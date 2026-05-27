@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* App background and overscroll behaviour for a native-feeling PWA */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  /* Prevent rubber-band bounce showing white above/below the app shell */
+  overscroll-behavior-y: none;
+  /* Disable the iOS tap-flash on interactive elements; App also sets
+     .no-tap-highlight in specific places. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: #FBF7ED; /* Matches LIGHT_THEME.bg so the splash before React boots looks correct */
+  font-family: 'DM Sans', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* When the user's saved theme is dark, the App reads it from IndexedDB after
+   mount and re-renders with the dark palette. The body background flips at
+   that point. The initial light-on-light flash is brief and matches the
+   default state for new users. */
+
+/* Safe-area insets for iOS standalone PWAs (notch / home indicator). The App
+   uses fixed bars in places; let those respect the inset by default. */
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

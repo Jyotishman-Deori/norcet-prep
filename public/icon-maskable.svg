@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Full-bleed fill so cropping never exposes white edges -->
+  <rect width="512" height="512" fill="#0F4C4C"/>
+  <!-- N mark, scaled smaller and centred so it survives a 10% edge crop on
+       every side (safe zone is the centre 80% — roughly the inner 410x410). -->
+  <text x="256" y="338"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="240"
+        font-weight="700"
+        text-anchor="middle"
+        fill="#FBF7ED"
+        letter-spacing="-9">N</text>
+</svg>
