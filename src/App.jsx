@@ -15,7 +15,148 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, PolarAngleAxis, LineChart, Line, Cell
 } from 'recharts';
+import { KEYS, KEY_PREFIXES } from './lib/keys.js';
+import { CURRENT_SCHEMA_VERSION, runMigrations } from './lib/migrations.js';
+import { compactData, needsCompaction, attemptStats, hasBeenSeen, COMPACTION_SIZE_THRESHOLD } from './lib/compact.js';
+import { log, setLogContext } from './lib/log.js';
 import * as kvStorage from './storage';
+
+// =====================================================================
+// ERROR BOUNDARY (Pipeline step 1 / A3; "Reset device data" added at P1)
+// Catches render-time crashes anywhere below App and shows a friendly
+// recovery screen instead of a white page. Self-contained: styles are
+// hardcoded (not theme-aware) so the fallback still works even if
+// context/state is broken.
+//
+// Reset device data is now ENABLED because P1 (cloud sync) ships the
+// canonical progress copy to Supabase. Wiping the local cache only
+// drops the device-side mirror; the next sign-in pulls fresh data
+// from Supabase. We keep a strong confirm() because losing unsynced
+// offline writes is still a real risk if the user is offline at the
+// moment of reset.
+// =====================================================================
+export class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null, wiping: false };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    // A10: report through the structured logger. log.error never throws
+    // and, in prod, ships the breadcrumb ring buffer to Supabase. We
+    // also attach the React component stack as the detail tail.
+    try {
+      const stack = (info && info.componentStack) ? String(info.componentStack).slice(0, 2000) : '';
+      log.error('errorBoundary.render', error);
+      if (stack) log.warn('errorBoundary.componentStack', stack);
+    } catch (e) { /* logger is fail-safe; nothing more to do */ }
+  }
+  handleReload = () => {
+    try { window.location.reload(); } catch (e) {}
+  };
+  handleResetScreen = () => {
+    try { window.dispatchEvent(new CustomEvent('norcet:reset-screen')); } catch (e) {}
+    this.setState({ hasError: false, error: null });
+  };
+  handleResetDeviceData = async () => {
+    // Strong confirm — last line of defence against an accidental tap.
+    // If the user is offline, any local writes that haven't synced yet
+    // will be lost; the confirm copy says so explicitly.
+    const offline = (typeof navigator !== 'undefined' && navigator.onLine === false);
+    const msg = offline
+      ? "You're currently OFFLINE. This will sign you out and delete all locally cached data on this device. Any progress from this offline session that hasn't synced to the cloud yet will be LOST. Continue?"
+      : "This will sign you out and clear all locally cached data on this device. Your progress is backed up to the cloud and will reload when you sign in again. Continue?";
+    if (!window.confirm(msg)) return;
+    this.setState({ wiping: true });
+    try {
+      // Drop the session pointer first so a partial wipe still leaves
+      // the user logged out on next boot (safer than half-wiping cache
+      // but leaving the session intact).
+      try { await safeStorage.delete(KEYS.SESSION, false); } catch (e) {}
+      // All per-profile local caches (added in P1).
+      try {
+        const listed = await safeStorage.list(KEY_PREFIXES.USERDATA, false);
+        const keys = (listed && listed.keys) || [];
+        await Promise.all(keys.map(k => safeStorage.delete(k, false).catch(() => {})));
+      } catch (e) {}
+      // Pending-sync map + admin lock + storage canary.
+      try { await safeStorage.delete(KEYS.PENDING_SYNC, false); } catch (e) {}
+      try { await safeStorage.delete(KEYS.ADMIN_STATUS, false); } catch (e) {}
+      try { await safeStorage.delete(KEYS.HEALTH, false); } catch (e) {}
+      // Intentionally LEFT alone: KEYS.THEME (cosmetic), ONBOARDING
+      // prefix (already-seen flags). The user's actual progress lives
+      // in Supabase under profile:<id>, untouched.
+    } finally {
+      // Hard reload so React state is fully reset and boot path
+      // re-runs against the cleared cache.
+      try { window.location.reload(); } catch (e) {}
+    }
+  };
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    const err = this.state.error;
+    const msg = (err && (err.message || String(err))) || 'Unknown error';
+    return (
+      <div role="alert" style={{
+        minHeight: '100vh', background: '#FBF7ED', color: '#1A2B23',
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24, boxSizing: 'border-box'
+      }}>
+        <div style={{
+          maxWidth: 480, width: '100%', background: '#FFFFFF',
+          borderRadius: 16, padding: 28,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.08)',
+          border: '1px solid #E5DFC9', boxSizing: 'border-box'
+        }}>
+          <div style={{ fontSize: 40, marginBottom: 8, lineHeight: 1 }}>😕</div>
+          <h1 style={{ fontSize: 22, margin: '0 0 8px 0', fontWeight: 700 }}>
+            Something went wrong
+          </h1>
+          <p style={{ fontSize: 14, color: '#3A4A40', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+            The app hit a render error. Your progress is safe — it&apos;s
+            backed up to the cloud. Try one of the options below.
+          </p>
+          <details style={{
+            background: '#F5EFDF', borderRadius: 8, padding: 10,
+            marginBottom: 16, fontSize: 12, color: '#7A7263'
+          }}>
+            <summary style={{ cursor: 'pointer', fontWeight: 600 }}>Technical details</summary>
+            <pre style={{
+              whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+              margin: '8px 0 0 0', fontFamily: 'ui-monospace, monospace', fontSize: 11
+            }}>{msg}</pre>
+          </details>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button onClick={this.handleReload} disabled={this.state.wiping} style={{
+              padding: '12px 16px', background: '#0F4C4C', color: '#FFFFFF',
+              border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 600,
+              cursor: this.state.wiping ? 'wait' : 'pointer', width: '100%',
+              opacity: this.state.wiping ? 0.6 : 1
+            }}>Reload app</button>
+            <button onClick={this.handleResetScreen} disabled={this.state.wiping} style={{
+              padding: '12px 16px', background: '#FFFFFF', color: '#0F4C4C',
+              border: '1.5px solid #0F4C4C', borderRadius: 10, fontSize: 15, fontWeight: 600,
+              cursor: this.state.wiping ? 'wait' : 'pointer', width: '100%',
+              opacity: this.state.wiping ? 0.6 : 1
+            }}>Go back to Home</button>
+            <button onClick={this.handleResetDeviceData} disabled={this.state.wiping} style={{
+              padding: '10px 16px', background: 'transparent', color: '#9B5050',
+              border: '1px dashed #C9A0A0', borderRadius: 10, fontSize: 13, fontWeight: 500,
+              cursor: this.state.wiping ? 'wait' : 'pointer', width: '100%',
+              marginTop: 4, opacity: this.state.wiping ? 0.6 : 1
+            }}>{this.state.wiping ? 'Clearing…' : 'Reset device data (last resort)'}</button>
+          </div>
+          <p style={{ fontSize: 11, color: '#7A7263', marginTop: 14, marginBottom: 0, textAlign: 'center' }}>
+            Still stuck? Close and reopen the app.
+          </p>
+        </div>
+      </div>
+    );
+  }
+}
 
 // =====================================================================
 // THEME
@@ -1104,9 +1245,13 @@ Object.keys(AIIMS_CONCEPT_CARDS).forEach(function (k) {
 // =====================================================================
 // STORAGE
 // =====================================================================
-const STORAGE_KEY = 'norcet:userdata:v1';
 
 const DEFAULT_DATA = {
+  // Bumped via CURRENT_SCHEMA_VERSION in src/lib/migrations.js. Fresh
+  // users start at the current version so the migration loop is a no-op
+  // for them. Existing users without this field default to 1 in the
+  // runner and walk forward through every migration on next load.
+  schemaVersion: CURRENT_SCHEMA_VERSION,
   customQuestions: [],
   history: {},        // qId -> { attempts: [{ts, correct, timeMs}], reviewCount, nextDue, lastResult }
   bookmarks: [],
@@ -1119,7 +1264,8 @@ const DEFAULT_DATA = {
     dailyHistory: [],
     examDate: null,
     streakGraceAvailable: true,
-    dailyTarget: null   // user-set questions-per-day goal; null = "auto" (derive from pool/days left)
+    dailyTarget: null,  // user-set questions-per-day goal; null = "auto" (derive from pool/days left)
+    lastCompactedTs: null  // P15 — timestamp of last lazy compaction pass; null = never run yet
   },
   advancedTestHistory: [],
   bankVersionsSeen: {},   // bankId -> last seen version (per user)
@@ -1165,17 +1311,38 @@ const DEFAULT_DATA = {
 // SAFE STORAGE — shim over `./storage.js`
 //   The artifact host's `window.storage` postMessage bridge is gone. Every
 //   storage call now goes through `./storage.js`, which is backed by
-//   IndexedDB (via the `idb` library). Same `get / set / delete / list`
-//   contract as the original `window.storage`, same return shapes — so the
-//   ~40 call sites elsewhere in this file did not need to change.
+//   IndexedDB (via the `idb` library) for device-local data and Supabase for
+//   shared data. Same `get / set / delete / list` contract as the original
+//   `window.storage`, same return shapes — so the ~40 call sites elsewhere in
+//   this file did not need to change. `delete` maps to `kvStorage.del` (the
+//   storage module avoids `delete` as a property name for lint reasons).
 //
 //   The `shared` flag on each call is the boundary between truly device-local
-//   data (sessions, theme, onboarding) and data that, in the original
-//   artifact, was visible across users (profiles, banks, feedback). Today
-//   both scopes live in IndexedDB on this device — the app works as a
-//   single-device offline-first PWA. When a backend is added in a later
-//   step, only the shared-side adapter in `./storage.js` needs to swap.
+//   data (sessions, theme, onboarding, admin unlock) and data that is visible
+//   across users/devices (profiles, banks, feedback, announcements).
 // =====================================================================
+const STORAGE_OP_TIMEOUT_MS = 6000;
+
+// Generic promise-timeout helper. Races an op against a deadline and reports
+// WHY it ended: { ok, value } | { timeout:true } | { error }. Used by the P1
+// cloud-sync paths (canonical Supabase writes via kvStorage) where we want an
+// explicit success/timeout/error signal that the plain safeStorage wrapper
+// flattens away. The op itself decides what it calls (here, kvStorage).
+function raceStorage(op, ms) {
+  return new Promise((resolve) => {
+    let settled = false;
+    const done = (r) => { if (!settled) { settled = true; clearTimeout(timer); resolve(r); } };
+    const timer = setTimeout(() => done({ timeout: true }), ms);
+    try {
+      Promise.resolve(op()).then(
+        (value) => done({ ok: true, value }),
+        (error) => done({ error: error || true })
+      );
+    } catch (error) {
+      done({ error });
+    }
+  });
+}
 
 const safeStorage = {
   get:    (key, shared)        => kvStorage.get(key, shared),
@@ -1192,15 +1359,10 @@ async function checkStorageBridge() {
   return kvStorage.isAlive();
 }
 
-const SESSION_KEY = 'norcet:session:v1';            // personal — per device
-const PROFILE_INDEX_KEY = 'profile_index';          // legacy: monolithic list (read-only fallback)
-const profileKey = (id) => `profile:${id}`;         // shared — one per profile (private blob)
 
 // One shared key PER user for the lightweight directory entry. Using a key per
 // user removes the read-modify-write contention the old monolithic list had:
 // two users signing in simultaneously can never overwrite each other's metadata.
-const PROFILE_META_PREFIX = 'profilemeta:';
-const profileMetaKey = (id) => `${PROFILE_META_PREFIX}${id}`;
 
 // Convert a free-form display name into a safe storage id
 function normalizeProfileId(name) {
@@ -1226,11 +1388,44 @@ async function hashPassword(password, salt) {
     .map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// =====================================================================
+// LOAD / SAVE PROFILE — with offline resilience (Pipeline step 4 / P1)
+// ---------------------------------------------------------------------
+// Strategy: Supabase is the canonical store; IndexedDB is a per-device
+// write-through cache. Every saveProfile writes BOTH layers so the user
+// can keep working offline; on reconnect, anything that didn't reach
+// Supabase is flushed up. Last-write-wins per profile is acceptable at
+// this scale (10-50 beta users).
+//
+// PENDING_SYNC tracks which profileIds have local writes not yet
+// confirmed in Supabase. It's keyed off the local IndexedDB only; the
+// flush replays the cached blob to Supabase and clears the entry.
+//
+// We use raceStorage (not safeStorage) for the canonical Supabase write
+// so we can distinguish "succeeded" from "timed out / errored", which
+// safeStorage flattens to `null`. The cache write keeps using
+// safeStorage — IndexedDB is local and never times out in practice.
+// =====================================================================
 async function loadProfile(id) {
+  // Try Supabase (canonical) first.
   try {
-    const result = await safeStorage.get(profileKey(id), true);
-    if (result && result.value) return JSON.parse(result.value);
-  } catch (e) { /* not found */ }
+    const result = await safeStorage.get(KEYS.profile(id), true);
+    if (result && result.value) {
+      const profile = JSON.parse(result.value);
+      // Refresh the local cache so a subsequent offline reload still
+      // returns the latest known-good copy.
+      try {
+        await safeStorage.set(KEYS.userdata(id), result.value, false);
+      } catch (e) { /* cache refresh is best-effort */ }
+      return profile;
+    }
+  } catch (e) { log.warn('storage.profileLoad.supabase', e); /* fall through to cache */ }
+  // Supabase didn't return a profile — either offline, timed out, or
+  // genuinely not there. Fall back to the local cache.
+  try {
+    const cached = await safeStorage.get(KEYS.userdata(id), false);
+    if (cached && cached.value) return JSON.parse(cached.value);
+  } catch (e) { log.warn('storage.profileLoad.cache', e); /* no cache either */ }
   return null;
 }
 
@@ -1238,12 +1433,99 @@ async function loadProfile(id) {
 // we debounce writes at the call site so rapid `setData` bursts coalesce into a
 // single network write, drastically reducing the chance of multi-device clobber.
 async function saveProfile(profile) {
-  await safeStorage.set(profileKey(profile.id), JSON.stringify(profile), true);
+  if (!profile || !profile.id) return;
+  const payload = JSON.stringify(profile);
+  // 1) Write-through to the local IndexedDB cache FIRST. This is fast,
+  //    cannot fail meaningfully offline, and means even if the Supabase
+  //    write below times out the user's progress survives a reload.
+  try { await safeStorage.set(KEYS.userdata(profile.id), payload, false); }
+  catch (e) { log.error('storage.profileSave.cache', e); }
+  // 2) Mark this profile as pending before attempting the Supabase write.
+  //    If the Supabase write succeeds we clear the flag; if not, the next
+  //    `flushPendingSync` (on reconnect or boot) will replay this write.
+  try { await markPendingSync(profile.id); } catch (e) {}
+  // 3) Attempt the canonical Supabase write. raceStorage gives us a clear
+  //    success/timeout/error signal that safeStorage flattens away.
+  const r = await raceStorage(
+    () => kvStorage.set(KEYS.profile(profile.id), payload, true),
+    STORAGE_OP_TIMEOUT_MS
+  );
+  if (r.ok) {
+    try { await clearPendingSync(profile.id); } catch (e) {}
+  }
+  // On timeout/error: pending flag remains set, flush handler will retry.
+}
+
+// Returns the current pending-sync map: { [profileId]: timestamp }. Safe to
+// call when the key doesn't exist yet — returns {}.
+async function getPendingSync() {
+  try {
+    const r = await safeStorage.get(KEYS.PENDING_SYNC, false);
+    if (r && r.value) {
+      const obj = JSON.parse(r.value);
+      return (obj && typeof obj === 'object') ? obj : {};
+    }
+  } catch (e) {}
+  return {};
+}
+
+async function markPendingSync(profileId) {
+  const obj = await getPendingSync();
+  obj[profileId] = Date.now();
+  try { await safeStorage.set(KEYS.PENDING_SYNC, JSON.stringify(obj), false); } catch (e) {}
+}
+
+async function clearPendingSync(profileId) {
+  const obj = await getPendingSync();
+  if (!(profileId in obj)) return;
+  delete obj[profileId];
+  try {
+    if (Object.keys(obj).length === 0) {
+      await safeStorage.delete(KEYS.PENDING_SYNC, false);
+    } else {
+      await safeStorage.set(KEYS.PENDING_SYNC, JSON.stringify(obj), false);
+    }
+  } catch (e) {}
+}
+
+// Replays any pending local writes up to Supabase. Called on the `online`
+// event, on boot once after the initial load settles, and after any
+// explicit user action that would benefit from a sync attempt. Idempotent:
+// each successful push clears that profile's pending flag; failures leave
+// the flag for the next attempt. Re-entry-safe via an in-memory lock so a
+// rapid online/offline flap doesn't spawn parallel flushes.
+let _flushInFlight = false;
+async function flushPendingSync() {
+  if (_flushInFlight) return;
+  _flushInFlight = true;
+  try {
+    const pending = await getPendingSync();
+    const ids = Object.keys(pending);
+    if (ids.length === 0) return;
+    for (const id of ids) {
+      try {
+        const cached = await safeStorage.get(KEYS.userdata(id), false);
+        if (!cached || !cached.value) {
+          // Nothing in cache to flush — drop the stale flag.
+          await clearPendingSync(id);
+          continue;
+        }
+        const r = await raceStorage(
+          () => kvStorage.set(KEYS.profile(id), cached.value, true),
+          STORAGE_OP_TIMEOUT_MS
+        );
+        if (r.ok) await clearPendingSync(id);
+        // r.timeout / r.error: leave flag, retry next time.
+      } catch (e) { /* leave flag set */ }
+    }
+  } finally {
+    _flushInFlight = false;
+  }
 }
 
 async function loadOneProfileMeta(id) {
   try {
-    const r = await safeStorage.get(profileMetaKey(id), true);
+    const r = await safeStorage.get(KEYS.profileMeta(id), true);
     if (r && r.value) return JSON.parse(r.value);
   } catch (e) { /* none */ }
   return null;
@@ -1251,7 +1533,7 @@ async function loadOneProfileMeta(id) {
 
 async function saveProfileMeta(meta) {
   if (!meta || !meta.id) return;
-  try { await safeStorage.set(profileMetaKey(meta.id), JSON.stringify(meta), true); } catch (e) {}
+  try { await safeStorage.set(KEYS.profileMeta(meta.id), JSON.stringify(meta), true); } catch (e) {}
 }
 
 // List every profile's lightweight metadata. Each user has their own key, so
@@ -1265,7 +1547,7 @@ async function listProfileMetas() {
   // entry that was missed will simply not appear until it's touched again,
   // at which point it gets written fresh.
   try {
-    const legacy = await safeStorage.get(PROFILE_INDEX_KEY, true);
+    const legacy = await safeStorage.get(KEYS.PROFILE_INDEX, true);
     if (legacy && legacy.value) {
       const arr = JSON.parse(legacy.value);
       if (Array.isArray(arr) && arr.length > 0) {
@@ -1275,14 +1557,14 @@ async function listProfileMetas() {
           createdAt: p.createdAt || null,
           lastActive: p.lastActive || null
         }) : null));
-        try { await safeStorage.delete(PROFILE_INDEX_KEY, true); } catch (e) {}
+        try { await safeStorage.delete(KEYS.PROFILE_INDEX, true); } catch (e) {}
       }
     }
   } catch (e) { /* no legacy list — fine */ }
 
   let keys = [];
   try {
-    const r = await safeStorage.list(PROFILE_META_PREFIX, true);
+    const r = await safeStorage.list(KEY_PREFIXES.PROFILE_META, true);
     keys = (r && r.keys) ? r.keys : [];
   } catch (e) { return []; }
   const metas = await Promise.all(keys.map(async k => {
@@ -1357,7 +1639,10 @@ async function createProfile({ displayName, password, dob, importData }) {
     dobHash,
     dobSalt,
     createdAt: Date.now(),
-    data: importData || DEFAULT_DATA
+    // Run migrations on legacy/imported data so an old shape gets walked
+    // forward to current before it's stored. DEFAULT_DATA is already at
+    // current version so doesn't need it.
+    data: importData ? runMigrations(importData) : DEFAULT_DATA
   };
   await saveProfile(profile);
   await upsertProfileIndex({ ...profile, lastActive: Date.now() });
@@ -1443,7 +1728,7 @@ async function renameProfile(profile, newDisplayName) {
   try {
     const myIds = await loadMyFeedbackIndex(profile.id);
     if (myIds && myIds.length > 0) {
-      await safeStorage.set(myFeedbackKey(newId), JSON.stringify(myIds), true);
+      await safeStorage.set(KEYS.myFeedback(newId), JSON.stringify(myIds), true);
     }
   } catch (e) { /* tolerate */ }
 
@@ -1462,9 +1747,12 @@ async function renameProfile(profile, newDisplayName) {
   } catch (e) { /* tolerate */ }
 
   // 7) Now safe to remove the old keys.
-  try { await safeStorage.delete(profileKey(profile.id), true); } catch (e) {}
-  try { await safeStorage.delete(profileMetaKey(profile.id), true); } catch (e) {}
-  try { await safeStorage.delete(myFeedbackKey(profile.id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.profile(profile.id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.profileMeta(profile.id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.myFeedback(profile.id), true); } catch (e) {}
+  // P1 — clear the local cache + any pending-sync flag for the old id.
+  try { await safeStorage.delete(KEYS.userdata(profile.id), false); } catch (e) {}
+  try { await clearPendingSync(profile.id); } catch (e) {}
 
   return renamed;
 }
@@ -1492,7 +1780,7 @@ async function recoverPasswordWithDob(displayName, dob, newPassword) {
 
 async function loadSession() {
   try {
-    const result = await safeStorage.get(SESSION_KEY);
+    const result = await safeStorage.get(KEYS.SESSION);
     if (result && result.value) return JSON.parse(result.value);
   } catch (e) { /* not found */ }
   return null;
@@ -1500,16 +1788,16 @@ async function loadSession() {
 
 async function saveSession(session) {
   if (session) {
-    await safeStorage.set(SESSION_KEY, JSON.stringify(session));
+    await safeStorage.set(KEYS.SESSION, JSON.stringify(session));
   } else {
-    try { await safeStorage.delete(SESSION_KEY); } catch (e) {}
+    try { await safeStorage.delete(KEYS.SESSION); } catch (e) {}
   }
 }
 
 // Returns legacy on-device data IF it represents real progress worth migrating
 async function peekLegacyData() {
   try {
-    const result = await safeStorage.get(STORAGE_KEY);
+    const result = await safeStorage.get(KEYS.USERDATA);
     if (result && result.value) {
       const parsed = JSON.parse(result.value);
       const attempted = parsed?.stats?.totalAttempted || 0;
@@ -1524,53 +1812,49 @@ async function peekLegacyData() {
 }
 
 async function clearLegacyData() {
-  try { await safeStorage.delete(STORAGE_KEY); } catch (e) {}
+  try { await safeStorage.delete(KEYS.USERDATA); } catch (e) {}
 }
 
 // =====================================================================
 // PER-DEVICE PREFERENCES — theme mode + onboarding completion
 // =====================================================================
-const THEME_KEY = 'norcet:theme:v1';
-const ONBOARDING_KEY = 'norcet:onboarded:v1';   // per-profile, but stored per-device fine
 
 async function loadThemeMode() {
   try {
-    const r = await safeStorage.get(THEME_KEY);
+    const r = await safeStorage.get(KEYS.THEME);
     if (r && r.value && THEMES[r.value]) return r.value;
   } catch (e) {}
   return 'light';
 }
 
 async function saveThemeMode(mode) {
-  try { await safeStorage.set(THEME_KEY, mode); } catch (e) {}
+  try { await safeStorage.set(KEYS.THEME, mode); } catch (e) {}
 }
 
 async function hasSeenOnboarding(profileId) {
   try {
-    const r = await safeStorage.get(`${ONBOARDING_KEY}:${profileId}`);
+    const r = await safeStorage.get(`${KEYS.ONBOARDING}:${profileId}`);
     return !!(r && r.value === '1');
   } catch (e) { return false; }
 }
 
 async function markOnboardingSeen(profileId) {
-  try { await safeStorage.set(`${ONBOARDING_KEY}:${profileId}`, '1'); } catch (e) {}
+  try { await safeStorage.set(`${KEYS.ONBOARDING}:${profileId}`, '1'); } catch (e) {}
 }
 
 // =====================================================================
 // FEEDBACK INBOX — shared storage; one key per report
 // =====================================================================
-const FEEDBACK_KEY_PREFIX = 'feedback:';
-const feedbackKey = (id) => `${FEEDBACK_KEY_PREFIX}${id}`;
 const newFeedbackId = () => `fb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
 async function saveFeedback(entry) {
-  await safeStorage.set(feedbackKey(entry.id), JSON.stringify(entry), true);
+  await safeStorage.set(KEYS.feedback(entry.id), JSON.stringify(entry), true);
 }
 
 async function listFeedback() {
   let keys = [];
   try {
-    const r = await safeStorage.list(FEEDBACK_KEY_PREFIX, true);
+    const r = await safeStorage.list(KEY_PREFIXES.FEEDBACK, true);
     keys = (r && r.keys) ? r.keys : [];
   } catch (e) { return []; }
   const items = await Promise.all(keys.map(async k => {
@@ -1584,7 +1868,7 @@ async function listFeedback() {
 }
 
 async function deleteFeedback(id) {
-  try { await safeStorage.delete(feedbackKey(id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.feedback(id), true); } catch (e) {}
 }
 
 // Admin reply + status live on the same feedback entry (kept lightweight).
@@ -1616,13 +1900,11 @@ async function updateFeedback(entry, patch) {
 // A small per-user pointer list so a device fetches only its OWN reports, rather
 // than pulling the entire shared inbox down and filtering. Other users' feedback
 // never reaches the device.
-const MY_FEEDBACK_KEY_PREFIX = 'myfeedback:';
-const myFeedbackKey = (profileId) => `${MY_FEEDBACK_KEY_PREFIX}${profileId}`;
 
 async function loadMyFeedbackIndex(profileId) {
   // Array of feedback ids, or null if the index has never been written.
   try {
-    const r = await safeStorage.get(myFeedbackKey(profileId), true);
+    const r = await safeStorage.get(KEYS.myFeedback(profileId), true);
     if (r && r.value) {
       const parsed = JSON.parse(r.value);
       if (Array.isArray(parsed)) return parsed;
@@ -1632,7 +1914,7 @@ async function loadMyFeedbackIndex(profileId) {
 }
 
 async function saveMyFeedbackIndex(profileId, ids) {
-  try { await safeStorage.set(myFeedbackKey(profileId), JSON.stringify(ids), true); } catch (e) {}
+  try { await safeStorage.set(KEYS.myFeedback(profileId), JSON.stringify(ids), true); } catch (e) {}
 }
 
 // Record a freshly-submitted report against its author.
@@ -1661,7 +1943,7 @@ async function listMyFeedback(profileId) {
 
   const entries = await Promise.all(ids.map(async (id) => {
     try {
-      const r = await safeStorage.get(feedbackKey(id), true);
+      const r = await safeStorage.get(KEYS.feedback(id), true);
       if (r && r.value) return JSON.parse(r.value);
     } catch (e) {}
     return null;                                   // deleted by admin → skip
@@ -1709,10 +1991,14 @@ async function adminListUsers() {
 async function adminDeleteProfile(id) {
   if (!id) return;
   // 1) Their private blob + lightweight metadata
-  try { await safeStorage.delete(profileKey(id), true); } catch (e) {}
-  try { await safeStorage.delete(profileMetaKey(id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.profile(id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.profileMeta(id), true); } catch (e) {}
+  // 1b) P1 — local cache + pending-sync flag (only matters if the admin
+  //     is operating on their OWN device's cache; harmless no-op otherwise).
+  try { await safeStorage.delete(KEYS.userdata(id), false); } catch (e) {}
+  try { await clearPendingSync(id); } catch (e) {}
   // 2) Their per-user feedback index pointer
-  try { await safeStorage.delete(myFeedbackKey(id), true); } catch (e) {}
+  try { await safeStorage.delete(KEYS.myFeedback(id), true); } catch (e) {}
   // 3) Every feedback report they authored
   try {
     const all = await listFeedback();
@@ -1737,11 +2023,10 @@ async function adminDeleteProfile(id) {
 //   - Each user records the id they dismissed in their OWN data, so dismissal
 //     is per-user and private.
 // =====================================================================
-const ANNOUNCEMENT_KEY = 'announcement:current';
 
 async function loadAnnouncement() {
   try {
-    const r = await safeStorage.get(ANNOUNCEMENT_KEY, true);
+    const r = await safeStorage.get(KEYS.ANNOUNCEMENT, true);
     if (r && r.value) {
       const parsed = JSON.parse(r.value);
       if (parsed && parsed.text) return parsed;
@@ -1750,34 +2035,60 @@ async function loadAnnouncement() {
   return null;
 }
 
-async function saveAnnouncement(text, level) {
+// A4: announcement WRITES are admin-only and now go through the direct
+// PostgREST path (with the x-profile-id header) so the server-side RLS policy
+// can enforce them. `loadAnnouncement` (read) stays on safeStorage — reads are
+// open to everyone. The caller must pass the current admin profile id; the
+// server rejects the write if that id is not in admin_profile_ids, so a
+// DevTools-patched isAdmin no longer buys anything.
+async function saveAnnouncement(text, level, adminProfileId) {
   // Two urgency levels:
   //  - 'info'      → calm teal card; default for routine notices.
   //  - 'important' → terracotta with an alert icon; for time-sensitive items
   //                  (schedule changes, exam reminders) so users notice.
   const lv = level === 'important' ? 'important' : 'info';
   const entry = { id: `ann-${Date.now()}`, text: String(text || '').trim(), level: lv, ts: Date.now() };
-  await safeStorage.set(ANNOUNCEMENT_KEY, JSON.stringify(entry), true);
+  await adminWriteShared(KEYS.ANNOUNCEMENT, JSON.stringify(entry), adminProfileId);
   return entry;
 }
 
-async function clearAnnouncement() {
-  try { await safeStorage.delete(ANNOUNCEMENT_KEY, true); } catch (e) {}
+async function clearAnnouncement(adminProfileId) {
+  await adminDeleteShared(KEYS.ANNOUNCEMENT, adminProfileId);
 }
 
 // =====================================================================
-// ADMIN UNLOCK
-//   - Passphrase is stored as a PBKDF2 hash (never plaintext in the bundle).
-//   - Admin status is per-device (personal storage), so unlocking on one
-//     device does not grant admin on another device.
-//   - To CHANGE the admin passphrase: pick a new one and recompute the
-//     hash with the same PBKDF2 params (SHA-256, 100k iter, 32-byte output,
-//     UTF-8 bytes, salt below). Then paste the hex into ADMIN_PASSPHRASE_HASH.
+// ADMIN UNLOCK  (Pipeline step 6 / A4 — server-side trust boundary)
+//   Before A4: passphrase was the entire gate. Hash + salt are baked
+//   into the JS bundle and the check happened client-side; any user
+//   could patch `isAdmin = true` in DevTools and then write to
+//   `announcement:current` directly against PostgREST because the
+//   kv_shared write policy was open-anon. Security theatre.
+//
+//   After A4: passphrase is a UX gate only (so a casual tap doesn't
+//   pop the unlock UI). The REAL check is server-side:
+//     1) `checkServerAdmin(profileId)` reads the `admin_profile_ids`
+//        table on Supabase — anon-readable, service-role-writable.
+//     2) Admin-only writes (announcement create/clear) go via
+//        `adminWriteShared` / `adminDeleteShared`, which POST/DELETE
+//        directly to PostgREST with an `x-profile-id` header. The
+//        kv_shared RLS policy reads that header and only permits the
+//        write if the profile id is in `admin_profile_ids`.
+//   Local `KEYS.ADMIN_STATUS` is now a UX cache so admin stays
+//   unlocked between reloads without re-typing — boot re-verifies
+//   against the server (see the useEffect in App) and silently
+//   downgrades on failure. Offline: stays admin from cache; next
+//   online boot re-verifies.
+//
+//   To CHANGE the admin passphrase: pick a new one and recompute the
+//   hash with the same PBKDF2 params (SHA-256, 100k iter, 32-byte
+//   output, UTF-8 bytes, salt below). Then paste the hex into
+//   ADMIN_PASSPHRASE_HASH. Note: rotating the passphrase no longer
+//   adds or removes anyone's admin power — that's done by INSERT /
+//   DELETE on `admin_profile_ids` in the Supabase SQL editor.
 // =====================================================================
 
 const ADMIN_PASSPHRASE_HASH = '02786e6bc3bd324be1df06cf7159def507860fde25efb28418aadc7247042fbc';
 const ADMIN_SALT = 'norcet-admin-salt-v1';
-const ADMIN_STATUS_KEY = 'norcet:admin:v1';
 
 async function verifyAdminPassphrase(passphrase) {
   if (!passphrase) return false;
@@ -1785,9 +2096,97 @@ async function verifyAdminPassphrase(passphrase) {
   return hash === ADMIN_PASSPHRASE_HASH;
 }
 
+// A4: Supabase config. Vite injects these at build time from .env / Vercel
+// env vars. If your env-var names differ, change the two strings below — they
+// are the ONLY references in App.jsx. Reads return `undefined` if unset.
+const SUPABASE_URL_FOR_ADMIN = (typeof import.meta !== 'undefined' && import.meta.env)
+  ? import.meta.env.VITE_SUPABASE_URL : undefined;
+const SUPABASE_ANON_KEY_FOR_ADMIN = (typeof import.meta !== 'undefined' && import.meta.env)
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined;
+
+// A4: Returns true iff `profileId` appears in the Supabase `admin_profile_ids`
+// table. Never throws — any network / parse / config failure resolves to false
+// (fail-closed: a broken admin check should reject, not grant).
+async function checkServerAdmin(profileId) {
+  if (!profileId) return false;
+  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) return false;
+  try {
+    const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/admin_profile_ids`
+      + `?profile_id=eq.${encodeURIComponent(profileId)}&select=profile_id`;
+    const r = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
+        'Accept': 'application/json',
+      },
+    });
+    if (!r.ok) return false;
+    const rows = await r.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+// A4: Direct PostgREST upsert for admin-only keys (currently: announcement:*).
+// Bypasses safeStorage so we can attach the `x-profile-id` header that the new
+// RLS policy on kv_shared inspects. Throws on non-2xx so the caller can show
+// a real error to the user (the safeStorage helpers swallow failures, which
+// would be wrong here — a silent failure would corrupt the admin's mental
+// model of what they just did).
+async function adminWriteShared(key, valueJson, adminProfileId) {
+  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
+    throw new Error('Supabase URL / anon key not configured');
+  }
+  if (!adminProfileId) throw new Error('Missing admin profile id');
+  const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/kv_shared`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'resolution=merge-duplicates,return=minimal',
+      'x-profile-id': adminProfileId,
+    },
+    body: JSON.stringify({ key, value: valueJson }),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`admin write failed: ${r.status} ${text || ''}`.trim());
+  }
+}
+
+// A4: Direct PostgREST delete for admin-only keys. Same header story as
+// adminWriteShared. 404 is treated as success (idempotent delete).
+async function adminDeleteShared(key, adminProfileId) {
+  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
+    throw new Error('Supabase URL / anon key not configured');
+  }
+  if (!adminProfileId) throw new Error('Missing admin profile id');
+  const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/kv_shared`
+    + `?key=eq.${encodeURIComponent(key)}`;
+  const r = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
+      'x-profile-id': adminProfileId,
+    },
+  });
+  if (!r.ok && r.status !== 404) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`admin delete failed: ${r.status} ${text || ''}`.trim());
+  }
+}
+
+// A4: ADMIN_STATUS local cache is a UX shortcut so admin stays unlocked
+// across reloads. Truthfulness is verified server-side by the boot re-verify
+// effect; this read can be stale until that runs.
 async function loadAdminStatus() {
   try {
-    const result = await safeStorage.get(ADMIN_STATUS_KEY);
+    const result = await safeStorage.get(KEYS.ADMIN_STATUS);
     if (result && result.value) {
       const parsed = JSON.parse(result.value);
       return parsed && parsed.unlocked === true;
@@ -1798,9 +2197,9 @@ async function loadAdminStatus() {
 
 async function saveAdminStatus(unlocked) {
   if (unlocked) {
-    await safeStorage.set(ADMIN_STATUS_KEY, JSON.stringify({ unlocked: true, ts: Date.now() }));
+    await safeStorage.set(KEYS.ADMIN_STATUS, JSON.stringify({ unlocked: true, ts: Date.now() }));
   } else {
-    try { await safeStorage.delete(ADMIN_STATUS_KEY); } catch (e) {}
+    try { await safeStorage.delete(KEYS.ADMIN_STATUS); } catch (e) {}
   }
 }
 
@@ -1818,8 +2217,6 @@ async function saveAdminStatus(unlocked) {
 //   - Legacy banks with no visibility are treated as PUBLIC.
 // =====================================================================
 
-const BANK_KEY_PREFIX = 'bank:';
-const bankKey = (id) => `${BANK_KEY_PREFIX}${id}`;
 const newBankId = () => `bk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 const bankVisibility = (bank) => (bank && bank.visibility === 'private' ? 'private' : 'public');
@@ -1836,7 +2233,7 @@ function canSeeBank(bank, profileId, isAdmin) {
 async function listBanks() {
   let keys = [];
   try {
-    const result = await safeStorage.list(BANK_KEY_PREFIX, true);
+    const result = await safeStorage.list(KEY_PREFIXES.BANK, true);
     keys = (result && result.keys) ? result.keys : [];
   } catch (e) {
     return [];
@@ -1857,18 +2254,18 @@ async function listBanks() {
 
 async function loadBank(id) {
   try {
-    const r = await safeStorage.get(bankKey(id), true);
+    const r = await safeStorage.get(KEYS.bank(id), true);
     if (r && r.value) return JSON.parse(r.value);
   } catch (e) { /* not found */ }
   return null;
 }
 
 async function saveBank(bank) {
-  await safeStorage.set(bankKey(bank.id), JSON.stringify(bank), true);
+  await safeStorage.set(KEYS.bank(bank.id), JSON.stringify(bank), true);
 }
 
 async function deleteBank(id) {
-  try { await safeStorage.delete(bankKey(id), true); return true; }
+  try { await safeStorage.delete(KEYS.bank(id), true); return true; }
   catch (e) { return false; }
 }
 
@@ -1930,12 +2327,14 @@ function getWeakTopics(history, allQuestions) {
   const byTopic = {};
   Object.entries(history).forEach(([qId, h]) => {
     const q = allQuestions.find(x => x.id === qId);
-    if (!q || !h.attempts || h.attempts.length === 0) return;
+    if (!q || !h) return;
+    // P15 — route through attemptStats so compacted records contribute
+    // their PRE-COMPACTION totals, not just the 5-attempt tail.
+    const s = attemptStats(h);
+    if (s.total === 0) return;
     if (!byTopic[q.topic]) byTopic[q.topic] = { correct: 0, total: 0 };
-    h.attempts.forEach(a => {
-      byTopic[q.topic].total++;
-      if (a.correct) byTopic[q.topic].correct++;
-    });
+    byTopic[q.topic].total += s.total;
+    byTopic[q.topic].correct += s.correct;
   });
   return Object.entries(byTopic)
     .map(([topic, { correct, total }]) => ({ topic, accuracy: total > 0 ? correct / total : 0, total }))
@@ -1972,8 +2371,9 @@ function shuffle(arr) {
 //   history updates, so least-recently-seen / weakest items surface first.
 // =====================================================================
 function lastSeenTs(h) {
-  if (!h || !h.attempts || h.attempts.length === 0) return 0;
-  return h.attempts[h.attempts.length - 1].ts || 0;
+  // P15 — compacted records carry lastAttemptedTs directly; attemptStats
+  // normalizes both shapes.
+  return attemptStats(h).lastTs;
 }
 
 // Higher score → should be served sooner (only for already-seen questions).
@@ -2007,7 +2407,9 @@ function selectQuickPracticeQuestions(pool, count, history) {
   const seen = [];
   pool.forEach(q => {
     const rec = h[q.id];
-    if (!rec || !rec.attempts || rec.attempts.length === 0) unseen.push(q);
+    // P15 — hasBeenSeen returns true for both Tier 2 (has attempts) and
+    // Tier 3 (compacted) records.
+    if (!hasBeenSeen(rec)) unseen.push(q);
     else seen.push(q);
   });
   // Fresh material first, in a varied order
@@ -3248,9 +3650,13 @@ function TopicSelect({ allQuestions, history, onPick, onBack }) {
     const a = {};
     Object.entries(history).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
-      if (!q || !h.attempts) return;
+      if (!q || !h) return;
+      // P15 — accurate totals across Tier 2 and Tier 3 records.
+      const s = attemptStats(h);
+      if (s.total === 0) return;
       if (!a[q.topic]) a[q.topic] = { c: 0, t: 0 };
-      h.attempts.forEach(att => { a[q.topic].t++; if (att.correct) a[q.topic].c++; });
+      a[q.topic].t += s.total;
+      a[q.topic].c += s.correct;
     });
     return a;
   }, [history, allQuestions]);
@@ -4285,14 +4691,20 @@ function StatsScreen({ data, allQuestions, onBack, onQuick, onPracticeTopic }) {
   const [topicSort, setTopicSort] = useState('weak'); // 'weak' | 'strong'
   const [chartReady, setChartReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setChartReady(true), 280); return () => clearTimeout(t); }, []);
+  const [trendWindow, setTrendWindow] = useState(6);          // P13: months — 3 | 6 | 12
+  const [showAllTrends, setShowAllTrends] = useState(false);  // P13: top-6 vs all topics
 
   const byTopic = useMemo(() => {
     const acc = {};
     Object.entries(data.history).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
-      if (!q || !h.attempts) return;
+      if (!q || !h) return;
+      // P15 — attemptStats returns accurate pre-compaction totals.
+      const s = attemptStats(h);
+      if (s.total === 0) return;
       if (!acc[q.topic]) acc[q.topic] = { id: q.topic, correct: 0, total: 0, name: topicName(q.topic), color: topicColor(q.topic) };
-      h.attempts.forEach(a => { acc[q.topic].total++; if (a.correct) acc[q.topic].correct++; });
+      acc[q.topic].total += s.total;
+      acc[q.topic].correct += s.correct;
     });
     return Object.values(acc).map(x => ({
       ...x, accuracy: x.total > 0 ? Math.round((x.correct / x.total) * 100) : 0
@@ -4318,7 +4730,8 @@ function StatsScreen({ data, allQuestions, onBack, onQuick, onPracticeTopic }) {
 
   // How much of the pool has been touched at least once.
   const coverage = useMemo(() => {
-    const seen = Object.values(data.history).filter(h => h.attempts && h.attempts.length > 0).length;
+    // P15 — hasBeenSeen counts both Tier 2 (attempts present) and Tier 3.
+    const seen = Object.values(data.history).filter(h => hasBeenSeen(h)).length;
     const total = allQuestions.length || 1;
     return { seen, total, pct: Math.round((seen / total) * 100) };
   }, [data.history, allQuestions]);
@@ -4357,6 +4770,71 @@ function StatsScreen({ data, allQuestions, onBack, onQuick, onPracticeTopic }) {
     byTopic.forEach(t => { if (t.accuracy >= 75) strong++; else if (t.accuracy >= 50) building++; else weak++; });
     return { strong, building, weak };
   }, [byTopic]);
+
+  // P13 — per-topic accuracy OVER TIME (monthly). Derived entirely from
+  // data.history[qId].attempts[].ts (spec point 6): additive, migration-free,
+  // does not touch data.stats.dailyHistory. Safe vs P15 compaction — any
+  // trend window here is ≤12 months, well inside the 730-day per-attempt
+  // retention, so attempts[] is always complete within the window.
+  const topicTrends = useMemo(() => {
+    const now = new Date();
+    const months = [];
+    for (let i = trendWindow - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      months.push({
+        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+        label: d.toLocaleDateString('en-US', { month: 'short' })
+      });
+    }
+    const windowStart = new Date(now.getFullYear(), now.getMonth() - (trendWindow - 1), 1).getTime();
+
+    const acc = {};    // topicId -> monthKey -> { c, t }
+    const totals = {}; // topicId -> attempts within the window
+    Object.entries(data.history).forEach(([qId, h]) => {
+      const q = allQuestions.find(x => x.id === qId);
+      if (!q || !h) return;
+      (h.attempts || []).forEach(at => {
+        if (typeof at.ts !== 'number' || at.ts < windowStart) return;
+        const d = new Date(at.ts);
+        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        acc[q.topic] = acc[q.topic] || {};
+        acc[q.topic][mk] = acc[q.topic][mk] || { c: 0, t: 0 };
+        acc[q.topic][mk].t++; if (at.correct) acc[q.topic][mk].c++;
+        totals[q.topic] = (totals[q.topic] || 0) + 1;
+      });
+    });
+
+    const topics = Object.keys(acc)
+      .filter(tid => (totals[tid] || 0) >= 10)            // require ≥10 attempts in window
+      .map(tid => {
+        const series = months.map(m => {
+          const cell = acc[tid][m.key];
+          const ok = cell && cell.t >= 5;                  // skip months with <5 (too noisy)
+          return {
+            key: m.key, label: m.label, n: cell ? cell.t : 0,
+            accuracy: ok ? Math.round((cell.c / cell.t) * 100) : null
+          };
+        });
+        return { id: tid, name: topicName(tid), color: topicColor(tid), total: totals[tid], series };
+      })
+      .filter(t => t.series.filter(p => p.accuracy !== null).length >= 2) // a line needs ≥2 points
+      .sort((a, b) => b.total - a.total);
+
+    // Auto-derived insights: compare first vs last plotted month per topic.
+    const cand = [];
+    topics.forEach(t => {
+      const pts = t.series.filter(p => p.accuracy !== null);
+      if (pts.length < 2) return;
+      const delta = pts[pts.length - 1].accuracy - pts[0].accuracy;
+      if (delta >= 10) cand.push({ type: 'up', name: t.name, delta });
+      else if (delta <= -10) cand.push({ type: 'down', name: t.name, delta });
+      else if (pts.every(p => p.accuracy >= 75)) cand.push({ type: 'strong', name: t.name, delta: 0 });
+    });
+    const movers = cand.filter(c => c.type !== 'strong').sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
+    const insights = [...movers, ...cand.filter(c => c.type === 'strong')].slice(0, 3);
+
+    return { months, topics, insights };
+  }, [data.history, allQuestions, trendWindow]);
 
   if (data.stats.totalAttempted === 0) {
     return (
@@ -4559,6 +5037,119 @@ function StatsScreen({ data, allQuestions, onBack, onQuick, onPracticeTopic }) {
             <div className="text-[10px] mt-2.5 px-0.5" style={{ color: T.muted }}>Tap any topic to practise it.</div>
           </Card>
         )}
+
+        {/* Topic trends — P13: per-topic accuracy over time */}
+        <Card className="p-4 mb-5">
+          <div className="flex items-center justify-between mb-1">
+            <div className="text-xs uppercase tracking-wider" style={{ color: T.muted }}>Topic trends</div>
+            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+              {[3, 6, 12].map(w => {
+                const active = trendWindow === w;
+                return (
+                  <button key={w} onClick={() => setTrendWindow(w)}
+                          className="no-tap-highlight text-[11px] font-medium px-2.5 py-1 transition-colors"
+                          style={{ background: active ? T.primary : 'transparent', color: active ? '#FFF' : T.muted }}>
+                    {w}M
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div className="text-[11px] mb-3" style={{ color: T.muted }}>Monthly accuracy by topic.</div>
+
+          {topicTrends.topics.length === 0 ? (
+            <div className="text-sm text-center py-6" style={{ color: T.muted }}>
+              Not enough data yet. Practise at least 10 questions in a topic across a couple of months to see its trend.
+            </div>
+          ) : (() => {
+            const visible = showAllTrends ? topicTrends.topics : topicTrends.topics.slice(0, 6);
+            const rows = topicTrends.months.map(m => {
+              const row = { label: m.label };
+              visible.forEach(t => {
+                const pt = t.series.find(p => p.key === m.key);
+                row[t.id] = pt ? pt.accuracy : null;
+              });
+              return row;
+            });
+            return (
+              <>
+                <div className="h-48">
+                  {!chartReady ? (
+                    <div className="h-full w-full skeleton-pulse rounded-xl" style={{ background: T.borderSoft }} />
+                  ) : (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={rows} margin={{ top: 5, right: 6, left: -18, bottom: 0 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={T.borderSoft} vertical={false} />
+                        <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: T.muted }} />
+                        <YAxis domain={[0, 100]} ticks={[0, 50, 100]} axisLine={false} tickLine={false}
+                               tick={{ fontSize: 10, fill: T.muted }} width={34} unit="%" />
+                        <Tooltip content={({ active, payload, label }) => {
+                          if (!active || !payload || !payload.length) return null;
+                          const pts = payload.filter(p => p.value !== null && p.value !== undefined);
+                          if (!pts.length) return null;
+                          return (
+                            <div className="text-xs px-2.5 py-1.5 rounded-lg"
+                                 style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink, maxWidth: 200 }}>
+                              <div style={{ color: T.muted, marginBottom: 2 }}>{label}</div>
+                              {pts.map(p => {
+                                const t = visible.find(x => x.id === p.dataKey);
+                                const s = t && t.series.find(x => x.label === label);
+                                return (
+                                  <div key={p.dataKey} className="flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+                                    <span style={{ fontWeight: 600 }}>{t ? t.name : p.dataKey}</span>
+                                    <span style={{ color: T.muted }}>{p.value}%{s ? ` · n=${s.n}` : ''}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        }} />
+                        {visible.map(t => (
+                          <Line key={t.id} type="monotone" dataKey={t.id} stroke={t.color}
+                                strokeWidth={2} dot={{ r: 2.5, fill: t.color }} activeDot={{ r: 4 }}
+                                connectNulls isAnimationActive={false} />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-3 text-[11px]" style={{ color: T.muted }}>
+                  {visible.map(t => (
+                    <span key={t.id} className="inline-flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full" style={{ background: t.color }} />{t.name}
+                    </span>
+                  ))}
+                </div>
+
+                {topicTrends.topics.length > 6 && (
+                  <button onClick={() => setShowAllTrends(v => !v)}
+                          className="no-tap-highlight text-[11px] font-medium mt-2" style={{ color: T.primary }}>
+                    {showAllTrends ? 'Show top 6' : `Show all ${topicTrends.topics.length}`}
+                  </button>
+                )}
+
+                {topicTrends.insights.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {topicTrends.insights.map((ins, i) => {
+                      const c = ins.type === 'up' ? T.success : ins.type === 'down' ? T.error : T.primary;
+                      const txt = ins.type === 'up' ? `${ins.name} +${ins.delta}%`
+                                : ins.type === 'down' ? `${ins.name} ${ins.delta}%`
+                                : `${ins.name} ✓`;
+                      return (
+                        <span key={i} className="text-[11px] rounded-full px-2.5 py-1"
+                              style={{ background: c + '15', color: c, fontWeight: 600 }}>
+                          {txt}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </>
+            );
+          })()}
+        </Card>
 
         {/* Speed */}
         {(() => {
@@ -8077,7 +8668,9 @@ function RevisionSheet({ data, allQuestions, onLogVisit, onBack }) {
     const ids = new Set(data.bookmarks || []);
     if (includeWrong) {
       Object.entries(data.history || {}).forEach(([qId, h]) => {
-        if (h && (h.lastResult === 'wrong' || (h.attempts && h.attempts.some(a => !a.correct)))) {
+        // P15 — attemptStats.anyWrong correctly flags compacted records
+        // whose pre-compaction history contained any wrong attempts.
+        if (h && (h.lastResult === 'wrong' || attemptStats(h).anyWrong)) {
           ids.add(qId);
         }
       });
@@ -9561,17 +10154,30 @@ function AdminPanel({
   const postAnnouncement = async () => {
     if (!annText.trim()) { setAnnMsg({ ok: false, text: 'Write a short notice first.' }); return; }
     setAnnBusy(true);
-    await onSaveAnnouncement(annText.trim(), annLevel);
-    setAnnBusy(false);
-    setAnnMsg({ ok: true, text: 'Posted — all users will see it on their home screen.' });
+    // A4: the write now hits Supabase directly and can throw (server rejected
+    // the write because this profile isn't an admin, or network/config error).
+    // Show a real failure message instead of optimistically claiming success.
+    try {
+      await onSaveAnnouncement(annText.trim(), annLevel);
+      setAnnMsg({ ok: true, text: 'Posted — all users will see it on their home screen.' });
+    } catch (e) {
+      setAnnMsg({ ok: false, text: 'Could not post — server rejected the write (are you online and using the admin profile?).' });
+    } finally {
+      setAnnBusy(false);
+    }
   };
 
   const removeAnnouncement = async () => {
     setAnnBusy(true);
-    await onClearAnnouncement();
-    setAnnBusy(false);
-    setAnnText('');
-    setAnnMsg({ ok: true, text: 'Announcement cleared.' });
+    try {
+      await onClearAnnouncement();
+      setAnnText('');
+      setAnnMsg({ ok: true, text: 'Announcement cleared.' });
+    } catch (e) {
+      setAnnMsg({ ok: false, text: 'Could not clear — server rejected the write (are you online and using the admin profile?).' });
+    } finally {
+      setAnnBusy(false);
+    }
   };
 
   const removeFeedback = async (id) => {
@@ -10041,15 +10647,17 @@ function WeakAreasScreen({ data, allQuestions, onBack, onStartWeakQuiz }) {
     const byTopic = {};
     Object.entries(data.history || {}).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
-      if (!q || !h.attempts || h.attempts.length === 0) return;
+      if (!q || !h) return;
+      // P15 — attemptStats normalizes Tier 2 / Tier 3 shapes.
+      const s = attemptStats(h);
+      if (s.total === 0) return;
       if (!byTopic[q.topic]) byTopic[q.topic] = { correct: 0, total: 0, wrongIds: new Set() };
-      let lastWasWrong = false;
-      h.attempts.forEach(a => {
-        byTopic[q.topic].total++;
-        if (a.correct) byTopic[q.topic].correct++;
-        else lastWasWrong = true;
-      });
-      if (lastWasWrong) byTopic[q.topic].wrongIds.add(qId);
+      byTopic[q.topic].total += s.total;
+      byTopic[q.topic].correct += s.correct;
+      // Track questions where the user has EVER gotten an answer wrong.
+      // For compacted records we lose the per-attempt detail but
+      // anyWrong is still accurate.
+      if (s.anyWrong) byTopic[q.topic].wrongIds.add(qId);
     });
 
     return Object.entries(byTopic)
@@ -10185,13 +10793,14 @@ function CoverageMap({ data, allQuestions, onBack, onDrill }) {
     const byTopic = {};
     Object.entries(data.history || {}).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
-      if (!q || !h.attempts) return;
+      if (!q || !h) return;
+      // P15 — attemptStats covers Tier 2 + Tier 3.
+      const s = attemptStats(h);
+      if (s.total === 0) return;
       if (!byTopic[q.topic]) byTopic[q.topic] = { attempted: 0, correct: 0, uniqueAnswered: new Set() };
       byTopic[q.topic].uniqueAnswered.add(qId);
-      h.attempts.forEach(a => {
-        byTopic[q.topic].attempted++;
-        if (a.correct) byTopic[q.topic].correct++;
-      });
+      byTopic[q.topic].attempted += s.total;
+      byTopic[q.topic].correct += s.correct;
     });
     // Total available per topic
     const totalPerTopic = {};
@@ -10240,12 +10849,13 @@ function CoverageMap({ data, allQuestions, onBack, onDrill }) {
       const uniqueAnswered = new Set();
       qs.forEach(q => {
         const h = history[q.id];
-        if (!h || !h.attempts) return;
+        if (!h) return;
+        // P15 — attemptStats normalizes Tier 2 / Tier 3.
+        const s = attemptStats(h);
+        if (s.total === 0) return;
         uniqueAnswered.add(q.id);
-        h.attempts.forEach(a => {
-          attempted++;
-          if (a.correct) correct++;
-        });
+        attempted += s.total;
+        correct += s.correct;
       });
       const total = qs.length;
       const coverage = total > 0 ? uniqueAnswered.size / total : 0;
@@ -10460,6 +11070,53 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed }) {
   const [recovering, setRecovering] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState(false);
+  // Live name-taken check (create mode only). null = unknown / not checked yet;
+  // true = a profile with this id exists in Supabase; false = name is free.
+  // We deliberately use raceStorage directly (not loadProfile, which after P1
+  // falls back to local cache) so the check reflects the canonical store.
+  // On offline / timeout we stay at `null` so we never falsely block — the
+  // final authoritative check still happens in createProfile at submit time.
+  const [nameTaken, setNameTaken] = useState(null);
+  const [checkingName, setCheckingName] = useState(false);
+  const nameCheckTimerRef = useRef(null);
+  useEffect(() => {
+    // Only run during fresh sign-up. Logging in or recovering doesn't need
+    // a "name taken" hint because the user is supplying an EXISTING name on
+    // purpose; we'd be reporting expected behaviour as a problem.
+    if (mode !== 'create' || recovering) {
+      setNameTaken(null);
+      setCheckingName(false);
+      return;
+    }
+    const name = displayName.trim();
+    if (!name) {
+      setNameTaken(null);
+      setCheckingName(false);
+      return;
+    }
+    if (nameCheckTimerRef.current) clearTimeout(nameCheckTimerRef.current);
+    setCheckingName(true);
+    nameCheckTimerRef.current = setTimeout(async () => {
+      const id = normalizeProfileId(name);
+      if (!id) { setNameTaken(null); setCheckingName(false); return; }
+      try {
+        const r = await raceStorage(
+          () => kvStorage.get(KEYS.profile(id), true),
+          4000
+        );
+        if (r.ok && r.value) setNameTaken(true);
+        else if (r.ok) setNameTaken(false);
+        else setNameTaken(null); // timeout / error — don't make claims
+      } catch (e) {
+        setNameTaken(null);
+      } finally {
+        setCheckingName(false);
+      }
+    }, 600);
+    return () => {
+      if (nameCheckTimerRef.current) clearTimeout(nameCheckTimerRef.current);
+    };
+  }, [displayName, mode, recovering]);
 
   const legacyStats = legacyData ? {
     attempted: legacyData.stats?.totalAttempted || 0,
@@ -10603,6 +11260,31 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed }) {
             className="w-full rounded-xl pl-10 pr-4 py-3 text-sm"
             style={inputStyle}
           />
+          {/* Live "name taken" hint (create mode only). Renders BELOW the input
+              as a subtle inline note plus a quick-action to switch to login.
+              Stays out of the way when status is unknown or the field is empty. */}
+          {mode === 'create' && !recovering && nameTaken === true && (
+            <div className="mt-2 text-xs flex items-start gap-1.5"
+                 style={{ color: T.error || '#9B5050' }}>
+              <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+              <span>
+                This name is already taken.{' '}
+                <button
+                  type="button"
+                  onClick={() => { setMode('login'); setError(null); setPassword(''); setNameTaken(null); }}
+                  className="no-tap-highlight underline font-medium"
+                  style={{ color: T.primary }}
+                >
+                  Log in instead?
+                </button>
+              </span>
+            </div>
+          )}
+          {mode === 'create' && !recovering && checkingName && nameTaken === null && displayName.trim() && (
+            <div className="mt-2 text-xs" style={{ color: T.muted }}>
+              Checking availability…
+            </div>
+          )}
         </div>
 
         {/* DOB — required in create mode, used as the recovery key in recovery mode.
@@ -11086,6 +11768,29 @@ function Settings({ data, profile, isAdmin, themeMode, onClearAll, onImportBacku
                 </div>
               </div>
             </div>
+            {/* P15 — Storage info, debug line. Only visible when admin is
+                unlocked. "Last compacted" only shows once a real
+                compaction has run (lastCompactedTs is null on a fresh
+                v8-migrated blob). */}
+            {(() => {
+              let kb = '?';
+              try { kb = (JSON.stringify(data).length / 1024).toFixed(0); } catch (e) {}
+              const lc = data && data.stats && data.stats.lastCompactedTs;
+              let lastStr = 'never';
+              if (typeof lc === 'number' && lc > 0) {
+                const days = Math.floor((Date.now() - lc) / (24 * 60 * 60 * 1000));
+                if (days === 0) lastStr = 'today';
+                else if (days === 1) lastStr = '1 day ago';
+                else if (days < 30) lastStr = days + ' days ago';
+                else if (days < 365) lastStr = Math.floor(days / 30) + ' months ago';
+                else lastStr = Math.floor(days / 365) + ' years ago';
+              }
+              return (
+                <div className="text-[11px] mb-2 px-1" style={{ color: T.muted }}>
+                  Your data: {kb} KB · last compacted {lastStr}
+                </div>
+              );
+            })()}
             <Button onClick={onOpenAdminPanel} className="w-full mb-2" icon={<ChevronRight size={14} />}>
               Open Admin Panel
             </Button>
@@ -11121,9 +11826,13 @@ function Settings({ data, profile, isAdmin, themeMode, onClearAll, onImportBacku
                      onKeyDown={async e => {
                        if (e.key === 'Enter' && adminInput && !adminBusy) {
                          setAdminBusy(true);
-                         const ok = await onUnlockAdmin(adminInput);
-                         if (!ok) { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
-                         else { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                         // A4: tri-state result. true → granted; 'not-authorized'
+                         // → passphrase ok but server didn't confirm this profile
+                         // (or we're offline); anything else → wrong passphrase.
+                         const res = await onUnlockAdmin(adminInput);
+                         if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                         else if (res === 'not-authorized') { setAdminError('This profile is not an admin, or you are offline. Connect and use the owner profile.'); setAdminBusy(false); }
+                         else { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
                        }
                      }}
                      className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
@@ -11144,9 +11853,10 @@ function Settings({ data, profile, isAdmin, themeMode, onClearAll, onImportBacku
               <Button disabled={!adminInput || adminBusy}
                       onClick={async () => {
                         setAdminBusy(true);
-                        const ok = await onUnlockAdmin(adminInput);
-                        if (!ok) { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
-                        else { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                        const res = await onUnlockAdmin(adminInput);
+                        if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                        else if (res === 'not-authorized') { setAdminError('This profile is not an admin, or you are offline. Connect and use the owner profile.'); setAdminBusy(false); }
+                        else { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
                       }}
                       className="flex-1"
                       icon={adminBusy ? <RefreshCw size={14} className="animate-spin" /> : null}>
@@ -11179,7 +11889,111 @@ function Settings({ data, profile, isAdmin, themeMode, onClearAll, onImportBacku
             </div>
           </Card>
         )}
+
+        {/* P19 — build-version string so users (and you) can confirm which
+            build is live. __APP_VERSION__ is injected by vite.config.js;
+            the typeof guard keeps it from throwing outside a Vite build. */}
+        <div className="mt-8 mb-2 text-center" style={{ color: T.muted, fontSize: 11, opacity: 0.75 }}>
+          Version: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
+        </div>
       </div>
+    </div>
+  );
+}
+
+// =====================================================================
+// PWA UPDATE TOAST (Pipeline step 8 / P19)
+// ---------------------------------------------------------------------
+// With registerType:'prompt' (vite.config.js), main.jsx fires a
+// 'pwa-update-available' event when a new build is installed and
+// waiting, and stashes the activator on window.__pwaUpdateSW. We show a
+// non-blocking bottom toast; the USER chooses when to reload — we never
+// auto-reload. "Later" hides it for the rest of this browser session
+// (sessionStorage) but it returns next session if the update is still
+// pending. If a quiz is in progress, Reload asks for confirmation first
+// so a session is never interrupted mid-question (progress is
+// debounce-saved regardless, so the reload is safe either way).
+// =====================================================================
+const PWA_DISMISS_KEY = 'pwa-update-dismissed';
+
+function UpdateToast({ quizInProgress }) {
+  const [show, setShow] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
+  useEffect(() => {
+    // If the user already chose "Later" this session, don't subscribe.
+    let dismissed = false;
+    try { dismissed = sessionStorage.getItem(PWA_DISMISS_KEY) === '1'; } catch (e) {}
+    if (dismissed) return;
+    const onAvailable = () => setShow(true);
+    window.addEventListener('pwa-update-available', onAvailable);
+    // The event may have fired during boot before this listener attached.
+    // main.jsx leaves window.__pwaUpdateSW set in that case, so check once.
+    try { if (window.__pwaUpdateSW) setShow(true); } catch (e) {}
+    return () => window.removeEventListener('pwa-update-available', onAvailable);
+  }, []);
+
+  if (!show) return null;
+
+  const doReload = () => {
+    try {
+      if (typeof window !== 'undefined' && typeof window.__pwaUpdateSW === 'function') {
+        window.__pwaUpdateSW(true); // activate the waiting SW, then reload
+      } else {
+        window.location.reload();   // fallback if the activator went missing
+      }
+    } catch (e) {
+      try { window.location.reload(); } catch (_) {}
+    }
+  };
+
+  const onReloadClick = () => {
+    // Mid-quiz: ask once before reloading. Otherwise reload immediately.
+    if (quizInProgress && !confirming) { setConfirming(true); return; }
+    doReload();
+  };
+
+  // Left button: in confirm mode it just backs out (toast stays);
+  // otherwise it's "Later" — dismiss for the rest of the session.
+  const onLeftClick = () => {
+    if (confirming) { setConfirming(false); return; }
+    setShow(false);
+    try { sessionStorage.setItem(PWA_DISMISS_KEY, '1'); } catch (e) {}
+  };
+
+  return (
+    <div className="anim-fadeup no-tap-highlight" role="status" aria-live="polite" style={{
+      position: 'fixed', left: 12, right: 12, bottom: 84, zIndex: 210,
+      maxWidth: 460, margin: '0 auto',
+      background: T.surface, color: T.ink,
+      border: `1px solid ${T.border}`, borderRadius: 14,
+      boxShadow: '0 6px 24px rgba(0,0,0,0.20)',
+      padding: '12px 14px',
+      display: 'flex', alignItems: 'center', gap: 12
+    }}>
+      <RefreshCw size={18} style={{ flexShrink: 0, color: T.primary }} />
+      <div className="text-sm" style={{ flex: 1, lineHeight: 1.35 }}>
+        {confirming ? (
+          <span><span style={{ fontWeight: 700 }}>Reload now?</span> Your current progress is saved.</span>
+        ) : (
+          <span><span style={{ fontWeight: 700 }}>New version available.</span> Reload to update.</span>
+        )}
+      </div>
+      <button onClick={onLeftClick}
+              aria-label={confirming ? 'Cancel reload' : 'Dismiss update until next session'}
+              className="no-tap-highlight text-xs"
+              style={{ flexShrink: 0, background: 'transparent', border: 'none',
+                       color: T.muted, cursor: 'pointer', padding: '6px 8px', fontWeight: 600 }}>
+        {confirming ? 'Cancel' : 'Later'}
+      </button>
+      <button onClick={onReloadClick}
+              aria-label="Reload to apply the new version"
+              className="no-tap-highlight text-xs"
+              style={{ flexShrink: 0, background: T.primary, border: 'none',
+                       color: '#fff', cursor: 'pointer', padding: '8px 14px',
+                       borderRadius: 9, fontWeight: 700 }}>
+        Reload
+      </button>
     </div>
   );
 }
@@ -11192,6 +12006,37 @@ export default function App() {
   const [profile, setProfile] = useState(null);
   const [legacyData, setLegacyData] = useState(null);
   const [nav, setNav] = useState({ screen: 'home' });
+  // A10: keep the logger's context in sync so every error report carries
+  // the current profile + screen without each call site passing them.
+  useEffect(() => {
+    try { setLogContext({ screen: nav && nav.screen ? nav.screen : null }); } catch (e) {}
+  }, [nav]);
+  // ErrorBoundary's "Go back to Home" button (Pipeline step 1 / A3) dispatches
+  // this event. Listen and reset nav so the user re-enters via Home cleanly,
+  // without a full page reload (preserves React state like profile, banks).
+  useEffect(() => {
+    const handler = () => setNav({ screen: 'home' });
+    window.addEventListener('norcet:reset-screen', handler);
+    return () => window.removeEventListener('norcet:reset-screen', handler);
+  }, []);
+  // P1 — offline write queue. When the browser regains connectivity, replay
+  // any local saves that didn't reach Supabase. Also fire once on mount
+  // (after a short delay so we don't fight boot's own loadProfile) so a user
+  // who closed the app while offline gets their last session synced as soon
+  // as they next open it online.
+  useEffect(() => {
+    const onOnline = () => { flushPendingSync(); };
+    window.addEventListener('online', onOnline);
+    const bootFlushTimer = setTimeout(() => {
+      if (typeof navigator === 'undefined' || navigator.onLine !== false) {
+        flushPendingSync();
+      }
+    }, 2000);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      clearTimeout(bootFlushTimer);
+    };
+  }, []);
   const [loading, setLoading] = useState(true);
   const [authInitialMode, setAuthInitialMode] = useState('create');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -11255,21 +12100,40 @@ export default function App() {
           if (p) {
             setProfile(p);
             touchProfileActivity(p.id);
+            try { setLogContext({ profileId: p.id }); } catch (e) {}
             const pd = p.data || {};
+            // A11: walk the loaded blob forward to current schema BEFORE
+            // the spread-merge below. Migrations preserve user values;
+            // the spread-merge below remains as a forward-compat safety
+            // net for any field a halted migration didn't fill in.
+            const migrated = runMigrations(pd);
             const loaded = {
               ...DEFAULT_DATA,
-              ...pd,
-              customQuestions: Array.isArray(pd.customQuestions) ? pd.customQuestions : DEFAULT_DATA.customQuestions,
-              bookmarks: Array.isArray(pd.bookmarks) ? pd.bookmarks : DEFAULT_DATA.bookmarks,
-              stats: { ...DEFAULT_DATA.stats, ...(pd.stats || {}) },
-              advancedTestHistory: pd.advancedTestHistory || [],
-              bankVersionsSeen: pd.bankVersionsSeen || {},
-              bankPublishedSeen: pd.bankPublishedSeen || {},
-              disabledBanks: pd.disabledBanks || {},
-              revisionLog: Array.isArray(pd.revisionLog) ? pd.revisionLog : DEFAULT_DATA.revisionLog,
-              preferences: { ...DEFAULT_DATA.preferences, ...(pd.preferences || {}) }
+              ...migrated,
+              customQuestions: Array.isArray(migrated.customQuestions) ? migrated.customQuestions : DEFAULT_DATA.customQuestions,
+              bookmarks: Array.isArray(migrated.bookmarks) ? migrated.bookmarks : DEFAULT_DATA.bookmarks,
+              stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
+              advancedTestHistory: migrated.advancedTestHistory || [],
+              bankVersionsSeen: migrated.bankVersionsSeen || {},
+              bankPublishedSeen: migrated.bankPublishedSeen || {},
+              disabledBanks: migrated.disabledBanks || {},
+              revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
+              preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
             };
-            setData(loaded);
+            // P15 — lazy compaction. Only runs when the serialized blob
+            // crosses ~500 KB AND compactData would actually trim
+            // something (avoids spinning cycles when the size is from
+            // Tier 1 fields like bookmarks). Compaction happens in
+            // memory; the saveData effect persists it on the next tick.
+            let bootData = loaded;
+            try {
+              if (needsCompaction(loaded)) {
+                bootData = compactData(loaded);
+              }
+            } catch (e) {
+              try { log.error('boot.compaction', e); } catch (_) {}
+            }
+            setData(bootData);
             // Check onboarding: only show automatically for brand-new users
             const seen = await hasSeenOnboarding(p.id);
             const isBrandNew = loaded.stats.totalAttempted === 0
@@ -11286,6 +12150,7 @@ export default function App() {
         setAuthInitialMode(index.length > 0 ? 'login' : 'create');
       } catch (e) {
         // Never let a boot error strand the user on the loading screen.
+        log.error('boot.fatal', e);
       } finally {
         clearTimeout(watchdog);
         if (!cancelled) setLoading(false);
@@ -11426,9 +12291,12 @@ export default function App() {
       const wrong = [], unseen = [], rest = [];
       topicPool.forEach(q => {
         const h = history[q.id];
-        if (h && h.attempts && h.attempts.some(a => !a.correct)) {
+        // P15 — attemptStats.anyWrong is true for compacted records that
+        // had any wrong attempts pre-compaction; hasBeenSeen catches both
+        // Tier 2 and Tier 3.
+        if (h && (h.lastResult === 'wrong' || attemptStats(h).anyWrong)) {
           wrong.push(q);
-        } else if (!h || !h.attempts || h.attempts.length === 0) {
+        } else if (!hasBeenSeen(h)) {
           unseen.push(q);
         } else {
           rest.push(q);
@@ -11567,12 +12435,15 @@ export default function App() {
   }, [goHome]);
 
   const importBackup = useCallback((payload) => {
-    // Merge with defaults so older or partial backups don't break the app
+    // Merge with defaults so older or partial backups don't break the app.
+    // A11: walk the imported payload forward to current schema before the
+    // spread-merge — a backup may be from an old version of the app.
+    const migrated = runMigrations(payload);
     setData({
       ...DEFAULT_DATA,
-      ...payload,
-      stats: { ...DEFAULT_DATA.stats, ...(payload.stats || {}) },
-      advancedTestHistory: payload.advancedTestHistory || []
+      ...migrated,
+      stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
+      advancedTestHistory: migrated.advancedTestHistory || []
     });
   }, []);
 
@@ -11683,12 +12554,16 @@ export default function App() {
   const handleAuthed = useCallback((p) => {
     setProfile(p);
     touchProfileActivity(p.id);
+    try { setLogContext({ profileId: p.id }); } catch (e) {}
     loadAnnouncement().then(setAnnouncement);
+    // A11: walk the freshly-loaded profile's data forward to current
+    // schema before the spread-merge.
+    const migrated = runMigrations(p.data || {});
     setData({
       ...DEFAULT_DATA,
-      ...(p.data || {}),
-      stats: { ...DEFAULT_DATA.stats, ...((p.data && p.data.stats) || {}) },
-      advancedTestHistory: (p.data && p.data.advancedTestHistory) || []
+      ...migrated,
+      stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
+      advancedTestHistory: migrated.advancedTestHistory || []
     });
     setLegacyData(null);
     setNav({ screen: 'home' });
@@ -11739,14 +12614,25 @@ export default function App() {
   }, [profile, data]);
 
   // ===== Admin =====
+  // A4: passphrase is the UX gate (don't pop admin UI on a stray tap), but
+  // the SOURCE OF TRUTH is the server. We only grant isAdmin if BOTH the
+  // passphrase verifies AND the current profile id is in admin_profile_ids
+  // on Supabase. Returns a string reason on failure so the form can tell the
+  // user WHY (wrong passphrase vs. this profile isn't an admin vs. offline).
   const handleUnlockAdmin = useCallback(async (passphrase) => {
-    const ok = await verifyAdminPassphrase(passphrase);
-    if (ok) {
-      await saveAdminStatus(true);
-      setIsAdmin(true);
+    const passOk = await verifyAdminPassphrase(passphrase);
+    if (!passOk) return false; // form shows "Incorrect passphrase"
+    const pid = profile ? profile.id : null;
+    const serverOk = await checkServerAdmin(pid);
+    if (!serverOk) {
+      // Passphrase right, but this profile isn't authorised server-side (or
+      // we're offline / Supabase unreachable). Do NOT grant — fail closed.
+      return 'not-authorized';
     }
-    return ok;
-  }, []);
+    await saveAdminStatus(true);
+    setIsAdmin(true);
+    return true;
+  }, [profile]);
 
   const handleLockAdmin = useCallback(async () => {
     await saveAdminStatus(false);
@@ -11754,15 +12640,50 @@ export default function App() {
   }, []);
 
   // ===== Announcements =====
+  // A4: writes go through the admin direct-fetch path and can THROW (network,
+  // not-authorised, config). Surface the failure to the caller instead of
+  // optimistically flipping local state, so the admin sees a real result.
   const handleSaveAnnouncement = useCallback(async (text, level) => {
-    const entry = await saveAnnouncement(text, level);
+    const pid = profile ? profile.id : null;
+    const entry = await saveAnnouncement(text, level, pid); // throws on failure
     setAnnouncement(entry);
-  }, []);
+    return entry;
+  }, [profile]);
 
   const handleClearAnnouncement = useCallback(async () => {
-    await clearAnnouncement();
+    const pid = profile ? profile.id : null;
+    await clearAnnouncement(pid); // throws on failure
     setAnnouncement(null);
-  }, []);
+  }, [profile]);
+
+  // A4: server re-verify of cached admin status. The boot path optimistically
+  // trusts the local KEYS.ADMIN_STATUS cache so a legit admin's UI doesn't
+  // flicker. This effect then confirms against Supabase whenever we have both
+  // a profile and a cached-admin flag:
+  //   - If online and the server says this profile is NOT an admin → silently
+  //     downgrade and clear the cache (covers a profile that was de-listed, or
+  //     a stale/forged cache).
+  //   - If offline / Supabase unreachable → leave the cached flag alone. The
+  //     admin keeps their UI, but any actual admin WRITE still goes through the
+  //     server and will be rejected there, so no privilege is actually granted.
+  // We intentionally do NOT auto-PROMOTE here: unlock always requires the
+  // passphrase via handleUnlockAdmin. This effect can only ever downgrade.
+  useEffect(() => {
+    if (!isAdmin) return;            // nothing to verify
+    if (!profile || !profile.id) return;
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return; // offline: keep cache
+    let cancelled = false;
+    (async () => {
+      const ok = await checkServerAdmin(profile.id);
+      if (cancelled) return;
+      if (!ok) {
+        // Definitive (online) negative — drop admin silently.
+        await saveAdminStatus(false);
+        if (!cancelled) setIsAdmin(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isAdmin, profile]);
 
   const dismissAnnouncement = useCallback((id) => {
     setData(prev => ({ ...prev, dismissedAnnouncementId: id }));
@@ -12149,6 +13070,10 @@ export default function App() {
       <style>{fontStyles}</style>
 
       {bridgeBanner}
+
+      {/* P19 — in-app PWA update toast. Rendered once here so it can surface
+          from any in-app screen; quizInProgress gates the mid-quiz confirm. */}
+      <UpdateToast quizInProgress={nav.screen === 'quiz'} />
 
       {/* Report modal lives at the app root (no transformed ancestor) so its
           position:fixed centering is relative to the viewport, not a screen. */}

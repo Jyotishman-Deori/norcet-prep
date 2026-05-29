@@ -1,0 +1,71 @@
+// =====================================================================
+// CENTRALIZED STORAGE KEYS  (Pipeline step 2 / A6)
+// ---------------------------------------------------------------------
+// Every storage-key string used by App.jsx is defined here, in ONE
+// place. Call sites import from this file and use KEYS.X or
+// KEY_PREFIXES.X — never raw strings.
+//
+// Why this file exists:
+//   Previously 12+ const declarations were sprinkled through App.jsx.
+//   A typo in any one of them creates a *new* storage key silently,
+//   no error, no warning — the user's data appears to vanish. You
+//   only find out when someone reports lost progress.
+//
+//   This file is also the prereq for PROMPT 1 (cloud sync), which
+//   wants to migrate STORAGE_KEY ('norcet:userdata:v1') to a
+//   per-profile shape ('userdata:<profileId>'). The forward-compat
+//   builder `KEYS.userdata(profileId)` is already wired up here so
+//   P1's rename only touches this one file.
+//
+// CRITICAL — DO NOT CHANGE STRING VALUES:
+//   Every string below must remain byte-identical to what's on disk
+//   in real users' IndexedDB right now. Changing any of these strings
+//   silently destroys existing user progress. Schema versioning (A11,
+//   pipeline step 3) will introduce a safe way to migrate keys; until
+//   then, ADD only, never RENAME or REMOVE.
+// =====================================================================
+
+export const KEYS = {
+  // -- Per-device personal state (not synced across devices) --
+  USERDATA:      'norcet:userdata:v1',  // main blob: progress, bookmarks, settings
+  SESSION:       'norcet:session:v1',   // active profile pointer for this device
+  HEALTH:        'norcet:health:v1',    // storage-layer round-trip canary
+  THEME:         'norcet:theme:v1',     // 'light' | 'dark' | 'system'
+  ONBOARDING:    'norcet:onboarded:v1', // used as prefix: `${ONBOARDING}:${profileId}`
+  ADMIN_STATUS:  'norcet:admin:v1',     // { unlocked: bool, ts }
+
+  // -- Shared / cross-device (private blobs, but visible across devices) --
+  ANNOUNCEMENT:  'announcement:current',
+  PROFILE_INDEX: 'profile_index',       // legacy: monolithic list — read-only fallback
+
+  // -- Per-id builders --
+  profile:       (id)        => `profile:${id}`,
+  profileMeta:   (id)        => `profilemeta:${id}`,
+  feedback:      (id)        => `feedback:${id}`,
+  myFeedback:    (profileId) => `myfeedback:${profileId}`,
+  bank:          (id)        => `bank:${id}`,
+
+  // -- Forward-compat for PROMPT 1 (cloud sync). Not yet used by any
+  //    call site. P1 will switch from KEYS.USERDATA to KEYS.userdata(id)
+  //    with a migration path. Defined here so the rename is one place. --
+  userdata:      (profileId) => `userdata:${profileId}`,
+
+  // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
+  //    Tracks which profileIds have been written locally but not yet
+  //    confirmed in Supabase. Cleared per-profile once the Supabase
+  //    write confirms. Drained on `online` event and at boot.
+  PENDING_SYNC:  'norcet:pendingsync:v1',
+};
+
+// Prefixes used with safeStorage.list() to scan all keys starting with
+// a given pattern. Each prefix here is exactly what the corresponding
+// builder above prepends.
+export const KEY_PREFIXES = {
+  PROFILE_META: 'profilemeta:',
+  FEEDBACK:     'feedback:',
+  MY_FEEDBACK:  'myfeedback:',
+  BANK:         'bank:',
+  // P1 — local cache scan prefix. Used by ErrorBoundary's "Reset device
+  // data" button to wipe every per-profile cache in one pass.
+  USERDATA:     'userdata:',
+};

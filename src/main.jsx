@@ -1,10 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import App from './App.jsx';
+import App, { ErrorBoundary } from './App.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
-
-// Register the service worker. `autoUpdate` (configured in vite.config.js)
+// Register the service worker. autoUpdate (configured in vite.config.js)
 // silently fetches a new SW in the background; this callback gets called
 // when a fresh build is fully installed and waiting. We auto-reload so the
 // user is always on the latest version next time they open the app.
@@ -31,9 +30,10 @@ registerSW({
     // No UI — the install/offline experience is intentionally invisible.
   }
 });
-
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 );
