@@ -18,8 +18,9 @@ import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { attemptStats } from '../lib/compact.js';
-import { clampNum } from '../lib/utils.js';
+import { clampNum, todayStr } from '../lib/utils.js';
 import { topicIcon } from '../lib/topics.js';
+import { loadMindmapNotes, saveMindmapNotes, mindmapNoteMatch, sanitizeNoteText } from '../lib/notes.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
@@ -108,7 +109,7 @@ function computeMindmapModel(allQuestions, history, includeGk) {
       return {
         id: t.id,
         name: t.name,
-        color: t.color || T.muted,
+        color: t.color || '#94a3b8', // [FIX] was T.muted, but computeMindmapModel is module-scope (no theme in scope) — neutral gray fallback (matches topics.js)
         total: totalPerTopic[t.id] || 0,
         attempted: agg.attempted,
         correct: agg.correct,
