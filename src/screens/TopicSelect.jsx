@@ -1,0 +1,76 @@
+// =====================================================================
+// TOPIC SELECT SCREEN  (extracted verbatim from App.jsx)
+// Lets the user pick a topic (with PYQ-only toggle) to start a 10-question
+// topic quiz. [A7] theme via useTheme(); question pool + history via
+// useData() (history === data.history, was a prop). onPick/onBack stay props.
+// =====================================================================
+import React, { useMemo } from 'react';
+import { ChevronRight } from 'lucide-react';
+import { useTheme, useData } from '../lib/app-context.jsx';
+import { attemptStats } from '../lib/compact.js';
+import { TOPICS } from '../data/seed.js';
+import { Card, TopBar } from '../ui/primitives.jsx';
+
+function TopicSelect({ onPick, onBack }) {
+  const { theme: T } = useTheme();
+  const { data, allQuestions } = useData();
+  const history = data.history;
+  const countsByTopic = useMemo(() => {
+    const c = {};
+    allQuestions.forEach(q => { c[q.topic] = (c[q.topic] || 0) + 1; });
+    return c;
+  }, [allQuestions]);
+
+  const accuracyByTopic = useMemo(() => {
+    const a = {};
+    Object.entries(history).forEach(([qId, h]) => {
+      const q = allQuestions.find(x => x.id === qId);
+      if (!q || !h) return;
+      // P15 — accurate totals across Tier 2 and Tier 3 records.
+      const s = attemptStats(h);
+      if (s.total === 0) return;
+      if (!a[q.topic]) a[q.topic] = { c: 0, t: 0 };
+      a[q.topic].t += s.total;
+      a[q.topic].c += s.correct;
+    });
+    return a;
+  }, [history, allQuestions]);
+
+  return (
+    <div className="anim-fadeup">
+      <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} />
+      <div className="max-w-md mx-auto px-4 pb-24 pt-4">
+        <div className="space-y-2.5">
+          {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {
+            const acc = accuracyByTopic[topic.id];
+            const accPct = acc && acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : null;
+            return (
+              <Card key={topic.id} className="p-4" onClick={() => onPick(topic.id)}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
+                         style={{ background: topic.color + '15' }}>
+                      {topic.icon}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>
+                        {topic.name}
+                      </div>
+                      <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                        {countsByTopic[topic.id]} question{countsByTopic[topic.id] === 1 ? '' : 's'}
+                        {accPct !== null && ` · ${accPct}% accuracy`}
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight size={20} style={{ color: T.muted }} />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default TopicSelect;

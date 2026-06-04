@@ -1,0 +1,112 @@
+// =====================================================================
+// src/lib/question-import.js — shared question parsing + validation (A1 slice 17)
+// Extracted VERBATIM from App.jsx. Used by the per-user bulk import AND the
+// admin bank uploader (BankEditor), so format/rules stay identical. Dep:
+// parseCsvLine (./utils.js). EXPORTS: processQuestionInput, validateQuestionFields.
+// parseQuestionInput + normalizeQuestion stay module-internal.
+// =====================================================================
+import { parseCsvLine } from './utils.js';
+
+export function validateQuestionFields(q) {
+  const errs = [];
+  if (!q.q || typeof q.q !== 'string' || !q.q.trim()) errs.push('Missing question text');
+  if (!Array.isArray(q.options) || q.options.length < 2) errs.push('Need ≥2 options');
+  else if (q.options.some(o => !o || typeof o !== 'string' || !o.trim())) errs.push('Empty option');
+  if (!Array.isArray(q.correct) || q.correct.length === 0) errs.push('Missing correct answer(s)');
+  else if (q.correct.some(c => !Number.isInteger(c) || c < 0 || c >= (q.options?.length || 0))) errs.push('Correct index out of range');
+  if (!q.exp || typeof q.exp !== 'string' || !q.exp.trim()) errs.push('Missing explanation');
+  if (q.type && !['mcq', 'msq'].includes(q.type)) errs.push('type must be mcq or msq');
+  if (q.type === 'mcq' && q.correct && q.correct.length !== 1) errs.push('mcq needs exactly 1 correct');
+  if (q.difficulty && !['easy', 'medium', 'hard'].includes(q.difficulty)) errs.push('difficulty must be easy/medium/hard');
+  return errs;
+}
+
+// Normalize a raw parsed question into the canonical shape used app-wide.
+function normalizeQuestion(raw, idPrefix) {
+  return {
+    id: `${idPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    topic: raw.topic || 'fund',
+    sub: raw.sub || 'General',
+    type: raw.type || 'mcq',
+    q: raw.q.trim(),
+    options: raw.options.map(o => o.trim()),
+    correct: raw.correct,
+    exp: raw.exp.trim(),
+    wrong: raw.wrong || {},
+    ...(raw.difficulty ? { difficulty: raw.difficulty } : {}),
+    ...(raw.source ? { source: String(raw.source).trim() } : {}),
+    // P17 — preserve an optional image URL / data-URI if the bank provides one.
+    ...(raw.image ? { image: String(raw.image).trim() } : {}),
+    // P16 — preserve optional PYQ provenance fields when an imported bank
+    // supplies them (matches the documented bank schema). Purely additive: a
+    // question without these stays exactly as before. No stored-schema change
+    // is implied — these are optional, like `source`/`difficulty`/`image`.
+    ...(raw.isPYQ === true ? { isPYQ: true } : {}),
+    ...((typeof raw.pyqYear === 'number' && raw.pyqYear > 0) ? { pyqYear: raw.pyqYear } : {}),
+    ...((typeof raw.pyqExam === 'string' && raw.pyqExam.trim()) ? { pyqExam: raw.pyqExam.trim() } : {})
+  };
+}
+
+// [A1 s3] isPYQ/pyqLabel → lib/pyq.js
+
+// Parse JSON or CSV → { items: [...] } or { parseError: '...' }
+function parseQuestionInput(text, format) {
+  if (!text || !text.trim()) return { parseError: 'Paste something first.' };
+  try {
+    if (format === 'json') {
+      const parsed = JSON.parse(text);
+      return { items: Array.isArray(parsed) ? parsed : [parsed] };
+    }
+    // CSV
+    const lines = text.trim().split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return { parseError: 'Need a header row and at least one data row.' };
+    const headers = parseCsvLine(lines[0]).map(h => h.trim());
+    const items = lines.slice(1).map(line => {
+      const fields = parseCsvLine(line);
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = fields[i] !== undefined ? fields[i] : ''; });
+      if (obj.options) obj.options = String(obj.options).split('|').map(s => s.trim()).filter(Boolean);
+      if (obj.correct !== undefined && obj.correct !== '') {
+        obj.correct = String(obj.correct).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+      }
+      if (obj.wrong && typeof obj.wrong === 'string' && obj.wrong.trim()) {
+        const wrongObj = {};
+        obj.wrong.split(';').forEach(pair => {
+          const idx = pair.indexOf(':');
+          if (idx > 0) {
+            const k = pair.slice(0, idx).trim();
+            const v = pair.slice(idx + 1).trim();
+            if (k && v) wrongObj[k] = v;
+          }
+        });
+        obj.wrong = wrongObj;
+      } else if (!obj.wrong) {
+        obj.wrong = {};
+      }
+      return obj;
+    });
+    return { items };
+  } catch (e) {
+    return { parseError: 'Parse error: ' + e.message };
+  }
+}
+
+// Run parse + validate together. Returns { valid, invalid, parseError }
+export function processQuestionInput(text, format, idPrefix = 'q') {
+  const parsed = parseQuestionInput(text, format);
+  if (parsed.parseError) return { valid: [], invalid: [], parseError: parsed.parseError };
+  const valid = [], invalid = [];
+  parsed.items.forEach((q, i) => {
+    const errs = validateQuestionFields(q);
+    if (errs.length === 0) {
+      valid.push(normalizeQuestion(q, idPrefix));
+    } else {
+      invalid.push({
+        index: i + 1,
+        errors: errs,
+        preview: (q && q.q) ? String(q.q).slice(0, 80) : '(no question text)'
+      });
+    }
+  });
+  return { valid, invalid };
+}

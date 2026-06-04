@@ -1,0 +1,116 @@
+// [A1 slice 42] Shared global stylesheet (fonts + animations + theme-token
+// utilities + scrollbars). Extracted VERBATIM from App.jsx so both the App
+// root and the now-extracted AuthScreen can mount <style>{fontStyles}</style>
+// without duplicating the literal. No logic — a single template-string const.
+export const fontStyles = `
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap');
+.font-display { font-family: 'Fraunces', Georgia, serif; font-feature-settings: 'ss01'; letter-spacing: -0.01em; }
+.font-body { font-family: 'DM Sans', system-ui, sans-serif; }
+.no-tap-highlight { -webkit-tap-highlight-color: transparent; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.anim-fadeup { animation: fadeUp 0.35s ease-out both; }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+.anim-scalein { animation: scaleIn 0.25s ease-out both; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+.shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+.anim-slide-next { animation: slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+.anim-slide-prev { animation: slideInLeft 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Theme-token utilities (A8) ─────────────────────────────────────────────
+   Backed by the --token CSS variables published on :root from the active theme
+   (see the themeMode handling in App). Components can use these classNames
+   instead of an inline style object reading T.surface / T.ink / etc., so they
+   don't allocate a new style object every render. All five themes resolve
+   through the same vars, so a single class is correct in every theme. Inline
+   styles are still used for genuinely dynamic values (computed colours, widths,
+   transforms) and for section-accent tints mixed with alpha at the call site. */
+.bg-app          { background-color: var(--bg); }
+.bg-surface      { background-color: var(--surface); }
+.bg-surface-warm { background-color: var(--surface-warm); }
+.bg-primary      { background-color: var(--primary); }
+.bg-success-soft { background-color: var(--success-soft); }
+.bg-error-soft   { background-color: var(--error-soft); }
+.text-ink        { color: var(--ink); }
+.text-ink-soft   { color: var(--ink-soft); }
+.text-muted      { color: var(--muted); }
+.text-primary    { color: var(--primary); }
+.text-accent     { color: var(--accent); }
+.text-success    { color: var(--success); }
+.text-error      { color: var(--error); }
+.text-on-primary { color: #FFFFFF; }
+.border-app      { border: 1px solid var(--border); }
+.border-app-soft { border: 1px solid var(--border-soft); }
+.bd-app          { border-color: var(--border); }
+.bd-app-soft     { border-color: var(--border-soft); }
+/* Common composite: a standard surface card face. Matches the original Card
+   primitive exactly (background + hairline border only; no color, so text
+   inheritance is unchanged). */
+.surface-card    { background-color: var(--surface); border: 1px solid var(--border); }
+
+/* ── Theme transition — smooth crossfade when switching colour themes ───────
+   Scoped to properties that change between themes. Deliberately excludes
+   transform (would fight the active-press scale) and opacity/animation
+   (would slow down existing enter animations and the quiz timer). */
+*:not([class*="anim-"]):not([class*="animate-"]) {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 180ms;
+  transition-timing-function: ease;
+}
+/* Override: elements that must stay instant (timer digits, progress fills) */
+.no-transition, .no-transition * { transition: none !important; }
+
+/* ── Tap / press feedback — cards feel physically pressed ───────────────────
+   Applied via the .pressable class. The scale snaps back on release via the
+   short duration; the timing-function gives a springy feel. */
+.pressable { transition: transform 120ms cubic-bezier(0.34,1.56,0.64,1) !important; }
+.pressable:active { transform: scale(0.975) !important; }
+
+/* ── Skeleton shimmer for loading states ────────────────────────────────────*/
+@keyframes skeletonPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.skeleton-pulse { animation: skeletonPulse 1.4s ease-in-out infinite; }
+/* P10 Phase B — mindmap dependency-edge pulse + bonus-node reveal. */
+@keyframes kmapEdgePulse { 0%, 100% { stroke-opacity: 0.35; } 50% { stroke-opacity: 0.95; } }
+.kmap-edge-pulse { animation: kmapEdgePulse 1.6s ease-in-out infinite; }
+@keyframes kmapBonusReveal { 0% { opacity: 0; transform: scale(0.7); } 60% { opacity: 1; transform: scale(1.08); } 100% { opacity: 1; transform: scale(1); } }
+.kmap-bonus-reveal { animation: kmapBonusReveal 0.9s cubic-bezier(0.22,1,0.36,1) both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapBonusPulse { 0%, 100% { opacity: 0.25; } 50% { opacity: 0.6; } }
+.kmap-bonus-pulse { animation: kmapBonusPulse 1.8s ease-in-out infinite; }
+/* P11 Feature B (step 31) — animated unlock moments for subject/sub state
+   upgrades after a quiz. All hand-built SVG + CSS (NOT react-flow). Each
+   element sets transform-box: fill-box so transform-origin: center stays local
+   (scale/translate happen around the element, like kmapBonusReveal above). */
+@keyframes kmapCelebPop { 0% { opacity: 0; transform: scale(0.55); } 55% { opacity: 1; transform: scale(1.12); } 100% { opacity: 0; transform: scale(1); } }
+.kmap-celeb-pop { animation: kmapCelebPop 0.6s ease-out both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebBounce { 0% { transform: scale(1); opacity: 0.9; } 30% { transform: scale(1.2); } 60% { transform: scale(0.96); } 100% { transform: scale(1); opacity: 0; } }
+.kmap-celeb-bounce { animation: kmapCelebBounce 0.7s cubic-bezier(0.34,1.56,0.64,1) both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebSatPulse { 0% { opacity: 0; transform: scale(0.9); } 35% { opacity: 0.85; transform: scale(1.15); } 100% { opacity: 0; transform: scale(1.25); } }
+.kmap-celeb-satpulse { animation: kmapCelebSatPulse 0.5s ease-out both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebGlow { 0% { opacity: var(--glow-from, 0.4); transform: scale(0.6); } 100% { opacity: 0; transform: scale(1.6); } }
+.kmap-celeb-glow { animation: kmapCelebGlow 1.5s ease-out both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebParticle { 0% { opacity: 0.95; transform: translate(0px,0px) scale(1); } 100% { opacity: 0; transform: translate(var(--tx,0px), var(--ty,0px)) scale(0.4); } }
+.kmap-celeb-particle { animation-name: kmapCelebParticle; animation-timing-function: cubic-bezier(0.22,1,0.36,1); animation-fill-mode: both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebCheck { 0% { opacity: 0; transform: scale(0); } 60% { opacity: 1; transform: scale(1.25); } 100% { opacity: 1; transform: scale(1); } }
+.kmap-celeb-check { animation: kmapCelebCheck 0.45s cubic-bezier(0.34,1.56,0.64,1) both; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapCelebSparkle { 0% { opacity: 0; transform: scale(0.4) rotate(-18deg); } 40% { opacity: 1; transform: scale(1.1) rotate(8deg); } 100% { opacity: 0; transform: scale(0.9) rotate(0deg); } }
+.kmap-celeb-sparkle { animation: kmapCelebSparkle 0.9s ease-out both; transform-box: fill-box; transform-origin: center; }
+/* Belt-and-braces: the component also skips celebrations entirely when reduced
+   motion is requested, but neutralise the classes here too. */
+@media (prefers-reduced-motion: reduce) {
+  .kmap-celeb-pop, .kmap-celeb-bounce, .kmap-celeb-satpulse, .kmap-celeb-glow,
+  .kmap-celeb-particle, .kmap-celeb-check, .kmap-celeb-sparkle { animation: none !important; }
+}
+
+/* Custom scrollbars — subtle, rounded, and theme-aware. The thumb colour is
+   driven by --sb-thumb / --sb-thumb-hover, set on :root from the theme (see the
+   themeMode effect in App), so the harsh default white bar never shows in dark
+   mode. Inline scrollbarWidth:'none' on horizontal chip rows still overrides
+   this and stays hidden. */
+* { scrollbar-width: thin; scrollbar-color: var(--sb-thumb, rgba(120,120,120,0.4)) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--sb-thumb, rgba(120,120,120,0.4)); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover, rgba(120,120,120,0.6)); background-clip: padding-box; }
+::-webkit-scrollbar-corner { background: transparent; }
+`;
