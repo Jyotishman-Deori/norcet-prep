@@ -20,55 +20,8 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
 import { newBankId, bankVisibility } from '../lib/banks.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
-import { processQuestionInput, validateQuestionFields } from '../lib/question-import.js';
-
-// Single-consumer example payloads (used only by BankEditor's "paste an
-// example" button) — moved here VERBATIM with the editor.
-const EXAMPLE_QUESTIONS_JSON = JSON.stringify([
-  {
-    q: "What is the normal adult resting pulse rate?",
-    type: "mcq",
-    topic: "fund",
-    sub: "Vital Signs",
-    options: ["40-60 bpm", "60-100 bpm", "100-120 bpm", "120-140 bpm"],
-    correct: [1],
-    exp: "Normal adult resting pulse is 60-100 bpm.",
-    wrong: { "0": "Bradycardia", "2": "Mild tachycardia", "3": "Significant tachycardia" },
-    difficulty: "easy",
-    source: "NORCET 2023 PYQ"
-  },
-  {
-    q: "Which are signs of digoxin toxicity? (Select all that apply)",
-    type: "msq",
-    topic: "pharm",
-    options: ["Yellow halos", "Bradycardia", "Nausea", "Hypertension"],
-    correct: [0, 1, 2],
-    exp: "Digoxin toxicity: visual disturbances, bradycardia, GI symptoms.",
-    wrong: { "3": "Hypertension is not a digoxin toxicity feature." },
-    difficulty: "medium",
-    source: "Park textbook"
-  },
-  {
-    // P17 — image-based example. `image` is OPTIONAL: a public URL (host in a
-    // Supabase `pyq-images` bucket) or, as here, an inline data URI for a quick
-    // test. The figure renders between the stem and the options.
-    q: "Identify the figure shown above.",
-    type: "mcq",
-    topic: "fund",
-    sub: "Equipment",
-    image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Crect width='240' height='120' rx='10' fill='%23e9e2d4'/%3E%3Ctext x='120' y='66' font-size='15' text-anchor='middle' fill='%23555' font-family='sans-serif'%3ESample figure%3C/text%3E%3C/svg%3E",
-    options: ["Sample figure", "ECG strip", "Chest X-ray", "Suction catheter"],
-    correct: [0],
-    exp: "This is a placeholder figure — replace `image` with your hosted PYQ image URL.",
-    difficulty: "easy",
-    source: "Image demo"
-  }
-], null, 2);
-
-const EXAMPLE_QUESTIONS_CSV = `q,type,topic,sub,options,correct,exp,wrong,difficulty,source,image
-"Normal adult pulse rate?",mcq,fund,Vital Signs,"40-60 bpm|60-100 bpm|100-120 bpm|120-140 bpm","1","Normal adult pulse is 60-100 bpm.","0:Bradycardia;2:Mild tachycardia;3:Significant tachycardia",easy,"NORCET 2023 PYQ",
-"Signs of digoxin toxicity?",msq,pharm,Cardiac,"Yellow halos|Bradycardia|Nausea|Hypertension","0,1,2","Visual + brady + GI.","3:HTN is not digoxin toxicity",medium,"Park textbook",
-"Identify the instrument shown above.",mcq,fund,Equipment,"Laryngoscope|Otoscope|Ophthalmoscope|Stethoscope","0","Replace the image URL with your hosted PYQ image.","",easy,"Image demo","https://YOUR-PROJECT.supabase.co/storage/v1/object/public/pyq-images/example.png"`;
+import { processQuestionInput, validateQuestionFields, EXAMPLE_QUESTIONS_JSON, EXAMPLE_QUESTIONS_CSV } from '../lib/question-import.js';
+import { findDuplicateStem } from '../lib/utils.js';
 
 function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImported, isDisabled, onImport, onUpdate, onEdit, onDelete, onToggleVisibility, onToggleEnabled, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();

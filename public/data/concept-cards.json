@@ -1,0 +1,447 @@
+{
+  "fund": [
+    {
+      "sub": "Vital Signs",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Normal Vital Sign Ranges (Adult)",
+          "body": "Pulse: 60–100 bpm\nRespiratory rate: 12–20 /min\nBP: <120/80 ideal\nTemperature: 36.5–37.5 °C orally\nSpO₂: 95–100%\n\nKnow the cut-offs — questions often hide on the borderline values."
+        },
+        {
+          "type": "mnemonic",
+          "title": "Remember Hypertension Stages",
+          "body": "JNC 8 / ACC-AHA:\n• Normal: <120/<80\n• Elevated: 120–129 / <80\n• Stage 1: 130–139 / 80–89\n• Stage 2: ≥140 / ≥90\n• Crisis: >180 / >120 → emergency if end-organ damage\n\nMemory hook: \"13/8 starts the stage.\""
+        },
+        {
+          "type": "keypoints",
+          "title": "When Vitals Are Lying",
+          "body": [
+            "Patient just ran in → wait 5 min before BP",
+            "Cuff too small → falsely HIGH",
+            "Cuff too large → falsely low",
+            "Hot drink within 15 min → oral temp unreliable",
+            "Cold extremity → SpO₂ inaccurate",
+            "White-coat HTN → patient nervous in clinic"
+          ]
+        },
+        {
+          "type": "quiz",
+          "title": "Quick Self-Check",
+          "body": "Pulse 110 in a febrile patient — primary or compensatory tachycardia?\n\nAnswer: COMPENSATORY. Each 1°C above 38.3 °C raises HR by ~10 bpm. Treat the fever, recheck the pulse."
+        }
+      ]
+    },
+    {
+      "sub": "Infection Control",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "WHO 5 Moments of Hand Hygiene",
+          "body": "1. BEFORE touching a patient\n2. BEFORE clean/aseptic procedure\n3. AFTER body fluid exposure risk\n4. AFTER touching a patient\n5. AFTER touching patient surroundings\n\nMoments 1, 2 protect the patient. Moments 3, 4, 5 protect YOU and OTHERS."
+        },
+        {
+          "type": "mnemonic",
+          "title": "Levels of Asepsis",
+          "body": "Cleaning < Disinfection < Sterilisation\n\n• Cleaning: removes visible dirt\n• Disinfection: kills most microbes (not always spores)\n• Sterilisation: kills ALL, including spores\n\nSpaulding classification:\n• Critical (enters sterile tissue) → Sterilise\n• Semi-critical (mucosa contact) → High-level disinfection\n• Non-critical (skin contact) → Low-level disinfection"
+        },
+        {
+          "type": "keypoints",
+          "title": "PPE Donning vs Doffing",
+          "body": [
+            "Don IN ORDER: Gown → Mask → Goggles → Gloves",
+            "Doff IN OPPOSITE ORDER (mostly): Gloves → Goggles → Gown → Mask",
+            "Most contaminated piece comes off first",
+            "Mask comes off LAST (highest infectious risk near face)",
+            "Hand hygiene between each step"
+          ]
+        }
+      ]
+    },
+    {
+      "sub": "Oxygen Delivery Devices",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Device → FiO₂ → Flow",
+          "body": "Nasal cannula: 1–6 L/min → ~24–44% (each 1 L adds ~4%)\nSimple face mask: 5–8 L/min → ~40–60% (min 5 L to flush CO₂)\nVenturi mask: precise, fixed FiO₂ (24–60%) — best for COPD\nNon-rebreather: 10–15 L/min → up to ~90% — emergencies\n\nRule: the more precise the control needed, the more you favour a Venturi."
+        },
+        {
+          "type": "keypoints",
+          "title": "Oxygen Safety",
+          "body": [
+            "No open flames / smoking near O₂",
+            "Humidify flows >4 L/min to prevent mucosal drying",
+            "COPD CO₂-retainers: target SpO₂ 88–92%, low flow",
+            "A non-rebreather needs the reservoir bag inflated before applying",
+            "Check tubing for kinks; assess SpO₂ and work of breathing, not the number alone"
+          ]
+        }
+      ]
+    }
+  ],
+  "anat": [
+    {
+      "sub": "Cardiac",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "The Cardiac Cycle in 30 Seconds",
+          "body": "DIASTOLE (relaxation, filling):\n• Atria contract → push final 20–30% blood into ventricles\n• \"Atrial kick\" — lost in AFib\n\nSYSTOLE (contraction, ejection):\n• AV valves CLOSE → S1 (\"lub\")\n• Ventricles contract isovolumetrically\n• Aortic & pulmonary valves open\n• Blood ejects\n• Semilunar valves CLOSE → S2 (\"dub\")\n\nStroke Volume = End-Diastolic − End-Systolic Volume"
+        },
+        {
+          "type": "mnemonic",
+          "title": "Heart Sounds",
+          "body": "S1 (\"lub\") — AV valves closing — beginning of systole\nS2 (\"dub\") — semilunar valves closing — end of systole\nS3 — early diastole rapid filling — normal in young, pathological in HF (ventricular gallop)\nS4 — late diastole atrial kick — pathological, ventricular stiffness (atrial gallop)\n\nMnemonic: \"Tennessee\" = S4 S1 S2 (a-S4-S1-S2 = ten-ne-ssee). \"Kentucky\" = S1 S2 S3."
+        },
+        {
+          "type": "keypoints",
+          "title": "Cardiac Output Equation",
+          "body": [
+            "CO = SV × HR",
+            "Normal: ~4–8 L/min",
+            "SV depends on: Preload (filling), Afterload (resistance), Contractility",
+            "Frank-Starling Law: more stretch = stronger contraction (up to a point)",
+            "In heart failure, the curve flattens — more preload no longer helps"
+          ]
+        }
+      ]
+    },
+    {
+      "sub": "Acid-Base Made Simple",
+      "cards": [
+        {
+          "type": "mnemonic",
+          "title": "ROME — Read an ABG Fast",
+          "body": "Step 1 – pH: <7.35 acidosis, >7.45 alkalosis\nStep 2 – ROME: Respiratory Opposite, Metabolic Equal\n  • pH and CO₂ move OPPOSITE → respiratory\n  • pH and HCO₃⁻ move the SAME way → metabolic\nStep 3 – Compensation: is the other value shifting to push pH back to normal?\n\nNormals: pH 7.35–7.45 · PaCO₂ 35–45 · HCO₃⁻ 22–26"
+        },
+        {
+          "type": "keypoints",
+          "title": "Common Causes",
+          "body": [
+            "Metabolic acidosis: DKA, lactic acidosis, diarrhoea, renal failure",
+            "Metabolic alkalosis: vomiting, excess antacids, diuretics",
+            "Respiratory acidosis: hypoventilation, COPD, opioid overdose",
+            "Respiratory alkalosis: hyperventilation, anxiety, high altitude"
+          ]
+        }
+      ]
+    }
+  ],
+  "msn": [
+    {
+      "sub": "Diabetes Emergencies",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "DKA vs HHS — How To Tell Them Apart",
+          "body": "DKA (Type 1, younger, acute):\n• Glucose 250–600\n• Severe ketosis ↑↑\n• pH < 7.3 (acidosis)\n• Kussmaul breathing, fruity breath\n• Onset: hours to days\n\nHHS (Type 2, older, slower):\n• Glucose >600 (often >1000)\n• Minimal ketosis\n• pH > 7.3 (no acidosis)\n• Profound dehydration, altered mental state\n• Onset: days to weeks"
+        },
+        {
+          "type": "mnemonic",
+          "title": "DKA Management Priorities",
+          "body": "F-I-K (in that order):\n\nFLUIDS first — NS 1L in first hour, then continue\nINSULIN second — regular insulin infusion 0.1 U/kg/hr\nPOTASSIUM third — replenish before serum K+ drops with insulin therapy (insulin drives K+ into cells)\n\nDO NOT give insulin first without fluids — risk of vascular collapse.\nDO NOT give insulin if K+ < 3.3 — give K+ first."
+        },
+        {
+          "type": "keypoints",
+          "title": "Hypoglycaemia — Rule of 15",
+          "body": [
+            "Conscious patient with BG < 70: give 15g fast carbs (e.g. 3 glucose tabs, 150mL juice)",
+            "Recheck in 15 minutes",
+            "If still <70, repeat",
+            "When >70 → give a complex carb + protein snack",
+            "Unconscious: IV dextrose 25% 50mL OR IM glucagon 1 mg",
+            "NEVER give oral glucose to an unconscious patient (aspiration)"
+          ]
+        }
+      ]
+    },
+    {
+      "sub": "Shock",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Four Types at a Glance",
+          "body": "HYPOVOLAEMIC: blood/fluid loss → ↓preload (haemorrhage, burns)\nCARDIOGENIC: pump failure (MI) → ↓cardiac output, congestion\nDISTRIBUTIVE: massive vasodilation (septic, anaphylactic, neurogenic) → ↓SVR, warm then cold\nOBSTRUCTIVE: physical block (tamponade, tension pneumothorax, PE)\n\nAll end the same way: inadequate tissue perfusion → cellular hypoxia."
+        },
+        {
+          "type": "keypoints",
+          "title": "Early Recognition & Priorities",
+          "body": [
+            "Early signs: tachycardia, restlessness, cool clammy skin, narrowing pulse pressure",
+            "Late signs: hypotension, weak pulse, oliguria (<30 mL/hr), altered consciousness",
+            "Position: flat with legs raised (except cardiogenic → semi-Fowler)",
+            "Hypovolaemic: stop bleeding + IV fluids; Anaphylactic: IM adrenaline first",
+            "Monitor urine output — the most sensitive bedside perfusion marker"
+          ]
+        }
+      ]
+    }
+  ],
+  "pharm": [
+    {
+      "sub": "High-Alert Drugs",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "The \"LASA\" Look-Alike Sound-Alike Drugs",
+          "body": "Common dangerous confusions:\n• Hydralazine vs Hydroxyzine\n• Cefazolin vs Ceftazidime\n• Furosemide vs Torsemide\n• Insulin Humalog vs Humulin\n• Digoxin vs Doxepin\n\nDefences: read label THREE times (pulling, preparing, giving), use generic names, \"tall man\" lettering (HumALOG vs HumULIN), independent double-checks for high-alert drugs."
+        },
+        {
+          "type": "mnemonic",
+          "title": "\"High-Alert\" Categories — APINCH",
+          "body": "A — Anticoagulants (heparin, warfarin)\nP — Potassium concentrate (NEVER push IV undiluted — fatal!)\nI — Insulin\nN — Narcotics (opioids)\nC — Chemotherapy / Cytotoxics\nH — Heparin specifically (often listed twice)\n\nThese have the highest harm potential when given wrong. Always double-check."
+        }
+      ]
+    },
+    {
+      "sub": "Antidotes & Reversals",
+      "cards": [
+        {
+          "type": "keypoints",
+          "title": "Drug → Antidote (Must-Know)",
+          "body": [
+            "Heparin → Protamine sulphate (monitor aPTT)",
+            "Warfarin → Vitamin K (+ FFP/PCC if urgent; monitor INR)",
+            "Opioids → Naloxone",
+            "Benzodiazepines → Flumazenil",
+            "Paracetamol → N-acetylcysteine",
+            "Digoxin → Digoxin-specific Fab fragments",
+            "Iron → Desferrioxamine",
+            "Organophosphates → Atropine + Pralidoxime",
+            "Methotrexate → Folinic acid (leucovorin)"
+          ]
+        },
+        {
+          "type": "mnemonic",
+          "title": "High-Alert Drugs — A PINCH",
+          "body": "A – Anticoagulants (heparin, warfarin)\nP – Potassium (NEVER IV push undiluted — fatal)\nI – Insulin\nN – Narcotics (opioids)\nC – Chemotherapy / cytotoxics\nH – Heparin\n\nThese carry the highest harm if given wrong — independent double-check."
+        }
+      ]
+    }
+  ],
+  "peds": [
+    {
+      "sub": "Immunisation Schedule",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "India UIP Schedule (Quick View)",
+          "body": "BIRTH: BCG + OPV-0 + HepB-0\n6 WEEKS: Penta-1 + OPV-1 + Rota-1 + fIPV-1 + PCV-1\n10 WEEKS: Penta-2 + OPV-2 + Rota-2\n14 WEEKS: Penta-3 + OPV-3 + Rota-3 + fIPV-2 + PCV-2\n9 MONTHS: MR-1 + JE-1 (endemic) + PCV booster + Vit A\n16–24 M: DPT-1 booster + OPV booster + MR-2 + JE-2\n5–6 YR: DPT-2 booster\n10 YR & 16 YR: Td"
+        },
+        {
+          "type": "mnemonic",
+          "title": "Live vs Inactivated Vaccines",
+          "body": "LIVE (don't give in pregnancy / severe immunosuppression):\n• MMR, MR\n• BCG\n• OPV\n• Varicella\n• Yellow fever\n• Rotavirus\n• Typhoid (oral Ty21a)\n\nINACTIVATED / SUBUNIT (safer):\n• DPT, Hib, HepB, IPV\n• Influenza (injectable)\n• PCV, HPV\n• Rabies, JE\n• Typhoid (injectable)"
+        }
+      ]
+    },
+    {
+      "sub": "Danger Signs (IMNCI)",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "General Danger Signs in a Sick Child",
+          "body": "Refer URGENTLY if a child:\n• Is unable to drink or breastfeed\n• Vomits everything\n• Has had convulsions\n• Is lethargic or unconscious\n\nIMNCI uses a colour triage: PINK = urgent referral, YELLOW = treat at facility, GREEN = home care/advice."
+        },
+        {
+          "type": "keypoints",
+          "title": "Fast Breathing Cut-offs (Pneumonia)",
+          "body": [
+            "<2 months: ≥ 60 breaths/min",
+            "2–12 months: ≥ 50 breaths/min",
+            "12 months–5 years: ≥ 40 breaths/min",
+            "Chest indrawing = severe pneumonia → refer",
+            "Count breaths for a FULL minute when the child is calm"
+          ]
+        }
+      ]
+    }
+  ],
+  "obg": [
+    {
+      "sub": "Labour Stages",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Four Stages of Labour",
+          "body": "STAGE 1: Onset of regular contractions → full cervical dilatation (10 cm).\n  • Latent phase: 0 → ~6 cm\n  • Active phase: 6 → 10 cm (~1 cm/hr primigravida)\n\nSTAGE 2: Full dilatation → birth of baby.\n  • Cardinal movements happen here\n\nSTAGE 3: Birth of baby → expulsion of placenta (typically <30 min)\n\nSTAGE 4: 1–2 hr observation post-placenta — watch for PPH"
+        },
+        {
+          "type": "mnemonic",
+          "title": "Cardinal Movements (Mechanism of Labour)",
+          "body": "Every Decent Family Is Extremely Rich, Earning Excellent Eternal Riches\n\n• Engagement\n• Descent\n• Flexion\n• Internal rotation\n• Extension\n• Restitution\n• External rotation\n• Expulsion\n\nThese describe how the foetal head navigates the pelvic canal."
+        }
+      ]
+    },
+    {
+      "sub": "Stages of Labour",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "The Four Stages",
+          "body": "FIRST: onset of true labour → full dilatation (10 cm)\n  • Latent (0–3 cm) then active (4–10 cm)\nSECOND: full dilatation → birth of the baby\nTHIRD: birth of baby → delivery of placenta (watch for the 3 signs of separation)\nFOURTH: ~1 hr after the placenta — immediate recovery, watch for PPH."
+        },
+        {
+          "type": "keypoints",
+          "title": "Partograph Essentials",
+          "body": [
+            "Plots cervical dilatation against time to spot abnormal/obstructed labour early",
+            "Alert line: 1 cm/hr in active phase; crossing it prompts review",
+            "Action line: 4 hr right of the alert line → intervention",
+            "Also tracks fetal heart rate, contractions, descent, liquor",
+            "A simple tool that prevents prolonged/obstructed labour deaths"
+          ]
+        }
+      ]
+    }
+  ],
+  "ch": [
+    {
+      "sub": "Indicators You MUST Know",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Mortality Indicators (India approx.)",
+          "body": "IMR (Infant Mortality Rate): ~28 per 1000 live births\nNMR (Neonatal): ~20 per 1000 live births\nU5MR (Under-5): ~32 per 1000 live births\nMMR (Maternal): ~97 per 100,000 live births\n\nKey definition trick — IMR/NMR/U5MR use /1000 LIVE BIRTHS. MMR uses /100,000 LIVE BIRTHS. Crude death rate uses /1000 POPULATION."
+        },
+        {
+          "type": "mnemonic",
+          "title": "Levels of Prevention — Quick Mapping",
+          "body": "PRIMORDIAL → eliminate the risk factor (e.g., healthy lifestyle in whole society)\nPRIMARY → prevent disease before onset (immunisation, sanitation)\nSECONDARY → early detection in asymptomatic (Pap smear, BP screening)\nTERTIARY → limit disability after disease (rehab, dialysis)"
+        }
+      ]
+    },
+    {
+      "sub": "National Health Programmes",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Key Programmes & Their Focus",
+          "body": "RNTCP / NTEP – Tuberculosis (DOTS)\nNVBDCP – Vector-borne (malaria, dengue, filaria)\nNLEP – Leprosy\nRCH / RMNCH+A – Reproductive & child health\nUIP – Universal Immunisation\nNPCDCS – Non-communicable diseases (diabetes, cancer, stroke)\nNMHP – Mental health"
+        },
+        {
+          "type": "keypoints",
+          "title": "Quick Facts",
+          "body": [
+            "DOTS = Directly Observed Treatment, Short-course — cornerstone of TB control",
+            "India aims to ELIMINATE TB ahead of the global 2030 SDG target",
+            "ASHA = Accredited Social Health Activist, the village-level link worker",
+            "Cold chain keeps vaccines viable from manufacturer to child",
+            "Sub-centre is the first/most peripheral contact point in rural health"
+          ]
+        }
+      ]
+    }
+  ],
+  "mhn": [
+    {
+      "sub": "Therapeutic Communication",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Therapeutic vs Non-Therapeutic Responses",
+          "body": "THERAPEUTIC:\n• Active listening\n• Open-ended questions\n• Reflection (\"You feel scared right now\")\n• Silence (let them speak)\n• Validation (\"Your feelings make sense\")\n\nAVOID:\n• False reassurance (\"Everything will be fine\")\n• Giving advice (\"You should…\")\n• \"Why\" questions (feel accusatory)\n• Changing the subject\n• Minimising (\"It's not that bad\")\n• Approval/disapproval"
+        },
+        {
+          "type": "mnemonic",
+          "title": "Suicide Risk — SAD PERSONS Scale",
+          "body": "S — Sex (male higher)\nA — Age (<19 or >45)\nD — Depression\nP — Previous attempts\nE — Ethanol/drug abuse\nR — Rational thinking loss\nS — Social support lacking\nO — Organised plan\nN — No spouse\nS — Sickness (chronic illness)\n\n0–4 low, 5–6 moderate, 7–10 high risk. ASK directly — it does not plant ideas."
+        }
+      ]
+    },
+    {
+      "sub": "Defence Mechanisms",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Recognise Them in a Vignette",
+          "body": "Denial – refusing to accept reality\nRepression – unconscious blocking of painful thoughts\nProjection – attributing your feelings to others\nDisplacement – redirecting feelings to a safer target\nRationalisation – logical excuses for behaviour\nRegression – reverting to earlier behaviour under stress\nReaction formation – acting opposite to true feelings\nSublimation (mature) – channelling impulses into acceptable activity"
+        },
+        {
+          "type": "keypoints",
+          "title": "Exam Tips",
+          "body": [
+            "Sublimation is the only one considered consistently \"mature/healthy\"",
+            "Displacement vs projection: displacement REDIRECTS the feeling; projection ASSIGNS it to someone else",
+            "Regression is common in hospitalised children (bed-wetting, thumb-sucking)",
+            "Identify by the behaviour described, not the label the patient uses"
+          ]
+        }
+      ]
+    }
+  ],
+  "micro": [
+    {
+      "sub": "Sterilisation Methods",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Which Method For Which Item?",
+          "body": "AUTOCLAVE (121°C, 15 psi, 15 min): surgical instruments, dressings, fluids, glassware\nDRY HEAT (160°C / 2 hr): glassware, oils, powders, sharp instruments (won't blunt)\nETHYLENE OXIDE: heat-sensitive items (endoscopes, plastics)\nFORMALDEHYDE / GLUTARALDEHYDE: heat-sensitive equipment, surfaces\nRADIATION (gamma): single-use plastics, sutures, commercial items\nFILTRATION: heat-sensitive liquids (serum, vaccines)"
+        }
+      ]
+    },
+    {
+      "sub": "Isolation Precautions",
+      "cards": [
+        {
+          "type": "mnemonic",
+          "title": "Airborne — \"My Chicken Tastes Tasty\"",
+          "body": "AIRBORNE (droplet nuclei <5 µm, negative-pressure room + N95):\n  • Measles\n  • Tuberculosis\n  • Varicella (chickenpox) / disseminated zoster\n\nDROPLET (>5 µm, surgical mask, ~1 m): influenza, pertussis, meningococcus, mumps, rubella\nCONTACT (gown + gloves): MRSA, C. difficile, scabies\n\nC. difficile and norovirus need SOAP-AND-WATER (alcohol rub doesn't kill spores)."
+        },
+        {
+          "type": "keypoints",
+          "title": "Standard Precautions",
+          "body": [
+            "Apply to ALL patients regardless of diagnosis",
+            "Hand hygiene is the single most effective measure",
+            "PPE chosen by anticipated exposure",
+            "Don: gown → mask → goggles → gloves; Doff: gloves → goggles → gown → mask",
+            "Most contaminated item comes off first; hand hygiene between steps"
+          ]
+        }
+      ]
+    }
+  ],
+  "nutr": [
+    {
+      "sub": "Special Diets",
+      "cards": [
+        {
+          "type": "concept",
+          "title": "Renal Diet Cheat Sheet",
+          "body": "PRE-DIALYSIS CKD: limit protein (~0.6–0.8 g/kg), restrict K+, phosphate, sodium, fluid\n\nON HAEMODIALYSIS: INCREASE protein (1.2 g/kg) because dialysis removes it. Still restrict K+, phosphate, sodium, fluid.\n\nFOODS HIGH IN K+ to avoid: bananas, oranges, tomato, coconut water, leafy greens, potatoes (soak before cooking helps)\nFOODS HIGH IN PHOSPHATE: dairy, nuts, processed foods, cola\n\nFluid limit on dialysis: ~1L/day + previous day's urine output"
+        }
+      ]
+    },
+    {
+      "sub": "Vitamins at a Glance",
+      "cards": [
+        {
+          "type": "keypoints",
+          "title": "Fat- vs Water-Soluble",
+          "body": [
+            "Fat-soluble = \"ADEK\" (A, D, E, K) — stored in body, toxicity possible",
+            "Water-soluble = B-complex + C — not stored, deficiency appears faster",
+            "Vitamin A: night blindness, Bitot's spots",
+            "Vitamin D: rickets (child) / osteomalacia (adult)",
+            "Vitamin K: bleeding (clotting factors II, VII, IX, X)"
+          ]
+        },
+        {
+          "type": "keypoints",
+          "title": "B-Complex Deficiencies",
+          "body": [
+            "B1 (Thiamine): beriberi, Wernicke encephalopathy",
+            "B2 (Riboflavin): angular stomatitis, glossitis",
+            "B3 (Niacin): pellagra — the 3 Ds (Dermatitis, Diarrhoea, Dementia)",
+            "B6 (Pyridoxine): peripheral neuropathy (esp. with isoniazid)",
+            "B9/B12: megaloblastic anaemia; B12 also causes neuro signs",
+            "Vitamin C: scurvy (bleeding gums, poor wound healing)"
+          ]
+        }
+      ]
+    }
+  ]
+}

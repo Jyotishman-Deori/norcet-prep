@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Layers, Plus } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
-import { processQuestionInput } from '../lib/question-import.js';
+import { processQuestionInput, EXAMPLE_QUESTIONS_JSON, EXAMPLE_QUESTIONS_CSV } from '../lib/question-import.js';
 
 function BulkImport({ onSaveBulk }) {
   const { theme: T } = useTheme();

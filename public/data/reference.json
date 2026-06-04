@@ -1,0 +1,1030 @@
+[
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "Haemoglobin",
+    "value": "M 13.5–17.5 · F 12–15 g/dL",
+    "note": "<11 in pregnancy = anaemia"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "WBC count",
+    "value": "4,000 – 11,000 /µL",
+    "note": "Leucocytosis vs leucopenia"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "RBC count",
+    "value": "M 4.7–6.1 · F 4.2–5.4 ×10⁶/µL"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "Haematocrit",
+    "value": "M 40–50 % · F 36–44 %"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "Platelets",
+    "value": "150,000 – 450,000 /µL",
+    "note": "<50k → bleeding risk; <20k → spontaneous"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "MCV",
+    "value": "80 – 100 fL",
+    "note": "<80 microcytic · >100 macrocytic"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "ESR",
+    "value": "M 0–15 · F 0–20 mm/hr"
+  },
+  {
+    "cat": "labs",
+    "section": "Haematology",
+    "label": "Reticulocyte count",
+    "value": "0.5 – 2.5 %"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Sodium (Na⁺)",
+    "value": "135 – 145 mEq/L",
+    "note": "Critical <120 or >160"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Potassium (K⁺)",
+    "value": "3.5 – 5.0 mEq/L",
+    "note": "Critical <2.5 or >6.5 — cardiac risk"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Chloride (Cl⁻)",
+    "value": "96 – 106 mEq/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Calcium (total)",
+    "value": "8.5 – 10.5 mg/dL",
+    "note": "Corrected for albumin if low"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Magnesium",
+    "value": "1.5 – 2.5 mEq/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Electrolytes",
+    "label": "Phosphorus",
+    "value": "2.5 – 4.5 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Renal",
+    "label": "BUN",
+    "value": "7 – 20 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Renal",
+    "label": "Creatinine",
+    "value": "M 0.7–1.3 · F 0.6–1.1 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Renal",
+    "label": "Uric acid",
+    "value": "M 3.4–7.0 · F 2.4–6.0 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Renal",
+    "label": "BUN/Creat ratio",
+    "value": "10 – 20 : 1",
+    "note": ">20:1 suggests pre-renal"
+  },
+  {
+    "cat": "labs",
+    "section": "Glucose / Diabetes",
+    "label": "Fasting glucose",
+    "value": "70 – 100 mg/dL",
+    "note": "100–125 = pre-diabetes · ≥126 = diabetes"
+  },
+  {
+    "cat": "labs",
+    "section": "Glucose / Diabetes",
+    "label": "Random glucose",
+    "value": "<140 mg/dL normal"
+  },
+  {
+    "cat": "labs",
+    "section": "Glucose / Diabetes",
+    "label": "OGTT 2-hr",
+    "value": "<140 normal · 140–199 IGT · ≥200 DM"
+  },
+  {
+    "cat": "labs",
+    "section": "Glucose / Diabetes",
+    "label": "HbA1c",
+    "value": "<5.7 % normal · 5.7–6.4 prediab · ≥6.5 DM",
+    "note": "Target ≤7 % in most patients"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "AST (SGOT)",
+    "value": "10 – 40 U/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "ALT (SGPT)",
+    "value": "7 – 56 U/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "Alkaline phosphatase",
+    "value": "44 – 147 U/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "Total bilirubin",
+    "value": "0.3 – 1.2 mg/dL",
+    "note": "Direct ≤0.3"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "Total protein",
+    "value": "6.0 – 8.3 g/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Liver",
+    "label": "Albumin",
+    "value": "3.5 – 5.0 g/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Lipids",
+    "label": "Total cholesterol",
+    "value": "<200 mg/dL desirable"
+  },
+  {
+    "cat": "labs",
+    "section": "Lipids",
+    "label": "LDL",
+    "value": "<100 mg/dL optimal"
+  },
+  {
+    "cat": "labs",
+    "section": "Lipids",
+    "label": "HDL",
+    "value": "M >40 · F >50 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Lipids",
+    "label": "Triglycerides",
+    "value": "<150 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "pH",
+    "value": "7.35 – 7.45"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "PaCO₂",
+    "value": "35 – 45 mmHg",
+    "note": "↑ = respiratory acidosis"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "PaO₂",
+    "value": "80 – 100 mmHg"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "HCO₃⁻",
+    "value": "22 – 26 mEq/L",
+    "note": "↓ = metabolic acidosis"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "SaO₂",
+    "value": "95 – 100 %"
+  },
+  {
+    "cat": "labs",
+    "section": "ABG (Arterial Blood Gas)",
+    "label": "Base excess",
+    "value": "−2 to +2 mEq/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Coagulation",
+    "label": "PT",
+    "value": "11 – 13.5 sec"
+  },
+  {
+    "cat": "labs",
+    "section": "Coagulation",
+    "label": "INR",
+    "value": "0.8 – 1.1",
+    "note": "Therapeutic on warfarin: 2.0–3.0 (or 2.5–3.5 for valves)"
+  },
+  {
+    "cat": "labs",
+    "section": "Coagulation",
+    "label": "aPTT",
+    "value": "25 – 35 sec",
+    "note": "Therapeutic on heparin: 1.5–2.5× control"
+  },
+  {
+    "cat": "labs",
+    "section": "Coagulation",
+    "label": "D-dimer",
+    "value": "<500 ng/mL"
+  },
+  {
+    "cat": "labs",
+    "section": "Coagulation",
+    "label": "Fibrinogen",
+    "value": "200 – 400 mg/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Cardiac",
+    "label": "Troponin I",
+    "value": "<0.04 ng/mL",
+    "note": "↑ in MI"
+  },
+  {
+    "cat": "labs",
+    "section": "Cardiac",
+    "label": "CK-MB",
+    "value": "<5 ng/mL"
+  },
+  {
+    "cat": "labs",
+    "section": "Cardiac",
+    "label": "BNP",
+    "value": "<100 pg/mL",
+    "note": ">400 strongly suggests CHF"
+  },
+  {
+    "cat": "labs",
+    "section": "Thyroid",
+    "label": "TSH",
+    "value": "0.4 – 4.0 µIU/mL"
+  },
+  {
+    "cat": "labs",
+    "section": "Thyroid",
+    "label": "Free T4",
+    "value": "0.8 – 1.8 ng/dL"
+  },
+  {
+    "cat": "labs",
+    "section": "Thyroid",
+    "label": "Free T3",
+    "value": "2.3 – 4.2 pg/mL"
+  },
+  {
+    "cat": "labs",
+    "section": "Inflammation",
+    "label": "CRP",
+    "value": "<10 mg/L"
+  },
+  {
+    "cat": "labs",
+    "section": "Inflammation",
+    "label": "Procalcitonin",
+    "value": "<0.05 ng/mL",
+    "note": ">2.0 suggests severe bacterial"
+  },
+  {
+    "cat": "labs",
+    "section": "Urinalysis",
+    "label": "Specific gravity",
+    "value": "1.005 – 1.030"
+  },
+  {
+    "cat": "labs",
+    "section": "Urinalysis",
+    "label": "pH",
+    "value": "4.5 – 8.0"
+  },
+  {
+    "cat": "labs",
+    "section": "Urinalysis",
+    "label": "Protein",
+    "value": "None / trace",
+    "note": ">300 mg/24h = abnormal"
+  },
+  {
+    "cat": "labs",
+    "section": "Urinalysis",
+    "label": "Ketones / Glucose",
+    "value": "Negative"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Newborn",
+    "value": "100 – 160 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Infant (1m–1y)",
+    "value": "90 – 150 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Toddler (1–3y)",
+    "value": "80 – 130 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Preschool",
+    "value": "80 – 120 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "School age",
+    "value": "70 – 110 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Adolescent",
+    "value": "60 – 100 bpm"
+  },
+  {
+    "cat": "vitals",
+    "section": "Heart Rate by age",
+    "label": "Adult",
+    "value": "60 – 100 bpm",
+    "note": "Athletes can be <60"
+  },
+  {
+    "cat": "vitals",
+    "section": "Respiratory rate",
+    "label": "Newborn",
+    "value": "30 – 60 /min"
+  },
+  {
+    "cat": "vitals",
+    "section": "Respiratory rate",
+    "label": "Infant",
+    "value": "25 – 40 /min"
+  },
+  {
+    "cat": "vitals",
+    "section": "Respiratory rate",
+    "label": "Toddler",
+    "value": "20 – 30 /min"
+  },
+  {
+    "cat": "vitals",
+    "section": "Respiratory rate",
+    "label": "School age",
+    "value": "18 – 25 /min"
+  },
+  {
+    "cat": "vitals",
+    "section": "Respiratory rate",
+    "label": "Adolescent / Adult",
+    "value": "12 – 20 /min"
+  },
+  {
+    "cat": "vitals",
+    "section": "Blood pressure (Adult, ACC/AHA)",
+    "label": "Normal",
+    "value": "<120 / <80 mmHg"
+  },
+  {
+    "cat": "vitals",
+    "section": "Blood pressure (Adult, ACC/AHA)",
+    "label": "Elevated",
+    "value": "120–129 / <80"
+  },
+  {
+    "cat": "vitals",
+    "section": "Blood pressure (Adult, ACC/AHA)",
+    "label": "Stage 1 HTN",
+    "value": "130–139 / 80–89"
+  },
+  {
+    "cat": "vitals",
+    "section": "Blood pressure (Adult, ACC/AHA)",
+    "label": "Stage 2 HTN",
+    "value": "≥140 / ≥90"
+  },
+  {
+    "cat": "vitals",
+    "section": "Blood pressure (Adult, ACC/AHA)",
+    "label": "Crisis",
+    "value": ">180 / >120",
+    "note": "Emergency if end-organ damage"
+  },
+  {
+    "cat": "vitals",
+    "section": "Temperature",
+    "label": "Oral",
+    "value": "36.5 – 37.5 °C"
+  },
+  {
+    "cat": "vitals",
+    "section": "Temperature",
+    "label": "Rectal",
+    "value": "+0.5 °C above oral"
+  },
+  {
+    "cat": "vitals",
+    "section": "Temperature",
+    "label": "Axillary",
+    "value": "−0.5 °C below oral"
+  },
+  {
+    "cat": "vitals",
+    "section": "Temperature",
+    "label": "Fever / Hypothermia",
+    "value": ">38 °C · <36 °C"
+  },
+  {
+    "cat": "vitals",
+    "section": "Oxygen / Pulse Ox",
+    "label": "SpO₂ normal",
+    "value": "95 – 100 %"
+  },
+  {
+    "cat": "vitals",
+    "section": "Oxygen / Pulse Ox",
+    "label": "COPD target",
+    "value": "88 – 92 %"
+  },
+  {
+    "cat": "vitals",
+    "section": "Oxygen / Pulse Ox",
+    "label": "Below 90 %",
+    "value": "Hypoxaemia — urgent"
+  },
+  {
+    "cat": "vitals",
+    "section": "GCS (Glasgow Coma Scale)",
+    "label": "Score range",
+    "value": "3 (deep coma) – 15 (normal)"
+  },
+  {
+    "cat": "vitals",
+    "section": "GCS (Glasgow Coma Scale)",
+    "label": "Severe head injury",
+    "value": "≤8",
+    "note": "\"GCS 8 — intubate\""
+  },
+  {
+    "cat": "vitals",
+    "section": "GCS (Glasgow Coma Scale)",
+    "label": "Moderate",
+    "value": "9 – 12"
+  },
+  {
+    "cat": "vitals",
+    "section": "GCS (Glasgow Coma Scale)",
+    "label": "Mild",
+    "value": "13 – 15"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Adrenaline (cardiac arrest)",
+    "value": "1 mg IV/IO q3–5 min",
+    "note": "1:10,000 dilution · 10 mL"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Adrenaline (anaphylaxis)",
+    "value": "0.3–0.5 mg IM (1:1000)",
+    "note": "Paeds: 0.01 mg/kg"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Atropine (bradycardia)",
+    "value": "0.5 mg IV q3–5 min · max 3 mg"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Amiodarone (VF/VT)",
+    "value": "300 mg IV bolus, then 150 mg"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Aspirin (ACS)",
+    "value": "162–325 mg PO chewable"
+  },
+  {
+    "cat": "drugs",
+    "section": "Cardiac emergency",
+    "label": "Nitroglycerin",
+    "value": "0.4 mg SL q5 min · max 3 doses"
+  },
+  {
+    "cat": "drugs",
+    "section": "Neuro emergency",
+    "label": "Lorazepam (status)",
+    "value": "2–4 mg IV slowly"
+  },
+  {
+    "cat": "drugs",
+    "section": "Neuro emergency",
+    "label": "Diazepam (status)",
+    "value": "5–10 mg IV (max 30 mg)"
+  },
+  {
+    "cat": "drugs",
+    "section": "Neuro emergency",
+    "label": "Phenytoin loading",
+    "value": "15–20 mg/kg IV at ≤50 mg/min"
+  },
+  {
+    "cat": "drugs",
+    "section": "Neuro emergency",
+    "label": "Mannitol (↑ICP)",
+    "value": "0.25–1 g/kg IV over 30 min"
+  },
+  {
+    "cat": "drugs",
+    "section": "Other emergency",
+    "label": "Naloxone (opioid OD)",
+    "value": "0.4–2 mg IV · repeat q2–3 min"
+  },
+  {
+    "cat": "drugs",
+    "section": "Other emergency",
+    "label": "Glucose D50",
+    "value": "25–50 mL IV (hypoglycaemia)"
+  },
+  {
+    "cat": "drugs",
+    "section": "Other emergency",
+    "label": "Glucagon",
+    "value": "1 mg IM/SC"
+  },
+  {
+    "cat": "drugs",
+    "section": "Other emergency",
+    "label": "Magnesium SO₄ (eclampsia)",
+    "value": "4 g IV load → 1–2 g/hr"
+  },
+  {
+    "cat": "drugs",
+    "section": "Other emergency",
+    "label": "Furosemide",
+    "value": "20–40 mg IV (CHF, oedema)"
+  },
+  {
+    "cat": "drugs",
+    "section": "Antidotes",
+    "label": "Vitamin K (warfarin)",
+    "value": "1–10 mg PO/IV depending on INR"
+  },
+  {
+    "cat": "drugs",
+    "section": "Antidotes",
+    "label": "Protamine (heparin)",
+    "value": "1 mg per 100 U heparin"
+  },
+  {
+    "cat": "drugs",
+    "section": "Antidotes",
+    "label": "N-acetylcysteine (paracetamol)",
+    "value": "150 mg/kg IV load"
+  },
+  {
+    "cat": "drugs",
+    "section": "Antidotes",
+    "label": "Flumazenil (benzo OD)",
+    "value": "0.2 mg IV, repeat to max 1 mg"
+  },
+  {
+    "cat": "drugs",
+    "section": "Antidotes",
+    "label": "Digibind (digoxin)",
+    "value": "Per kit instructions, by dig level"
+  },
+  {
+    "cat": "drugs",
+    "section": "Paediatric (mg/kg)",
+    "label": "Paracetamol",
+    "value": "15 mg/kg PO/PR q4–6h",
+    "note": "Max 75 mg/kg/day"
+  },
+  {
+    "cat": "drugs",
+    "section": "Paediatric (mg/kg)",
+    "label": "Ibuprofen",
+    "value": "5–10 mg/kg PO q6–8h"
+  },
+  {
+    "cat": "drugs",
+    "section": "Paediatric (mg/kg)",
+    "label": "Amoxicillin",
+    "value": "25–50 mg/kg/day ÷ TDS"
+  },
+  {
+    "cat": "drugs",
+    "section": "Paediatric (mg/kg)",
+    "label": "ORS (acute diarrhoea)",
+    "value": "75 mL/kg over 4 hr"
+  },
+  {
+    "cat": "drugs",
+    "section": "Paediatric (mg/kg)",
+    "label": "Maintenance fluid",
+    "value": "4-2-1 rule (mL/hr)",
+    "note": "1st 10 kg ×4 + next 10 ×2 + above ×1"
+  },
+  {
+    "cat": "drugs",
+    "section": "Insulin onset/peak/duration",
+    "label": "Lispro / Aspart (rapid)",
+    "value": "5–15 min · 1 h · 3–4 h"
+  },
+  {
+    "cat": "drugs",
+    "section": "Insulin onset/peak/duration",
+    "label": "Regular (short)",
+    "value": "30–60 min · 2–3 h · 5–8 h"
+  },
+  {
+    "cat": "drugs",
+    "section": "Insulin onset/peak/duration",
+    "label": "NPH (intermediate)",
+    "value": "1–2 h · 4–12 h · 14–24 h"
+  },
+  {
+    "cat": "drugs",
+    "section": "Insulin onset/peak/duration",
+    "label": "Glargine / Detemir (long)",
+    "value": "1–2 h · No peak · ~24 h"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "OD / QD",
+    "value": "Once daily"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "BD / BID",
+    "value": "Twice daily"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "TDS / TID",
+    "value": "Three times daily"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "QID",
+    "value": "Four times daily"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "HS",
+    "value": "At bedtime (hora somni)"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "PRN",
+    "value": "As needed"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "STAT",
+    "value": "Immediately"
+  },
+  {
+    "cat": "abbr",
+    "section": "Frequency",
+    "label": "AC / PC",
+    "value": "Before / After meals"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "PO",
+    "value": "By mouth (per os)"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "SL",
+    "value": "Sublingual"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "PR",
+    "value": "Per rectum"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "IV",
+    "value": "Intravenous"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "IM",
+    "value": "Intramuscular"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "SC",
+    "value": "Subcutaneous"
+  },
+  {
+    "cat": "abbr",
+    "section": "Route",
+    "label": "ID",
+    "value": "Intradermal"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "NPO / NBM",
+    "value": "Nothing by mouth"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "KVO / TKO",
+    "value": "Keep vein open"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "I&O",
+    "value": "Intake & output"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "HOB",
+    "value": "Head of bed"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "ROM",
+    "value": "Range of motion"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "ADL",
+    "value": "Activities of daily living"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "DNR",
+    "value": "Do not resuscitate"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "BMI",
+    "value": "Body mass index"
+  },
+  {
+    "cat": "abbr",
+    "section": "Status / Care",
+    "label": "BSA",
+    "value": "Body surface area"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "DM",
+    "value": "Diabetes mellitus"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "HTN",
+    "value": "Hypertension"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "COPD",
+    "value": "Chronic obstructive pulmonary disease"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "CHF",
+    "value": "Congestive heart failure"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "CKD / AKI",
+    "value": "Chronic kidney disease / Acute kidney injury"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "MI",
+    "value": "Myocardial infarction"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "CVA / TIA",
+    "value": "Stroke / Transient ischaemic attack"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "DVT / PE",
+    "value": "Deep vein thrombosis / Pulmonary embolism"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "ARDS",
+    "value": "Acute respiratory distress syndrome"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "PPH",
+    "value": "Postpartum haemorrhage"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "LBW",
+    "value": "Low birth weight (<2.5 kg)"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "GCS",
+    "value": "Glasgow Coma Scale"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "PEEP",
+    "value": "Positive end-expiratory pressure"
+  },
+  {
+    "cat": "abbr",
+    "section": "Conditions",
+    "label": "IFA",
+    "value": "Iron + Folic Acid"
+  },
+  {
+    "cat": "conv",
+    "section": "Weight",
+    "label": "1 kg",
+    "value": "2.2 lb"
+  },
+  {
+    "cat": "conv",
+    "section": "Weight",
+    "label": "1 lb",
+    "value": "0.45 kg"
+  },
+  {
+    "cat": "conv",
+    "section": "Weight",
+    "label": "1 grain",
+    "value": "60 mg (approx.)"
+  },
+  {
+    "cat": "conv",
+    "section": "Length",
+    "label": "1 inch",
+    "value": "2.54 cm"
+  },
+  {
+    "cat": "conv",
+    "section": "Length",
+    "label": "1 m",
+    "value": "39.4 inches"
+  },
+  {
+    "cat": "conv",
+    "section": "Volume",
+    "label": "1 tsp",
+    "value": "5 mL"
+  },
+  {
+    "cat": "conv",
+    "section": "Volume",
+    "label": "1 tbsp",
+    "value": "15 mL"
+  },
+  {
+    "cat": "conv",
+    "section": "Volume",
+    "label": "1 oz",
+    "value": "30 mL"
+  },
+  {
+    "cat": "conv",
+    "section": "Volume",
+    "label": "1 cup",
+    "value": "240 mL"
+  },
+  {
+    "cat": "conv",
+    "section": "Drop factor",
+    "label": "Macrodrip",
+    "value": "15 gtt/mL (also 10, 20)"
+  },
+  {
+    "cat": "conv",
+    "section": "Drop factor",
+    "label": "Microdrip",
+    "value": "60 gtt/mL"
+  },
+  {
+    "cat": "conv",
+    "section": "Drop factor",
+    "label": "mL/hr → gtt/min",
+    "value": "(mL/hr × drop factor) ÷ 60"
+  },
+  {
+    "cat": "conv",
+    "section": "Temperature",
+    "label": "°F → °C",
+    "value": "(°F − 32) × 5/9"
+  },
+  {
+    "cat": "conv",
+    "section": "Temperature",
+    "label": "°C → °F",
+    "value": "(°C × 9/5) + 32"
+  },
+  {
+    "cat": "conv",
+    "section": "Dose units",
+    "label": "1 mg → mcg",
+    "value": "×1000"
+  },
+  {
+    "cat": "conv",
+    "section": "Dose units",
+    "label": "1 g → mg",
+    "value": "×1000"
+  },
+  {
+    "cat": "conv",
+    "section": "Dose units",
+    "label": "1 mEq Na",
+    "value": "23 mg"
+  }
+]

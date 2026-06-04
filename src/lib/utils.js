@@ -85,6 +85,23 @@ export function stemSimilarity(a, b) {
   return union === 0 ? 0 : inter / union;
 }
 
+export const DUPLICATE_THRESHOLD = 0.75;  // 75% word-overlap → flag
+
+// Returns { match, similarity } if a likely duplicate is found in pool, else null.
+// [A1 step 34 follow-up] moved here from App.jsx alongside its dep stemSimilarity.
+export function findDuplicateStem(newQ, pool) {
+  let bestMatch = null;
+  let bestScore = 0;
+  for (const ex of pool) {
+    const s = stemSimilarity(newQ.q, ex.q);
+    if (s > bestScore) { bestScore = s; bestMatch = ex; }
+  }
+  if (bestMatch && bestScore >= DUPLICATE_THRESHOLD) {
+    return { match: bestMatch, similarity: bestScore };
+  }
+  return null;
+}
+
 export function relativeTimeShort(ts, now) {
   if (!ts || typeof ts !== 'number') return '';
   const n = now || Date.now();

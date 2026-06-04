@@ -550,6 +550,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   // every refresh. On mount: if today's cached set exists, use it; else rank
   // fresh from the current model and cache it under today's date.
   const [suggestions, setSuggestions] = useState([]);
+  const [suggestDismissed, setSuggestDismissed] = useState(false);  // user closed the "Suggested today" panel
   useEffect(() => {
     let alive = true;
     const today = todayStr();
@@ -831,7 +832,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
       const svg = svgRef.current;
       const r = svg && svg.getBoundingClientRect ? svg.getBoundingClientRect() : null;
       const scale = r && r.width ? Math.min(r.width, r.height) / KMAP_VIEW : 1;
-      setView(v => ({ ...v, x: dragRef.current.ox + dx / scale, y: dragRef.current.oy + dy / scale }));
+      // Capture origin BEFORE setView: the functional updater can run after a
+      // pointerup/pointercancel has reset dragRef.current to null (common on
+      // touch during a pan->pinch handoff), which previously threw
+      // "Cannot read properties of null (reading 'ox')".
+      const ox = dragRef.current.ox, oy = dragRef.current.oy;
+      setView(v => ({ ...v, x: ox + dx / scale, y: oy + dy / scale }));
     }
   };
   const endPointer = (e) => {
@@ -903,13 +909,20 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
              style={{ height: 460, touchAction: 'none' }}>
           {/* P11 Feature A — "Suggested for you today" floating panel (top-right
               overlay). Hidden when there's nothing to suggest. */}
-          {suggestions.length > 0 && (
+          {suggestions.length > 0 && !suggestDismissed && (
             <div className="absolute top-2 right-2 z-10 rounded-xl anim-fadeup"
                  style={{ width: 200, background: T.surface, border: `1px solid ${T.border}`,
                           boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
-              <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center gap-1.5"
+              <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
                    style={{ color: T.inkSoft }}>
-                <Sparkles size={13} style={{ color: T.accent }} /> Suggested today
+                <span className="flex items-center gap-1.5">
+                  <Sparkles size={13} style={{ color: T.accent }} /> Suggested today
+                </span>
+                <button onClick={() => setSuggestDismissed(true)}
+                        className="no-tap-highlight p-0.5 -m-0.5 rounded active:bg-black/5"
+                        aria-label="Dismiss suggestions">
+                  <X size={14} style={{ color: T.muted }} />
+                </button>
               </div>
               <div className="px-2 pb-2 space-y-1.5">
                 {suggestions.map(sug => (

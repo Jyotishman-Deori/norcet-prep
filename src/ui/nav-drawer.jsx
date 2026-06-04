@@ -6,7 +6,7 @@
 // bookmarks count via useData(). open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, FlaskConical, GraduationCap, Layers, Lock, Menu, Network, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, FlaskConical, GraduationCap, Layers, Lock, Menu, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 
 function NavDrawer({ open, onClose, onNavigate }) {
@@ -34,7 +34,6 @@ function NavDrawer({ open, onClose, onNavigate }) {
   const study = [
     { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: `${data.bookmarks.length} saved`, action: () => go('bookmarks-view') },
     { key: 'stats',     icon: BarChart3,   color: T.sec.stats,    label: 'Stats',     sub: 'Progress by topic',              action: () => go('stats') },
-    { key: 'kmap',      icon: Network,     color: T.accent,       label: 'Knowledge map', sub: 'Your syllabus as a graph',   action: () => go('knowledge-map') },
     { key: 'weightage', icon: Activity,    color: T.primary,      label: 'Exam weightage', sub: 'What the exam tests most',   action: () => go('weightage') },
     { key: 'leaderboard', icon: Trophy,    color: T.accent,       label: 'Leaderboard', sub: 'Compare with other users',      action: () => go('leaderboard') },
     { key: 'library',   icon: Layers,      color: T.sec.library,  label: 'Library',   sub: 'Question banks',                 action: () => go('library') },

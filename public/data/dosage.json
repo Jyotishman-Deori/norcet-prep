@@ -1,0 +1,276 @@
+[
+  {
+    "id": "d1",
+    "type": "tablets",
+    "q": "Ordered: Amoxicillin 500 mg PO. Stock: 250 mg tablets. How many tablets do you give?",
+    "answer": 2,
+    "unit": "tablet(s)",
+    "tolerance": 0,
+    "steps": [
+      "Dose on hand (what each tablet contains) = 250 mg",
+      "Dose desired (what is ordered) = 500 mg",
+      "Formula — Tablets = Dose desired ÷ Dose on hand",
+      "500 mg ÷ 250 mg = 2 tablets"
+    ],
+    "intuition": "You are really just asking \"how many 250 mg tablets fit into 500 mg?\" — and 250 goes into 500 exactly twice. The mg units cancel, leaving a plain count of tablets, so a clean whole number is a good sign you set it up correctly. If you ever land on an awkward fraction like 1.7 tablets, re-check your numbers, since most tablets can be split in half at most."
+  },
+  {
+    "id": "d2",
+    "type": "liquid",
+    "q": "Ordered: Paracetamol 250 mg PO. Stock: 125 mg per 5 mL syrup. How many mL?",
+    "answer": 10,
+    "unit": "mL",
+    "tolerance": 0,
+    "steps": [
+      "Dose on hand = 125 mg, and it lives in 5 mL of syrup (its volume)",
+      "Dose desired = 250 mg",
+      "Formula — Volume = (Dose desired ÷ Dose on hand) × Volume on hand",
+      "(250 mg ÷ 125 mg) × 5 mL = 2 × 5 mL",
+      "= 10 mL"
+    ],
+    "intuition": "First work out how many \"doses-worth\" of drug you need (250 ÷ 125 = 2), then give that many of the volume each dose is dissolved in (2 × 5 mL). The difference from a tablet is that the drug is suspended in liquid, so you must carry the 5 mL along. Forgetting to multiply by that volume is the single most common mistake in liquid calculations."
+  },
+  {
+    "id": "d3",
+    "type": "mg/kg",
+    "q": "Order: Paracetamol 15 mg/kg PO. The child weighs 20 kg. Calculate the dose in mg.",
+    "answer": 300,
+    "unit": "mg",
+    "tolerance": 0,
+    "steps": [
+      "Read the order as a rate: 15 mg of drug for every 1 kg of body weight",
+      "Multiply the rate by the actual weight: 15 mg/kg × 20 kg",
+      "The kg units cancel, leaving mg: = 300 mg per dose"
+    ],
+    "intuition": "Weight-based dosing simply scales the drug to the patient's size — a 20 kg child needs twice what a 10 kg child would. Let the units guide you: \"mg/kg\" multiplied by \"kg\" leaves \"mg\", confirming you should multiply (not divide). Always notice whether the order is written per DOSE or per DAY — here it is per dose, so no further dividing is needed."
+  },
+  {
+    "id": "d4",
+    "type": "mg/kg",
+    "q": "A 60 kg adult is prescribed Vancomycin 15 mg/kg IV. Calculate the dose in mg.",
+    "answer": 900,
+    "unit": "mg",
+    "tolerance": 0,
+    "steps": [
+      "Same weight-based rule: 15 mg for every 1 kg of body weight",
+      "15 mg/kg × 60 kg",
+      "= 900 mg per dose"
+    ],
+    "intuition": "This is the identical setup to a paediatric mg/kg dose — adults are just heavier, so the final number is larger. Quick sanity check: 15 × 60 is the same as 15 × 6 × 10 = 900, so the magnitude looks right. In real practice you would also confirm 900 mg sits within Vancomycin's recommended maximum, since it is dosed by weight but capped for safety."
+  },
+  {
+    "id": "d5",
+    "type": "IV mL/hr",
+    "q": "Order: 1000 mL Normal Saline IV over 8 hours. What is the infusion rate in mL/hr?",
+    "answer": 125,
+    "unit": "mL/hr",
+    "tolerance": 0,
+    "steps": [
+      "You need to spread a fixed volume evenly across a fixed time",
+      "Formula — Rate (mL/hr) = Total volume ÷ Total time in hours",
+      "1000 mL ÷ 8 hr",
+      "= 125 mL/hr"
+    ],
+    "intuition": "An infusion rate is nothing more than \"how much fluid per hour\", so you divide the whole bag by the hours it must last. Because the answer must be mL/hr, volume (mL) goes on top and time (hr) on the bottom — the units literally spell out the formula. If the time had been given in minutes, you would convert to hours first, or the rate would come out 60× too small."
+  },
+  {
+    "id": "d6",
+    "type": "IV gtt/min",
+    "q": "Order: 1000 mL D5W IV over 8 hours. Drop factor 15 gtt/mL. Drops per minute?",
+    "answer": 31,
+    "unit": "gtt/min",
+    "tolerance": 1,
+    "steps": [
+      "Drops depend on three things: the volume, the tubing's drop factor, and the time in MINUTES",
+      "Formula — gtt/min = (Total volume × Drop factor) ÷ Time in minutes",
+      "Convert the time to minutes: 8 hr × 60 = 480 min",
+      "(1000 mL × 15 gtt/mL) ÷ 480 min",
+      "= 15,000 ÷ 480 = 31.25",
+      "≈ 31 gtt/min (round to a whole drop)"
+    ],
+    "intuition": "The drop factor tells you how many drops make up 1 mL for that particular tubing, so multiplying volume by drop factor converts millilitres into a total number of drops; dividing by minutes then spreads those drops evenly across the infusion. The classic trap is leaving time in hours — drops are counted per MINUTE, so the time must be in minutes. Since a fraction of a drop is impossible, always round to the nearest whole drop."
+  },
+  {
+    "id": "d7",
+    "type": "IV gtt/min",
+    "q": "Order: 500 mL Ringer's Lactate over 4 hours. Microdrip (60 gtt/mL). Drops per minute?",
+    "answer": 125,
+    "unit": "gtt/min",
+    "tolerance": 1,
+    "steps": [
+      "Microdrip tubing has a drop factor of 60 gtt/mL",
+      "gtt/min = (500 mL × 60 gtt/mL) ÷ (4 hr × 60 min)",
+      "= 30,000 ÷ 240",
+      "= 125 gtt/min"
+    ],
+    "intuition": "Here is a time-saving shortcut: with microdrip (60 gtt/mL), the drop factor of 60 and the 60 minutes-in-an-hour cancel each other out, so gtt/min always equals mL/hr. The mL/hr here is 500 ÷ 4 = 125, which is exactly the gtt/min — no long calculation needed. Remember this only holds for 60 gtt/mL microdrip tubing; for any other drop factor you must use the full formula."
+  },
+  {
+    "id": "d8",
+    "type": "IV gtt/min",
+    "q": "Order: 100 mL antibiotic infusion over 30 minutes. Drop factor 20 gtt/mL. Drops per minute?",
+    "answer": 67,
+    "unit": "gtt/min",
+    "tolerance": 1,
+    "steps": [
+      "The time is already in minutes (30 min), so no conversion is needed",
+      "gtt/min = (100 mL × 20 gtt/mL) ÷ 30 min",
+      "= 2,000 ÷ 30",
+      "= 66.67",
+      "≈ 67 gtt/min"
+    ],
+    "intuition": "Short infusions are often timed in minutes, which actually makes the maths easier — you plug the minutes straight in with no hour-to-minute conversion. Because you cannot deliver two-thirds of a drop, 66.67 rounds up to 67. Being off by a single drop per minute is clinically trivial, which is why a ±1 tolerance is accepted on these questions."
+  },
+  {
+    "id": "d9",
+    "type": "units / insulin",
+    "q": "Order: Regular insulin 12 units SC. Stock: U-100 insulin (100 units/mL). How many mL?",
+    "answer": 0.12,
+    "unit": "mL",
+    "tolerance": 0.01,
+    "steps": [
+      "U-100 is a concentration: 100 units of insulin sit in every 1 mL",
+      "Formula — Volume = Units ordered ÷ Units per mL",
+      "12 units ÷ 100 units/mL",
+      "= 0.12 mL"
+    ],
+    "intuition": "U-100 is the standard insulin strength, so 1 mL always contains 100 units. The volume comes out tiny (0.12 mL) — which is precisely why insulin is never drawn into an ordinary syringe. You use a unit-marked insulin syringe and simply dial to 12 units; the mL figure is a conceptual check rather than something you measure at the bedside."
+  },
+  {
+    "id": "d10",
+    "type": "concentration",
+    "q": "Dopamine 400 mg is added to 250 mL D5W. What is the concentration in mg/mL?",
+    "answer": 1.6,
+    "unit": "mg/mL",
+    "tolerance": 0.01,
+    "steps": [
+      "Concentration means \"how much drug per 1 mL of fluid\"",
+      "Formula — Concentration = Total drug ÷ Total volume",
+      "400 mg ÷ 250 mL",
+      "= 1.6 mg/mL"
+    ],
+    "intuition": "You are spreading 400 mg of drug evenly through 250 mL of fluid and asking how much sits in each single millilitre. Because the drug amount (400) is larger than the volume (250), the answer must be more than 1 mg/mL — which 1.6 satisfies. This per-mL value is the bridge for the next step in drip problems, where you turn an ordered dose into a pump rate."
+  },
+  {
+    "id": "d11",
+    "type": "mcg/kg/min",
+    "q": "Dopamine drip at 5 mcg/kg/min for a 70 kg patient. Concentration 1600 mcg/mL. mL/hr?",
+    "answer": 13,
+    "unit": "mL/hr",
+    "tolerance": 1,
+    "steps": [
+      "Step 1 — Dose per minute (multiply by weight): 5 mcg/kg/min × 70 kg = 350 mcg/min",
+      "Step 2 — Dose per hour (multiply by 60): 350 mcg/min × 60 = 21,000 mcg/hr",
+      "Step 3 — Convert dose to volume using the concentration: 21,000 mcg/hr ÷ 1600 mcg/mL ≈ 13.1",
+      "≈ 13 mL/hr"
+    ],
+    "intuition": "These drips look intimidating but are just three unit-conversions chained together: per-kg becomes per-minute, per-minute becomes per-hour, and per-hour becomes per-mL. Take one step at a time and let the units cancel until only mL/hr — what the pump needs — is left. The most common error is skipping the ×60 that converts a per-minute dose into a per-hour dose."
+  },
+  {
+    "id": "d12",
+    "type": "mL/hr ↔ gtt/min",
+    "q": "Patient on 100 mL/hr IV. Drop factor 15 gtt/mL. Convert to gtt/min.",
+    "answer": 25,
+    "unit": "gtt/min",
+    "tolerance": 1,
+    "steps": [
+      "You already have the hourly rate (100 mL/hr); you want drops per minute",
+      "Formula — gtt/min = (mL/hr × Drop factor) ÷ 60",
+      "(100 × 15) ÷ 60",
+      "= 1,500 ÷ 60",
+      "= 25 gtt/min"
+    ],
+    "intuition": "This one formula quietly does two conversions at once: multiplying by the drop factor turns mL into drops, and dividing by 60 turns \"per hour\" into \"per minute\". If you ever blank on the formula, rebuild it from the units — (mL/hr × gtt/mL) gives gtt/hr, then ÷ 60 gives gtt/min. That habit of tracking units will rescue almost any drip calculation."
+  },
+  {
+    "id": "d13",
+    "type": "BSA / paediatric",
+    "q": "A child weighs 15 kg. Maintenance fluid using 4-2-1 rule. mL/hr?",
+    "answer": 50,
+    "unit": "mL/hr",
+    "tolerance": 0,
+    "steps": [
+      "The 4-2-1 rule builds maintenance fluid in weight bands",
+      "First 10 kg: 4 mL/kg/hr → 10 × 4 = 40 mL/hr",
+      "Next 10 kg (here only 5 kg of it): 2 mL/kg/hr → 5 × 2 = 10 mL/hr",
+      "Add the bands: 40 + 10 = 50 mL/hr"
+    ],
+    "intuition": "Smaller bodies need proportionally more fluid per kg, so the rule is generous for the first 10 kg (4 mL/kg/hr), then tapers to 2, then 1 mL/kg/hr for heavier bands. A 15 kg child only reaches 5 kg into the second band, so you stop there. For a child over 20 kg you would add a third band at 1 mL/kg/hr for every kilogram beyond 20."
+  },
+  {
+    "id": "d14",
+    "type": "unit conversion",
+    "q": "Order: 0.25 mg of digoxin. Stock: 125 mcg/mL elixir. How many mL?",
+    "answer": 2,
+    "unit": "mL",
+    "tolerance": 0,
+    "steps": [
+      "The units don't match — the order is in mg, the stock in mcg. Convert FIRST",
+      "Convert: 0.25 mg × 1000 = 250 mcg (since 1 mg = 1000 mcg)",
+      "Now both are in mcg. Volume = (Dose desired ÷ Dose on hand) × Volume on hand",
+      "(250 mcg ÷ 125 mcg) × 1 mL",
+      "= 2 mL"
+    ],
+    "intuition": "The entire challenge here is the unit mismatch — divide mg by mcg directly and you will be 1000× off. The rule is simple: convert everything to the same unit before you calculate anything. Digoxin is also a high-alert drug with a very narrow margin between effective and toxic, so a tiny dose like this always deserves an independent double-check."
+  },
+  {
+    "id": "d15",
+    "type": "time calculation",
+    "q": "500 mL infusion at 50 mL/hr. How many hours will it take?",
+    "answer": 10,
+    "unit": "hours",
+    "tolerance": 0,
+    "steps": [
+      "You know the volume and the rate; you want the time",
+      "Formula — Time = Total volume ÷ Rate",
+      "500 mL ÷ 50 mL/hr",
+      "= 10 hours"
+    ],
+    "intuition": "This is the infusion-rate formula run backwards: if rate = volume ÷ time, then time = volume ÷ rate. The mL cancel and leave hours. Sanity check it in your head — at 50 mL every hour, reaching 500 mL must take ten hours, which matches the answer exactly."
+  },
+  {
+    "id": "d16",
+    "type": "heparin",
+    "q": "Heparin 25,000 units in 250 mL D5W. Ordered at 1000 units/hr. mL/hr?",
+    "answer": 10,
+    "unit": "mL/hr",
+    "tolerance": 0,
+    "steps": [
+      "Step 1 — Find the concentration (units per mL): 25,000 units ÷ 250 mL = 100 units/mL",
+      "Step 2 — Convert the ordered dose into volume per hour using that concentration",
+      "1000 units/hr ÷ 100 units/mL = 10 mL/hr"
+    ],
+    "intuition": "Work it in two stages: first turn the bag into a concentration (units per mL), then use that to convert the ordered units/hr into the mL/hr a pump can actually deliver. The units cancel against units, leaving mL/hr. Heparin is a high-alert anticoagulant, so this is exactly the kind of calculation that requires an independent second-nurse check before it runs."
+  },
+  {
+    "id": "d17",
+    "type": "paediatric mg/kg",
+    "q": "Order: Amoxicillin 40 mg/kg/day in 3 divided doses. Child is 18 kg. Each dose in mg?",
+    "answer": 240,
+    "unit": "mg",
+    "tolerance": 0,
+    "steps": [
+      "Notice the order is per DAY and split into 3 doses — that is two operations",
+      "Step 1 — Total daily dose: 40 mg/kg/day × 18 kg = 720 mg/day",
+      "Step 2 — Per dose: 720 mg ÷ 3 doses = 240 mg",
+      "So 240 mg every 8 hours (24 hr ÷ 3 doses)"
+    ],
+    "intuition": "The classic trap is stopping at 720 mg — but that is the whole DAY's dose, not a single one. Always check whether a mg/kg order is per dose or per day, and if it is per day, divide the daily total by the number of doses. \"3 divided doses\" across 24 hours naturally works out to one dose every 8 hours."
+  },
+  {
+    "id": "d18",
+    "type": "IV mL/hr",
+    "q": "Order: 2 L (2000 mL) Normal Saline IV over 24 hours. Rate in mL/hr?",
+    "answer": 83,
+    "unit": "mL/hr",
+    "tolerance": 1,
+    "steps": [
+      "Convert litres to mL first if needed: 2 L = 2000 mL",
+      "Formula — Rate = Total volume ÷ Total time in hours",
+      "2000 mL ÷ 24 hr",
+      "= 83.33",
+      "≈ 83 mL/hr"
+    ],
+    "intuition": "A 24-hour infusion is the standard for maintenance fluids, and dividing by 24 rarely gives a whole number, so rounding (and the small ±1 tolerance) is expected. Quick check: 2000 ÷ 24 is just over 80, so 83 mL/hr is sensible. Always convert litres to millilitres first — skip that and your rate will be 1000× off."
+  }
+]

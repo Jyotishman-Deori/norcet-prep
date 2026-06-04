@@ -13,6 +13,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Eye, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
+import { arraysEqualUnordered } from '../lib/utils.js';
 import { Card, Button, Pill, PyqBadge, TopBar } from '../ui/primitives.jsx';
 import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
