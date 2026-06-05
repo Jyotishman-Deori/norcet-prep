@@ -18,11 +18,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   AlertCircle, Check, EyeOff, Flag, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, Trash2, Upload, User
+  RefreshCw, Send, ShieldCheck, Trash2, Upload, User
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
 import AdminTile from '../ui/admin-tile.jsx';
+import AdminManager from '../ui/admin-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
@@ -468,6 +469,11 @@ function AdminPanel({
     );
   }
 
+  // =================== DETAIL VIEW: MANAGE ADMINS ===================
+  if (view === 'manageAdmins') {
+    return <AdminManager onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -535,6 +541,15 @@ function AdminPanel({
             hint="Explanation ratings"
             onClick={() => { setView('helpfulness'); refreshHelpful(); }}
             signal={<Lightbulb size={18} style={{ color: T.muted }} />} />
+
+          {/* Manage admins — add/remove who has admin access */}
+          <AdminTile
+            icon={<ShieldCheck size={22} style={{ color: T.primary }} />}
+            accent={T.primary}
+            label="Manage admins"
+            hint="Add / remove admins"
+            onClick={() => setView('manageAdmins')}
+            signal={<ShieldCheck size={18} style={{ color: T.muted }} />} />
 
           {/* Announcement — post a notice to everyone */}
           <AdminTile

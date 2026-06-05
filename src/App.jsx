@@ -861,21 +861,35 @@ async function clearAnnouncement(adminProfileId) {
 //   downgrades on failure. Offline: stays admin from cache; next
 //   online boot re-verifies.
 //
-//   To CHANGE the admin passphrase: pick a new one and recompute the
-//   hash with the same PBKDF2 params (SHA-256, 100k iter, 32-byte
-//   output, UTF-8 bytes, salt below). Then paste the hex into
-//   ADMIN_PASSPHRASE_HASH. Note: rotating the passphrase no longer
-//   adds or removes anyone's admin power — that's done by INSERT /
-//   DELETE on `admin_profile_ids` in the Supabase SQL editor.
+//   To CHANGE the admin passphrase: it is NOT in the frontend anymore. Rotate
+//   the Supabase secret instead:  supabase secrets set ADMIN_PASSPHRASE="new"
+//   (the `admin-manage` Edge Function verifies it server-side). Note: rotating
+//   the passphrase does not add or remove anyone's admin power — that's the
+//   `admin_profile_ids` allow-list, managed via the in-app panel / Edge Function.
 // =====================================================================
 
-const ADMIN_PASSPHRASE_HASH = '02786e6bc3bd324be1df06cf7159def507860fde25efb28418aadc7247042fbc';
-const ADMIN_SALT = 'norcet-admin-salt-v1';
-
+// Server-side passphrase check: POSTs the typed passphrase to the admin-manage
+// Edge Function (action "verify"), which compares it to the ADMIN_PASSPHRASE
+// secret and returns { ok }. No passphrase or hash lives in the frontend.
+// Throws on network/config failure so the caller can show an "offline" message
+// rather than a false "wrong passphrase".
 async function verifyAdminPassphrase(passphrase) {
   if (!passphrase) return false;
-  const hash = await hashPassword(passphrase, ADMIN_SALT);
-  return hash === ADMIN_PASSPHRASE_HASH;
+  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
+    throw new Error('admin verify unavailable');
+  }
+  const r = await fetch(`${SUPABASE_URL_FOR_ADMIN}/functions/v1/admin-manage`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action: 'verify', passphrase }),
+  });
+  if (!r.ok) throw new Error(`verify failed: ${r.status}`);
+  const j = await r.json();
+  return !!(j && j.ok === true);
 }
 
 // A4: Supabase config. Vite injects these at build time from .env / Vercel
@@ -2553,7 +2567,14 @@ export default function App() {
   // on Supabase. Returns a string reason on failure so the form can tell the
   // user WHY (wrong passphrase vs. this profile isn't an admin vs. offline).
   const handleUnlockAdmin = useCallback(async (passphrase) => {
-    const passOk = await verifyAdminPassphrase(passphrase);
+    let passOk;
+    try {
+      passOk = await verifyAdminPassphrase(passphrase); // server-side check
+    } catch (e) {
+      // Couldn't reach the verify function (offline / unreachable). Don't claim
+      // "wrong passphrase" — surface the same offline path as the server check.
+      return 'not-authorized';
+    }
     if (!passOk) return false; // form shows "Incorrect passphrase"
     const pid = profile ? profile.id : null;
     const uid = profile ? profile.uid : null;

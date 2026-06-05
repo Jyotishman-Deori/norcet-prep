@@ -58,7 +58,15 @@ Deno.serve(async (req: Request) => {
 
   // ---- server-side auth: the passphrase is the gate, checked HERE ----
   if (!ADMIN_PASSPHRASE) return json({ error: "Server not configured" }, 500);
-  if (!safeEqual(passphrase, ADMIN_PASSPHRASE)) return json({ error: "Wrong passphrase" }, 401);
+  const passOk = safeEqual(passphrase, ADMIN_PASSPHRASE);
+
+  // "verify" is a yes/no check used to UNLOCK the admin UI. It returns the
+  // result with a 200 (never 401) so the frontend can branch on { ok } — and
+  // no passphrase or hash needs to live in the frontend at all.
+  if (action === "verify") return json({ ok: passOk });
+
+  // add / remove require a correct passphrase.
+  if (!passOk) return json({ error: "Wrong passphrase" }, 401);
 
   if (action === "add") {
     if (!id) return json({ error: "Missing profileId" }, 400);
