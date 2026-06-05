@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
+import AdminManager from '../ui/admin-manager.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { LIGHT_THEMES } from '../lib/light-themes.js';
 import { downloadAsFile } from '../lib/utils.js';
@@ -525,6 +526,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
 
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Admin</div>
         {isAdmin ? (
+          <>
           <Card className="p-4 mb-3" style={{ background: T.successSoft, border: `1px solid ${T.success}40` }}>
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2.5 min-w-0">
@@ -568,6 +570,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               Lock admin
             </Button>
           </Card>
+          <AdminManager />
+          </>
         ) : !showAdminForm ? (
           <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => { setShowAdminForm(true); setAdminError(null); }}>
             <div className="flex items-center gap-3">

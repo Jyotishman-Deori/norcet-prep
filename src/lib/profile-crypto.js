@@ -17,6 +17,15 @@ export function genSalt() {
   return Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
+// Permanent, name-independent unique id for a profile (survives renames).
+// Prefer crypto.randomUUID; fall back to 16 random bytes for older webviews.
+export function genUid() {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
+  } catch (e) { /* fall through */ }
+  return genSalt();
+}
+
 export async function hashPassword(password, salt) {
   const enc = new TextEncoder();
   const keyMaterial = await crypto.subtle.importKey(

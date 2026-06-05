@@ -889,12 +889,16 @@ const SUPABASE_ANON_KEY_FOR_ADMIN = (typeof import.meta !== 'undefined' && impor
 // A4: Returns true iff `profileId` appears in the Supabase `admin_profile_ids`
 // table. Never throws — any network / parse / config failure resolves to false
 // (fail-closed: a broken admin check should reject, not grant).
-async function checkServerAdmin(profileId) {
-  if (!profileId) return false;
+async function checkServerAdmin(profileId, uid) {
+  if (!profileId && !uid) return false;
   if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) return false;
   try {
+    // Match EITHER the (name-derived) slug id OR the permanent uid, so existing
+    // slug-based allow-list rows keep working while you migrate to uids, and a
+    // renamed admin (whose slug changed) stays admin via their uid.
+    const ids = [profileId, uid].filter(Boolean).map(encodeURIComponent);
     const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/admin_profile_ids`
-      + `?profile_id=eq.${encodeURIComponent(profileId)}&select=profile_id`;
+      + `?profile_id=in.(${ids.join(',')})&select=profile_id`;
     const r = await fetch(url, {
       method: 'GET',
       headers: {
@@ -2552,7 +2556,8 @@ export default function App() {
     const passOk = await verifyAdminPassphrase(passphrase);
     if (!passOk) return false; // form shows "Incorrect passphrase"
     const pid = profile ? profile.id : null;
-    const serverOk = await checkServerAdmin(pid);
+    const uid = profile ? profile.uid : null;
+    const serverOk = await checkServerAdmin(pid, uid);
     if (!serverOk) {
       // Passphrase right, but this profile isn't authorised server-side (or
       // we're offline / Supabase unreachable). Do NOT grant — fail closed.
@@ -2603,7 +2608,7 @@ export default function App() {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) return; // offline: keep cache
     let cancelled = false;
     (async () => {
-      const ok = await checkServerAdmin(profile.id);
+      const ok = await checkServerAdmin(profile.id, profile.uid);
       if (cancelled) return;
       if (!ok) {
         // Definitive (online) negative — drop admin silently.

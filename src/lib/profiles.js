@@ -31,7 +31,7 @@ import { log } from './log.js';
 import * as kvStorage from '../storage';
 import { DEFAULT_DATA } from '../data/seed.js';
 import { STORAGE_OP_TIMEOUT_MS, raceStorage, safeStorage } from './safe-storage.js';
-import { normalizeProfileId, genSalt, hashPassword } from './profile-crypto.js';
+import { normalizeProfileId, genSalt, genUid, hashPassword } from './profile-crypto.js';
 
 // =====================================================================
 // GUEST MODE  (Pipeline step 26 / P-GUEST, Phase A)
@@ -55,7 +55,7 @@ export function makeGuestProfile() {
   // Mirrors the real profile shape closely enough that every `profile.x`
   // read in the UI resolves; isGuest is the discriminator everything else
   // keys off. No dobHash/dobSalt — a guest can't authenticate.
-  return { id: GUEST_ID, displayName: 'Guest', isGuest: true, createdAt: Date.now() };
+  return { id: GUEST_ID, uid: GUEST_ID, displayName: 'Guest', isGuest: true, createdAt: Date.now() };
 }
 
 export function isGuestProfile(p) { return !!(p && (p.isGuest || p.id === GUEST_ID)); }
@@ -108,6 +108,20 @@ export async function clearGuestData() {
   try { await safeStorage.delete(KEYS.userdata(GUEST_ID), false); } catch (e) { try { log.warn('guest.clear', e); } catch (_) {} }
 }
 
+// Backfill a permanent uid onto profiles created before uids existed. Runs on
+// the canonical (network) load path only and persists once; after that the
+// stored blob carries the uid so this is a no-op. Best-effort: a failed persist
+// just retries on the next online load. We do NOT backfill on the offline boot
+// path (loadProfileCached) so the instant-paint read stays network-free.
+async function ensureUid(profile) {
+  if (!profile) return profile;
+  if (profile.uid) return profile;
+  if (isGuestProfile(profile)) { profile.uid = GUEST_ID; return profile; }
+  const withUid = { ...profile, uid: genUid() };
+  try { await saveProfile(withUid); } catch (e) { /* retry next load */ }
+  return withUid;
+}
+
 export async function loadProfile(id) {
   // Try Supabase (canonical) first.
   try {
@@ -119,14 +133,14 @@ export async function loadProfile(id) {
       try {
         await safeStorage.set(KEYS.userdata(id), result.value, false);
       } catch (e) { /* cache refresh is best-effort */ }
-      return profile;
+      return await ensureUid(profile);
     }
   } catch (e) { log.warn('storage.profileLoad.supabase', e); /* fall through to cache */ }
   // Supabase didn't return a profile — either offline, timed out, or
   // genuinely not there. Fall back to the local cache.
   try {
     const cached = await safeStorage.get(KEYS.userdata(id), false);
-    if (cached && cached.value) return JSON.parse(cached.value);
+    if (cached && cached.value) return await ensureUid(JSON.parse(cached.value));
   } catch (e) { log.warn('storage.profileLoad.cache', e); /* no cache either */ }
   return null;
 }
@@ -350,6 +364,7 @@ export async function createProfile({ displayName, password, dob, importData }) 
   const dobHash = await hashPassword(normDob, dobSalt);
   const profile = {
     id,
+    uid: genUid(),  // permanent, name-independent handle (survives renames)
     displayName: displayName.trim(),
     passwordHash,
     salt,
