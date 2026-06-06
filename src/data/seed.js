@@ -12,6 +12,7 @@
 // =====================================================================
 
 import { CURRENT_SCHEMA_VERSION } from '../lib/migrations.js';
+import { SEED_EXPLANATIONS } from './seed-explanations.js';
 
 export const TOPICS = [
   { id: 'fund', name: 'Fundamentals of Nursing', icon: '🩺', color: '#0F4C4C' },
@@ -599,6 +600,17 @@ export const SEED_QUESTIONS = [
     exp: 'In pre-dialysis CKD, restrict protein (less urea/nitrogenous waste), potassium (hyperkalaemia risk \u2192 arrhythmia), phosphorus (renal osteodystrophy), sodium and fluid (oedema/HTN). Keep calories adequate to prevent catabolism. Once on dialysis, protein needs INCREASE because dialysis removes amino acids.',
     wrong: { 0: 'High potassium is dangerous in CKD; protein is restricted pre-dialysis.', 2: 'Sodium and fluid are restricted to control oedema and BP.', 3: 'Phosphorus is restricted; calcium balance is managed with binders, not phosphorus loading.' } }
 ];
+
+// Apply the upgraded, structured explanations (Session: content quality).
+// This overrides ONLY `exp` and `wrong` on the built-in questions — options,
+// correct answers, ids, topics and types are never touched. Questions without
+// an upgraded entry simply keep their original text.
+for (const _q of SEED_QUESTIONS) {
+  const _up = SEED_EXPLANATIONS[_q.id];
+  if (!_up) continue;
+  if (_up.exp) _q.exp = _up.exp;
+  if (_up.wrong && Object.keys(_up.wrong).length) _q.wrong = _up.wrong;
+}
 
 export const DEFAULT_DATA = {
   // Bumped via CURRENT_SCHEMA_VERSION in src/lib/migrations.js. Fresh

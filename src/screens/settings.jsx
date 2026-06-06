@@ -6,7 +6,7 @@
 // on* callbacks, isGuest, unseenReplyCount, onBack) stay props. setData is
 // NOT used by Settings (0 refs). IS_DARK not used (0 refs).
 // =====================================================================
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
   GraduationCap, Heart, Lock, LogOut, RefreshCw, RotateCcw, Sigma, Trash2,
@@ -38,6 +38,34 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   const [adminError, setAdminError] = useState(null);
   const [adminBusy, setAdminBusy] = useState(false);
   const [showAdminForm, setShowAdminForm] = useState(false);
+  // Session 4, Item 3 — brute-force throttle on the unlock passphrase.
+  const [adminFailCount, setAdminFailCount] = useState(0);
+  const [adminCooldown, setAdminCooldown] = useState(0); // seconds remaining
+  useEffect(() => {
+    if (adminCooldown <= 0) return;
+    const t = setInterval(() => {
+      setAdminCooldown(c => {
+        if (c <= 1) { clearInterval(t); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+  }, [adminCooldown]);
+  // Record a wrong-passphrase attempt; lock out for 30s after 3 misses.
+  // ('not-authorized' = correct passphrase but wrong profile/offline — that
+  // is NOT a brute-force signal, so it does not count toward the cooldown.)
+  const registerAdminFail = () => {
+    const fails = adminFailCount + 1;
+    setAdminFailCount(fails);
+    if (fails >= 3) {
+      setAdminError('Too many attempts — wait 30 seconds');
+      setAdminCooldown(30);
+      setAdminFailCount(0);
+    } else {
+      setAdminError(`Incorrect passphrase (${3 - fails} attempt${3 - fails === 1 ? '' : 's'} left)`);
+    }
+    setAdminBusy(false);
+  };
 
   // P3 — daily reminder local UI state. `drPerm` reflects the latest known
   // Notification permission so we can show a "blocked" hint without storing it.
@@ -293,6 +321,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                   <div className="text-sm font-medium" style={{ color: T.ink }}>Reminder time</div>
                   <input type="time" value={reminder.time || '20:00'}
                          onChange={(e) => onSetDailyReminder({ time: e.target.value })}
+                         onFocus={() => document.body.classList.remove('app-blurred')}
                          className="rounded-lg px-3 py-1.5 text-sm"
                          style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
                 </div>
@@ -352,50 +381,58 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
 
         {/* Appearance */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Appearance</div>
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onToggleTheme}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                   style={{ background: themeMode === 'dark' ? T.surface : T.surfaceWarm }}>
-                {themeMode === 'dark' ? '🌙' : '☀️'}
-              </div>
-              <div>
-                <div className="font-medium" style={{ color: T.ink }}>Dark mode</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  {themeMode === 'dark' ? 'Easier on the eyes at night' : 'Tap to switch to dark'}
-                </div>
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: themeMode === 'dark' ? T.primary : T.border }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: themeMode === 'dark' ? 'translateX(20px)' : 'translateX(0px)' }} />
-            </div>
+
+        {/* Mode selector — Light / Dark */}
+        <Card className="p-4 mb-3">
+          <div className="text-xs font-medium mb-3" style={{ color: T.muted }}>Mode</div>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { id: 'light', label: 'Light', icon: '☀️', desc: 'Default'      },
+              { id: 'dark',  label: 'Dark',  icon: '🌙', desc: 'Easy on eyes' },
+            ].map(opt => {
+              const active = opt.id === 'dark' ? themeMode === 'dark' : themeMode !== 'dark';
+              const isDarkOpt = opt.id === 'dark';
+              return (
+                <button key={opt.id}
+                        onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
+                        className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl no-tap-highlight pressable"
+                        style={{
+                          background: active ? (isDarkOpt ? '#1A1A1A' : T.primary + '12') : T.surfaceWarm,
+                          border: `1.5px solid ${active ? (isDarkOpt ? '#444' : T.primary) : T.border}`,
+                        }}>
+                  <span className="text-xl leading-none">{opt.icon}</span>
+                  <span className="text-xs font-semibold"
+                        style={{ color: active ? (isDarkOpt ? '#FFF' : T.primary) : T.ink }}>
+                    {opt.label}
+                  </span>
+                  <span className="text-[9px]"
+                        style={{ color: active ? (isDarkOpt ? '#999' : T.primarySoft) : T.muted }}>
+                    {opt.desc}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </Card>
 
-        {/* Color theme picker — only relevant in light mode */}
+        {/* Colour theme picker — hidden in dark mode */}
         {themeMode !== 'dark' && (
           <Card className="p-4 mb-3">
-            <div className="text-xs font-medium mb-3" style={{ color: T.muted }}>Colour theme</div>
-            <div className="grid grid-cols-4 gap-2">
-              {LIGHT_THEMES.map(opt => {
+
+            {/* Row 1 — Soft */}
+            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Soft</div>
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {LIGHT_THEMES.slice(0, 4).map(opt => {
                 const active = themeMode === opt.id;
                 return (
-                  <button key={opt.id}
-                          onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
+                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
                           className="flex flex-col items-center gap-1.5 no-tap-highlight"
-                          style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer' }}>
-                    {/* Swatch circle */}
-                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center transition-all"
-                         style={{
-                           background: opt.bg,
-                           border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
-                           boxShadow: active ? `0 0 0 3px ${opt.swatch}28` : 'none',
-                         }}>
-                      {/* Inner accent dot */}
+                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
+                         style={{ background: opt.bg,
+                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
+                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}28` : 'none' }}>
                       <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch, opacity: 0.85 }} />
-                      {/* Checkmark overlay when active */}
                       {active && (
                         <div className="absolute inset-0 flex items-center justify-center rounded-full"
                              style={{ background: opt.swatch + '18' }}>
@@ -412,6 +449,69 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 );
               })}
             </div>
+
+            {/* Row 2 — Vivid */}
+            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Vivid</div>
+            <div className="grid grid-cols-4 gap-2 mb-4">
+              {LIGHT_THEMES.slice(4).map(opt => {
+                const active = themeMode === opt.id;
+                return (
+                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
+                          className="flex flex-col items-center gap-1.5 no-tap-highlight"
+                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
+                         style={{ background: opt.bg,
+                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
+                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}38` : 'none' }}>
+                      <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch }} />
+                      {active && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full"
+                             style={{ background: opt.swatch + '20' }}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M3.5 8.5l3 3 6-6" stroke={opt.swatch} strokeWidth="2.2"
+                                  strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-medium leading-tight"
+                          style={{ color: active ? opt.swatch : T.muted }}>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Row 3 — Minimal */}
+            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Minimal</div>
+            <div className="flex gap-2">
+              {[{ id: 'midnight', label: 'Midnight', swatch: '#000000', bg: '#FFFFFF' }].map(opt => {
+                const active = themeMode === opt.id;
+                return (
+                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
+                          className="flex flex-col items-center gap-1.5 no-tap-highlight"
+                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
+                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
+                         style={{ background: opt.bg,
+                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
+                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}22` : 'none' }}>
+                      <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch }} />
+                      {active && (
+                        <div className="absolute inset-0 flex items-center justify-center rounded-full"
+                             style={{ background: opt.swatch + '10' }}>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                            <path d="M3.5 8.5l3 3 6-6" stroke={opt.swatch} strokeWidth="2.2"
+                                  strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-[10px] font-medium leading-tight"
+                          style={{ color: active ? opt.swatch : T.muted }}>{opt.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
           </Card>
         )}
 
@@ -598,19 +698,20 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                      placeholder="Admin passphrase"
                      autoComplete="off"
                      onKeyDown={async e => {
-                       if (e.key === 'Enter' && adminInput && !adminBusy) {
+                       if (e.key === 'Enter' && adminInput && !adminBusy && adminCooldown <= 0) {
                          setAdminBusy(true);
                          // A4: tri-state result. true → granted; 'not-authorized'
                          // → passphrase ok but server didn't confirm this profile
                          // (or we're offline); anything else → wrong passphrase.
                          const res = await onUnlockAdmin(adminInput);
-                         if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                         if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); setAdminFailCount(0); setAdminCooldown(0); }
                          else if (res === 'not-authorized') { setAdminError('This profile is not an admin, or you are offline. Connect and use the owner profile.'); setAdminBusy(false); }
-                         else { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
+                         else { registerAdminFail(); }
                        }
                      }}
+                     disabled={adminBusy || adminCooldown > 0}
                      className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
-                     style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
+                     style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink, opacity: adminCooldown > 0 ? 0.5 : 1 }} />
               <button onClick={() => setAdminShow(v => !v)}
                       className="no-tap-highlight absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg active:bg-black/5"
                       type="button">
@@ -618,23 +719,28 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               </button>
             </div>
             {adminError && (
-              <div className="text-xs mb-3 px-1" style={{ color: T.error }}>{adminError}</div>
+              <div className="text-xs mb-3 px-1 flex items-center gap-2" style={{ color: T.error }}>
+                <span>{adminError}</span>
+                {adminCooldown > 0 && (
+                  <span className="font-mono font-bold ml-auto">{adminCooldown}s</span>
+                )}
+              </div>
             )}
             <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => { setShowAdminForm(false); setAdminInput(''); setAdminError(null); }} className="flex-1">
+              <Button variant="ghost" onClick={() => { setShowAdminForm(false); setAdminInput(''); setAdminError(null); setAdminFailCount(0); setAdminCooldown(0); }} className="flex-1">
                 Cancel
               </Button>
-              <Button disabled={!adminInput || adminBusy}
+              <Button disabled={!adminInput || adminBusy || adminCooldown > 0}
                       onClick={async () => {
                         setAdminBusy(true);
                         const res = await onUnlockAdmin(adminInput);
-                        if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); }
+                        if (res === true) { setAdminInput(''); setShowAdminForm(false); setAdminBusy(false); setAdminFailCount(0); setAdminCooldown(0); }
                         else if (res === 'not-authorized') { setAdminError('This profile is not an admin, or you are offline. Connect and use the owner profile.'); setAdminBusy(false); }
-                        else { setAdminError('Incorrect passphrase'); setAdminBusy(false); }
+                        else { registerAdminFail(); }
                       }}
                       className="flex-1"
                       icon={adminBusy ? <RefreshCw size={14} className="animate-spin" /> : null}>
-                {adminBusy ? 'Checking' : 'Unlock'}
+                {adminCooldown > 0 ? `Wait ${adminCooldown}s` : adminBusy ? 'Checking' : 'Unlock'}
               </Button>
             </div>
           </Card>

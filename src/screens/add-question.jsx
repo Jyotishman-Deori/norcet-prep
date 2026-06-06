@@ -21,6 +21,7 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
   const [options, setOptions] = useState(['', '', '', '']);
   const [correct, setCorrect] = useState([]);
   const [explanation, setExplanation] = useState('');
+  const [memoryTip, setMemoryTip] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [source, setSource] = useState('');
 
@@ -44,6 +45,7 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
       exp: explanation.trim(),
       wrong: {},
       custom: true,
+      ...(memoryTip.trim() ? { memoryTip: memoryTip.trim() } : {}),
       ...(difficulty ? { difficulty } : {}),
       ...(source.trim() ? { source: source.trim() } : {})
     });
@@ -170,6 +172,13 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Explanation</div>
         <textarea value={explanation} onChange={e => setExplanation(e.target.value)}
                   placeholder="Why is this the correct answer? Include any key intuitions..." rows={4}
+                  className="w-full rounded-xl px-4 py-3 mb-4 text-sm resize-none" style={inputStyle} />
+
+        {/* Memory tip */}
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2 mt-0" style={{ color: T.muted }}>Memory tip <span style={{ color: T.muted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></div>
+        <textarea value={memoryTip} onChange={e => setMemoryTip(e.target.value)}
+                  placeholder="A pattern, mnemonic, or clinical intuition that makes this stick — e.g. 'HIGH K = HIGH RISK: think of potassium as a volume knob on the heart'"
+                  rows={3}
                   className="w-full rounded-xl px-4 py-3 mb-4 text-sm resize-none" style={inputStyle} />
           </>
         )}

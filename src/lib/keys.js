@@ -34,6 +34,12 @@ export const KEYS = {
   ONBOARDING:    'norcet:onboarded:v1', // used as prefix: `${ONBOARDING}:${profileId}`
   ADMIN_STATUS:  'norcet:admin:v1',     // { unlocked: bool, ts }
 
+  // -- Session 1/2 additive personal keys (per-device). ADD only. --
+  WEEKLY_SUMMARY_DISMISSED: 'norcet:weekly-summary-dismissed:v1', // ISO week str
+  QUOTES_SHOWN:  'norcet:quotes-shown:v1',   // JSON array of shown quote indices
+  NOTIFICATIONS: 'norcet:notifications:v1',  // JSON array of notification objects
+  PUSH_SUB_ID:   'norcet:push-sub-id:v1',    // Vercel KV subscription id (Session 5)
+
   // -- Shared / cross-device (private blobs, but visible across devices) --
   ANNOUNCEMENT:  'announcement:current',
   PROFILE_INDEX: 'profile_index',       // legacy: monolithic list — read-only fallback

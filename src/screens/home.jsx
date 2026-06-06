@@ -7,16 +7,43 @@
 // app data + question pool via useData(). All navigation/dismiss callbacks
 // and presentation flags stay props.
 // =====================================================================
-import React, { useState, useEffect } from 'react';
-import { Activity, AlertCircle, AlertTriangle, Brain, Calculator, CalendarDays, Check, ChevronRight, ClipboardList, Flag, Flame, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Flag, Flame, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
 import { todayStr } from '../lib/utils.js';
+import { getNextQuote } from '../lib/quotes.js';
+import { pushNotification } from '../lib/notifications.js';
 import { Card, Button } from '../ui/primitives.jsx';
 import { HomeSupportNudge } from '../ui/home-support-nudge.jsx';
 
-function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu }) {
+// Feature 3 — brief positive feedback when the spaced-review queue is empty
+// for an active user. Auto-hides after 3s so it rewards, then clears space.
+// Not dismissable (it's reassurance, not an interruption).
+function AllCaughtUpCard() {
+  const { theme: T } = useTheme();
+  const [visible, setVisible] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(false), 3000);
+    return () => clearTimeout(t);
+  }, []);
+  if (!visible) return null;
+  return (
+    <div className="anim-fadeup mb-4 px-4 py-3 rounded-2xl flex items-center gap-3"
+         style={{ background: T.successSoft, border: `1px solid ${T.success}30` }}>
+      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 bg-white shadow-sm">
+        <CheckCircle size={18} style={{ color: T.success }} />
+      </div>
+      <div>
+        <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>All caught up</div>
+        <div className="text-xs" style={{ color: T.muted }}>Nothing due for review today</div>
+      </div>
+    </div>
+  );
+}
+
+function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const due = getDueQuestions(data.history, allQuestions);
@@ -37,6 +64,127 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
 
+  // Feature 4 — week-over-week snapshot. ADAPTED to the real data model:
+  //   • dailyHistory entries are { date, attempted, correct } — NOT `answered`.
+  //   • per-question history does NOT store a topic; we resolve it from
+  //     allQuestions (the same pattern getWeakTopics uses).
+  const weeklySummary = useMemo(() => {
+    const nowD = new Date();
+    const dayOfWeek = nowD.getDay() || 7; // 1=Mon … 7=Sun
+    const startOfThisWeek = new Date(nowD);
+    startOfThisWeek.setDate(nowD.getDate() - (dayOfWeek - 1));
+    startOfThisWeek.setHours(0, 0, 0, 0);
+
+    const startOfLastWeek = new Date(startOfThisWeek);
+    startOfLastWeek.setDate(startOfThisWeek.getDate() - 7);
+
+    const thisWeekStart = startOfThisWeek.toISOString().slice(0, 10);
+    const lastWeekStart = startOfLastWeek.toISOString().slice(0, 10);
+    const lastWeekEnd = new Date(startOfThisWeek);
+    lastWeekEnd.setDate(startOfThisWeek.getDate() - 1);
+    const lastWeekEndStr = lastWeekEnd.toISOString().slice(0, 10);
+
+    const daily = data.stats.dailyHistory || [];
+    const thisWeekEntries = daily.filter(d => d.date >= thisWeekStart);
+    const lastWeekEntries = daily.filter(d => d.date >= lastWeekStart && d.date <= lastWeekEndStr);
+    const sum = (arr, key) => arr.reduce((a, b) => a + (b[key] || 0), 0);
+
+    const thisAnswered = sum(thisWeekEntries, 'attempted');
+    const thisCorrect = sum(thisWeekEntries, 'correct');
+    const lastAnswered = sum(lastWeekEntries, 'attempted');
+    const lastCorrect = sum(lastWeekEntries, 'correct');
+
+    const thisAcc = thisAnswered >= 5 ? Math.round((thisCorrect / thisAnswered) * 100) : null;
+    const lastAcc = lastAnswered >= 5 ? Math.round((lastCorrect / lastAnswered) * 100) : null;
+
+    const topicOf = (qId) => { const q = allQuestions.find(x => x.id === qId); return q ? q.topic : null; };
+
+    const topicThisWeek = {};
+    const topicLastWeek = {};
+    Object.entries(data.history || {}).forEach(([qId, h]) => {
+      const topic = topicOf(qId);
+      if (!topic || !h.attempts) return;
+      h.attempts.forEach(a => {
+        if (!a.ts) return;
+        const d = new Date(a.ts).toISOString().slice(0, 10);
+        const bucket = d >= thisWeekStart ? topicThisWeek
+                     : (d >= lastWeekStart && d <= lastWeekEndStr) ? topicLastWeek
+                     : null;
+        if (!bucket) return;
+        if (!bucket[topic]) bucket[topic] = { correct: 0, total: 0 };
+        bucket[topic].total++;
+        if (a.correct) bucket[topic].correct++;
+      });
+    });
+
+    const allTopicStats = {};
+    Object.entries(data.history || {}).forEach(([qId, h]) => {
+      const topic = topicOf(qId);
+      if (!topic || !h.attempts) return;
+      if (!allTopicStats[topic]) allTopicStats[topic] = { correct: 0, total: 0 };
+      allTopicStats[topic].total += h.attempts.length;
+      allTopicStats[topic].correct += h.attempts.filter(a => a.correct).length;
+    });
+    const weakestTopic = Object.entries(allTopicStats)
+      .filter(([, s]) => s.total >= 3)
+      .sort(([, a], [, b]) => (a.correct / a.total) - (b.correct / b.total))[0]?.[0] || null;
+
+    let improvedTopic = null;
+    let bestImprovement = 0;
+    Object.keys(topicThisWeek).forEach(tid => {
+      if (!topicLastWeek[tid]) return;
+      const thisT = topicThisWeek[tid];
+      const lastT = topicLastWeek[tid];
+      if (thisT.total < 2 || lastT.total < 2) return;
+      const imp = (thisT.correct / thisT.total) - (lastT.correct / lastT.total);
+      if (imp > bestImprovement) { bestImprovement = imp; improvedTopic = tid; }
+    });
+
+    const fmt = (d) => d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    const endOfThisWeek = new Date(startOfThisWeek);
+    endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
+    const dateRange = `${fmt(startOfThisWeek)}–${fmt(endOfThisWeek)}`;
+
+    return { thisAnswered, thisAcc, lastAcc, weakestTopic, improvedTopic, dateRange };
+  }, [data.stats.dailyHistory, data.history, allQuestions]);
+
+  const showWeeklySummary = !weeklySummaryDismissed
+    && (data.stats.totalAttempted || 0) >= 10
+    && new Date().getDay() !== 0; // not Sunday — show Mon–Sat only
+
+  // Feature 5 — daily quote. New quote on every Home mount (each navigation
+  // here); cycles the full set without repeats. Renders only once resolved.
+  const [dailyQuote, setDailyQuote] = useState(null);
+  useEffect(() => {
+    getNextQuote().then(q => setDailyQuote(q));
+  }, []);
+
+  // Feature 6 — generate inbox notifications from existing signals. Both
+  // de-dupe inside pushNotification(), so re-mounts won't spam the inbox.
+  useEffect(() => {
+    if (due.length > 0) {
+      pushNotification({
+        type: 'spaced_due',
+        title: 'Questions ready for review',
+        body: `${due.length} question${due.length === 1 ? '' : 's'} are due for spaced revision today.`,
+        action: { screen: 'quiz', mode: 'review-due' }
+      });
+    }
+  }, [due.length]);
+
+  const STREAK_MILESTONES = [3, 7, 14, 21, 30, 50, 100];
+  useEffect(() => {
+    const s = data.stats.streakCurrent;
+    if (STREAK_MILESTONES.includes(s)) {
+      pushNotification({
+        type: 'streak',
+        title: `${s}-day streak! 🔥`,
+        body: `You've studied ${s} days in a row. That kind of consistency is what separates those who pass from those who don't.`,
+        action: null
+      });
+    }
+  }, [data.stats.streakCurrent]);
+
   // In-app notice when the admin has replied to / resolved the user's feedback.
   const replies = unseenReplies || [];
   const fixedReply = replies.find(r => r.status === 'fixed');
@@ -48,7 +196,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
   return (
     <div className="max-w-md mx-auto px-4 pb-24 pt-2 anim-fadeup">
-      {/* Top bar: menu + quick settings */}
+      {/* Top bar: menu + notifications + quick settings */}
       <div className="flex items-center justify-between mb-3">
         <button onClick={onOpenMenu}
                 className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
@@ -56,10 +204,30 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <Menu size={22} style={{ color: T.ink }} />
           <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
         </button>
-        <button onClick={() => onNavigate({ screen: 'settings' })}
-                className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
-          <SettingsIcon size={20} style={{ color: T.muted }} />
-        </button>
+
+        <div className="flex items-center gap-1">
+          {/* Notification bell — Feature 6 */}
+          {onOpenNotifications && (
+            <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
+                    className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
+                    aria-label="Notifications">
+              {unreadNotifCount > 0
+                ? <BellRing size={20} style={{ color: T.primary }} />
+                : <Bell size={20} style={{ color: T.muted }} />}
+              {unreadNotifCount > 0 && (
+                <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                      style={{ background: T.error, lineHeight: 1 }}>
+                  {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                </span>
+              )}
+            </button>
+          )}
+
+          <button onClick={() => onNavigate({ screen: 'settings' })}
+                  className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
+            <SettingsIcon size={20} style={{ color: T.muted }} />
+          </button>
+        </div>
       </div>
 
       {/* GUEST MODE (Phase A): subtle, dismissible sign-in nudge — shown only
@@ -202,6 +370,24 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </h1>
       </div>
 
+      {/* Daily quote — Feature 5. New quote each Home visit; no card chrome. */}
+      {dailyQuote && (
+        <div className="anim-fadeup mb-6">
+          <div className="relative pl-5" style={{ borderLeft: `2px solid ${T.primary}40` }}>
+            <div className="font-display text-3xl leading-none mb-3 select-none"
+                 style={{ color: T.primary, opacity: 0.25, lineHeight: 1, marginLeft: -2, marginBottom: 0 }}>
+              &#8220;
+            </div>
+            <p className="text-sm leading-relaxed italic mt-0" style={{ color: T.inkSoft }}>
+              {dailyQuote.text}
+            </p>
+            <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
+              — {dailyQuote.source}
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Streak · Accuracy · Today — center-aligned summary strip */}
       <div className="grid grid-cols-3 gap-2.5 mb-5">
         {/* Streak */}
@@ -259,6 +445,84 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
       </div>
 
+      {/* Feature 4 — weekly summary (first nudge of a new week, Mon–Sat) */}
+      {showWeeklySummary && (
+        <div className="anim-fadeup mb-4">
+          <Card className="p-4" style={{ border: `1px solid ${T.border}` }}>
+            <div className="flex items-center justify-between gap-2 mb-3">
+              <div className="flex items-center gap-2">
+                <BarChart2 size={16} style={{ color: T.primary }} />
+                <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>
+                  Your week · {weeklySummary.dateRange}
+                </div>
+              </div>
+              <button onClick={dismissWeeklySummary}
+                      className="no-tap-highlight p-1 -m-1 rounded-full active:bg-black/5"
+                      aria-label="Dismiss">
+                <X size={15} style={{ color: T.muted }} />
+              </button>
+            </div>
+
+            {weeklySummary.thisAnswered < 5 ? (
+              <div className="text-sm" style={{ color: T.muted }}>
+                Keep going — answer a few questions each day to unlock your weekly summary.
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-3 mb-2 flex-wrap">
+                  <div className="text-sm font-semibold" style={{ color: T.ink }}>
+                    {weeklySummary.thisAnswered} questions
+                  </div>
+                  {weeklySummary.thisAcc !== null && (
+                    <div className="text-sm font-semibold" style={{ color: T.ink }}>
+                      · {weeklySummary.thisAcc}% accuracy
+                    </div>
+                  )}
+                </div>
+
+                {weeklySummary.thisAcc !== null && weeklySummary.lastAcc !== null && (
+                  (() => {
+                    const diff = weeklySummary.thisAcc - weeklySummary.lastAcc;
+                    if (Math.abs(diff) <= 1) return null;
+                    return (
+                      <div className="text-xs mb-2 font-medium"
+                           style={{ color: diff > 0 ? T.success : T.error }}>
+                        {diff > 0 ? '▲' : '▼'} {Math.abs(diff)}% accuracy vs last week
+                      </div>
+                    );
+                  })()
+                )}
+
+                {weeklySummary.improvedTopic && (
+                  <div className="text-xs mb-1" style={{ color: T.muted }}>
+                    Improved: <span style={{ color: T.success, fontWeight: 600 }}>
+                      {topicName(weeklySummary.improvedTopic)}
+                    </span>
+                  </div>
+                )}
+
+                {weeklySummary.weakestTopic && (
+                  <div className="flex items-center justify-between gap-2 mt-3 pt-3"
+                       style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+                    <div className="text-xs" style={{ color: T.muted }}>
+                      Focus next: <span style={{ color: T.ink, fontWeight: 600 }}>
+                        {topicName(weeklySummary.weakestTopic)}
+                      </span>
+                    </div>
+                    <button onClick={() => onNavigate({ screen: 'quiz', mode: 'topic',
+                                                        topic: weeklySummary.weakestTopic, count: 10 })}
+                            className="no-tap-highlight flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold pressable"
+                            style={{ background: T.primary, color: '#FFF' }}>
+                      Start <ChevronRight size={12} />
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </Card>
+        </div>
+      )}
+
       {/* Spaced revision reminder. Three respects for the user:
             1. (?) icon explains what spaced revision is the first time they wonder.
             2. (×) hides it for today only; tomorrow it returns if still due.
@@ -270,7 +534,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         const enabled = prefs.reviewRemindersEnabled !== false;
         const todayStr = new Date().toISOString().slice(0, 10);
         const dismissedToday = prefs.reviewDismissedDate === todayStr;
-        if (due.length === 0 || !enabled || dismissedToday) return null;
+        // Feature 3 — when nothing is due, show a brief "all caught up" pat on
+        // the back for active users (≥10 attempts); first-timers see nothing.
+        const hasEnoughActivity = (data.stats.totalAttempted || 0) >= 10;
+        if (due.length === 0) {
+          if (!enabled || !hasEnoughActivity) return null;
+          return <AllCaughtUpCard />;
+        }
+        if (!enabled || dismissedToday) return null;
 
         return (
           <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable"

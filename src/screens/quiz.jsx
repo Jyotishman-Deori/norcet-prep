@@ -307,7 +307,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
         {/* Question */}
         <div className="flex items-start gap-2 mb-4">
-          <div className="font-display text-xl leading-snug flex-1 text-ink">
+          <div className="font-display text-xl leading-snug flex-1 text-ink select-none"
+               onContextMenu={e => e.preventDefault()}>
             {q.q}
           </div>
           <TTSButton text={q.q} className="flex-shrink-0 mt-1" />
@@ -338,7 +339,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         )}
 
         {/* Options */}
-        <div className="space-y-2.5 mb-6">
+        <div className="space-y-2.5 mb-6 select-none">
           {q.options.map((opt, i) => {
             const isSelected = selected.includes(i);
             const isCorrect = q.correct.includes(i);
@@ -373,6 +374,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             }
             return (
               <div key={i} onClick={() => toggleSelect(i)}
+                   onContextMenu={e => e.preventDefault()}
                    role="button"
                    tabIndex={isLocked ? -1 : 0}
                    aria-pressed={isSelected}
@@ -426,6 +428,24 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               {/* P8 — "Was this helpful?" (question is finished + explanation visible) */}
               <HelpfulToggle questionId={q.id} explanation={q.exp} profileId={profileId} />
             </Card>
+            {/* Memory tip (Intuition anchor) — fixed amber across all themes so
+                students learn amber = memory hook. Renders only when present. */}
+            {q.memoryTip && (
+              <Card className="anim-fadeup p-4 overflow-hidden"
+                    style={{
+                      background: IS_DARK ? '#2A2010' : '#FFF8E8',
+                      border: `1px solid #D4900A33`,
+                      borderLeft: `3px solid #D4900A`
+                    }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Lightbulb size={14} style={{ color: '#D4900A' }} />
+                  <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: '#D4900A' }}>Memory tip</div>
+                </div>
+                <div className="text-sm leading-relaxed" style={{ color: T.ink }}>
+                  {q.memoryTip}
+                </div>
+              </Card>
+            )}
             {q.wrong && Object.keys(q.wrong).length > 0 && (
               <Card className="p-4 bg-surface">
                 <div className="text-xs uppercase tracking-wider font-semibold mb-3 text-muted">Why the others are wrong</div>

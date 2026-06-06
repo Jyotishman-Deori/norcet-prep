@@ -6,7 +6,7 @@
 // useTheme() hook (was a bare-T reader). Render site (<HelpHost/>) unchanged.
 // =====================================================================
 import React, { useState, useEffect } from 'react';
-import { Lightbulb, ListChecks, Sparkles, HelpCircle, X } from 'lucide-react';
+import { Lightbulb, ListChecks, Sparkles, HelpCircle, X, Quote } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { useContent } from '../lib/content.js';
@@ -50,7 +50,9 @@ function HelpModal({ screen, onClose }) {
   const sections = [
     { label: 'What it is', icon: <Lightbulb size={13} />, text: c.what },
     { label: 'How to use it', icon: <ListChecks size={13} />, text: c.how },
-    { label: 'Why it\u2019s here', icon: <Sparkles size={13} />, text: c.why }
+    { label: 'Why it\u2019s here', icon: <Sparkles size={13} />, text: c.why },
+    // Optional concrete example — only shown when the section provides one.
+    ...(c.example ? [{ label: 'For example', icon: <Quote size={13} />, text: c.example, isExample: true }] : [])
   ];
   const dialogRef = useFocusTrap(onClose);
   return (
@@ -74,12 +76,13 @@ function HelpModal({ screen, onClose }) {
 
           <div className="space-y-4">
             {sections.map(s => (
-              <div key={s.label}>
+              <div key={s.label}
+                   style={s.isExample ? { background: T.surfaceWarm, border: `1px solid ${T.border}`, borderRadius: 12, padding: '10px 12px' } : undefined}>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span style={{ color: T.primary }}>{s.icon}</span>
                   <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>{s.label}</div>
                 </div>
-                <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>{s.text}</div>
+                <div className="text-sm leading-relaxed" style={{ color: s.isExample ? T.ink : T.inkSoft }}>{s.text}</div>
               </div>
             ))}
           </div>

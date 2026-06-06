@@ -47,7 +47,7 @@ import { normalizeProfileId, genSalt, hashPassword } from './lib/profile-crypto.
 // (T/IS_DARK) intentionally NOT extracted yet — coupled to A7 (next step).
 import {
   todayStr, spacedRepetitionNext, arraysEqualUnordered, shuffle, parseCsvLine,
-  normalizeStem, stemSimilarity
+  normalizeStem, stemSimilarity, getISOWeek
 } from './lib/utils.js';
 // [A1 slice 49 / tidy-up] quick-practice selection logic extracted.
 import { selectQuickPracticeQuestions } from './lib/quick-practice.js';
@@ -179,6 +179,9 @@ import LearnTopics from './screens/learn-topics.jsx';
 import MyReports from './screens/my-reports.jsx';
 // [A1 slice 28] LearnCards extracted (pairs with LearnTopics; useFgOnDark).
 import LearnCards from './screens/learn-cards.jsx';
+// Session 2, Feature 6 — in-app notification inbox + its storage helpers.
+import NotificationCenter from './screens/notification-center.jsx';
+import { loadNotifications, pushNotification } from './lib/notifications.js';
 // [A1 slice 45] AdminTile no longer referenced by App (now used only inside AdminPanel).
 
 // =====================================================================
@@ -413,12 +416,80 @@ const MEADOW_THEME = {
   }
 };
 
+// ── AZURE — vivid ocean blue / electric teal ─────────────────────────────────
+const AZURE_THEME = {
+  bg: '#F4FCFF', surface: '#FFFFFF', surfaceWarm: '#DDEEF8',
+  ink: '#001A2E', inkSoft: '#0A2D45', muted: '#4A7A90',
+  primary: '#0080FF', primarySoft: '#2E9FFF',
+  accent: '#E07000', accentSoft: '#F08A00',
+  success: '#1B7A3E', successSoft: '#E5F5EC',
+  error: '#C41E3A', errorSoft: '#FDE8EC',
+  border: '#9AD8F0', borderSoft: '#CBF0FF',
+  sec: { quick:'#0080FF', topic:'#E07000', mock:'#1B7A3E', advanced:'#001A2E', learn:'#0055D4', revision:'#6A2FA0', library:'#007A6A', stats:'#005AC0' }
+};
+
+// ── AMETHYST — electric violet / vivid purple ─────────────────────────────────
+const AMETHYST_THEME = {
+  bg: '#FAF6FF', surface: '#FFFFFF', surfaceWarm: '#EDE0FF',
+  ink: '#14002E', inkSoft: '#280050', muted: '#7A5A9A',
+  primary: '#8B00FF', primarySoft: '#A830FF',
+  accent: '#C8840A', accentSoft: '#E09A10',
+  success: '#1A7A40', successSoft: '#E5F5EC',
+  error: '#B8001E', errorSoft: '#FFE8EC',
+  border: '#D4AAFF', borderSoft: '#EADAFF',
+  sec: { quick:'#8B00FF', topic:'#C8840A', mock:'#1A7A40', advanced:'#14002E', learn:'#A020E0', revision:'#6000C0', library:'#007A6A', stats:'#0050A0' }
+};
+
+// ── FUCHSIA — vivid hot pink / electric magenta ───────────────────────────────
+const FUCHSIA_THEME = {
+  bg: '#FFF5FA', surface: '#FFFFFF', surfaceWarm: '#FFE0F0',
+  ink: '#2A0015', inkSoft: '#450025', muted: '#9A5070',
+  primary: '#E8007A', primarySoft: '#FF2090',
+  accent: '#6A00CC', accentSoft: '#8820E0',
+  success: '#1A7A3A', successSoft: '#E5F5EC',
+  error: '#CC001A', errorSoft: '#FFE5EA',
+  border: '#FFB0D8', borderSoft: '#FFD5EC',
+  sec: { quick:'#E8007A', topic:'#6A00CC', mock:'#1A7A3A', advanced:'#2A0015', learn:'#FF2090', revision:'#8820E0', library:'#007A6A', stats:'#0050A0' }
+};
+
+// ── JADE — vivid emerald / bright forest green ────────────────────────────────
+const JADE_THEME = {
+  bg: '#F2FDF7', surface: '#FFFFFF', surfaceWarm: '#D4F5E4',
+  ink: '#001810', inkSoft: '#042E1A', muted: '#3A7A58',
+  primary: '#00A84A', primarySoft: '#00CC5A',
+  accent: '#8A00C0', accentSoft: '#A820E0',
+  success: '#006830', successSoft: '#D5F2E3',
+  error: '#C0001E', errorSoft: '#FFE5EA',
+  border: '#7ADCAA', borderSoft: '#BAEECE',
+  sec: { quick:'#00A84A', topic:'#8A00C0', mock:'#006830', advanced:'#001810', learn:'#00CC5A', revision:'#00608A', library:'#005A80', stats:'#2A6A9A' }
+};
+
+// ── MIDNIGHT — newspaper · pure white, only blacks & greys ───────────────────
+// Strictly zero hue. Every token is a shade of grey between #000 and #FFF.
+// Correct/wrong feedback uses value contrast: near-black = correct, mid-grey = wrong.
+// NOT IS_DARK — it is a light-family theme (themeMode !== 'dark').
+const MIDNIGHT_THEME = {
+  bg: '#FFFFFF', surface: '#FFFFFF', surfaceWarm: '#F5F5F5',
+  ink: '#000000', inkSoft: '#1A1A1A', muted: '#888888',
+  primary: '#000000', primarySoft: '#222222',
+  accent: '#555555', accentSoft: '#777777',
+  success: '#111111', successSoft: '#EEEEEE',
+  error: '#AAAAAA', errorSoft: '#F5F5F5',
+  border: '#CCCCCC', borderSoft: '#E8E8E8',
+  sec: { quick:'#000000', topic:'#333333', mock:'#555555', advanced:'#000000', learn:'#222222', revision:'#444444', library:'#666666', stats:'#333333' }
+};
+
 const THEMES = {
   light:   LIGHT_THEME,
   dark:    DARK_THEME,
+  midnight: MIDNIGHT_THEME,
   bloom:   BLOOM_THEME,
   dusk:    DUSK_THEME,
   meadow:  MEADOW_THEME,
+  azure:    AZURE_THEME,
+  amethyst: AMETHYST_THEME,
+  fuchsia:  FUCHSIA_THEME,
+  jade:     JADE_THEME,
 };
 
 // [A1 slice 13] LIGHT_THEMES moved to ./lib/light-themes.js (imported below).
@@ -661,6 +732,65 @@ async function hasSeenOnboarding(profileId) {
 
 async function markOnboardingSeen(profileId) {
   try { await safeStorage.set(`${KEYS.ONBOARDING}:${profileId}`, '1'); } catch (e) {}
+}
+
+// ===== Session 5 — Web Push (opt-in, piggybacks on the daily reminder) =====
+// The client VAPID public key is inlined by Vite at build time. When it's
+// absent (push not configured), every helper below no-ops — so the existing
+// local-reminder behaviour is byte-for-byte unchanged. The KV subscription id
+// is cached per device so app-open pings can find the right record.
+const VAPID_PUBLIC_KEY = (typeof import.meta !== 'undefined' && import.meta.env)
+  ? import.meta.env.VITE_VAPID_PUBLIC_KEY : undefined;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+async function subscribeToPush(reminderTime) {
+  try {
+    if (!VAPID_PUBLIC_KEY) return null;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') return null;
+    if (Notification.permission !== 'granted') {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') return null;
+    }
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+    }
+    const res = await fetch('/api/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub, reminderTime: reminderTime || '20:00' }),
+    });
+    if (!res.ok) return null;
+    const { id } = await res.json();
+    if (id) { try { await safeStorage.set(KEYS.PUSH_SUB_ID, id); } catch (e) {} }
+    return id || null;
+  } catch (e) { return null; }
+}
+
+async function pingActive() {
+  try {
+    if (!VAPID_PUBLIC_KEY) return;
+    const r = await safeStorage.get(KEYS.PUSH_SUB_ID);
+    const id = r && r.value;
+    if (!id) return;
+    await fetch('/api/active', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId: id }),
+    });
+  } catch (e) {}
 }
 
 // =====================================================================
@@ -1611,6 +1741,10 @@ export default function App() {
   const [sessionResolving, setSessionResolving] = useState(true);
   const [authInitialMode, setAuthInitialMode] = useState('create');
   const [isAdmin, setIsAdmin] = useState(false);
+  // Feature 4 — weekly summary dismissal (per ISO week, stored locally).
+  const [weeklySummaryDismissed, setWeeklySummaryDismissed] = useState(false);
+  // Feature 6 — unread notification badge count for the Home bell.
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [banks, setBanks] = useState([]);
   const [banksLoading, setBanksLoading] = useState(false);
   const [themeMode, setThemeMode] = useState('light');
@@ -2500,6 +2634,9 @@ export default function App() {
 
   const handleLogout = useCallback(async () => {
     await saveSession(null);
+    // Session 4, Item 4 — drop admin privilege on logout/switch so it never
+    // leaks into the next profile loaded in the same JS session.
+    setIsAdmin(false);
     // GUEST MODE (Phase A): logging out lands in guest mode (not the old
     // wall). Load any prior guest-local blob so a returning guest keeps their
     // separate guest progress; the account's data is untouched in storage.
@@ -2698,6 +2835,7 @@ export default function App() {
         if (grant !== 'granted') enabled = false; // can't enable without permission
       }
     }
+    let effTime = patch.time || '20:00';
     setData(prev => {
       const cur = (prev.preferences && prev.preferences.dailyReminder) || {};
       const merged = {
@@ -2705,8 +2843,13 @@ export default function App() {
         time: patch.time || cur.time || '20:00',
         lastNotified: cur.lastNotified || null
       };
+      effTime = merged.time; // capture freshest time for the push subscription
       return { ...prev, preferences: { ...(prev.preferences || {}), dailyReminder: merged } };
     });
+    // Session 5 — when reminders are on + permission granted, (re)register the
+    // Web Push subscription so the cron can reach this device in the background.
+    // No-ops entirely when VAPID isn't configured (subscribeToPush guards that).
+    if (enabled === true && grant === 'granted') { subscribeToPush(effTime); }
     return grant;
   }, []);
 
@@ -2745,6 +2888,14 @@ export default function App() {
         const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null;
         if (reg && reg.showNotification) await reg.showNotification('NORCET Prep', opts);
         else new Notification('NORCET Prep', opts);
+        // Feature 7 — also log the reminder into the in-app Notification Center
+        // (Feature 6), so it's visible even if the OS notification was missed.
+        await pushNotification({
+          type: 'daily_reminder',
+          title: 'Time to study! 📚',
+          body: 'Your NORCET prep session is waiting. Even 15 minutes of focused practice counts.',
+          action: null,
+        });
         setData(prev => ({
           ...prev,
           preferences: {
@@ -3012,9 +3163,56 @@ export default function App() {
   }, [themeMode]);
 
   const setColorTheme = useCallback(async (id) => {
-    if (!LIGHT_THEMES.find(t => t.id === id)) return;
+    if (!THEMES[id]) return;
     setThemeMode(id);
     await saveThemeMode(id);
+  }, []);
+
+  // Feature 4 — load the dismissed-week marker once at boot; if it matches the
+  // current ISO week, the weekly summary stays hidden until next Monday.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await safeStorage.get(KEYS.WEEKLY_SUMMARY_DISMISSED);
+        if (!cancelled && r && r.value === getISOWeek()) setWeeklySummaryDismissed(true);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const dismissWeeklySummary = useCallback(async () => {
+    setWeeklySummaryDismissed(true);
+    try { await safeStorage.set(KEYS.WEEKLY_SUMMARY_DISMISSED, getISOWeek()); } catch (e) {}
+  }, []);
+
+  // Feature 6 — keep the Home bell badge accurate. Recompute the unread count
+  // from storage on mount and on every navigation (so it refreshes when the
+  // user returns from the Notification Center after marking things read).
+  useEffect(() => {
+    loadNotifications().then(list => {
+      setUnreadNotifCount(list.filter(n => !n.read).length);
+    }).catch(() => {});
+  }, [nav.screen]);
+
+  // Session 5 — tell the server this device opened today (so the cron skips
+  // it). Fire-and-forget on mount; no-ops when push isn't configured / no sub.
+  useEffect(() => { pingActive(); }, []);
+
+  // Session 4, Item 2 — blur the whole app while it's backgrounded / unfocused.
+  // (Named visibilitychange handler so cleanup removes the SAME reference.)
+  useEffect(() => {
+    const blur = () => document.body.classList.add('app-blurred');
+    const unblur = () => document.body.classList.remove('app-blurred');
+    const onVis = () => { document.hidden ? blur() : unblur(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('blur', blur);
+    window.addEventListener('focus', unblur);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('blur', blur);
+      window.removeEventListener('focus', unblur);
+    };
   }, []);
 
   const dismissWelcome = useCallback(async () => {
@@ -3087,9 +3285,28 @@ export default function App() {
     return provide(
       <div className="font-body min-h-screen flex items-center justify-center" style={{ background: T.bg }}>
         <style>{fontStyles}</style>
-        <div className="text-center">
-          <div className="font-display text-2xl" style={{ color: T.primary }}>NORCET</div>
-          <div className="text-xs mt-2" style={{ color: T.muted }}>loading your progress…</div>
+        <div className="text-center px-8 max-w-sm mx-auto">
+
+          {/* App name */}
+          <div className="font-display text-3xl font-semibold mb-1" style={{ color: T.primary }}>NORCET prep</div>
+
+          {/* Thin accent rule */}
+          <div className="mx-auto mb-6 mt-3 rounded-full"
+               style={{ width: 36, height: 2, background: T.primary, opacity: 0.3 }} />
+
+          {/* Motivational quote */}
+          <p className="text-sm leading-relaxed italic mb-8" style={{ color: T.inkSoft }}>
+            Remember, it's never where you started,<br />
+            it's always where you finished.
+          </p>
+
+          {/* Animated loading dots */}
+          <div className="flex items-center justify-center gap-1.5">
+            <span className="loading-dot w-1.5 h-1.5 rounded-full" style={{ background: T.primary }} />
+            <span className="loading-dot w-1.5 h-1.5 rounded-full" style={{ background: T.primary }} />
+            <span className="loading-dot w-1.5 h-1.5 rounded-full" style={{ background: T.primary }} />
+          </div>
+
         </div>
       </div>
     );
@@ -3183,6 +3400,9 @@ export default function App() {
     <div className="font-body min-h-screen" style={{ background: T.bg, color: T.ink }}>
       <style>{fontStyles}</style>
 
+      {/* Session 4, Item 2 — blur overlay (CSS-toggled via body.app-blurred) */}
+      <div id="app-blur-overlay" aria-hidden="true" />
+
       {bridgeBanner}
 
       {/* P19 — in-app PWA update toast. Rendered once here so it can surface
@@ -3223,6 +3443,11 @@ export default function App() {
               onDismissReviewToday={dismissReviewToday}
               onShowReviewInfo={() => requestHelp({ screen: 'Spaced revision' })}
               onOpenMenu={() => setDrawerOpen(true)}
+              weeklySummaryDismissed={weeklySummaryDismissed}
+              dismissWeeklySummary={dismissWeeklySummary}
+              onOpenNotifications={() => setNav({ screen: 'notifications' })}
+              unreadNotifCount={unreadNotifCount}
+              onNotifRead={() => setUnreadNotifCount(0)}
               onNavigate={handleHomeNavigate} />
       )}
 
@@ -3231,6 +3456,13 @@ export default function App() {
                    seenMap={data.feedbackRepliesSeen}
                    onRefresh={refreshMyReports}
                    onBack={goHome} />
+      )}
+
+      {nav.screen === 'notifications' && (
+        <NotificationCenter
+          onBack={goHome}
+          onNavigate={handleHomeNavigate}
+        />
       )}
 
       {nav.screen === 'quick-setup' && (

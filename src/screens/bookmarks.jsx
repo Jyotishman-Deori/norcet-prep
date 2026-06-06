@@ -17,7 +17,7 @@ import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { TTSButton } from '../ui/question-widgets.jsx';
 
 function BookmarksScreen({ onToggleBookmark, onBack }) {
-  const { theme: T } = useTheme();
+  const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const fgOnDark = useFgOnDark();
   // Two-mode component:
@@ -182,6 +182,24 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
               </div>
               <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: T.ink }}>
                 {q.exp}
+              </div>
+            </Card>
+          )}
+
+          {/* Memory tip — same amber treatment as the quiz, shown during revision */}
+          {q.memoryTip && (
+            <Card className="p-4 mb-3 overflow-hidden"
+                  style={{
+                    background: IS_DARK ? '#2A2010' : '#FFF8E8',
+                    border: `1px solid #D4900A33`,
+                    borderLeft: `3px solid #D4900A`
+                  }}>
+              <div className="flex items-center gap-2 mb-2">
+                <Lightbulb size={14} style={{ color: '#D4900A' }} />
+                <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: '#D4900A' }}>Memory tip</div>
+              </div>
+              <div className="text-sm leading-relaxed" style={{ color: T.ink }}>
+                {q.memoryTip}
               </div>
             </Card>
           )}

@@ -6,7 +6,8 @@
         {
           "type": "concept",
           "title": "Normal Vital Sign Ranges (Adult)",
-          "body": "Pulse: 60–100 bpm\nRespiratory rate: 12–20 /min\nBP: <120/80 ideal\nTemperature: 36.5–37.5 °C orally\nSpO₂: 95–100%\n\nKnow the cut-offs — questions often hide on the borderline values."
+          "body": "Pulse: 60–100 bpm\nRespiratory rate: 12–20 /min\nBP: <120/80 ideal\nTemperature: 36.5–37.5 °C orally\nSpO₂: 95–100%\n\nKnow the cut-offs — questions often hide on the borderline values.",
+          "clinicalNote": "Your post-op patient says they feel their heart racing. You count a pulse of 130 and BP 88/54. Don't chart it and move on — tachycardia plus a falling BP is early shock. Escalate before the numbers get worse."
         },
         {
           "type": "mnemonic",
@@ -23,7 +24,8 @@
             "Hot drink within 15 min → oral temp unreliable",
             "Cold extremity → SpO₂ inaccurate",
             "White-coat HTN → patient nervous in clinic"
-          ]
+          ],
+          "clinicalNote": "An anxious patient in clinic reads 158/96. Before you flag hypertension, sit them quietly for five minutes and recheck on a properly sized cuff — white-coat effect and a small cuff both push the number up falsely."
         },
         {
           "type": "quiz",
@@ -135,7 +137,8 @@
         {
           "type": "concept",
           "title": "DKA vs HHS — How To Tell Them Apart",
-          "body": "DKA (Type 1, younger, acute):\n• Glucose 250–600\n• Severe ketosis ↑↑\n• pH < 7.3 (acidosis)\n• Kussmaul breathing, fruity breath\n• Onset: hours to days\n\nHHS (Type 2, older, slower):\n• Glucose >600 (often >1000)\n• Minimal ketosis\n• pH > 7.3 (no acidosis)\n• Profound dehydration, altered mental state\n• Onset: days to weeks"
+          "body": "DKA (Type 1, younger, acute):\n• Glucose 250–600\n• Severe ketosis ↑↑\n• pH < 7.3 (acidosis)\n• Kussmaul breathing, fruity breath\n• Onset: hours to days\n\nHHS (Type 2, older, slower):\n• Glucose >600 (often >1000)\n• Minimal ketosis\n• pH > 7.3 (no acidosis)\n• Profound dehydration, altered mental state\n• Onset: days to weeks",
+          "clinicalNote": "A young Type 1 diabetic arrives drowsy, breathing deeply, with fruity breath. Think DKA first: check glucose, ketones and pH. The deep 'Kussmaul' breathing is the body dumping acid — never mistake it for simple anxiety."
         },
         {
           "type": "mnemonic",
@@ -185,7 +188,8 @@
         {
           "type": "concept",
           "title": "The \"LASA\" Look-Alike Sound-Alike Drugs",
-          "body": "Common dangerous confusions:\n• Hydralazine vs Hydroxyzine\n• Cefazolin vs Ceftazidime\n• Furosemide vs Torsemide\n• Insulin Humalog vs Humulin\n• Digoxin vs Doxepin\n\nDefences: read label THREE times (pulling, preparing, giving), use generic names, \"tall man\" lettering (HumALOG vs HumULIN), independent double-checks for high-alert drugs."
+          "body": "Common dangerous confusions:\n• Hydralazine vs Hydroxyzine\n• Cefazolin vs Ceftazidime\n• Furosemide vs Torsemide\n• Insulin Humalog vs Humulin\n• Digoxin vs Doxepin\n\nDefences: read label THREE times (pulling, preparing, giving), use generic names, \"tall man\" lettering (HumALOG vs HumULIN), independent double-checks for high-alert drugs.",
+          "clinicalNote": "You're handed an order for 'hydroxyzine' but the chart context screams cardiac. Stop — hydralazine and hydroxyzine are a classic LASA pair. Read back the indication, not just the name, before you give it."
         },
         {
           "type": "mnemonic",
@@ -242,7 +246,8 @@
         {
           "type": "concept",
           "title": "General Danger Signs in a Sick Child",
-          "body": "Refer URGENTLY if a child:\n• Is unable to drink or breastfeed\n• Vomits everything\n• Has had convulsions\n• Is lethargic or unconscious\n\nIMNCI uses a colour triage: PINK = urgent referral, YELLOW = treat at facility, GREEN = home care/advice."
+          "body": "Refer URGENTLY if a child:\n• Is unable to drink or breastfeed\n• Vomits everything\n• Has had convulsions\n• Is lethargic or unconscious\n\nIMNCI uses a colour triage: PINK = urgent referral, YELLOW = treat at facility, GREEN = home care/advice.",
+          "clinicalNote": "A mother brings a toddler who 'won't drink and vomits everything'. That single sentence is two IMNCI danger signs. Don't wait for a fever spike — danger signs alone mean urgent referral."
         },
         {
           "type": "keypoints",

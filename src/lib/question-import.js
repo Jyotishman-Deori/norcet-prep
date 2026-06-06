@@ -33,6 +33,10 @@ function normalizeQuestion(raw, idPrefix) {
     correct: raw.correct,
     exp: raw.exp.trim(),
     wrong: raw.wrong || {},
+    // Session 1 — optional memory tip (intuition anchor). Accept either the
+    // CSV column `memory_tip` or a JSON `memoryTip` field; omit when blank.
+    ...((raw.memoryTip || raw.memory_tip) && String(raw.memoryTip || raw.memory_tip).trim()
+        ? { memoryTip: String(raw.memoryTip || raw.memory_tip).trim() } : {}),
     ...(raw.difficulty ? { difficulty: raw.difficulty } : {}),
     ...(raw.source ? { source: String(raw.source).trim() } : {}),
     // P17 — preserve an optional image URL / data-URI if the bank provides one.

@@ -35,6 +35,10 @@ export default defineConfig({
         ]
       },
       workbox: {
+        // Session 5 — pull in the Web Push handlers (push + notificationclick).
+        // public/push-sw.js is copied to the dist root, so the generated SW can
+        // importScripts() it without disturbing the precaching strategy.
+        importScripts: ['push-sw.js'],
         // Precache everything Vite emits. globPatterns is the source of truth
         // for what's available offline on first visit.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff,woff2}'],

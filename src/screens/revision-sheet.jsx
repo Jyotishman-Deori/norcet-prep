@@ -9,7 +9,7 @@
 // topicName/Color/Icon from lib/topics; TTSButton from ui/question-widgets.
 // =====================================================================
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Printer, CalendarDays, Clock, X, ChevronDown, ChevronUp, Bookmark, Check } from 'lucide-react';
+import { Printer, CalendarDays, Clock, X, ChevronDown, ChevronUp, Bookmark, Check, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
@@ -29,7 +29,7 @@ const PRINT_STYLES = `
 `;
 
 function RevisionSheet({ onLogVisit, onBack }) {
-  const { theme: T } = useTheme();
+  const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const [includeWrong, setIncludeWrong] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
@@ -344,6 +344,21 @@ function RevisionSheet({ onLogVisit, onBack }) {
                             <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: T.muted }}>Explanation</div>
                             <div className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: T.inkSoft }}>{q.exp}</div>
                           </div>
+
+                          {q.memoryTip && (
+                            <div className="mt-3 rounded-lg p-3 overflow-hidden"
+                                 style={{
+                                   background: IS_DARK ? '#2A2010' : '#FFF8E8',
+                                   border: `1px solid #D4900A33`,
+                                   borderLeft: `3px solid #D4900A`
+                                 }}>
+                              <div className="flex items-center gap-1.5 mb-1.5">
+                                <Lightbulb size={12} style={{ color: '#D4900A' }} />
+                                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: '#D4900A' }}>Memory tip</div>
+                              </div>
+                              <div className="text-sm leading-relaxed" style={{ color: T.ink }}>{q.memoryTip}</div>
+                            </div>
+                          )}
 
                           {q.wrong && Object.keys(q.wrong).length > 0 && (
                             <div className="pt-3 mt-3 border-t" style={{ borderColor: T.borderSoft }}>

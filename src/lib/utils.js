@@ -115,3 +115,13 @@ export function relativeTimeShort(ts, now) {
 }
 
 export function clampNum(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+// Session 1/2 — ISO-8601 week string, e.g. "2026-W23". Single source of truth
+// shared by the Weekly Summary card (Home) and its dismiss key (App). Pure.
+export function getISOWeek(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return `${d.getUTCFullYear()}-W${String(Math.ceil((((d - yearStart) / 86400000) + 1) / 7)).padStart(2, '0')}`;
+}

@@ -13,6 +13,14 @@ export const fontStyles = `
 .anim-scalein { animation: scaleIn 0.25s ease-out both; }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+/* Session 0 — branded loading splash: three staggered bouncing dots. */
+@keyframes loadingDot {
+  0%, 80%, 100% { opacity: 0.2; transform: translateY(0); }
+  40%           { opacity: 1;   transform: translateY(-4px); }
+}
+.loading-dot { display: inline-block; animation: loadingDot 1.4s ease-in-out infinite; }
+.loading-dot:nth-child(2) { animation-delay: 0.2s; }
+.loading-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes slideInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes slideInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
 .anim-slide-next { animation: slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both; }
@@ -113,4 +121,19 @@ export const fontStyles = `
 ::-webkit-scrollbar-thumb { background: var(--sb-thumb, rgba(120,120,120,0.4)); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover, rgba(120,120,120,0.6)); background-clip: padding-box; }
 ::-webkit-scrollbar-corner { background: transparent; }
+
+/* ── App blur overlay — covers screen when the app loses focus (Session 4) ──
+   Prevents shoulder-surfing / screen-recording of question content while the
+   app is backgrounded. Lifts instantly on return. */
+#app-blur-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  backdrop-filter: blur(18px) brightness(0.92);
+  -webkit-backdrop-filter: blur(18px) brightness(0.92);
+  background: rgba(255,255,255,0.45);
+  pointer-events: none;
+}
+body.app-blurred #app-blur-overlay { display: block; }
 `;

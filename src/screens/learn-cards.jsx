@@ -8,7 +8,7 @@
 // the slice-26 LearnTopics; topicName from lib/topics, lazy cards via useContent.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { BookOpen, Sparkles, ListChecks, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft } from 'lucide-react';
+import { BookOpen, Sparkles, ListChecks, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft, Stethoscope } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useContent } from '../lib/content.js';
@@ -184,6 +184,25 @@ function LearnCards({ topicId, subFilter, onBack }) {
                 </>
               ) : (
                 <div className="text-base leading-relaxed whitespace-pre-wrap" style={{ color: T.ink }}>{card.body}</div>
+              )}
+
+              {/* Clinical context — renders below every card type (keypoints,
+                  quiz, concept/mnemonic) when present. Soft-green "hospital"
+                  tint, separated by a hairline divider. Silent when absent. */}
+              {card.clinicalNote && (
+                <>
+                  <div className="mt-5 mb-4" style={{ height: 1, background: T.borderSoft }} />
+                  <div className="rounded-xl p-3.5"
+                       style={{ background: T.successSoft, border: `1px solid ${T.success}30` }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Stethoscope size={13} style={{ color: T.success }} />
+                      <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.success }}>At the bedside</div>
+                    </div>
+                    <div className="text-sm leading-relaxed" style={{ color: T.ink }}>
+                      {card.clinicalNote}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </Card>

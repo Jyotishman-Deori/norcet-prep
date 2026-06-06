@@ -8,7 +8,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { safeStorage } from './safe-storage.js';
 
-const CONTENT_VERSION = 1;
+// Bump this whenever any /public/data/*.json content file changes. It is the
+// cache-buster for BOTH the IndexedDB cache key (content:NAME:vN) and the
+// network ?v=N query — without a bump, returning users keep seeing the old
+// cached copy of help/reference/dosage/concept-cards forever.
+// v2: upgraded explanations rollout — refreshed help.json (examples + Knowledge
+//     Map / Previous Year Papers / Exam weightage) and concept-cards.json.
+const CONTENT_VERSION = 2;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',
