@@ -185,6 +185,88 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     }
   }, [data.stats.streakCurrent]);
 
+  // #7 — Exam-countdown REMINDER. Mentor one-liner once the exam is under
+  // 30 days out. Re-checked daily (dedupe 23h) so it surfaces at most once
+  // a day, routing to the high-yield Revision digest.
+  useEffect(() => {
+    const examDate = data.stats.examDate;
+    if (!examDate) return;
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const tgt = new Date(examDate); tgt.setHours(0, 0, 0, 0);
+    const daysLeft = Math.round((tgt - t0) / 86400000);
+    if (daysLeft < 0 || daysLeft > 30) return;
+    const line = daysLeft <= 7
+      ? 'The final stretch — trust your prep and keep the high-yield notes close.'
+      : daysLeft <= 14
+        ? 'Two weeks to go. Tighten up your weak areas and lean on revision.'
+        : 'Under a month left. Steady, focused revision now pays off most.';
+    pushNotification({
+      type: 'exam_countdown',
+      title: daysLeft === 0 ? 'Exam day is here' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} to your exam`,
+      body: line,
+      action: { screen: 'revision-sheet' },
+      dedupeMs: 23 * 60 * 60 * 1000,
+    });
+  }, [data.stats.examDate]);
+
+  // #7 — Weekly INSIGHT + ACHIEVEMENT from the week-over-week snapshot Home
+  // already computes. Slow cadence (dedupe ~6 days) so they read as a weekly
+  // observation, not a daily nag. Gated on enough activity to be meaningful.
+  useEffect(() => {
+    if ((data.stats.totalAttempted || 0) < 10) return;
+    const WEEK = 6 * 24 * 60 * 60 * 1000;
+    const { thisAcc, lastAcc, improvedTopic } = weeklySummary;
+    if (thisAcc != null && lastAcc != null && thisAcc - lastAcc >= 5) {
+      pushNotification({
+        type: 'improvement',
+        title: 'You\u2019re trending up',
+        body: `Your accuracy rose from ${lastAcc}% to ${thisAcc}% week over week. Whatever you changed, it\u2019s working.`,
+        action: { screen: 'stats' },
+        dedupeMs: WEEK,
+      });
+    }
+    if (improvedTopic) {
+      pushNotification({
+        type: 'accuracy_up',
+        title: 'Sharper this week',
+        body: `Your ${topicName(improvedTopic)} accuracy improved noticeably over last week. Nice momentum.`,
+        action: { screen: 'stats' },
+        dedupeMs: WEEK,
+      });
+    }
+  }, [weeklySummary, data.stats.totalAttempted]);
+
+  // #7 — UPDATES category. Admin announcements and "what's new" bank/content
+  // updates also land in the inbox (they keep their own dismissible Home
+  // banners too). De-duped by type over a multi-day window so the same notice
+  // never stacks up; the prominent Home banner remains the primary surface, so
+  // a brand-new notice arriving inside that window simply shows there.
+  useEffect(() => {
+    if (!announcement || !announcement.text) return;
+    if (announcement.id === data.dismissedAnnouncementId) return;
+    pushNotification({
+      type: 'admin',
+      title: announcement.level === 'important' ? 'Important announcement' : 'Announcement',
+      body: announcement.text.slice(0, 240),
+      action: null,
+      dedupeMs: 7 * 24 * 60 * 60 * 1000,
+    });
+  }, [announcement, data.dismissedAnnouncementId]);
+
+  useEffect(() => {
+    if (!whatsNew || whatsNew.length === 0) return;
+    const body = whatsNew.length === 1
+      ? `"${whatsNew[0].name}" was updated to v${whatsNew[0].version}.`
+      : `${whatsNew.length} question banks were updated with new content.`;
+    pushNotification({
+      type: 'feature',
+      title: 'New content available',
+      body,
+      action: { screen: 'library' },
+      dedupeMs: 3 * 24 * 60 * 60 * 1000,
+    });
+  }, [whatsNew]);
+
   // In-app notice when the admin has replied to / resolved the user's feedback.
   const replies = unseenReplies || [];
   const fixedReply = replies.find(r => r.status === 'fixed');
