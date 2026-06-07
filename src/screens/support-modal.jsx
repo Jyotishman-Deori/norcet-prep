@@ -15,8 +15,8 @@ import { Card } from '../ui/primitives.jsx';
 import { encodeQR } from '../lib/qr.js';
 
 // ---- Donate config (OWNER: set DONATE_UPI_ID to a real VPA before deploy) ----
-const DONATE_UPI_ID = 'your-vpa@bank';          // <-- OWNER: set real UPI ID
-const DONATE_QR_URL = '';                        // <-- OWNER (optional): static QR image URL; falls back to a generated QR
+const DONATE_UPI_ID = 'onehalt.in@axl';          // <-- OWNER: set real UPI ID
+const DONATE_QR_URL = '/qr.png';                        // <-- OWNER (optional): static QR image URL; falls back to a generated QR
 const DONATE_PAYEE_NAME = 'NORCET Prep';
 const DONATE_RAZORPAY_URL = '';                  // optional; '' hides the secondary option
 
