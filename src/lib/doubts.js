@@ -24,7 +24,12 @@ export async function loadDoubts(profileId) {
   try {
     const r = await safeStorage.get(`${KEYS.DOUBTS}${profileId}`, false);
     const v = r && r.value ? JSON.parse(r.value) : {};
-    return (v && typeof v === 'object' && !Array.isArray(v)) ? v : {};
+    if (!v || typeof v !== 'object' || Array.isArray(v)) return {};
+    // Drop any null / non-object / id-less entries so a corrupt value can
+    // never reach the selectors (and gets cleaned on the next save).
+    const clean = {};
+    for (const k in v) { const d = v[k]; if (d && typeof d === 'object' && d.id) clean[k] = d; }
+    return clean;
   } catch (e) { return {}; }
 }
 export async function saveDoubts(profileId, map) {
@@ -36,6 +41,7 @@ export function toggleDoubt(map, id, record) {
   const next = { ...(map || {}) };
   if (next[id]) { delete next[id]; }
   else {
+    if (!record) return next; // never write a malformed entry
     next[id] = {
       id,
       topic: record.topic,
@@ -54,7 +60,9 @@ export function setResolved(map, id, resolved) {
   return { ...map, [id]: { ...map[id], resolvedAt: resolved ? Date.now() : null } };
 }
 
-export const listDoubts = (map) => Object.values(map || {});
+// Only ever expose well-formed records — a null / non-object value in the
+// persisted map (corrupt or partial write) must never crash a render.
+export const listDoubts = (map) => Object.values(map || {}).filter(d => d && typeof d === 'object');
 export const unresolved = (map) => listDoubts(map).filter(d => !d.resolvedAt).sort((a, b) => b.createdAt - a.createdAt);
 export const resolved = (map) => listDoubts(map).filter(d => d.resolvedAt).sort((a, b) => (b.resolvedAt || 0) - (a.resolvedAt || 0));
 
