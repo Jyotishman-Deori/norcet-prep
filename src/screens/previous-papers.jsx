@@ -8,6 +8,7 @@ import React from 'react';
 import { ClipboardList, ListChecks, Hourglass, Check, ChevronRight } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 
 function PreviousPapers({ papers, previousPapers, onStart, onBack }) {
   const { theme: T } = useTheme();
@@ -26,10 +27,12 @@ function PreviousPapers({ papers, previousPapers, onStart, onBack }) {
         </div>
 
         {sorted.length === 0 ? (
-          <Card className="p-6 text-center">
-            <ClipboardList size={28} className="mx-auto mb-3" style={{ color: T.muted }} />
-            <div className="text-sm" style={{ color: T.muted }}>No papers available yet.</div>
-          </Card>
+          // #15 — admin-controlled (Type 2): reassuring "coming soon", no CTA.
+          // This state shows when no previous-paper banks have been published.
+          <EmptyState
+            icon={ClipboardList}
+            title="Papers coming soon"
+            text="Official AIIMS NORCET previous year papers will appear here once uploaded." />
         ) : (
           <div className="space-y-2.5">
             {sorted.map(paper => {

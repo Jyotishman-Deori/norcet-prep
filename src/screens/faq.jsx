@@ -10,6 +10,7 @@ import React, { useState, useEffect } from 'react';
 import { ChevronDown, MessageCircle, Send, Shield, Sparkles, Trash2, HelpCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
 import {
   listFaqs, faqCategories, listCommunityQuestions, addCommunityQuestion,
@@ -92,15 +93,14 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
         {faqs === null ? (
           <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
         ) : faqs.length === 0 ? (
-          <div className="text-center py-14 px-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style={{ background: T.surfaceWarm }}>
-              <HelpCircle size={26} style={{ color: T.muted }} />
-            </div>
-            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>No FAQs yet</div>
-            <div className="text-sm" style={{ color: T.muted }}>
-              {isAdmin ? 'Add your first FAQ from the Admin panel → FAQ manager.' : 'Check back soon — answers to common questions will appear here.'}
-            </div>
-          </div>
+          // #15 — admin-controlled (Type 2): "coming soon", no CTA for users.
+          // Shows when zero FAQs exist in the admin panel's FAQ manager.
+          <EmptyState
+            icon={MessageCircle}
+            title="Questions incoming"
+            text={isAdmin
+              ? 'No FAQs yet — add your first from the Admin panel → FAQ manager. It appears here instantly.'
+              : 'The FAQ section is being set up. Check back soon — answers to common questions will appear here.'} />
         ) : (
           <>
             {/* Category chips */}

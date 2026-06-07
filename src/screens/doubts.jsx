@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { Flag, Check, ChevronRight, RotateCcw, HelpCircle } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 import { topicName, topicColor } from '../lib/topics.js';
 import { loadDoubts, saveDoubts, setResolved, unresolved, resolved, groupByTopic, relativeAge } from '../lib/doubts.js';
 
@@ -58,19 +59,20 @@ function DoubtsScreen({ onBack, onNavigate }) {
         </div>
 
         {list.length === 0 ? (
-          <div className="text-center py-14 px-6">
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3" style={{ background: T.surfaceWarm }}>
-              {tab === 'open' ? <HelpCircle size={26} style={{ color: T.muted }} /> : <Check size={26} style={{ color: T.success }} />}
-            </div>
-            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>
-              {tab === 'open' ? 'No open doubts' : 'Nothing resolved yet'}
-            </div>
-            <div className="text-sm" style={{ color: T.muted }}>
-              {tab === 'open'
-                ? 'While reading a concept card, tap the flag on anything that does not click. It will land here.'
-                : 'Once you re-read a flagged point and mark it resolved, it moves here as a record of progress.'}
-            </div>
-          </div>
+          tab === 'open' ? (
+            <EmptyState
+              icon={Flag}
+              title="No doubts flagged yet"
+              text="While reading Revision Notes, tap the flag icon next to anything unclear. It will appear here until you resolve it."
+              actionLabel={onNavigate ? 'Go to Revision Notes' : undefined}
+              onAction={onNavigate ? () => onNavigate({ screen: 'learn-topics' }) : undefined}
+              note="Resolving doubts strengthens your Knowledge Map nodes faster." />
+          ) : (
+            <EmptyState
+              icon={Check}
+              title="Nothing resolved yet"
+              text="Once you re-read a flagged point and mark it resolved, it moves here as a record of progress." />
+          )
         ) : (
           <div className="space-y-5">
             {topics.map(topic => (

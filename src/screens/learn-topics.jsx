@@ -20,7 +20,7 @@ import { buildQuickRevisionPlan, cardBudget, buildRevisionStream, readMinutes } 
 import { loadDoubts, unresolvedCards, unresolvedCount } from '../lib/doubts.js';
 import QuickRevisionView from '../ui/quick-revision-view.jsx';
 
-function LearnTopics({ onPick, onBack, onOpenDoubts, weakTopics = [], dueTopicIds = [], examDaysLeft = null }) {
+function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopics = [], dueTopicIds = [], examDaysLeft = null }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const fgOnDark = useFgOnDark();
@@ -117,7 +117,7 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, weakTopics = [], dueTopicId
             )}
 
             {mode === 'quick' ? (
-              <QuickRevisionView stream={stream} examDaysLeft={examDaysLeft} onPick={onPick} />
+              <QuickRevisionView stream={stream} examDaysLeft={examDaysLeft} onPick={onPick} onStartQuiz={onStartQuickTest} />
             ) : (
               <>
                 {/* Resume banner */}

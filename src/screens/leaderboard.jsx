@@ -8,9 +8,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Trophy } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 import { loadLeaderboard } from '../lib/leaderboard.js';
 
-function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack }) {
+function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, attemptedCount = 0, onStartQuiz }) {
   const { theme: T } = useTheme();
   const [tab, setTab] = useState('week'); // 'week' | 'streak' | 'accuracy'
   const [entries, setEntries] = useState(null); // null = loading
@@ -107,11 +108,14 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack }
         ) : entries === null ? (
           <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
         ) : ranked.length === 0 ? (
-          <Card className="p-6 text-center" style={{ background: T.surfaceWarm }}>
-            <Trophy size={32} className="mx-auto mb-3" style={{ color: T.accent, opacity: 0.6 }} />
-            <div className="font-display text-lg mb-1" style={{ color: T.ink }}>No one here yet</div>
-            <div className="text-sm" style={{ color: T.muted }}>Be the first — finish a quiz and you'll top the board.</div>
-          </Card>
+          <EmptyState
+            icon={Trophy}
+            title="Your name belongs on this board"
+            text="Complete 10 questions to appear on the leaderboard and see how you rank against other NORCET aspirants."
+            progress={`${Math.min(attemptedCount, 10)} / 10 questions completed`}
+            actionLabel={onStartQuiz ? 'Start Practising' : undefined}
+            onAction={onStartQuiz}
+            kmNote />
         ) : (
           <>
             <div className="space-y-2">

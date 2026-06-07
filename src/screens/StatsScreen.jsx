@@ -12,6 +12,7 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 
 function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
   const { theme: T } = useTheme();
@@ -168,17 +169,14 @@ function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
-        <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
-          <BarChart3 size={48} className="mx-auto mb-4" style={{ color: T.muted, opacity: 0.4 }} />
-          <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No data yet</div>
-          <div className="text-sm mb-6" style={{ color: T.muted }}>
-            Practise some questions and your progress, speed, weak areas, and a suggested next step will show up here.
-          </div>
-          {onQuick && (
-            <Button onClick={onQuick} className="inline-flex" icon={<Shuffle size={16} />}>
-              Start Quick test
-            </Button>
-          )}
+        <div className="max-w-md mx-auto px-4 pt-6">
+          <EmptyState
+            icon={BarChart3}
+            title="Your story starts with the first question"
+            text="Attempt a quiz and your accuracy, streak and topic progress will appear here."
+            actionLabel={onQuick ? 'Start a Quick Test' : undefined}
+            onAction={onQuick}
+            note="Every question lights up your Knowledge Map too." />
         </div>
       </div>
     );
