@@ -7,7 +7,7 @@
 // bare-T reader). Render site (SupportHost) unchanged.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { Heart, X, Check } from 'lucide-react';
+import { Heart, X, Check, Copy } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { registerSupportOpener } from '../ui/primitives.jsx';
@@ -16,13 +16,15 @@ import { encodeQR } from '../lib/qr.js';
 
 // ---- Donate config (OWNER: set DONATE_UPI_ID to a real VPA before deploy) ----
 const DONATE_UPI_ID = 'your-vpa@bank';          // <-- OWNER: set real UPI ID
+const DONATE_QR_URL = '';                        // <-- OWNER (optional): static QR image URL; falls back to a generated QR
 const DONATE_PAYEE_NAME = 'NORCET Prep';
 const DONATE_RAZORPAY_URL = '';                  // optional; '' hides the secondary option
 
+// #14 — updated tier amounts (Chai ₹10, Snack ₹20, Treat ₹50).
 const DONATE_AMOUNTS = [
-  { amt: 20, emoji: '\u2615', label: 'Chai' },     // ☕ ₹20
-  { amt: 50, emoji: '\uD83C\uDF55', label: 'Snack' }, // 🍕 ₹50
-  { amt: 100, emoji: '\uD83C\uDF89', label: 'Treat' }, // 🎉 ₹100
+  { amt: 10, emoji: '\u2615', label: 'Chai' },        // ☕ ₹10
+  { amt: 20, emoji: '\uD83E\uDDC6', label: 'Snack' }, // 🧆 ₹20
+  { amt: 50, emoji: '\uD83C\uDF8A', label: 'Treat' }, // 🎊 ₹50
 ];
 
 function buildUpiLink(amount) {
@@ -111,19 +113,23 @@ function SupportModal({ onClose }) {
       <Card className="w-full max-w-sm anim-scalein max-h-[88vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}>
         <div className="p-5" ref={dialogRef} role="dialog" aria-modal="true" aria-label="Support the app">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: T.primary + '15' }}>
-                <Heart size={17} style={{ color: T.primary }} />
+          {/* #14 — premium gradient header banner */}
+          <div className="rounded-2xl px-4 py-3.5 mb-4 flex items-start justify-between gap-3"
+               style={{ background: `linear-gradient(135deg, ${T.primary}1F 0%, ${T.accent}12 100%)`, border: `1px solid ${T.border}` }}>
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0"
+                    style={{ background: T.primary + '22' }}>
+                <Heart size={20} style={{ color: T.primary }} fill={T.primary} />
               </span>
-              <div className="font-display text-lg font-semibold truncate" style={{ color: T.ink }}>
-                Keep NORCET Prep free {'\u2615'}
+              <div className="min-w-0">
+                <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>Keep NORCET Prep free</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Free {'\u00b7'} Ad-free {'\u00b7'} Always</div>
               </div>
             </div>
             <button onClick={onClose} aria-label="Close"
-                    className="no-tap-highlight p-1.5 -m-1.5 rounded-lg active:bg-black/5 flex-shrink-0">
-              <X size={18} style={{ color: T.muted }} />
+                    className="no-tap-highlight w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: T.surfaceWarm }}>
+              <X size={16} style={{ color: T.muted }} />
             </button>
           </div>
 
@@ -178,11 +184,13 @@ function SupportModal({ onClose }) {
                     <div className="text-[11px] mb-2 text-center" style={{ color: T.muted }}>
                       On a computer? Scan with any UPI app:
                     </div>
-                    <QRCode value={upiLink} px={172} />
+                    {DONATE_QR_URL
+                      ? <img src={DONATE_QR_URL} alt="UPI QR code" className="w-44 h-44 rounded-xl object-contain" style={{ border: `1px solid ${T.border}`, background: '#FFF' }} />
+                      : <QRCode value={upiLink} px={172} />}
                     <button onClick={onCopyId}
                             className="no-tap-highlight pressable mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
                             style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }}>
-                      {copied ? <Check size={13} style={{ color: T.success }} /> : null}
+                      {copied ? <Check size={13} style={{ color: T.success }} /> : <Copy size={13} style={{ color: T.muted }} />}
                       {copied ? 'Copied!' : 'Copy UPI ID: ' + DONATE_UPI_ID}
                     </button>
                   </div>

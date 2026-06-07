@@ -17,13 +17,14 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  AlertCircle, Check, EyeOff, Flag, Layers, Lightbulb, Lock, Plus,
+  AlertCircle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Trash2, Upload, User
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
 import AdminTile from '../ui/admin-tile.jsx';
 import AdminManager from '../ui/admin-manager.jsx';
+import AdminFaqManager from '../ui/admin-faq-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
@@ -474,6 +475,10 @@ function AdminPanel({
     return <AdminManager onBack={backToDash} />;
   }
 
+  if (view === 'faq') {
+    return <AdminFaqManager onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -550,6 +555,15 @@ function AdminPanel({
             hint="Add / remove admins"
             onClick={() => setView('manageAdmins')}
             signal={<ShieldCheck size={18} style={{ color: T.muted }} />} />
+
+          {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
+          <AdminTile
+            icon={<HelpCircle size={22} style={{ color: T.accent }} />}
+            accent={T.accent}
+            label="FAQ manager"
+            hint="Add, edit & order FAQs"
+            onClick={() => setView('faq')}
+            signal={<HelpCircle size={18} style={{ color: T.muted }} />} />
 
           {/* Announcement — post a notice to everyone */}
           <AdminTile

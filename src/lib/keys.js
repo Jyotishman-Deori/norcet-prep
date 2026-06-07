@@ -49,6 +49,9 @@ export const KEYS = {
   profileMeta:   (id)        => `profilemeta:${id}`,
   feedback:      (id)        => `feedback:${id}`,
   myFeedback:    (profileId) => `myfeedback:${profileId}`,
+  // F-F — FAQ entries + community Q&A (shared kv, mirrors feedback()).
+  faq:           (id)        => `faq:${id}`,
+  faqQuestion:   (faqId, qid)=> `faqq:${faqId}:${qid}`,
   bank:          (id)        => `bank:${id}`,
 
   // -- Forward-compat for PROMPT 1 (cloud sync). Not yet used by any
@@ -70,6 +73,8 @@ export const KEY_PREFIXES = {
   PROFILE_META: 'profilemeta:',
   FEEDBACK:     'feedback:',
   MY_FEEDBACK:  'myfeedback:',
+  FAQ:          'faq:',
+  FAQ_Q:        'faqq:',
   BANK:         'bank:',
   // P1 — local cache scan prefix. Used by ErrorBoundary's "Reset device
   // data" button to wipe every per-profile cache in one pass.

@@ -14,7 +14,6 @@ import {
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
-import AdminManager from '../ui/admin-manager.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { LIGHT_THEMES } from '../lib/light-themes.js';
 import { downloadAsFile } from '../lib/utils.js';
@@ -702,7 +701,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               Lock admin
             </Button>
           </Card>
-          <AdminManager />
           </>
         ) : !showAdminForm ? (
           <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => { setShowAdminForm(true); setAdminError(null); }}>

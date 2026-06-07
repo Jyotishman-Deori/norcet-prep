@@ -3856,13 +3856,14 @@ export default function App() {
       )}
 
       {nav.screen === 'dosage' && (
-        <DosagePractice onComplete={completeDosage} onBack={goHome} />
+        <DosagePractice onComplete={completeDosage} onBack={goHome} profile={profile} isAdmin={isAdmin} />
       )}
 
       {nav.screen === 'dosage-results' && (
         <DosageResults results={nav.results} questions={nav.questions} onHome={goHome}
                        displayName={profile ? (profile.displayName || profile.id) : null}
-                       streak={(data && data.stats && data.stats.streakCurrent) || 0} />
+                       streak={(data && data.stats && data.stats.streakCurrent) || 0}
+                       profile={profile} isAdmin={isAdmin} />
       )}
 
       {nav.screen === 'bookmarks-view' && (

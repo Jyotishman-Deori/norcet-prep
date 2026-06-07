@@ -9,8 +9,9 @@ import { Calculator, Check, Eye, SkipForward, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { MotivationCard, ShareScoreButton } from '../ui/result-cards.jsx';
+import HelpfulBulb from '../ui/helpful-bulb.jsx';
 
-function DosageResults({ results, questions, onHome, displayName = null, streak = 0 }) {
+function DosageResults({ results, questions, onHome, displayName = null, streak = 0, profile, isAdmin = false }) {
   const { theme: T } = useTheme();
   // Accuracy is measured only over genuinely attempted questions — skipped and
   // revealed items are study actions, not failures, so they don't drag the score.
@@ -126,6 +127,12 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
           </div>
         </div>
       )}
+
+      {/* #9 — overall: was this dosage session helpful & well structured? */}
+      <Card className="p-4 mb-5">
+        <div className="text-[10px] uppercase tracking-widest font-semibold mb-2.5" style={{ color: T.muted }}>Rate this session</div>
+        <HelpfulBulb voteId="dosagetest" profileId={profile ? profile.id : null} isAdmin={isAdmin} />
+      </Card>
 
       {/* P5 — share the dosage-drill score (over genuinely attempted items). */}
       <div className="space-y-2">

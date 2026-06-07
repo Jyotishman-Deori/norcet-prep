@@ -6,7 +6,7 @@
 // bookmarks count via useData(). open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, Lock, Menu, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, HelpCircle, Layers, Lock, Menu, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 
 function NavDrawer({ open, onClose, onNavigate }) {
@@ -43,7 +43,8 @@ function NavDrawer({ open, onClose, onNavigate }) {
   const tools = [
     { key: 'examdate',  icon: CalendarDays, color: T.primary,      label: 'Exam date', sub: 'Countdown & daily goal',         action: () => go('exam-date') },
     { key: 'reference', icon: FlaskConical, color: T.accent,      label: 'Reference', sub: 'Labs, drugs, values',            action: () => go('reference') },
-    { key: 'revision',  icon: FileText,     color: T.sec.revision,label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet') }
+    { key: 'revision',  icon: FileText,     color: T.sec.revision,label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet') },
+    { key: 'faq',       icon: HelpCircle,   color: T.primary,     label: 'FAQ & Help', sub: 'Answers + ask a question',     action: () => go('faq') }
   ];
 
   const Item = ({ it }) => {

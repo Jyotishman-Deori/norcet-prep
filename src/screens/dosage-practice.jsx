@@ -14,8 +14,9 @@ import { useContent } from '../lib/content.js';
 import { ContentGate } from '../ui/content-gate.jsx';
 import { shuffle } from '../lib/utils.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import HelpfulBulb from '../ui/helpful-bulb.jsx';
 
-function DosagePractice({ onComplete, onBack }) {
+function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
@@ -208,6 +209,11 @@ function DosagePractice({ onComplete, onBack }) {
                   <div className="text-sm leading-relaxed" style={{ color: T.ink }}>{q.intuition}</div>
                 </div>
               )}
+            </Card>
+
+            {/* #9 — was this explanation helpful? (per dosage question) */}
+            <Card className="p-4">
+              <HelpfulBulb voteId={`dosageq:${q.id}`} profileId={profile ? profile.id : null} isAdmin={isAdmin} />
             </Card>
           </div>
         )}
