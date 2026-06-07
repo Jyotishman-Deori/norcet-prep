@@ -1,0 +1,129 @@
+// =====================================================================
+// src/lib/faq.js  (Feature F-F — FAQ Section)
+// FAQ storage on the SAME shared key-value store as feedback/votes — NO new
+// Supabase tables. Mirrors lib/feedback.js exactly.
+//
+//   faq:{id}              -> { id, question, answer, category, order,
+//                              createdAt, updatedAt }   (admin-authored)
+//   faqq:{faqId}:{qid}    -> { id, faqId, text, authorId, authorName,
+//                              createdAt, reply, repliedAt }  (community Q + 1 admin reply)
+//
+// The "Was this helpful?" bulb reuses lib/helpful-votes.js with scoped ids:
+//   answer  -> voteId `faq:{faqId}`        reply -> voteId `faqr:{questionId}`
+// (both resolve to the existing helpful:/notHelpful: shared keys.)
+// =====================================================================
+import { safeStorage } from './safe-storage.js';
+import { KEYS, KEY_PREFIXES } from './keys.js';
+
+export const newFaqId = () => `faq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+export const newFaqQId = () => `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+
+// Vote-id helpers (so the screen and admin counts agree).
+export const faqAnswerVoteId = (faqId) => `faq:${faqId}`;
+export const faqReplyVoteId = (questionId) => `faqr:${questionId}`;
+
+// ---------- FAQ entries (admin-authored) ----------
+export async function saveFaq(entry) {
+  await safeStorage.set(KEYS.faq(entry.id), JSON.stringify(entry), true);
+}
+
+export async function listFaqs() {
+  let keys = [];
+  try {
+    const r = await safeStorage.list(KEY_PREFIXES.FAQ, true);
+    keys = (r && r.keys) ? r.keys : [];
+  } catch (e) { return []; }
+  const items = await Promise.all(keys.map(async k => {
+    try { const r = await safeStorage.get(k, true); if (r && r.value) return JSON.parse(r.value); } catch (e) {}
+    return null;
+  }));
+  // Sort by explicit order, then newest first as a tie-break.
+  return items.filter(Boolean).sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || (b.createdAt || 0) - (a.createdAt || 0));
+}
+
+export async function createFaq({ question, answer, category, order }) {
+  const entry = {
+    id: newFaqId(),
+    question: (question || '').trim(),
+    answer: (answer || '').trim(),
+    category: (category || 'General').trim() || 'General',
+    order: typeof order === 'number' ? order : Date.now(),
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  await saveFaq(entry);
+  return entry;
+}
+
+export async function updateFaq(entry, patch) {
+  const updated = { ...entry, ...patch, updatedAt: Date.now() };
+  await saveFaq(updated);
+  return updated;
+}
+
+export async function deleteFaq(id) {
+  try { await safeStorage.delete(KEYS.faq(id), true); } catch (e) {}
+  // Best-effort: remove its community questions too (don't leave orphans).
+  try {
+    const r = await safeStorage.list(`${KEY_PREFIXES.FAQ_Q}${id}:`, true);
+    const keys = (r && r.keys) ? r.keys : [];
+    await Promise.all(keys.map(k => safeStorage.delete(k, true).catch(() => {})));
+  } catch (e) {}
+}
+
+export function faqCategories(faqs) {
+  const set = [];
+  for (const f of (faqs || [])) { if (f.category && !set.includes(f.category)) set.push(f.category); }
+  return set;
+}
+
+// ---------- Community Q&A under a FAQ ----------
+export async function listCommunityQuestions(faqId) {
+  let keys = [];
+  try {
+    const r = await safeStorage.list(`${KEY_PREFIXES.FAQ_Q}${faqId}:`, true);
+    keys = (r && r.keys) ? r.keys : [];
+  } catch (e) { return []; }
+  const items = await Promise.all(keys.map(async k => {
+    try { const r = await safeStorage.get(k, true); if (r && r.value) return JSON.parse(r.value); } catch (e) {}
+    return null;
+  }));
+  // Chat order: oldest first.
+  return items.filter(Boolean).sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+}
+
+export async function addCommunityQuestion(faqId, { text, authorId, authorName }) {
+  const entry = {
+    id: newFaqQId(),
+    faqId,
+    text: (text || '').trim(),
+    authorId: authorId || null,
+    authorName: authorName || 'Student',
+    createdAt: Date.now(),
+    reply: null,
+    repliedAt: null,
+  };
+  await safeStorage.set(KEYS.faqQuestion(faqId, entry.id), JSON.stringify(entry), true);
+  return entry;
+}
+
+export async function replyToCommunityQuestion(entry, replyText) {
+  const updated = { ...entry, reply: (replyText || '').trim(), repliedAt: Date.now() };
+  await safeStorage.set(KEYS.faqQuestion(entry.faqId, entry.id), JSON.stringify(updated), true);
+  return updated;
+}
+
+export async function deleteCommunityQuestion(faqId, qid) {
+  try { await safeStorage.delete(KEYS.faqQuestion(faqId, qid), true); } catch (e) {}
+}
+
+// ---------- Helpful counts for an arbitrary vote-id (admin view) ----------
+// Reads the SAME shared keys helpful-votes.js writes, so counts stay in sync.
+export async function loadHelpfulCounts(voteId) {
+  const read = async (key) => {
+    try { const r = await safeStorage.get(key, true); if (r && r.value) { const a = JSON.parse(r.value); if (Array.isArray(a)) return a.length; } } catch (e) {}
+    return 0;
+  };
+  const [yes, no] = await Promise.all([read(`helpful:${voteId}`), read(`notHelpful:${voteId}`)]);
+  return { yes, no };
+}

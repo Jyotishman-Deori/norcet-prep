@@ -10,7 +10,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
   GraduationCap, Heart, Lock, LogOut, RefreshCw, RotateCcw, Sigma, Trash2,
-  Upload, User, UserPlus
+  Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
@@ -18,6 +18,7 @@ import AdminManager from '../ui/admin-manager.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { LIGHT_THEMES } from '../lib/light-themes.js';
 import { downloadAsFile } from '../lib/utils.js';
+import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
@@ -33,6 +34,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // notes live in a local shared:false blob, not in `data`).
   const [notesMsg, setNotesMsg] = useState(null);
   const notesFileRef = useRef(null);
+  // F-B — pull-to-refresh sound preference (local pref, not in `data`).
+  const [soundOn, setSoundOn] = useState(true);
+  useEffect(() => { let on = true; loadSoundEnabled().then(v => { if (on) setSoundOn(v); }); return () => { on = false; }; }, []);
   const [adminInput, setAdminInput] = useState('');
   const [adminShow, setAdminShow] = useState(false);
   const [adminError, setAdminError] = useState(null);
@@ -378,6 +382,34 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </Card>
           </>
         )}
+
+        {/* F-B — pull-to-refresh sound toggle. Local pref; respects the device
+            media volume (a web app can't read the hardware mute switch). */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sound</div>
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
+              onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+                   style={{ background: T.primary + '20' }}>
+                <Volume2 size={18} style={{ color: T.primary }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Pull-to-refresh sound</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  {soundOn
+                    ? 'A soft sound plays when you pull down to refresh'
+                    : 'Off — refreshing is silent'}
+                </div>
+              </div>
+            </div>
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: soundOn ? T.success : T.border }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: soundOn ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
+          </div>
+        </Card>
 
         {/* Appearance */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Appearance</div>

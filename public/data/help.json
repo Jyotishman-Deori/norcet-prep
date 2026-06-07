@@ -8,10 +8,10 @@
   },
   "Learn — topics": {
     "title": "Learn topic wise",
-    "what": "The theory side of the app — short concept cards grouped by topic and then by sub-module. Not a quiz. Each topic (Anatomy, Pharmacology, etc.) is broken into small modules like “Cardiovascular” or “Medication Safety”, and each module holds a handful of cards: concepts, mnemonics, key points and the occasional self-check.",
-    "how": "Tap a topic row to expand its modules. From there, use the green Read button to read the whole topic top-to-bottom, or tap a single module to focus on just those few cards. You can collapse a topic by tapping it again.",
+    "what": "Bite-sized concept cards across every topic, in two modes. Study mode lets you read a topic or module top-to-bottom (now with a read-time estimate and a “continue where you left off” resume). Quick Revision mode is an app-curated rapid sweep of the points that matter most for you right now.",
+    "how": "Use the Study / Quick-Revision toggle at the top. In Study mode, tap a topic to expand its modules and Read; the banner jumps you back to where you stopped. In Quick Revision, just scroll the prioritised stream — each card is tagged with why it surfaced, and “Read in context” opens it in the full reader.",
     "why": "Quizzes test what you know; Learn is where you pick up and revise the actual concepts. Skimming a few cards before a topic-wise quiz dramatically improves how much sticks afterwards.",
-    "example": "Before a Pharmacology quiz, you tap the Pharmacology row, open just the “Insulin” module, and read its 5 cards in two minutes. Now when the quiz asks which insulin acts fastest, the answer (lispro/aspart) is already fresh."
+    "example": "With your exam three weeks away, you open Quick Revision: it leads with your weakest topic (tagged “Weak area”), then what’s due, then a high-yield sweep — so 15 minutes between shifts hits exactly what moves your score."
   },
   "Learn — cards": {
     "title": "Concept cards",
@@ -236,5 +236,26 @@
     "how": "Scan the ranked bars — the longest carry the most exam weight. Rising weightage over the years shows in red, declining in blue. Begin with the High-leverage list: those topics give the biggest score return for the time you put in, because the app computes leverage as weightage × your remaining gap.",
     "why": "Topics are not worth equal study time. Ten minutes on a high-weight topic you’re weak in moves your score far more than polishing a minor topic you already ace — this screen tells you exactly where that effort sits.",
     "example": "Community Health makes up ~18% of the exam but you’re at 55% accuracy, so it tops the High-leverage list — a clear signal to study it before a low-weight topic you’re already scoring 90% on."
+  },
+  "Study methods": {
+    "title": "Study Methods",
+    "what": "A short, revisitable guide to six science-backed ways to study — how to read, understand, remember, and lock in material. It's a permanent reference, not a one-time tour, and each method links straight to the matching tool in the app.",
+    "how": "Scroll the numbered list (the order is a journey from first approach to long-term retention) and tap any method to open its card. Read the idea and the one key stat, then use “Go to feature” to jump into the tool that lets you actually do it, or “Next method” to keep moving. Rows you've opened get a checkmark.",
+    "why": "Most students study hard but were never taught how. These methods are the difference between re-reading (which feels productive but isn't) and retrieval (which actually builds memory) — small changes that move your score more than extra hours do.",
+    "example": "You open “How to Remember What You Read,” learn that active recall beats re-reading, then tap “Start a quick test” to close your notes and actually retrieve — turning the idea into practice in one tap."
+  },
+  "Doubts": {
+    "title": "My Doubts",
+    "what": "A review space for anything you flagged as unclear while reading concept cards. Each flagged point is saved here with its topic and age, split into Unresolved and Resolved, so nothing you struggled with quietly slips away.",
+    "how": "While reading, tap the small flag on any bullet or card that doesn't click — it lands here. Open this screen to re-read them (“Go to topic” jumps you back), then tap “Mark resolved” once it makes sense. Resolved doubts are archived, never deleted, as a record of progress.",
+    "why": "The things you half-understand are exactly what the exam catches. Flagging them in one tap — no typing, no friction — turns vague unease into a concrete list you can actually clear, and they jump to the top of Quick Revision until you do.",
+    "example": "Reading pharmacology, a line about insulin onset doesn't quite land, so you tap its flag. Two days later it's at the top of Quick Revision and listed here; you re-read, it clicks, and you mark it resolved."
+  },
+  "FAQ": {
+    "title": "FAQ & Help",
+    "what": "Answers to common questions about the app and NORCET prep, in a chat-style layout. Under every answer is a public community thread where you can ask a follow-up and an admin replies — visible to everyone, so one student's question helps the rest.",
+    "how": "Filter by category if you like, then tap a question to open its answer. Tap the bulb to say whether it helped. Still stuck? Type a follow-up under that answer; admins reply with an “Admin” badge. Questions and replies here are public.",
+    "why": "Most doubts are shared — surfacing answers in one searchable place saves everyone time and keeps support out of scattered DMs. The helpful bulb tells the team which answers are landing and which need work.",
+    "example": "You wonder how negative marking works in mock tests, find that exact FAQ, tap the bulb because it helped — and ask a follow-up about partial marking, which an admin answers for everyone to see."
   }
 }

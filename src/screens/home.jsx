@@ -8,7 +8,7 @@
 // and presentation flags stay props.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Flag, Flame, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Flag, Flame, GraduationCap, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
@@ -870,6 +870,26 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                     style={{ background: T.primary, color: '#FFF' }}>NEW</span>
             </div>
             <div className="text-xs" style={{ color: T.muted }}>Your syllabus as a graph {'\u00b7'} unlock topics as you practise</div>
+          </div>
+          <ChevronRight size={20} style={{ color: T.muted }} />
+        </div>
+      </Card>
+
+      {/* F-A — Study Methods. A mentor-style guide to HOW to study, linking
+          straight into the matching tool. Sits with the headline features. */}
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'study-methods' })}
+            style={{ borderTop: `3px solid ${T.primary}` }}>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
+            <GraduationCap size={20} color="#FFF" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5">
+              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Study Methods</div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                    style={{ background: T.primary, color: '#FFF' }}>NEW</span>
+            </div>
+            <div className="text-xs" style={{ color: T.muted }}>6 science-backed ways to study {'\u00b7'} and how to use them here</div>
           </div>
           <ChevronRight size={20} style={{ color: T.muted }} />
         </div>

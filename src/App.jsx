@@ -92,6 +92,8 @@ import Quiz from './screens/quiz.jsx';
 import { NavDrawer } from './ui/nav-drawer.jsx';
 import Home from './screens/home.jsx';
 import { getDueQuestions } from './lib/selectors.js';
+// [F-D] weak-topic ranking for Quick Revision.
+import { getWeakTopics } from './lib/topics.js';
 // [A1 s4 / batch 1b slice 11] bank permission helpers + Library screen extracted.
 import { isBankOwner, canSeeBank } from './lib/banks.js';
 // [A1 slice 48 / tidy-up] bank shared-storage CRUD extracted.
@@ -129,6 +131,14 @@ import RevisionSheet from './screens/revision-sheet.jsx';
 import MindmapNodePopup from './screens/mindmap-node-popup.jsx';
 // [A1 slice 34] KnowledgeMap (+its mindmap subsystem) extracted (data/allQuestions->useData, profileId->useProfile, T/IS_DARK/fgOnDark via hooks; imports lib/kmap + the popup).
 import KnowledgeMap from './screens/knowledge-map.jsx';
+// [F-A] Study Methods section.
+import StudyMethods from './screens/study-methods.jsx';
+// [F-B] Global pull-to-refresh overlay.
+import PullToRefresh from './ui/pull-to-refresh.jsx';
+// [F-E] Doubts review screen.
+import DoubtsScreen from './screens/doubts.jsx';
+// [F-F] FAQ section (user side).
+import FAQScreen from './screens/faq.jsx';
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
 import WeightageScreen from './screens/weightage.jsx';
 // [A1 slice 36] CoverageMap extracted (data/allQuestions->useData).
@@ -182,6 +192,8 @@ import LearnCards from './screens/learn-cards.jsx';
 // Session 2, Feature 6 — in-app notification inbox + its storage helpers.
 import NotificationCenter from './screens/notification-center.jsx';
 import { loadNotifications, pushNotification } from './lib/notifications.js';
+// [F-E] stale-doubt nudge.
+import { loadDoubts as loadDoubtsForNudge, staleUnresolvedCount } from './lib/doubts.js';
 // [A1 slice 45] AdminTile no longer referenced by App (now used only inside AdminPanel).
 
 // =====================================================================
@@ -792,6 +804,37 @@ async function pingActive() {
     });
   } catch (e) {}
 }
+
+// F-B — shape a raw stored/cloud data blob into the in-memory `data` object,
+// mirroring the boot loader's merge + compaction. Pure (module scope) so
+// pull-to-refresh can re-pull and re-commit WITHOUT re-running the fragile
+// boot effect. Kept in sync with the boot's `loaded` shape.
+function hydrateLoaded(rawData) {
+  const migrated = runMigrations(rawData || {});
+  const loaded = {
+    ...DEFAULT_DATA,
+    ...migrated,
+    customQuestions: Array.isArray(migrated.customQuestions) ? migrated.customQuestions : DEFAULT_DATA.customQuestions,
+    bookmarks: Array.isArray(migrated.bookmarks) ? migrated.bookmarks : DEFAULT_DATA.bookmarks,
+    stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
+    advancedTestHistory: migrated.advancedTestHistory || [],
+    bankVersionsSeen: migrated.bankVersionsSeen || {},
+    bankPublishedSeen: migrated.bankPublishedSeen || {},
+    disabledBanks: migrated.disabledBanks || {},
+    revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
+    preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
+  };
+  let out = loaded;
+  try { if (needsCompaction(loaded)) out = compactData(loaded); } catch (e) {}
+  return out;
+}
+
+// F-B — screens with custom full-screen gestures or timed flows where a
+// pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
+const PTR_DISABLED_SCREENS = new Set([
+  'quiz', 'advanced-test', 'paper-test', 'dosage', 'knowledge-map', 'results',
+  'advanced-results', 'paper-results', 'dosage-results',
+]);
 
 // =====================================================================
 // FEEDBACK INBOX — shared storage; one key per report
@@ -2019,7 +2062,79 @@ export default function App() {
     return [...SEED_QUESTIONS, ...activeCustom];
   }, [data]);
 
+  // F-A — Study Methods: real, read-only progress signals for the method
+  // rows (never fabricated). Cheap: one pass over history + a due-count.
+  const studyProgress = useMemo(() => {
+    if (!data) return { totalAttempted: 0, accuracy: 0, streakCurrent: 0, dueCount: 0, topicsCovered: 0, totalTopics: 0 };
+    const st = data.stats || {};
+    const att = st.totalAttempted || 0;
+    const topicOf = new Map(allQuestions.map(q => [q.id, q.topic]));
+    const covered = new Set();
+    const hist = data.history || {};
+    for (const qId in hist) {
+      const h = hist[qId];
+      if (h && h.attempts && h.attempts.length) {
+        const t = topicOf.get(qId);
+        if (t) covered.add(t);
+      }
+    }
+    const totalTopics = new Set(allQuestions.map(q => q.topic)).size;
+    return {
+      totalAttempted: att,
+      accuracy: att > 0 ? (st.totalCorrect || 0) / att : 0,
+      streakCurrent: st.streakCurrent || 0,
+      dueCount: getDueQuestions(hist, allQuestions).length,
+      topicsCovered: covered.size,
+      totalTopics,
+    };
+  }, [data, allQuestions]);
+
+  // F-D — ranking signals for Quick Revision (weak topics, due-by-topic, days
+  // to exam). Computed here where data + allQuestions live; passed to LearnTopics.
+  const learnSignals = useMemo(() => {
+    if (!data) return { weakTopics: [], dueTopicIds: [], examDaysLeft: null };
+    const includeGk = !!(data.preferences && data.preferences.includeGkInStats === true);
+    const weakTopics = getWeakTopics(data.history || {}, allQuestions, includeGk);
+    const due = getDueQuestions(data.history || {}, allQuestions);
+    const dueTopicIds = [...new Set(due.map(q => q.topic))];
+    let examDaysLeft = null;
+    const ed = data.stats && data.stats.examDate;
+    if (ed) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const target = new Date(ed + 'T00:00:00');
+      if (!isNaN(target.getTime())) {
+        const d = Math.ceil((target - today) / 86400000);
+        examDaysLeft = d >= 0 ? d : null; // ignore past exam dates
+      }
+    }
+    return { weakTopics, dueTopicIds, examDaysLeft };
+  }, [data, allQuestions]);
+
   const navigate = useCallback((n) => setNav(n), []);
+
+  // F-B — pull-to-refresh action. Signed-in: flush pending local writes, then
+  // re-pull the canonical Supabase copy and re-commit (so changes from another
+  // device / admin content appear). Guest: re-read the local blob. Re-running
+  // the boot is avoided; hydrateLoaded() reuses its exact shaping. Always
+  // resolves so the spinner can complete.
+  const refreshApp = useCallback(async () => {
+    try {
+      if (!profile) return;
+      if (isGuestProfile(profile)) {
+        const g = await loadGuestData();
+        if (g) setData(hydrateLoaded(g));
+      } else {
+        try { await flushPendingSync(); } catch (e) {}
+        const fresh = await loadProfile(profile.id);
+        if (fresh) {
+          setProfile(fresh);
+          setData(hydrateLoaded(fresh.data || {}));
+        }
+      }
+    } catch (e) {
+      try { log.warn('pullRefresh', e); } catch (_) {}
+    }
+  }, [profile]);
 
   // When the screen changes (e.g. completing a test → results), the window can
   // carry over the previous screen's scroll position, so the new page appears
@@ -3199,6 +3314,31 @@ export default function App() {
   // it). Fire-and-forget on mount; no-ops when push isn't configured / no sub.
   useEffect(() => { pingActive(); }, []);
 
+  // F-E — gentle nudge for doubts left unresolved 7+ days, throttled to ~once
+  // every 3 days via a local timestamp, surfaced through the notification inbox.
+  useEffect(() => {
+    if (!profile) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const map = await loadDoubtsForNudge(profile.id);
+        const stale = staleUnresolvedCount(map, 7);
+        if (cancelled || stale <= 0) return;
+        const r = await safeStorage.get(KEYS.DOUBT_NUDGE_TS, false);
+        const last = r && r.value ? parseInt(r.value, 10) : 0;
+        if (Date.now() - last < 3 * 86400000) return;
+        await pushNotification({
+          type: 'doubt_nudge',
+          title: 'Unresolved doubts',
+          body: `You have ${stale} flagged point${stale === 1 ? '' : 's'} waiting to be cleared up. A quick re-read could close the gap.`,
+          action: { screen: 'doubts' },
+        });
+        await safeStorage.set(KEYS.DOUBT_NUDGE_TS, String(Date.now()), false);
+      } catch (e) {}
+    })();
+    return () => { cancelled = true; };
+  }, [profile]);
+
   // Session 4, Item 2 — blur the whole app while it's backgrounded / unfocused.
   // (Named visibilitychange handler so cleanup removes the SAME reference.)
   useEffect(() => {
@@ -3403,6 +3543,9 @@ export default function App() {
       {/* Session 4, Item 2 — blur overlay (CSS-toggled via body.app-blurred) */}
       <div id="app-blur-overlay" aria-hidden="true" />
 
+      {/* F-B — one global pull-to-refresh (disabled on gesture/timed screens). */}
+      <PullToRefresh onRefresh={refreshApp} disabled={PTR_DISABLED_SCREENS.has(nav.screen)} />
+
       {bridgeBanner}
 
       {/* P19 — in-app PWA update toast. Rendered once here so it can surface
@@ -3547,7 +3690,19 @@ export default function App() {
       )}
 
       {nav.screen === 'learn-topics' && (
-        <LearnTopics onPick={(topicId, sub) => navigate({ screen: 'learn-cards', topicId, sub })} onBack={goHome} />
+        <LearnTopics onPick={(topicId, sub) => navigate({ screen: 'learn-cards', topicId, sub })} onBack={goHome}
+                     onOpenDoubts={() => navigate({ screen: 'doubts' })}
+                     weakTopics={learnSignals.weakTopics} dueTopicIds={learnSignals.dueTopicIds} examDaysLeft={learnSignals.examDaysLeft} />
+      )}
+
+      {/* F-E — Doubts review. Go-to-topic routes back into the card reader. */}
+      {nav.screen === 'doubts' && (
+        <DoubtsScreen onBack={goHome} onNavigate={handleHomeNavigate} />
+      )}
+
+      {/* F-F — FAQ. Admin reply/delete + helpful counts show only when isAdmin. */}
+      {nav.screen === 'faq' && (
+        <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} />
       )}
 
       {nav.screen === 'learn-cards' && (
@@ -3567,6 +3722,12 @@ export default function App() {
         <KnowledgeMap onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })}
                       onPracticeSub={(topicId, sub) => startQuiz({ mode: 'topic', topic: topicId, sub, count: 10 })}
                       onBack={goHome} />
+      )}
+
+      {/* F-A — Study Methods. Reads progress only; "Go to feature" routes
+          through handleHomeNavigate so quiz specs actually start a quiz. */}
+      {nav.screen === 'study-methods' && (
+        <StudyMethods onBack={goHome} onNavigate={handleHomeNavigate} progress={studyProgress} />
       )}
 
       {nav.screen === 'advanced-setup' && (

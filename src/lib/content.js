@@ -14,7 +14,11 @@ import { safeStorage } from './safe-storage.js';
 // cached copy of help/reference/dosage/concept-cards forever.
 // v2: upgraded explanations rollout — refreshed help.json (examples + Knowledge
 //     Map / Previous Year Papers / Exam weightage) and concept-cards.json.
-const CONTENT_VERSION = 2;
+// v3: added the "Study methods" help section (Feature F-A).
+// v4: updated the "Learn — topics" help for Quick Revision (Feature F-D).
+// v5: added the "Doubts" help section (Feature F-E).
+// v6: added the "FAQ" help section (Feature F-F).
+const CONTENT_VERSION = 6;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

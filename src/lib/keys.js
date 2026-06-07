@@ -74,4 +74,20 @@ export const KEY_PREFIXES = {
   // P1 — local cache scan prefix. Used by ErrorBoundary's "Reset device
   // data" button to wipe every per-profile cache in one pass.
   USERDATA:     'userdata:',
+  // F-A — Study Methods: ids of method cards the user has opened
+  // (JSON array; per profile via `${KEYS.STUDY_METHODS_VISITED}${profileId}`).
+  STUDY_METHODS_VISITED: 'studymethodsvisited:',
+  // F-B — global pull-to-refresh sound on/off (default on).
+  SOUND_ENABLED: 'soundenabled:v1',
+  // F-C — which welcome-tour rows the user has opened the help popup for
+  // (JSON array of help keys; per profile).
+  WELCOME_TOUR_VISITED: 'welcometourvisited:',
+  // F-D — Learn 'resume where you left off' ({topicId,sub,index,ts}) and a
+  // short recently-studied topic list. Both per profile, local only.
+  LEARN_RESUME: 'learnresume:',
+  LEARN_RECENT: 'learnrecent:',
+  // F-E — flagged 'doubts' (map id->record), per profile, local. Plus a
+  // throttle timestamp for the 7-day stale-doubt nudge (global).
+  DOUBTS: 'doubts:',
+  DOUBT_NUDGE_TS: 'doubtnudgets:v1',
 };

@@ -8,17 +8,22 @@
 // the slice-26 LearnTopics; topicName from lib/topics, lazy cards via useContent.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { BookOpen, Sparkles, ListChecks, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft, Stethoscope } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { BookOpen, Sparkles, ListChecks, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft, Stethoscope, Flag } from 'lucide-react';
+import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useContent } from '../lib/content.js';
+import { safeStorage } from '../lib/safe-storage.js';
+import { KEYS } from '../lib/keys.js';
+import { loadDoubts, saveDoubts, toggleDoubt, pointId } from '../lib/doubts.js';
 import { ContentGate } from '../ui/content-gate.jsx';
 import { topicName } from '../lib/topics.js';
 import { Card, Pill, Button, TopBar } from '../ui/primitives.jsx';
 
 function LearnCards({ topicId, subFilter, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
+  const { profile } = useProfile();
   const fgOnDark = useFgOnDark();
+  const profileId = (profile && profile.id) || 'guest';
   // A2 — concept cards loaded lazily from /public/data/concept-cards.json.
   const { data: cc, loading, error, reload } = useContent('conceptCards');
   const subs = (cc && cc[topicId]) || [];
@@ -34,6 +39,7 @@ function LearnCards({ topicId, subFilter, onBack }) {
   }, [topicId, subFilter, cc]);
 
   const [index, setIndex] = useState(0);
+  const [ready, setReady] = useState(false);         // F-D — gates resume save until restore done
   const [revealed, setRevealed] = useState(false);   // self-check answer toggle
   const [direction, setDirection] = useState('next'); // drives slide animation
   const touchStartX = useRef(null);
@@ -52,6 +58,46 @@ function LearnCards({ topicId, subFilter, onBack }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [index, allCards.length]);
+
+  // F-D — restore reading position once cards are ready (matching topic+module),
+  // then mark ready so the save effect can begin without clobbering the value.
+  useEffect(() => {
+    if (ready || !allCards.length) return;
+    let alive = true;
+    safeStorage.get(`${KEYS.LEARN_RESUME}${profileId}`, false).then(r => {
+      if (!alive) return;
+      try {
+        const v = r && r.value ? JSON.parse(r.value) : null;
+        if (v && v.topicId === topicId && (v.sub || null) === (subFilter || null) && typeof v.index === 'number') {
+          const i = Math.min(Math.max(0, v.index), allCards.length - 1);
+          if (i > 0) setIndex(i);
+        }
+      } catch (e) {}
+      setReady(true);
+    }).catch(() => { if (alive) setReady(true); });
+    return () => { alive = false; };
+  }, [ready, allCards.length, topicId, subFilter, profileId]);
+
+  // F-D — persist position as the user moves (only after restore).
+  useEffect(() => {
+    if (!ready || !allCards.length) return;
+    try { safeStorage.set(`${KEYS.LEARN_RESUME}${profileId}`, JSON.stringify({ topicId, sub: subFilter || null, index, ts: Date.now() }), false); } catch (e) {}
+  }, [ready, index, topicId, subFilter, profileId, allCards.length]);
+
+  // F-D — record this topic as recently studied (front of a capped list).
+  useEffect(() => {
+    if (!ready) return;
+    safeStorage.get(`${KEYS.LEARN_RECENT}${profileId}`, false).then(r => {
+      let arr = [];
+      try { arr = r && r.value ? JSON.parse(r.value) : []; if (!Array.isArray(arr)) arr = []; } catch (e) { arr = []; }
+      arr = [topicId, ...arr.filter(t => t !== topicId)].slice(0, 5);
+      try { safeStorage.set(`${KEYS.LEARN_RECENT}${profileId}`, JSON.stringify(arr), false); } catch (e) {}
+    }).catch(() => {});
+  }, [ready, topicId, profileId]);
+
+  // F-E — load the doubt map (per profile) for the flag toggles.
+  const [doubtMap, setDoubtMap] = useState({});
+  useEffect(() => { let a = true; loadDoubts(profileId).then(m => { if (a) setDoubtMap(m); }); return () => { a = false; }; }, [profileId]);
 
   if (!card) {
     // A2 — distinguish "still loading / failed to load" from a genuinely
@@ -82,6 +128,13 @@ function LearnCards({ topicId, subFilter, onBack }) {
     quiz:      { label: 'Self-Check', icon: <Brain size={13} />, color: '#7A4A2E', bg: '#7A4A2E15' }
   };
   const meta = typeMeta[card.type] || typeMeta.concept;
+
+  // F-E — flag toggles. keypoints → per-bullet; other cards → whole-card.
+  const isFlagged = (id) => !!doubtMap[id];
+  const toggleFlag = (id, rec) => {
+    setDoubtMap(prev => { const next = toggleDoubt(prev, id, rec); saveDoubts(profileId, next); return next; });
+  };
+  const cardFlagId = pointId(topicId, card.title);
 
   // Self-check cards store "question … Answer: …" in one string — split so the
   // answer can be hidden behind a tap.
@@ -151,15 +204,25 @@ function LearnCards({ topicId, subFilter, onBack }) {
 
               {card.type === 'keypoints' && Array.isArray(card.body) ? (
                 <ul className="space-y-2.5">
-                  {card.body.map((b, i) => (
-                    <li key={i} className="flex gap-3 items-start">
-                      <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
-                            style={{ background: meta.color + '18' }}>
-                        <Check size={12} style={{ color: fgOnDark(meta.color) }} />
-                      </span>
-                      <div className="text-sm leading-relaxed" style={{ color: T.ink }}>{b}</div>
-                    </li>
-                  ))}
+                  {card.body.map((b, i) => {
+                    const bid = pointId(topicId, card.title, i);
+                    const on = isFlagged(bid);
+                    return (
+                      <li key={i} className="flex gap-3 items-start">
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
+                              style={{ background: meta.color + '18' }}>
+                          <Check size={12} style={{ color: fgOnDark(meta.color) }} />
+                        </span>
+                        <div className="text-sm leading-relaxed flex-1" style={{ color: T.ink }}>{b}</div>
+                        <button onClick={() => toggleFlag(bid, { topic: topicId, sub: card.sub, cardTitle: card.title, text: b })}
+                                aria-label={on ? 'Unflag doubt' : 'Flag as unclear'}
+                                title={on ? 'Flagged as unclear' : 'Flag as unclear'}
+                                className="no-tap-highlight p-1 -mt-0.5 rounded-md active:scale-90 transition flex-shrink-0">
+                          <Flag size={14} style={{ color: on ? T.error : T.muted, fill: on ? T.error : 'none' }} />
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ul>
               ) : quiz ? (
                 <>
@@ -184,6 +247,18 @@ function LearnCards({ topicId, subFilter, onBack }) {
                 </>
               ) : (
                 <div className="text-base leading-relaxed whitespace-pre-wrap" style={{ color: T.ink }}>{card.body}</div>
+              )}
+
+              {/* F-E — whole-card "flag as unclear" for non-keypoints cards. */}
+              {card.type !== 'keypoints' && (
+                <div className="mt-4 flex justify-end">
+                  <button onClick={() => toggleFlag(cardFlagId, { topic: topicId, sub: card.sub, cardTitle: card.title, text: card.title })}
+                          className="no-tap-highlight inline-flex items-center gap-1.5 text-[12px] font-semibold active:scale-95 transition"
+                          style={{ color: isFlagged(cardFlagId) ? T.error : T.muted }}>
+                    <Flag size={13} style={{ fill: isFlagged(cardFlagId) ? T.error : 'none' }} />
+                    {isFlagged(cardFlagId) ? 'Flagged as unclear' : 'Flag as unclear'}
+                  </button>
+                </div>
               )}
 
               {/* Clinical context — renders below every card type (keypoints,
