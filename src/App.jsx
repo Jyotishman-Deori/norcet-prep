@@ -2140,14 +2140,26 @@ export default function App() {
 
   // When the screen changes (e.g. completing a test → results), the window can
   // carry over the previous screen's scroll position, so the new page appears
-  // to "launch from the middle". Reset scroll to the top on every screen change.
+  // to "launch from the middle". Reset scroll to the top on every screen
+  // change — and re-assert on the next frame + shortly after, because on
+  // mobile the first reset can lose a race against mount animations/layout.
   useEffect(() => {
-    try {
-      window.scrollTo(0, 0);
-      if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-      document.documentElement.scrollTop = 0;
-      document.body.scrollTop = 0;
-    } catch (e) { /* no-op */ }
+    const reset = () => {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (e) {
+        try { window.scrollTo(0, 0); } catch (_) {}
+      }
+      try {
+        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+      } catch (e) { /* no-op */ }
+    };
+    reset();
+    const raf = (typeof requestAnimationFrame === 'function') ? requestAnimationFrame(reset) : null;
+    const t = setTimeout(reset, 90);
+    return () => { if (raf != null) cancelAnimationFrame(raf); clearTimeout(t); };
   }, [nav.screen]);
 
   // Theme-aware scrollbar colours. Set on :root so they apply to the window

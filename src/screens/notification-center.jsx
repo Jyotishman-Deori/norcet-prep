@@ -148,12 +148,22 @@ function NotificationCenter({ onBack, onNavigate }) {
     ? notifications
     : notifications.filter(n => categoryOf(n) === filter);
 
-  // Group for the All view so categories read in priority order.
+  // Group for the All view. Sections are ordered by RECENCY — the category
+  // containing the newest notification appears first, so what just happened
+  // is always at the top (CATEGORY_ORDER only breaks ties).
   const grouped = useMemo(() => {
     const g = { reminders: [], achievements: [], insights: [], updates: [] };
     for (const n of notifications) { const c = categoryOf(n); (g[c] || g.updates).push(n); }
     return g;
   }, [notifications]);
+  const sectionOrder = useMemo(() => {
+    return CATEGORY_ORDER
+      .filter(c => grouped[c] && grouped[c].length > 0)
+      .map(c => ({ c, newest: Math.max(...grouped[c].map(n => n.ts || 0)) }))
+      .sort((a, b) => (b.newest - a.newest) ||
+                      (CATEGORY_ORDER.indexOf(a.c) - CATEGORY_ORDER.indexOf(b.c)))
+      .map(x => x.c);
+  }, [grouped]);
 
   const chips = [
     { id: 'all', label: 'All', count: totalUnread },
@@ -384,7 +394,7 @@ function NotificationCenter({ onBack, onNavigate }) {
           <EmptyForFilter />
         ) : filter === 'all' ? (
           <div className="space-y-4">
-            {CATEGORY_ORDER.map(cat => {
+            {sectionOrder.map(cat => {
               const items = grouped[cat];
               if (!items || items.length === 0) return null;
               return (

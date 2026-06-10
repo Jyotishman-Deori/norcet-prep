@@ -78,12 +78,12 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
     }).sort((a, b) => b.weightage - a.weightage);
 
     // 6) High-leverage = weightage × (1 − accuracy). Only in-bank topics, since
-    //    the recommendation taps through to practice.
+    //    the recommendation taps through to practice. Top 5.
     const leverage = rows
       .filter(r => r.inBank)
       .map(r => ({ ...r, score: (r.weightage / 100) * (1 - (r.accuracy == null ? 0 : r.accuracy)) }))
       .sort((a, b) => b.score - a.score)
-      .slice(0, 3);
+      .slice(0, 5);
 
     // 7) Year-over-year: average each topic's % within a year (a year can have
     //    more than one paper), then track the first→last shift.

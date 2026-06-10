@@ -132,6 +132,17 @@ export const fontStyles = `
 /* Flag-planting reward — "Mastered" floats up from the node and fades. */
 @keyframes kmapFloatUp { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
 .kmap-float-up { animation: kmapFloatUp 1.4s ease-out both; transform-box: fill-box; transform-origin: center; }
+
+/* Welcome tour (F-C refresh) — subtle micro-interactions. */
+@keyframes welcomeFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+.welcome-float { animation: welcomeFloat 3.2s ease-in-out infinite; }
+@keyframes welcomePop { 0% { transform: scale(0); } 65% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.welcome-pop { animation: welcomePop 0.35s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes welcomeRow { 0% { opacity: 0; transform: translateY(10px); } 100% { opacity: 1; transform: translateY(0); } }
+.welcome-row { animation: welcomeRow 0.4s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .welcome-float, .welcome-pop, .welcome-row { animation: none !important; }
+}
 /* First-time cinematic intro text + HUD bottom-sheet spring-up. */
 @keyframes kmapIntroText { 0% { opacity: 0; transform: translateY(8px); } 25% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
 .kmap-intro-text { animation: kmapIntroText 3s ease-in-out both; }

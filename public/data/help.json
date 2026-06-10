@@ -257,5 +257,10 @@
     "how": "Filter by category if you like, then tap a question to open its answer. Tap the bulb to say whether it helped. Still stuck? Type a follow-up under that answer; admins reply with an “Admin” badge. Questions and replies here are public.",
     "why": "Most doubts are shared — surfacing answers in one searchable place saves everyone time and keeps support out of scattered DMs. The helpful bulb tells the team which answers are landing and which need work.",
     "example": "You wonder how negative marking works in mock tests, find that exact FAQ, tap the bulb because it helped — and ask a follow-up about partial marking, which an admin answers for everyone to see."
+  },
+  "Drill tests": {
+    "what": "One home for every way to test yourself — Quick Test, Topic Wise, Mock Test, Dosage Calc, Previous Year Papers, and the full exam-mode Advanced Test, arranged from casual warm-up to exam-hall intensity.",
+    "how": "Pick a card that matches how serious you want this session to be. Start light at the top when you’re warming up; work down to Previous Year Papers and Advanced Test when you’re ready for real exam conditions with negative marking and a countdown.",
+    "why": "Different stages of prep need different kinds of testing. Putting all six modes on one ladder makes it obvious which drill fits today — and nudges you to climb toward exam-realistic practice as the exam gets closer."
   }
 }

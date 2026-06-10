@@ -17,13 +17,14 @@
 // [A7] theme via useTheme(), bookmarks count via useData().
 // open/onClose/onNavigate stay props.
 // =====================================================================
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 
 function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
+  const panelRef = useRef(null);
   // Lock background scroll while the drawer is open.
   useEffect(() => {
     if (open) {
@@ -31,6 +32,13 @@ function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
       document.body.style.overflow = 'hidden';
       return () => { document.body.style.overflow = prev; };
     }
+  }, [open]);
+
+  // The panel stays mounted (it slides off-screen), so its internal scroll
+  // position would otherwise persist between opens — making the menu appear
+  // to "open from the middle". Always start from the top.
+  useEffect(() => {
+    if (open && panelRef.current) panelRef.current.scrollTop = 0;
   }, [open]);
 
   // Close on Escape for keyboard users.
@@ -118,10 +126,12 @@ function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
       {/* Sliding panel — the panel itself scrolls. Its height comes from
           inset-y-0 against the fixed full-screen wrapper (always definite),
           so scrolling works on every device without relying on flexbox. */}
-      <div className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
+      <div ref={panelRef}
+           className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
            style={{
              background: T.bg,
              WebkitOverflowScrolling: 'touch',
+             touchAction: 'pan-y',
              transform: open ? 'translateX(0)' : 'translateX(-102%)',
              boxShadow: open ? '0 0 40px rgba(0,0,0,0.25)' : 'none'
            }}>

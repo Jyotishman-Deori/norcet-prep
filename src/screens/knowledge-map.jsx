@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid } from 'lucide-react';
+import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -570,6 +570,24 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const lastTapRef = useRef({ t: 0, id: null });
 
   const [selected, setSelected] = useState(null);   // node payload for popup
+  // #13 follow-up — fullscreen mode for the map (user request). The container
+  // becomes a fixed overlay; the SVG + gestures adapt automatically because
+  // they measure getBoundingClientRect. Body scroll locks while active.
+  const [fullscreen, setFullscreen] = useState(false);
+  useEffect(() => {
+    if (!fullscreen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e) => { if (e.key === 'Escape') setFullscreen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => { document.body.style.overflow = prev; window.removeEventListener('keydown', onKey); };
+  }, [fullscreen]);
+  // Re-fit the camera right after the surface changes size so the galaxy is
+  // framed for the new dimensions.
+  const toggleFullscreen = () => {
+    setFullscreen(f => !f);
+    setTimeout(() => { try { fitView(); } catch (_) {} }, 60);
+  };
   // #13 — first-time cinematic intro: 'reveal' while the camera pulls back,
   // 'banner' to show the one-time welcome, null afterwards. Plays once ever.
   const [intro, setIntro] = useState(null);
@@ -1004,14 +1022,21 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           })}
         </div>
 
-        {/* The map surface — a dark "constellation" canvas. */}
-        <div className="relative rounded-2xl overflow-hidden"
-             style={{ height: 460, touchAction: 'none', background: CMAP.bg, border: `1px solid ${CMAP.border}` }}>
+        {/* The map surface — a dark "constellation" canvas. In fullscreen mode
+            it becomes a fixed overlay filling the viewport (Esc or the button
+            exits); all floating controls live inside, so they come along. */}
+        <div className={fullscreen
+               ? 'fixed inset-0 z-[80]'
+               : 'relative rounded-2xl overflow-hidden'}
+             style={{ height: fullscreen ? '100dvh' : 460, touchAction: 'none',
+                      background: CMAP.bg,
+                      border: fullscreen ? 'none' : `1px solid ${CMAP.border}` }}>
           {/* P11 Feature A — "Suggested for you today" floating panel (top-right
               overlay), restyled to the dark game aesthetic. */}
           {suggestions.length > 0 && !suggestDismissed && !intro && (
-            <div className="absolute top-2 right-2 z-10 rounded-xl anim-fadeup"
-                 style={{ width: 200, background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+            <div className="absolute right-2 z-10 rounded-xl anim-fadeup"
+                 style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 8,
+                          width: 200, background: CMAP.panel, border: `1px solid ${CMAP.border}`,
                           boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
               <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
                    style={{ color: CMAP.text }}>
@@ -1327,14 +1352,25 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             </g>
           </svg>
 
+          {/* #13 follow-up — explicit exit affordance while in fullscreen. */}
+          {fullscreen && (
+            <button onClick={toggleFullscreen} aria-label="Exit fullscreen"
+                    className="no-tap-highlight absolute right-2 z-20 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
+                    style={{ top: 'calc(env(safe-area-inset-top, 0px) + 8px)',
+                             background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: CMAP.text, backdropFilter: 'blur(6px)' }}>
+              <X size={17} />
+            </button>
+          )}
+
           {/* #13 — master sound toggle (was Feature B). Off by default; toggles
               all game sounds. Icon reflects state; a chime confirms enabling and
               unlocks the AudioContext for later state-change chimes. Animations
               still play silently when off; device silent mode is respected. */}
           <button onClick={() => { const n = !soundOn; setSoundOn(n); saveMindmapSound(n); if (n) playCelebChime('familiar'); }}
                   aria-label={soundOn ? 'Game sound: on' : 'Game sound: off'} aria-pressed={soundOn}
-                  className="no-tap-highlight absolute top-2 left-2 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                  style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: soundOn ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
+                  className="no-tap-highlight absolute left-2 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
+                  style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 8px)' : 8,
+                           background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: soundOn ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
             {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
@@ -1343,14 +1379,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
               topic name OR note text) and dims the rest. */}
           {!searchOpen && (
             <button onClick={() => setSearchOpen(true)} aria-label="Search the map"
-                    className="no-tap-highlight absolute top-2 left-12 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                    style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: queryActive ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
+                    className="no-tap-highlight absolute left-12 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
+                    style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 8px)' : 8,
+                             background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: queryActive ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
               <Search size={16} />
             </button>
           )}
           {searchOpen && (
-            <div className="absolute top-2 left-2 right-2 z-20 rounded-xl flex items-center gap-2 px-2.5 anim-fadeup"
-                 style={{ height: 38, background: CMAP.panel, border: `1px solid ${CMAP.border}`, boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
+            <div className="absolute left-2 right-2 z-20 rounded-xl flex items-center gap-2 px-2.5 anim-fadeup"
+                 style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 8px)' : 8,
+                          height: 38, background: CMAP.panel, border: `1px solid ${CMAP.border}`, boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
               <Search size={15} style={{ color: CMAP.muted, flexShrink: 0 }} />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
                      placeholder={'Search topics & notes\u2026'}
@@ -1369,16 +1407,18 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             </div>
           )}
 
-          {/* Zoom controls (replacing react-flow <Controls/>) */}
-          <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
+          {/* Zoom controls (replacing react-flow <Controls/>) + fullscreen */}
+          <div className="absolute left-3 flex flex-col gap-1.5"
+               style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : 12 }}>
             {[
+              { lbl: fullscreen ? 'Exit fullscreen' : 'Fullscreen', sign: fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />, fn: toggleFullscreen },
               { lbl: 'Zoom in', sign: <Plus size={16} />, fn: () => zoomAt(view.k * 1.25) },
               { lbl: 'Zoom out', sign: <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 700 }}>{'\u2212'}</span>, fn: () => zoomAt(view.k / 1.25) },
               { lbl: 'Fit to screen', sign: <LayoutGrid size={15} />, fn: fitView }
             ].map(b => (
-              <button key={b.lbl} onClick={b.fn} aria-label={b.lbl}
+              <button key={b.lbl} onClick={b.fn} aria-label={b.lbl} title={b.lbl}
                       className="no-tap-highlight w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                      style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: CMAP.text, backdropFilter: 'blur(6px)' }}>
+                      style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: b.fn === toggleFullscreen && fullscreen ? CMAP.sun : CMAP.text, backdropFilter: 'blur(6px)' }}>
                 {b.sign}
               </button>
             ))}
