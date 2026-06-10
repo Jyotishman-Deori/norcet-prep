@@ -18,7 +18,7 @@ function MindmapNoteEditor({ node, initialText = '', onSave, onDelete, onClose }
   const hadNote = (initialText || '').length > 0;
   const remaining = NOTE_MAX_LEN - text.length;
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+    <div className="fixed inset-0 z-[90] flex items-end sm:items-center justify-center p-4"
          style={{ background: 'rgba(0,0,0,0.45)' }} onClick={onClose}>
       <div ref={trapRef} role="dialog" aria-modal="true" aria-label={`Note for ${title}`}
            className="w-full max-w-sm rounded-2xl surface-card anim-scalein"

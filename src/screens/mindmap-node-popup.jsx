@@ -63,7 +63,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
   const trapRef = useFocusTrap(onClose);
 
   const Sheet = ({ children, label }) => (
-    <div className="fixed inset-0 z-50 flex items-end justify-center kmap-scrim-in"
+    <div className="fixed inset-0 z-[90] flex items-end justify-center kmap-scrim-in"
          style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.30), rgba(7,10,20,0.74))' }}
          onClick={onClose}>
       <div ref={trapRef} role="dialog" aria-modal="true" aria-label={label}
@@ -143,7 +143,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
           <div className="flex items-center gap-2.5 min-w-0">
             {!isSub && <span style={{ fontSize: 26 }}>{topicIcon(node.id)}</span>}
             <div className="min-w-0">
-              <div className="font-display text-xl font-semibold leading-tight truncate" style={{ color: HUD.text }}>{name}</div>
+              <div className="font-display text-xl font-semibold leading-tight" style={{ color: HUD.text, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{name}</div>
               <div className="text-xs mt-0.5 truncate" style={{ color: HUD.muted }}>
                 {isSub ? topicName(node.parent) : 'Subject'}
                 <span className="inline-flex items-center gap-1 ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"

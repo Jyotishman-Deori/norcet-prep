@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2 } from 'lucide-react';
+import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -574,6 +574,8 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   // becomes a fixed overlay; the SVG + gestures adapt automatically because
   // they measure getBoundingClientRect. Body scroll locks while active.
   const [fullscreen, setFullscreen] = useState(false);
+  // #13 follow-up — a reopenable "how this works" guide (game tutorial).
+  const [guideOpen, setGuideOpen] = useState(false);
   useEffect(() => {
     if (!fullscreen) return;
     const prev = document.body.style.overflow;
@@ -1411,6 +1413,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           <div className="absolute left-3 flex flex-col gap-1.5"
                style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : 12 }}>
             {[
+              { lbl: 'How this works', sign: <HelpCircle size={16} />, fn: () => setGuideOpen(true) },
               { lbl: fullscreen ? 'Exit fullscreen' : 'Fullscreen', sign: fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />, fn: toggleFullscreen },
               { lbl: 'Zoom in', sign: <Plus size={16} />, fn: () => zoomAt(view.k * 1.25) },
               { lbl: 'Zoom out', sign: <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 700 }}>{'\u2212'}</span>, fn: () => zoomAt(view.k / 1.25) },
@@ -1483,6 +1486,121 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           Drag to pan {'\u00b7'} pinch or scroll to zoom {'\u00b7'} tap a star for details {'\u00b7'} double-tap to focus
         </div>
       </div>
+
+      {/* #13 follow-up — game guide. Rendered at screen root so it's never
+          clipped by the surface and sits above the fullscreen layer. */}
+      {guideOpen && (() => {
+        const Dot = ({ state }) => {
+          const cs = _constNode(state, CMAP.sun);
+          return (
+            <svg width="22" height="22" viewBox="0 0 22 22" style={{ display: 'block', flexShrink: 0 }}>
+              {cs.glow && <circle cx="11" cy="11" r="9" fill={cs.glow} opacity={cs.glowOpacity} />}
+              <circle cx="11" cy="11" r={5.4 * cs.rScale} fill={cs.core} stroke={cs.ring} strokeWidth={1.4} />
+              {cs.crown && <text x="11" y="7.4" textAnchor="middle" fontSize="7" fill="#FFE6A6">{'\u2605'}</text>}
+            </svg>
+          );
+        };
+        const Line = ({ stroke, dash, glow }) => (
+          <svg width="30" height="14" viewBox="0 0 30 14" style={{ flexShrink: 0 }}>
+            <line x1="2" y1="7" x2="28" y2="7" stroke={stroke} strokeWidth={glow ? 3 : 2}
+                  strokeLinecap="round" strokeDasharray={dash || undefined} opacity={glow ? 1 : 0.8} />
+          </svg>
+        );
+        const states = [
+          { s: 'locked',     t: 'Locked',     d: 'Untouched. A faint, dim star waiting in the dark.' },
+          { s: 'discovered', t: 'Discovered', d: 'You\u2019ve started here. It glows a cool blue.' },
+          { s: 'familiar',   t: 'Familiar',   d: 'Getting consistent \u2014 a warmer, brighter star.' },
+          { s: 'mastered',   t: 'Mastered',   d: 'Conquered. Radiant gold with a \u2605 crown.' },
+        ];
+        const Section = ({ title, children }) => (
+          <div className="mb-4">
+            <div className="text-[11px] uppercase tracking-widest font-semibold mb-2" style={{ color: CMAP.sun }}>{title}</div>
+            {children}
+          </div>
+        );
+        return (
+          <div className="fixed inset-0 z-[95] flex items-end justify-center kmap-scrim-in"
+               style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.45), rgba(7,10,20,0.85))' }}
+               onClick={() => setGuideOpen(false)}>
+            <div className="w-full max-w-md rounded-t-3xl kmap-sheet-up"
+                 style={{ background: CMAP.surfaceSolid || CMAP.panelSolid, borderTop: `1px solid ${CMAP.border}`,
+                          maxHeight: '86vh', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+                 onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="How the Knowledge Map works">
+              <div className="flex justify-center pt-2.5 pb-1"><div style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.18)' }} /></div>
+              <div className="px-5 pb-5">
+                <div className="flex items-start justify-between gap-3 mb-1">
+                  <div className="font-display text-xl font-semibold" style={{ color: CMAP.text }}>How the map works</div>
+                  <button onClick={() => setGuideOpen(false)} aria-label="Close guide"
+                          className="no-tap-highlight p-2 -m-1 rounded-full active:bg-white/10" style={{ color: CMAP.muted }}>
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="text-sm leading-relaxed mb-5" style={{ color: CMAP.muted }}>
+                  Every topic in the NORCET syllabus is a <span style={{ color: CMAP.text }}>star</span>. Practising
+                  questions lights them up. Your mission: turn the whole sky gold.
+                </div>
+
+                <Section title="The four states">
+                  <div className="space-y-2.5">
+                    {states.map(st => (
+                      <div key={st.s} className="flex items-center gap-3">
+                        <Dot state={st.s} />
+                        <div className="min-w-0">
+                          <div className="text-sm font-semibold" style={{ color: CMAP.text }}>{st.t}</div>
+                          <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>{st.d}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </Section>
+
+                <Section title="Levelling up">
+                  <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
+                    Tap any star {'\u2192'} <span style={{ color: CMAP.text }}>Practice</span>. Roughly <span style={{ color: CMAP.text }}>10 attempts</span> at
+                    60%+ moves a topic to Familiar; <span style={{ color: CMAP.text }}>25 attempts</span> at 80%+ Masters it.
+                    The panel always shows your next milestone.
+                  </div>
+                </Section>
+
+                <Section title="The lines">
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-3"><Line stroke={CMAP.edgeRoot} glow />
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Gold threads tie each <span style={{ color: CMAP.text }}>subject</span> to the NORCET core (the sun).</div></div>
+                    <div className="flex items-center gap-3"><Line stroke={CMAP.edge} />
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Faint lines link a subject to its <span style={{ color: CMAP.text }}>sub-topics</span> \u2014 they appear as you zoom in.</div></div>
+                    <div className="flex items-center gap-3"><Line stroke={T.accent} glow />
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>A <span style={{ color: CMAP.text }}>pulsing</span> line marks a prerequisite worth doing first.</div></div>
+                    <div className="flex items-center gap-3"><Line stroke={KMAP_BONUS_COLOR} dash="1 5" />
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Dashed amber points to <span style={{ color: CMAP.text }}>bonus</span> beyond-syllabus stars.</div></div>
+                  </div>
+                </Section>
+
+                <Section title="Fog of war">
+                  <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
+                    A faint shimmer around a locked star means it\u2019s right next to where you\u2019re
+                    working \u2014 a good one to unlock next.
+                  </div>
+                </Section>
+
+                <Section title="Finding your way">
+                  <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
+                    Zoomed out you see the <span style={{ color: CMAP.text }}>subjects</span> (the galaxy). Zoom in to reveal
+                    sub-topics and their labels. Pinch/scroll or use <span style={{ color: CMAP.text }}>+ / \u2212</span>; tap
+                    <span style={{ color: CMAP.text }}> Fit</span> to reframe, and the <span style={{ color: CMAP.text }}>\u2922</span> for fullscreen.
+                    Double-tap a star to focus, long-press to add a note, and search topics or notes.
+                  </div>
+                </Section>
+
+                <button onClick={() => setGuideOpen(false)}
+                        className="no-tap-highlight w-full py-3.5 rounded-2xl text-base font-semibold active:scale-[0.98] transition"
+                        style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, color: '#fff' }}>
+                  Got it
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Tap popup — a focus-trapped dialog (A9 pattern). */}
       {selected && (

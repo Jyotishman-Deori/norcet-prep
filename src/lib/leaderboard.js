@@ -8,6 +8,9 @@
 // =====================================================================
 import { safeStorage } from './safe-storage.js';
 import { todayStr } from './utils.js';
+import { attemptStats } from './compact.js';
+import { masteryTally } from './kmap.js';
+import { countsInNursingStats } from '../data/seed.js';
 
 const LEADERBOARD_PREFIX = 'leaderboard:';
 const leaderboardKey = (pid) => LEADERBOARD_PREFIX + pid;
@@ -22,11 +25,22 @@ function weekStartStr(now = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
-function computeLeaderboardEntry(profile, data) {
+function computeLeaderboardEntry(profile, data, allQuestions) {
   const s = (data && data.stats) || {};
   const daily = Array.isArray(s.dailyHistory) ? s.dailyHistory : [];
   const wk = weekStartStr();
   const weeklyAnswered = daily.reduce((sum, d) => (d && d.date >= wk ? sum + (d.attempted || 0) : sum), 0);
+  // Knowledge-Map mastery (mastered sub-topics) — same math the map uses, so a
+  // user's board rank matches their constellation. GK/Aptitude follow the
+  // user's stats preference. Falls back to 0 when the question pool isn't given.
+  let masteredTopics = 0;
+  try {
+    if (allQuestions && allQuestions.length) {
+      const includeGk = !!(data && data.preferences && data.preferences.includeGkInStats === true);
+      masteredTopics = masteryTally(data && data.history, allQuestions, attemptStats,
+        (t) => countsInNursingStats(t, includeGk)).mastered;
+    }
+  } catch (e) { masteredTopics = 0; }
   return {
     id: profile.id,
     displayName: profile.displayName || profile.id,
@@ -34,15 +48,16 @@ function computeLeaderboardEntry(profile, data) {
     totalCorrect: s.totalCorrect || 0,
     currentStreak: s.streakCurrent || 0,
     weeklyAnswered,
+    masteredTopics,
     lastActiveDate: s.lastStudiedDate || todayStr(),
     ts: Date.now()
   };
 }
 
 // Fire-and-forget upsert of this user's row. Fails quietly when offline.
-export async function saveLeaderboardEntry(profile, data) {
+export async function saveLeaderboardEntry(profile, data, allQuestions) {
   if (!profile || !profile.id) return;
-  const entry = computeLeaderboardEntry(profile, data);
+  const entry = computeLeaderboardEntry(profile, data, allQuestions);
   if ((entry.totalAnswered || 0) <= 0) return; // don't board a user with no activity
   try { await safeStorage.set(leaderboardKey(profile.id), JSON.stringify(entry), true); } catch (e) {}
 }

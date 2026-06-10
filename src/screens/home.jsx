@@ -14,7 +14,7 @@ import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
 // #13 — live Knowledge Map summary on the Home card (same state math as the map).
 import { attemptStats } from '../lib/compact.js';
-import { mindmapState } from '../lib/kmap.js';
+import { mindmapState, masteryTally } from '../lib/kmap.js';
 import { countsInNursingStats } from '../data/seed.js';
 import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
@@ -73,26 +73,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   // (attemptStats per question → per-(topic,sub) totals → mindmapState), so the
   // card's promise always matches what the constellation shows.
   const kmapSummary = useMemo(() => {
-    const hist = data.history || {};
     const includeGk = !!(data.preferences && data.preferences.includeGkInStats === true);
-    const agg = {};   // `${topic}::${sub}` -> { attempted, correct }
-    Object.entries(hist).forEach(([qId, h]) => {
-      const q = allQuestions.find(x => x.id === qId);
-      if (!q || !q.topic || !countsInNursingStats(q.topic, includeGk)) return;
-      const s = attemptStats(h);
-      if (!s || s.total === 0) return;
-      const key = `${q.topic}::${(q.sub && String(q.sub).trim()) || 'General'}`;
-      if (!agg[key]) agg[key] = { attempted: 0, correct: 0 };
-      agg[key].attempted += s.total;
-      agg[key].correct += s.correct;
-    });
-    let mastered = 0, inProgress = 0;
-    Object.values(agg).forEach(a => {
-      const st = mindmapState(a.attempted, a.attempted > 0 ? a.correct / a.attempted : 0);
-      if (st === 'mastered') mastered += 1;
-      else if (st === 'discovered' || st === 'familiar') inProgress += 1;
-    });
-    return { mastered, inProgress };
+    return masteryTally(data.history || {}, allQuestions, attemptStats, (t) => countsInNursingStats(t, includeGk));
   }, [data.history, data.preferences, allQuestions]);
 
   // Feature 4 — week-over-week snapshot. ADAPTED to the real data model:
@@ -726,7 +708,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   Weak area
                 </div>
               </div>
-              <div className="font-display text-sm font-semibold truncate" style={{ color: T.ink }}>
+              <div className="font-display text-sm font-semibold leading-tight" style={{ color: T.ink, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {topicName(worstWeak.topic)}
               </div>
               <div className="text-[11px]" style={{ color: T.muted }}>
@@ -753,7 +735,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 <Activity size={14} style={{ color: showWarning ? T.accent : T.primary }} />
                 <div className="text-[10px] uppercase tracking-wider font-semibold"
                      style={{ color: showWarning ? T.accent : T.primary }}>
-                  Coverage
+                  Syllabus
                 </div>
               </div>
               {showWarning ? (

@@ -189,13 +189,13 @@ function NotificationCenter({ onBack, onNavigate }) {
             <Icon size={18} color="#FFF" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-display text-[15px] font-semibold leading-snug flex items-center gap-1.5"
+            <div className="font-display text-[15px] font-semibold leading-snug flex items-start gap-1.5"
                  style={{ color: T.ink }}>
-              <span className="truncate">{notif.title}</span>
-              {unread && <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: meta.color }} />}
+              <span className="min-w-0">{notif.title}</span>
+              {unread && <span className="w-2 h-2 rounded-full flex-shrink-0 mt-1.5" style={{ background: meta.color }} />}
             </div>
             {notif.body && (
-              <div className="text-xs leading-relaxed mt-0.5 truncate" style={{ color: T.inkSoft }}>
+              <div className="text-xs leading-relaxed mt-0.5" style={{ color: T.inkSoft, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {notif.body}
               </div>
             )}

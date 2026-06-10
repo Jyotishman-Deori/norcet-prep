@@ -143,6 +143,21 @@ export const fontStyles = `
 @media (prefers-reduced-motion: reduce) {
   .welcome-float, .welcome-pop, .welcome-row { animation: none !important; }
 }
+
+/* Leaderboard (UX pass) — staggered rows, rising podium, medal shimmer, "you" glow. */
+@keyframes lbRow { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: translateY(0); } }
+.lb-row { animation: lbRow 0.42s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes lbRise { 0% { opacity: 0; transform: translateY(18px) scale(0.92); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.lb-rise { animation: lbRise 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes lbShimmer { 0% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+.lb-medal-shimmer { background-image: linear-gradient(110deg, transparent 30%, rgba(255,255,255,0.55) 50%, transparent 70%); background-size: 220% 100%; animation: lbShimmer 2.6s ease-in-out infinite; }
+@keyframes lbYouGlow { 0%, 100% { box-shadow: 0 0 0 0 var(--lb-glow, rgba(0,0,0,0)); } 50% { box-shadow: 0 0 0 3px var(--lb-glow, rgba(0,0,0,0)); } }
+.lb-you-glow { animation: lbYouGlow 2.4s ease-in-out infinite; }
+@keyframes lbPop { 0% { transform: scale(0.6); opacity: 0; } 70% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+.lb-pop { animation: lbPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .lb-row, .lb-rise, .lb-medal-shimmer, .lb-you-glow, .lb-pop { animation: none !important; }
+}
 /* First-time cinematic intro text + HUD bottom-sheet spring-up. */
 @keyframes kmapIntroText { 0% { opacity: 0; transform: translateY(8px); } 25% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
 .kmap-intro-text { animation: kmapIntroText 3s ease-in-out both; }

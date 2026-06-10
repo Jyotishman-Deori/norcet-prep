@@ -127,6 +127,7 @@ function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
           inset-y-0 against the fixed full-screen wrapper (always definite),
           so scrolling works on every device without relying on flexbox. */}
       <div ref={panelRef}
+           data-no-ptr
            className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
            style={{
              background: T.bg,

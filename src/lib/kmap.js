@@ -187,9 +187,38 @@ function mindmapLayout(model) {
 const KMAP_STATE_LABEL = { locked: 'Locked', discovered: 'Discovered', familiar: 'Familiar', mastered: 'Mastered' };
 const KMAP_BONUS_COLOR = '#E0A52E';   // amber/gold for "beyond syllabus" bonus nodes (Phase B)
 
+// Shared mastery tally — counts sub-topics by state using the SAME aggregation
+// + thresholds the map uses, so Home, the leaderboard, and the map all agree.
+// `attemptStatsFn` is injected (lib/compact's attemptStats) to avoid a circular
+// import; `nursingFilter(topicId)` lets callers honour the GK/Aptitude toggle.
+function masteryTally(history, allQuestions, attemptStatsFn, nursingFilter) {
+  const agg = {};   // `${topic}::${sub}` -> { attempted, correct }
+  const byId = {};
+  (allQuestions || []).forEach(q => { byId[q.id] = q; });
+  Object.entries(history || {}).forEach(([qId, h]) => {
+    const q = byId[qId];
+    if (!q || !q.topic) return;
+    if (nursingFilter && !nursingFilter(q.topic)) return;
+    const s = attemptStatsFn(h);
+    if (!s || s.total === 0) return;
+    const key = `${q.topic}::${(q.sub && String(q.sub).trim()) || 'General'}`;
+    if (!agg[key]) agg[key] = { attempted: 0, correct: 0 };
+    agg[key].attempted += s.total;
+    agg[key].correct += s.correct;
+  });
+  let mastered = 0, inProgress = 0, touched = 0;
+  Object.values(agg).forEach(a => {
+    touched += 1;
+    const st = mindmapState(a.attempted, a.attempted > 0 ? a.correct / a.attempted : 0);
+    if (st === 'mastered') mastered += 1;
+    else if (st === 'discovered' || st === 'familiar') inProgress += 1;
+  });
+  return { mastered, inProgress, touched };
+}
+
 export {
   KMAP_STATES, KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
-  mindmapState, mindmapNextProgress, mindmapStateRank,
+  mindmapState, mindmapNextProgress, mindmapStateRank, masteryTally,
   _kmapEdgePath, _kmapHexPath, mindmapLayout, subjectStruggling, DEPENDENCIES,
   BONUS_NODES, BONUS_REVEAL_MASTERED, masteredSubCount, revealedBonusNodes,
 };

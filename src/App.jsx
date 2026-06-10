@@ -21,6 +21,7 @@ import { CURRENT_SCHEMA_VERSION, runMigrations } from './lib/migrations.js';
 // real SEED_QUESTIONS schema. Imported (never inlined) to keep App.jsx lean.
 import { PREVIOUS_YEAR_PAPERS } from './norcet-pyq-data.js';
 import { compactData, needsCompaction, attemptStats, hasBeenSeen, COMPACTION_SIZE_THRESHOLD } from './lib/compact.js';
+import { masteryTally } from './lib/kmap.js';
 import { log, setLogContext } from './lib/log.js';
 import * as kvStorage from './storage';
 import { normalizeUserData, guestBlobHasActivity, mergeGuestIntoAccount } from './lib/merge.js';
@@ -3052,7 +3053,7 @@ export default function App() {
   const lbStreak = data && data.stats && data.stats.streakCurrent;
   useEffect(() => {
     if (!profile || isGuestProfile(profile) || !lbTotal) return;
-    saveLeaderboardEntry(profile, data);
+    saveLeaderboardEntry(profile, data, allQuestions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile, lbTotal, lbStreak]);
 
@@ -3558,7 +3559,7 @@ export default function App() {
       <div id="app-blur-overlay" aria-hidden="true" />
 
       {/* F-B — one global pull-to-refresh (disabled on gesture/timed screens). */}
-      <PullToRefresh onRefresh={refreshApp} disabled={PTR_DISABLED_SCREENS.has(nav.screen)} />
+      <PullToRefresh onRefresh={refreshApp} disabled={drawerOpen || PTR_DISABLED_SCREENS.has(nav.screen)} />
 
       {bridgeBanner}
 
@@ -3654,6 +3655,7 @@ export default function App() {
                            isGuest={isGuestProfile(profile)}
                            onGuestSignIn={() => setNav({ screen: 'auth' })}
                            attemptedCount={(data && data.stats && data.stats.totalAttempted) || 0}
+                           myMastered={(() => { try { const inc = !!(data && data.preferences && data.preferences.includeGkInStats === true); return masteryTally(data && data.history, allQuestions, attemptStats, (t) => countsInNursingStats(t, inc)).mastered; } catch (e) { return 0; } })()}
                            onStartQuiz={() => handleHomeNavigate({ screen: 'quick-setup' })}
                            onBack={goHome} />
       )}
