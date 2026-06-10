@@ -8,7 +8,7 @@
 // the slice-26 LearnTopics; topicName from lib/topics, lazy cards via useContent.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { BookOpen, Sparkles, ListChecks, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft, Stethoscope, Flag } from 'lucide-react';
+import { BookOpen, Sparkles, ListChecks, ListOrdered, Brain, ArrowLeft, ChevronRight, Check, Eye, Lightbulb, ChevronLeft, Stethoscope, Flag, Target, AlertTriangle, Calculator } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useContent } from '../lib/content.js';
@@ -125,7 +125,12 @@ function LearnCards({ topicId, subFilter, onBack }) {
     concept:   { label: 'Concept', icon: <BookOpen size={13} />, color: T.primary, bg: T.primary + '15' },
     mnemonic:  { label: 'Mnemonic', icon: <Sparkles size={13} />, color: T.accent, bg: T.accent + '15' },
     keypoints: { label: 'Key Points', icon: <ListChecks size={13} />, color: T.success, bg: T.successSoft },
-    quiz:      { label: 'Self-Check', icon: <Brain size={13} />, color: '#7A4A2E', bg: '#7A4A2E15' }
+    quiz:      { label: 'Self-Check', icon: <Brain size={13} />, color: '#7A4A2E', bg: '#7A4A2E15' },
+    // #10 — Aptitude mini-lesson card types (method-based, not fact-based).
+    whatTests: { label: 'What this tests', icon: <Target size={13} />, color: T.primary, bg: T.primary + '15' },
+    method:    { label: 'Method', icon: <ListOrdered size={13} />, color: T.success, bg: T.successSoft },
+    worked:    { label: 'Worked example', icon: <Calculator size={13} />, color: (T.sec && T.sec.stats) || '#3D5A7A', bg: ((T.sec && T.sec.stats) || '#3D5A7A') + '15' },
+    mistake:   { label: 'Avoid this', icon: <AlertTriangle size={13} />, color: T.accent, bg: T.accent + '15' }
   };
   const meta = typeMeta[card.type] || typeMeta.concept;
 
@@ -202,16 +207,17 @@ function LearnCards({ topicId, subFilter, onBack }) {
                 {card.title}
               </div>
 
-              {card.type === 'keypoints' && Array.isArray(card.body) ? (
+              {Array.isArray(card.body) ? (
                 <ul className="space-y-2.5">
                   {card.body.map((b, i) => {
                     const bid = pointId(topicId, card.title, i);
                     const on = isFlagged(bid);
+                    const numbered = card.type === 'method';
                     return (
                       <li key={i} className="flex gap-3 items-start">
-                        <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5"
-                              style={{ background: meta.color + '18' }}>
-                          <Check size={12} style={{ color: fgOnDark(meta.color) }} />
+                        <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 text-[11px] font-bold tabular-nums"
+                              style={{ background: meta.color + '18', color: fgOnDark(meta.color) }}>
+                          {numbered ? (i + 1) : <Check size={12} style={{ color: fgOnDark(meta.color) }} />}
                         </span>
                         <div className="text-sm leading-relaxed flex-1" style={{ color: T.ink }}>{b}</div>
                         <button onClick={() => toggleFlag(bid, { topic: topicId, sub: card.sub, cardTitle: card.title, text: b })}
@@ -249,8 +255,9 @@ function LearnCards({ topicId, subFilter, onBack }) {
                 <div className="text-base leading-relaxed whitespace-pre-wrap" style={{ color: T.ink }}>{card.body}</div>
               )}
 
-              {/* F-E — whole-card "flag as unclear" for non-keypoints cards. */}
-              {card.type !== 'keypoints' && (
+              {/* F-E — whole-card "flag as unclear" for prose cards (array-body
+                  cards — keypoints / method — use per-item flags instead). */}
+              {!Array.isArray(card.body) && (
                 <div className="mt-4 flex justify-end">
                   <button onClick={() => toggleFlag(cardFlagId, { topic: topicId, sub: card.sub, cardTitle: card.title, text: card.title })}
                           className="no-tap-highlight inline-flex items-center gap-1.5 text-[12px] font-semibold active:scale-95 transition"

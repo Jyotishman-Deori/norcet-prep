@@ -448,5 +448,247 @@
         }
       ]
     }
+  ],
+  "apt": [
+    {
+      "sub": "Number Series",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "Number series questions test whether you can spot the rule linking a sequence of numbers and use it to predict the next term. It is pattern recognition under time pressure — not heavy calculation."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Write the gaps between consecutive terms — the first differences.",
+            "If the gaps are equal, the rule is +constant (arithmetic). If they grow or shrink steadily, look at the second differences.",
+            "If differences don’t settle, test ratios (×constant), squares/cubes, or two interleaved series.",
+            "Apply the confirmed rule to the last term, then check it fits the whole series."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "Series: 2, 6, 12, 20, 30, ?\n\nStep 1 — First differences: 4, 6, 8, 10.\nStep 2 — The gaps rise by 2 each time, so the next gap is 12.\nStep 3 — Confirmed rule: add an increasing even number (equivalently term = n(n+1)).\nStep 4 — 30 + 12 = 42.\n\nAnswer: 42."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Don’t grab the first pattern you see and stop. Always extend your rule back across the whole series to confirm it fits every term, not just the last two."
+        }
+      ]
+    },
+    {
+      "sub": "Blood Relations",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "These test your ability to track family links from a worded statement and work out how two people are related, often through a chain of ‘the son of’, ‘the only daughter of’ phrases."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Read the sentence from the innermost phrase outward — resolve the smallest relation first.",
+            "Translate each phrase into a quick family tree (+ for male, − for female, lines for parent/child).",
+            "Substitute each resolved person back into the outer phrase, step by step.",
+            "State the final relation from the asked person’s point of view, watching the gender."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "‘His mother is the only daughter of my mother’ — how is the speaker (a woman) related to him?\n\nStep 1 — Innermost: ‘the only daughter of my mother’.\nStep 2 — The only daughter of the speaker’s mother is the speaker herself.\nStep 3 — So ‘his mother’ = the speaker.\nStep 4 — She is his mother.\n\nAnswer: Mother."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "The biggest trap is assuming the speaker’s gender or skipping ‘only’. ‘Only daughter’ forces that daughter to be the speaker herself — read those qualifiers literally."
+        }
+      ]
+    },
+    {
+      "sub": "Direction Sense",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "Direction questions test whether you can track turns and distances on a mental map, then find either the final direction or the straight-line distance from the start."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Draw axes: North up, South down, East right, West left. Start at the origin.",
+            "Plot each leg. ‘Turn right’ rotates your facing 90° clockwise; ‘turn left’ 90° anticlockwise.",
+            "Total the movement along each axis separately — net North–South and net East–West.",
+            "For distance, use Pythagoras on the two net legs; opposite legs of equal length cancel."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "Walk 5 km N, turn right 3 km, turn right 5 km. Distance from start?\n\nStep 1 — Origin, facing North.\nStep 2 — 5 km North; right → East 3 km; right → South 5 km.\nStep 3 — North 5 and South 5 cancel; net East = 3.\nStep 4 — One leg remains, so distance = 3 km.\n\nAnswer: 3 km."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Confusing ‘distance walked’ with ‘distance from start’. The question almost always wants displacement — cancel opposite legs before measuring."
+        }
+      ]
+    },
+    {
+      "sub": "Coding & Decoding",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "These test whether you can find the rule that turns a word into its code — usually a fixed letter shift, a reversal, or a position swap — and then apply the same rule to a new word."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Line up the original word and its code, letter by letter.",
+            "Find the change per letter: count the alphabet gap (C→D is +1) and check it is constant.",
+            "Watch for variations — alternating shifts, reversed order, or position-based shifts.",
+            "Apply the confirmed rule to each letter of the target word independently."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "If CAT = DBU, then DOG = ?\n\nStep 1 — Align: C→D, A→B, T→U.\nStep 2 — Each letter moves +1 in the alphabet.\nStep 3 — Rule confirmed: shift every letter forward by one.\nStep 4 — D→E, O→P, G→H.\n\nAnswer: EPH."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Forgetting to apply the rule to every letter — students shift the first letter then copy the rest. Process each letter on its own."
+        }
+      ]
+    },
+    {
+      "sub": "Syllogisms",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "Syllogisms test whether a conclusion necessarily follows from the given statements — pure logic, not real-world knowledge. ‘Necessarily’ is the key word."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Treat each statement as a set: ‘All A are B’ means A sits entirely inside B.",
+            "Sketch overlapping circles (a Venn diagram) for the statements.",
+            "A conclusion is valid only if it holds in EVERY possible diagram, not just one.",
+            "Reject any conclusion that could be false in some valid arrangement — ‘some’ and ‘all’ must be exact."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "All cats are animals. All animals breathe. Conclusion?\n\nStep 1 — Cats sit inside Animals.\nStep 2 — Animals sit inside ‘things that breathe’.\nStep 3 — So Cats sit inside ‘things that breathe’ in every diagram.\nStep 4 — ‘All cats breathe’ always holds.\n\nAnswer: All cats breathe."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Bringing in outside knowledge, or accepting a conclusion that only ‘could’ be true. If you can draw one valid diagram where it fails, it does not follow."
+        }
+      ]
+    },
+    {
+      "sub": "Time and Work",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "These test the idea of a work rate — how much of a job someone does per day — and how rates add when people work together."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Convert each worker’s time into a one-day rate: finish in n days → 1/n per day.",
+            "Add the rates of everyone working together.",
+            "Invert the combined rate to get the combined time.",
+            "For staggered work, multiply rate × days for each phase and sum the work done."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "A finishes in 10 days, B in 15 days. Together?\n\nStep 1 — Rates: A = 1/10, B = 1/15 per day.\nStep 2 — Combined = 1/10 + 1/15 = 3/30 + 2/30 = 5/30.\nStep 3 — 5/30 = 1/6 per day.\nStep 4 — Time = 1 ÷ (1/6) = 6 days.\n\nAnswer: 6 days."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Averaging the two times, e.g. (10+15)/2. Work rates add, times do not — always go via 1/n per day."
+        }
+      ]
+    },
+    {
+      "sub": "Percentage",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "Percentage questions test conversion between percentages and fractions, and how successive percentage changes combine — a frequent NORCET trap."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Turn a percentage into a multiplier: +20% means ×1.20, −20% means ×0.80.",
+            "For successive changes, multiply the multipliers in order — never add the percentages.",
+            "Compare the final multiplier to 1: above 1 is a net gain, below 1 a net loss.",
+            "Convert the final multiplier back into a percentage change."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "A value rises 20%, then falls 20%. Net change?\n\nStep 1 — +20% → ×1.20; −20% → ×0.80.\nStep 2 — Combined = 1.20 × 0.80 = 0.96.\nStep 3 — 0.96 is below 1, so it is a net loss.\nStep 4 — 0.96 = 96% of the original → 4% decrease.\n\nAnswer: 4% decrease."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Assuming equal up-and-down percentages cancel to zero. They act on different bases, so the result is always a small net decrease."
+        }
+      ]
+    },
+    {
+      "sub": "Ratio and Proportion",
+      "cards": [
+        {
+          "type": "whatTests",
+          "title": "What this tests",
+          "body": "These test whether you can scale and combine ratios — especially chaining two ratios that share a common term."
+        },
+        {
+          "type": "method",
+          "title": "Step-by-step method",
+          "body": [
+            "Write each ratio clearly and identify the term they share.",
+            "Scale both ratios so the shared term has the same value (use the LCM).",
+            "Read the combined ratio across all terms.",
+            "Pick out the two terms the question asks for and simplify."
+          ]
+        },
+        {
+          "type": "worked",
+          "title": "Worked example",
+          "body": "A : B = 2 : 3 and B : C = 4 : 5. Find A : C.\n\nStep 1 — Shared term is B (3 in the first, 4 in the second).\nStep 2 — LCM of 3 and 4 is 12: scale to A : B = 8 : 12 and B : C = 12 : 15.\nStep 3 — Combined A : B : C = 8 : 12 : 15.\nStep 4 — A : C = 8 : 15.\n\nAnswer: 8 : 15."
+        },
+        {
+          "type": "mistake",
+          "title": "Common mistake to avoid",
+          "body": "Equalise the shared term before reading across. Blindly multiplying across ratios is unreliable — make B common first."
+        }
+      ]
+    }
   ]
 }

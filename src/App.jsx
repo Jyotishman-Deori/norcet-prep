@@ -133,6 +133,8 @@ import MindmapNodePopup from './screens/mindmap-node-popup.jsx';
 import KnowledgeMap from './screens/knowledge-map.jsx';
 // [F-A] Study Methods section.
 import StudyMethods from './screens/study-methods.jsx';
+// [#11] Drill Tests — consolidated test-mode hub.
+import DrillTests from './screens/drill-tests.jsx';
 // [F-B] Global pull-to-refresh overlay.
 import PullToRefresh from './ui/pull-to-refresh.jsx';
 // [F-E] Doubts review screen.
@@ -3639,6 +3641,8 @@ export default function App() {
         <LeaderboardScreen profileId={profile && profile.id}
                            isGuest={isGuestProfile(profile)}
                            onGuestSignIn={() => setNav({ screen: 'auth' })}
+                           attemptedCount={(data && data.stats && data.stats.totalAttempted) || 0}
+                           onStartQuiz={() => handleHomeNavigate({ screen: 'quick-setup' })}
                            onBack={goHome} />
       )}
 
@@ -3692,6 +3696,7 @@ export default function App() {
       {nav.screen === 'learn-topics' && (
         <LearnTopics onPick={(topicId, sub) => navigate({ screen: 'learn-cards', topicId, sub })} onBack={goHome}
                      onOpenDoubts={() => navigate({ screen: 'doubts' })}
+                     onStartQuickTest={() => handleHomeNavigate({ screen: 'quick-setup' })}
                      weakTopics={learnSignals.weakTopics} dueTopicIds={learnSignals.dueTopicIds} examDaysLeft={learnSignals.examDaysLeft} />
       )}
 
@@ -3728,6 +3733,12 @@ export default function App() {
           through handleHomeNavigate so quiz specs actually start a quiz. */}
       {nav.screen === 'study-methods' && (
         <StudyMethods onBack={goHome} onNavigate={handleHomeNavigate} progress={studyProgress} />
+      )}
+
+      {/* #11 — Drill Tests hub. Cards route to the existing setup screens via
+          handleHomeNavigate (plain navigate targets). */}
+      {nav.screen === 'drill-tests' && (
+        <DrillTests onBack={goHome} onNavigate={handleHomeNavigate} />
       )}
 
       {nav.screen === 'advanced-setup' && (

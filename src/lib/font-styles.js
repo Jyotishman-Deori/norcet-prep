@@ -110,6 +110,41 @@ export const fontStyles = `
   .kmap-celeb-particle, .kmap-celeb-check, .kmap-celeb-sparkle { animation: none !important; }
 }
 
+/* #13 Constellation overhaul — ambient/state animations on the dark star map.
+   All keyed on transform-box: fill-box so SVG transforms stay node-local. */
+@keyframes kmapPulseSlow { 0%, 100% { opacity: 0.22; transform: scale(1); } 50% { opacity: 0.42; transform: scale(1.12); } }
+.kmap-pulse-slow { animation: kmapPulseSlow 3.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapPulseWarm { 0%, 100% { opacity: 0.34; transform: scale(1); } 50% { opacity: 0.58; transform: scale(1.16); } }
+.kmap-pulse-warm { animation: kmapPulseWarm 2.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapRadiance { 0%, 100% { opacity: 0.40; transform: scale(1); } 50% { opacity: 0.72; transform: scale(1.22); } }
+.kmap-radiance { animation: kmapRadiance 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes kmapSunGlow { 0%, 100% { opacity: 0.55; transform: scale(1); } 50% { opacity: 0.8; transform: scale(1.08); } }
+.kmap-sun-glow { animation: kmapSunGlow 4.5s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+/* Fog-of-war: locked node adjacent to discovered/familiar territory — a faint
+   shimmer that says "you're close". */
+@keyframes kmapFogShimmer { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.34; } }
+.kmap-fog-shimmer { animation: kmapFogShimmer 2.4s ease-in-out infinite; }
+@keyframes kmapFogShimmerStrong { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.5; } }
+.kmap-fog-shimmer-strong { animation: kmapFogShimmerStrong 1.7s ease-in-out infinite; }
+/* Mastered node atmosphere — a tiny orbiting-particle group rotates slowly. */
+@keyframes kmapOrbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+.kmap-orbit { animation: kmapOrbit 9s linear infinite; transform-box: fill-box; transform-origin: center; }
+/* Flag-planting reward — "Mastered" floats up from the node and fades. */
+@keyframes kmapFloatUp { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(-26px); } }
+.kmap-float-up { animation: kmapFloatUp 1.4s ease-out both; transform-box: fill-box; transform-origin: center; }
+/* First-time cinematic intro text + HUD bottom-sheet spring-up. */
+@keyframes kmapIntroText { 0% { opacity: 0; transform: translateY(8px); } 25% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-6px); } }
+.kmap-intro-text { animation: kmapIntroText 3s ease-in-out both; }
+@keyframes kmapSheetUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+.kmap-sheet-up { animation: kmapSheetUp 0.34s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes kmapScrimIn { from { opacity: 0; } to { opacity: 1; } }
+.kmap-scrim-in { animation: kmapScrimIn 0.25s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .kmap-pulse-slow, .kmap-pulse-warm, .kmap-radiance, .kmap-sun-glow,
+  .kmap-fog-shimmer, .kmap-fog-shimmer-strong, .kmap-orbit, .kmap-float-up { animation: none !important; }
+  .kmap-sheet-up { animation: none !important; }
+}
+
 /* Custom scrollbars — subtle, rounded, and theme-aware. The thumb colour is
    driven by --sb-thumb / --sb-thumb-hover, set on :root from the theme (see the
    themeMode effect in App), so the harsh default white bar never shows in dark

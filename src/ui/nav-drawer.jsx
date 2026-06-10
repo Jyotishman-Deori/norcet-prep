@@ -1,15 +1,27 @@
 // =====================================================================
-// NAV DRAWER  (Pipeline step 38 / A1 session 4 — batch 1b slice 8 —
-// extracted from App.jsx)
-// The slide-in navigation menu (opened from the Home Menu button): the
-// secondary destinations + Settings entry. [A7] theme via useTheme(),
-// bookmarks count via useData(). open/onClose/onNavigate stay props.
+// NAV DRAWER  (Pipeline step 38 / A1 session 4 — extracted from App.jsx)
+// The slide-in navigation menu (opened from the Home Menu button).
+//
+// #8 Sidebar Revamp — restructured into FIVE clearly-defined groups, same
+// row/icon/chevron visual language as before:
+//   Study     — Revision, Library, Bookmarks, My Doubts, Add Question
+//   Progress  — Stats, Leaderboard, Exam Weightage
+//   Tools     — Exam Date, Reference
+//   Help&Learn— Study Methods + FAQ, shown as elevated CARDS (richer
+//               destinations), not plain rows
+//   Settings  — standalone, always at the very bottom
+// My Doubts is kept in Study (spec rule: reorganise, never remove an
+// existing item — the spec's lists predate the F-E Doubts feature).
+// FAQ card is badge-ready via the optional `faqUnread` prop (default 0).
+//
+// [A7] theme via useTheme(), bookmarks count via useData().
+// open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, HelpCircle, Layers, Lock, Menu, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 
-function NavDrawer({ open, onClose, onNavigate }) {
+function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   // Lock background scroll while the drawer is open.
@@ -31,20 +43,24 @@ function NavDrawer({ open, onClose, onNavigate }) {
 
   const go = (screen, extra) => { onClose(); onNavigate(extra ? { screen, ...extra } : { screen }); };
 
+  // ---- Category 1 — Study ----
   const study = [
-    { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: `${data.bookmarks.length} saved`, action: () => go('bookmarks-view') },
-    { key: 'doubts',    icon: Flag,        color: T.error,        label: 'My Doubts', sub: 'Points you flagged to revisit',  action: () => go('doubts') },
-    { key: 'stats',     icon: BarChart3,   color: T.sec.stats,    label: 'Stats',     sub: 'Progress by topic',              action: () => go('stats') },
-    { key: 'weightage', icon: Activity,    color: T.primary,      label: 'Exam weightage', sub: 'What the exam tests most',   action: () => go('weightage') },
-    { key: 'leaderboard', icon: Trophy,    color: T.accent,       label: 'Leaderboard', sub: 'Compare with other users',      action: () => go('leaderboard') },
+    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet') },
     { key: 'library',   icon: Layers,      color: T.sec.library,  label: 'Library',   sub: 'Question banks',                 action: () => go('library') },
-    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', sub: 'Your own custom Qs',          action: () => go('add-question') }
+    { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: `${data.bookmarks.length} saved`,  action: () => go('bookmarks-view') },
+    { key: 'doubts',    icon: Flag,        color: T.error,        label: 'My Doubts', sub: 'Points you flagged to revisit',  action: () => go('doubts') },
+    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', sub: 'Your own custom Qs',          action: () => go('add-question') },
   ];
+  // ---- Category 2 — Progress ----
+  const progress = [
+    { key: 'stats',       icon: BarChart3, color: T.sec.stats, label: 'Stats',          sub: 'Progress by topic',          action: () => go('stats') },
+    { key: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard',    sub: 'Compare with other users',   action: () => go('leaderboard') },
+    { key: 'weightage',   icon: Activity,  color: T.primary,   label: 'Exam weightage', sub: 'What the exam tests most',    action: () => go('weightage') },
+  ];
+  // ---- Category 3 — Tools ----
   const tools = [
-    { key: 'examdate',  icon: CalendarDays, color: T.primary,      label: 'Exam date', sub: 'Countdown & daily goal',         action: () => go('exam-date') },
-    { key: 'reference', icon: FlaskConical, color: T.accent,      label: 'Reference', sub: 'Labs, drugs, values',            action: () => go('reference') },
-    { key: 'revision',  icon: FileText,     color: T.sec.revision,label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet') },
-    { key: 'faq',       icon: HelpCircle,   color: T.primary,     label: 'FAQ & Help', sub: 'Answers + ask a question',     action: () => go('faq') }
+    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', sub: 'Countdown & daily goal', action: () => go('exam-date') },
+    { key: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', sub: 'Labs, drugs, values',    action: () => go('reference') },
   ];
 
   const Item = ({ it }) => {
@@ -67,6 +83,29 @@ function NavDrawer({ open, onClose, onNavigate }) {
 
   const GroupLabel = ({ children }) => (
     <div className="text-[10px] uppercase tracking-wider font-semibold px-3 mt-4 mb-1" style={{ color: T.muted }}>{children}</div>
+  );
+
+  // Help & Learn — elevated cards. More visual weight than a plain row to
+  // signal these are richer destinations (a guide / a Q&A experience).
+  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick }) => (
+    <button onClick={onClick}
+            className="no-tap-highlight w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left active:scale-[0.99] transition-transform"
+            style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconColor }}>
+        <Icon size={20} color="#FFF" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-1.5">
+          <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>{title}</div>
+          {badge && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
+                  style={{ background: badgeTone || T.primary, color: '#FFF' }}>{badge}</span>
+          )}
+        </div>
+        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>
+      </div>
+      <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+    </button>
   );
 
   return (
@@ -108,8 +147,23 @@ function NavDrawer({ open, onClose, onNavigate }) {
           <GroupLabel>Study</GroupLabel>
           {study.map(it => <Item key={it.key} it={it} />)}
 
+          <GroupLabel>Progress</GroupLabel>
+          {progress.map(it => <Item key={it.key} it={it} />)}
+
           <GroupLabel>Tools</GroupLabel>
           {tools.map(it => <Item key={it.key} it={it} />)}
+
+          <GroupLabel>Help &amp; Learn</GroupLabel>
+          <div className="px-1 mt-1 space-y-2">
+            <LearnCard icon={GraduationCap} iconColor={T.primary}
+                       title="Study Methods" sub="Learn how to study smarter"
+                       badge="Guide" badgeTone={T.primary}
+                       onClick={() => go('study-methods')} />
+            <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
+                       title="FAQ" sub="Questions answered by our team"
+                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error}
+                       onClick={() => go('faq')} />
+          </div>
 
           <div className="my-3 mx-3 border-t" style={{ borderColor: T.borderSoft }} />
           <button onClick={() => go('settings')}

@@ -8,10 +8,14 @@
 // and presentation flags stay props.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Flag, Flame, GraduationCap, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
+// #13 — live Knowledge Map summary on the Home card (same state math as the map).
+import { attemptStats } from '../lib/compact.js';
+import { mindmapState } from '../lib/kmap.js';
+import { countsInNursingStats } from '../data/seed.js';
 import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { pushNotification } from '../lib/notifications.js';
@@ -63,6 +67,33 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   }, []);
   const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
+
+  // #13 — live Knowledge Map summary for the Home card: counts sub-topics by
+  // state with the EXACT same aggregation + thresholds the map uses
+  // (attemptStats per question → per-(topic,sub) totals → mindmapState), so the
+  // card's promise always matches what the constellation shows.
+  const kmapSummary = useMemo(() => {
+    const hist = data.history || {};
+    const includeGk = !!(data.preferences && data.preferences.includeGkInStats === true);
+    const agg = {};   // `${topic}::${sub}` -> { attempted, correct }
+    Object.entries(hist).forEach(([qId, h]) => {
+      const q = allQuestions.find(x => x.id === qId);
+      if (!q || !q.topic || !countsInNursingStats(q.topic, includeGk)) return;
+      const s = attemptStats(h);
+      if (!s || s.total === 0) return;
+      const key = `${q.topic}::${(q.sub && String(q.sub).trim()) || 'General'}`;
+      if (!agg[key]) agg[key] = { attempted: 0, correct: 0 };
+      agg[key].attempted += s.total;
+      agg[key].correct += s.correct;
+    });
+    let mastered = 0, inProgress = 0;
+    Object.values(agg).forEach(a => {
+      const st = mindmapState(a.attempted, a.attempted > 0 ? a.correct / a.attempted : 0);
+      if (st === 'mastered') mastered += 1;
+      else if (st === 'discovered' || st === 'familiar') inProgress += 1;
+    });
+    return { mastered, inProgress };
+  }, [data.history, data.preferences, allQuestions]);
 
   // Feature 4 — week-over-week snapshot. ADAPTED to the real data model:
   //   • dailyHistory entries are { date, attempted, correct } — NOT `answered`.
@@ -839,121 +870,78 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* Advanced Test — featured */}
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'advanced-setup' })}
-            style={{ background: T.sec.advanced, border: 'none' }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                 style={{ background: 'rgba(255,255,255,0.12)' }}>
-              <Hourglass size={20} color={T.bg} />
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <div className="font-display text-base font-semibold" style={{ color: T.bg }}>Advanced Test</div>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                      style={{ background: T.accent, color: '#FFF' }}>Exam</span>
-              </div>
-              <div className="text-xs leading-snug truncate" style={{ color: T.bg, opacity: 0.7 }}>
-                Negative marking · Countdown · Palette
-              </div>
+      {/* #11 — Drill Tests hub entry. Replaces the old inline practice
+          section; all six test modes now live on the dedicated Drill Tests
+          screen. Prominent, gradient, with a mini mode-icon row so it reads
+          as an entry point to something substantial. */}
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'drill-tests' })}
+            style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+            <Dumbbell size={22} color="#FFF" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display text-lg font-semibold mb-0.5" style={{ color: '#FFF' }}>Drill Tests</div>
+            <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              Quick {'\u00b7'} Topic Wise {'\u00b7'} Mock {'\u00b7'} Advanced {'\u00b7'} Dosage {'\u00b7'} PYQ
             </div>
           </div>
-          <ChevronRight size={20} style={{ color: T.bg, opacity: 0.6 }} />
+          <ChevronRight size={22} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
+        </div>
+        <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+          {[Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass].map((Ic, i) => (
+            <Ic key={i} size={15} color="rgba(255,255,255,0.8)" />
+          ))}
         </div>
       </Card>
 
-      {/* Main actions */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <Card className="p-4" onClick={() => onNavigate({ screen: 'quick-setup' })}
-              style={{ borderTop: `3px solid ${T.sec.quick}` }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: T.sec.quick }}>
-            <Shuffle size={18} color="#FFF" />
-          </div>
-          <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Quick test</div>
-          <div className="text-xs" style={{ color: T.muted }}>Pick count + topic</div>
-        </Card>
-        <Card className="p-4" onClick={() => onNavigate({ screen: 'topic-select' })}
-              style={{ borderTop: `3px solid ${T.sec.topic}` }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: T.sec.topic }}>
-            <ListChecks size={18} color="#FFF" />
-          </div>
-          <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Topic wise test</div>
-          <div className="text-xs" style={{ color: T.muted }}>Pick a subject</div>
-        </Card>
-        <Card className="p-4" onClick={() => onNavigate({ screen: 'mock-setup' })}
-              style={{ borderTop: `3px solid ${T.sec.mock}` }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: T.sec.mock }}>
-            <Timer size={18} color="#FFF" />
-          </div>
-          <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Mock test</div>
-          <div className="text-xs" style={{ color: T.muted }}>Timed simulation</div>
-        </Card>
-        <Card className="p-4" onClick={() => onNavigate({ screen: 'learn-topics' })}
-              style={{ borderTop: `3px solid ${T.sec.learn}` }}>
-          <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: T.sec.learn }}>
-            <Brain size={18} color="#FFF" />
-          </div>
-          <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Learn topic wise</div>
-          <div className="text-xs" style={{ color: T.muted }}>Concept cards</div>
-        </Card>
-      </div>
-
-      {/* Dosage calculator — numeric drug-math practice. Lives on the dashboard
-          (not the slide-in menu) since it's a core practice mode. */}
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'dosage' })}
-            style={{ borderTop: `3px solid ${T.primary}` }}>
+      {/* Learn Topic Wise — stays on Home as its own standalone card
+          (learning, not testing); clearly separated from the Drill Tests
+          entry above. Same icon/accent/labels as before. */}
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'learn-topics' })}
+            style={{ borderTop: `3px solid ${T.sec.learn}` }}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
-            <Calculator size={20} color="#FFF" />
+          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.sec.learn }}>
+            <Brain size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Dosage calculation test</div>
-            <div className="text-xs" style={{ color: T.muted }}>Numeric drug-math practice · type-in answers</div>
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Learn topic wise</div>
+            <div className="text-xs" style={{ color: T.muted }}>Concept cards {'\u00b7'} learn before you test</div>
           </div>
           <ChevronRight size={20} style={{ color: T.muted }} />
         </div>
       </Card>
 
-      {/* P7 — Previous Year Papers. Exam-style entry point, so it sits on the
-          dashboard alongside the other core practice modes rather than in the
-          slide-in menu. */}
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'previous-papers' })}
-            style={{ borderTop: `3px solid ${T.sec.mock}` }}>
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.sec.mock }}>
-            <ClipboardList size={20} color="#FFF" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Previous Year Papers</div>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                    style={{ background: T.accent, color: '#FFF' }}>PYQ</span>
-            </div>
-            <div className="text-xs" style={{ color: T.muted }}>Official AIIMS NORCET papers · full mock with negative marking</div>
-          </div>
-          <ChevronRight size={20} style={{ color: T.muted }} />
-        </div>
-      </Card>
-
-      {/* P10 — Interactive Knowledge Map. Visualises the whole syllabus as a
-          graph the user unlocks by practising; a headline feature, so it sits
-          on the dashboard. Network icon (added to the lucide import for this). */}
+      {/* P10 / #13 — Interactive Knowledge Map. The app's USP, so the entry
+          card carries the constellation language itself: deep-space gradient,
+          a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
+          (same state math as the map) to create pull from Home. */}
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'knowledge-map' })}
-            style={{ borderTop: `3px solid ${T.accent}` }}>
+            style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
+                     border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(7,10,20,0.45)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent }}>
-            <Network size={20} color="#FFF" />
+          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 relative"
+               style={{ background: 'rgba(255,210,122,0.14)', border: '1px solid rgba(255,210,122,0.35)' }}>
+            <Network size={20} color="#FFD27A" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Knowledge Map</div>
+              <div className="font-display text-base font-semibold" style={{ color: '#EAF0FF' }}>Knowledge Map</div>
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                    style={{ background: T.primary, color: '#FFF' }}>NEW</span>
+                    style={{ background: 'rgba(255,210,122,0.18)', color: '#FFD27A' }}>{'\u2728'} Game</span>
             </div>
-            <div className="text-xs" style={{ color: T.muted }}>Your syllabus as a graph {'\u00b7'} unlock topics as you practise</div>
+            <div className="text-xs" style={{ color: 'rgba(234,240,255,0.62)' }}>
+              {(kmapSummary.mastered + kmapSummary.inProgress) > 0
+                ? <>
+                    <span style={{ color: '#FFD27A', fontWeight: 600 }}>{kmapSummary.mastered} mastered</span>
+                    {' \u00b7 '}
+                    <span style={{ color: '#9CC4FF', fontWeight: 600 }}>{kmapSummary.inProgress} in progress</span>
+                    {' \u00b7 your constellation grows'}
+                  </>
+                : <>A universe of topics, waiting to light up</>}
+            </div>
           </div>
-          <ChevronRight size={20} style={{ color: T.muted }} />
+          <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} />
         </div>
       </Card>
 

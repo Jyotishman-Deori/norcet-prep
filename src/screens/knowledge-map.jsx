@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Volume2, Search, Sparkles, X, Plus, LayoutGrid } from 'lucide-react';
+import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -490,28 +490,67 @@ function playCelebChime(tier) {
 
 // [A1 step 34] clampNum moved to ./lib/utils.js
 
+// =====================================================================
+// #13 Constellation overhaul — pure visual helpers (dark "star map").
+// The map interior is intentionally dark regardless of app theme, so these
+// tokens are fixed (not theme-derived). The four states are dramatically
+// different: locked = fog, discovered = cool star, familiar = warm star,
+// mastered = radiant gold-crowned star.
+// =====================================================================
+const CMAP = {
+  bg: '#0A0E1C',            // deep navy near-black
+  bgEdge: '#070A14',        // darker vignette edge
+  star: '#FFFFFF',          // starfield dots
+  panel: 'rgba(18,24,42,0.94)',
+  panelSolid: '#121A2E',
+  border: 'rgba(255,255,255,0.14)',
+  text: '#EAF0FF',
+  muted: 'rgba(234,240,255,0.58)',
+  edge: 'rgba(150,180,255,0.22)',
+  edgeRoot: 'rgba(255,210,120,0.40)',
+  sun: '#FFD27A',           // warm sun glow around NORCET center
+};
+// Per-state constellation styling. `base` is the subject identity colour.
+function _constNode(state, base) {
+  switch (state) {
+    case 'mastered':
+      return { core: base, ring: '#FFE6A6', label: '#FFFFFF', labelOpacity: 1,
+               glow: base, glowClass: 'kmap-radiance', glowR: 2.25, glowOpacity: 0.55,
+               rScale: 1.18, crown: true, orbit: true };
+    case 'familiar':
+      return { core: base, ring: base, label: '#F3F6FF', labelOpacity: 1,
+               glow: base, glowClass: 'kmap-pulse-warm', glowR: 1.85, glowOpacity: 0.42,
+               rScale: 1.06, crown: false, orbit: false };
+    case 'discovered':
+      return { core: '#26365C', ring: '#93C2FF', label: '#D6E6FF', labelOpacity: 0.95,
+               glow: '#7FB4FF', glowClass: 'kmap-pulse-slow', glowR: 1.7, glowOpacity: 0.34,
+               rScale: 0.96, crown: false, orbit: false };
+    default: // locked — fog of war
+      return { core: 'rgba(255,255,255,0.045)', ring: 'rgba(255,255,255,0.16)',
+               label: 'rgba(234,240,255,0.30)', labelOpacity: 1,
+               glow: null, glowClass: null, glowR: 0, glowOpacity: 0,
+               rScale: 0.84, crown: false, orbit: false };
+  }
+}
+// Deterministic star field (logical coords) — generated once, stable across renders.
+const CMAP_STARS = (() => {
+  const out = []; let seed = 1337;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  for (let i = 0; i < 90; i++) {
+    out.push({ x: rnd() * KMAP_VIEW, y: rnd() * KMAP_VIEW, r: 0.6 + rnd() * 1.6, o: 0.18 + rnd() * 0.5 });
+  }
+  return out;
+})();
+const kmapIntroSeenKey = (pid) => 'kmapintroseen:v1:' + (pid || 'guest');
+
 // ---- The screen ----------------------------------------------------------
 function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const profileId = useProfile().profileId;
   const fgOnDark = useFgOnDark();
-  // _kmapNodeStyle: closure over T/IS_DARK/fgOnDark (moved inside the component in slice 34).
-  // Visual treatment per state. Returns colour tokens for fill/stroke/text +
-  // flags. `color` is the subject's base colour; `fg` is its dark-safe variant.
-  function _kmapNodeStyle(state, color) {
-    const fg = fgOnDark(color);
-    switch (state) {
-      case 'mastered':
-        return { fill: color, stroke: color, text: '#FFFFFF', halo: true, badge: true, opacity: 1, dim: false };
-      case 'familiar':
-        return { fill: color + (IS_DARK ? '4D' : '40'), stroke: fg, text: T.ink, halo: 'hover', badge: false, opacity: 1, dim: false };
-      case 'discovered':
-        return { fill: color + (IS_DARK ? '33' : '22'), stroke: fg + '99', text: T.ink, halo: false, badge: false, opacity: 1, dim: false };
-      default: // locked
-        return { fill: color + (IS_DARK ? '1F' : '12'), stroke: T.border, text: T.muted, halo: false, badge: false, opacity: 0.62, dim: true };
-    }
-  }
+  // #13 — per-state visuals now come from the module-scope _constNode()
+  // (constellation language); the old theme-tinted _kmapNodeStyle was removed.
   const includeGk = !!(data && data.preferences && data.preferences.includeGkInStats === true);
 
   // Compute states ONCE per progress change (prompt point 7).
@@ -531,6 +570,10 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const lastTapRef = useRef({ t: 0, id: null });
 
   const [selected, setSelected] = useState(null);   // node payload for popup
+  // #13 — first-time cinematic intro: 'reveal' while the camera pulls back,
+  // 'banner' to show the one-time welcome, null afterwards. Plays once ever.
+  const [intro, setIntro] = useState(null);
+  const introRan = useRef(false);
 
   // Phase B — earned Explorer badges (local-only, shared:false). Loaded once;
   // mutated via earnExplorer below. Never written to Supabase.
@@ -871,64 +914,121 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
   const minimapVisible = view.k > 1.15;
 
-  // Background dot-grid colour + edge stroke = muted theme colour.
-  const dot = (T.muted || '#888') + (IS_DARK ? '26' : '1F');
-  const edgeStroke = (T.border || '#ccc');
+  // #13 — progressive reveal by zoom. Galaxy: subjects only. Solar: sub-topics
+  // fade in. Topic: everything crisp. Sub-nodes + their tree edges share one
+  // opacity ramp so the map never feels like a dense web when zoomed out.
+  const subReveal = Math.max(0, Math.min(1, (view.k - 1.15) / 0.95));   // 0 at k≤1.15 → 1 at k≥2.10
+  const subsInteractive = view.k >= 1.35;
+
+  // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
+  // get a subtle shimmer that pulls the eye toward what's unlockable next.
+  const fogSet = useMemo(() => {
+    const m = new Map();   // id -> 'soft' | 'strong'
+    const byId = {}; (model.subjects || []).forEach(s => { byId[s.id] = s; });
+    (model.subjects || []).forEach(subj => {
+      const started = mindmapStateRank(subj.state) >= 1;   // discovered+
+      const masteredSib = (subj.subs || []).some(x => x.state === 'mastered');
+      (subj.subs || []).forEach(sub => {
+        if (sub.state === 'locked' && started) m.set(`${subj.id}::${sub.sub}`, masteredSib ? 'strong' : 'soft');
+      });
+    });
+    DEPENDENCIES.forEach(dep => {
+      const a = byId[dep.from], b = byId[dep.to];
+      if (!a || !b) return;
+      if (a.state === 'locked' && mindmapStateRank(b.state) >= 1 && !m.has(a.id)) m.set(a.id, 'soft');
+      if (b.state === 'locked' && mindmapStateRank(a.state) >= 1 && !m.has(b.id)) m.set(b.id, 'soft');
+    });
+    return m;
+  }, [model]);
+
+  // #13 — first-time cinematic reveal. Start zoomed in on the NORCET sun, then
+  // pull back to the full galaxy over ~2.6s and show the one-time welcome.
+  useEffect(() => {
+    if (introRan.current) return;
+    introRan.current = true;
+    let alive = true;
+    const timers = [];
+    (async () => {
+      let seen = false;
+      try { const r = await safeStorage.get(kmapIntroSeenKey(profileId), false); seen = !!(r && r.value); } catch (_) {}
+      if (!alive || seen) return;
+      try { safeStorage.set(kmapIntroSeenKey(profileId), '1', false); } catch (_) {}
+      const reduced = prefersReducedMotion();
+      const cx = KMAP_VIEW / 2;
+      if (reduced || typeof requestAnimationFrame !== 'function') {
+        setIntro('banner');
+        timers.push(setTimeout(() => { if (alive) setIntro(null); }, 6000));
+        return;
+      }
+      setIntro('reveal');
+      setView({ k: 2.7, x: cx - cx * 2.7, y: cx - cx * 2.7 });   // centred on the sun
+      timers.push(setTimeout(() => { if (alive) animateView(FIT_TARGET, 2600); }, 70));
+      timers.push(setTimeout(() => { if (alive) setIntro('banner'); }, 2750));
+    })();
+    return () => { alive = false; timers.forEach(clearTimeout); };
+  }, [profileId, animateView]);
 
   return (
     <div className="anim-fadeup">
       <TopBar title="Knowledge Map" onBack={onBack} feedback={{ screen: 'Knowledge Map' }} />
 
       <div className="max-w-md mx-auto px-4 pt-3 pb-24">
-        {/* Encouraging banner for users with no progress (edge case 10). */}
+        {/* Encouraging banner for users with no progress (edge case 10),
+            re-voiced for the constellation metaphor. */}
         {model.totalAttempted === 0 && (
           <div className="rounded-2xl px-4 py-3 mb-3 text-sm anim-fadeup"
                style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}`, color: T.ink }}>
-            <span className="font-display font-semibold">Take a quiz to start unlocking your knowledge map.</span>
+            <span className="font-display font-semibold">Take a quiz to light your first star.</span>
             <div className="text-xs mt-1" style={{ color: T.muted }}>
-              Every topic begins locked. Answer questions and branches light up as you grow.
+              Every topic starts dark. Answer questions and watch your constellation come to life.
             </div>
           </div>
         )}
 
-        {/* Legend */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mb-2 text-[11px]" style={{ color: T.muted }}>
+        {/* Legend — tiny live examples of each state in the new constellation
+            language, on a dark strip so the glows read the same as the map. */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
+             style={{ background: CMAP.panelSolid, border: `1px solid ${CMAP.border}`, color: CMAP.muted }}>
           {KMAP_STATES.map(s => {
-            const st = _kmapNodeStyle(s, T.primary);
+            const cs = _constNode(s, CMAP.sun);
             return (
-              <span key={s} className="inline-flex items-center gap-1">
-                <span style={{ width: 10, height: 10, borderRadius: 999, background: st.fill, border: `1.5px solid ${st.stroke}`, display: 'inline-block', opacity: st.opacity }} />
-                {KMAP_STATE_LABEL[s]}
+              <span key={s} className="inline-flex items-center gap-1.5">
+                <svg width="18" height="18" viewBox="0 0 18 18" style={{ display: 'block', flexShrink: 0 }}>
+                  {cs.glow && <circle cx="9" cy="9" r={7.5} fill={cs.glow} opacity={cs.glowOpacity} />}
+                  <circle cx="9" cy="9" r={4.6 * cs.rScale} fill={cs.core} stroke={cs.ring} strokeWidth={1.3} />
+                  {cs.crown && <text x="9" y="6.2" textAnchor="middle" fontSize="6" fill="#FFE6A6">{'\u2605'}</text>}
+                </svg>
+                <span style={{ color: s === 'locked' ? CMAP.muted : CMAP.text }}>{KMAP_STATE_LABEL[s]}</span>
               </span>
             );
           })}
         </div>
 
-        {/* The map surface */}
-        <div className="relative rounded-2xl overflow-hidden surface-card"
-             style={{ height: 460, touchAction: 'none' }}>
+        {/* The map surface — a dark "constellation" canvas. */}
+        <div className="relative rounded-2xl overflow-hidden"
+             style={{ height: 460, touchAction: 'none', background: CMAP.bg, border: `1px solid ${CMAP.border}` }}>
           {/* P11 Feature A — "Suggested for you today" floating panel (top-right
-              overlay). Hidden when there's nothing to suggest. */}
-          {suggestions.length > 0 && !suggestDismissed && (
+              overlay), restyled to the dark game aesthetic. */}
+          {suggestions.length > 0 && !suggestDismissed && !intro && (
             <div className="absolute top-2 right-2 z-10 rounded-xl anim-fadeup"
-                 style={{ width: 200, background: T.surface, border: `1px solid ${T.border}`,
-                          boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
+                 style={{ width: 200, background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
               <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
-                   style={{ color: T.inkSoft }}>
+                   style={{ color: CMAP.text }}>
                 <span className="flex items-center gap-1.5">
-                  <Sparkles size={13} style={{ color: T.accent }} /> Suggested today
+                  <Sparkles size={13} style={{ color: CMAP.sun }} /> Suggested today
                 </span>
                 <button onClick={() => setSuggestDismissed(true)}
-                        className="no-tap-highlight p-0.5 -m-0.5 rounded active:bg-black/5"
+                        className="no-tap-highlight p-0.5 -m-0.5 rounded active:bg-white/10"
                         aria-label="Dismiss suggestions">
-                  <X size={14} style={{ color: T.muted }} />
+                  <X size={14} style={{ color: CMAP.muted }} />
                 </button>
               </div>
               <div className="px-2 pb-2 space-y-1.5">
                 {suggestions.map(sug => (
-                  <div key={sug.id} className="rounded-lg p-2" style={{ background: T.surfaceWarm }}>
+                  <div key={sug.id} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold truncate" style={{ color: T.ink }}>{sug.name}</span>
+                      <span className="text-xs font-semibold truncate" style={{ color: CMAP.text }}>{sug.name}</span>
                       <button onClick={() => onPracticeTopic && onPracticeTopic(sug.id)}
                               className="no-tap-highlight text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0 active:scale-95"
                               style={{ background: T.primary, color: '#fff' }}
@@ -936,7 +1036,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                         Start
                       </button>
                     </div>
-                    <div className="text-[10px] mt-0.5 leading-snug" style={{ color: T.muted }}>{sug.detail}</div>
+                    <div className="text-[10px] mt-0.5 leading-snug" style={{ color: CMAP.muted }}>{sug.detail}</div>
                   </div>
                 ))}
               </div>
@@ -944,18 +1044,30 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           )}
           <svg ref={svgRef} viewBox={`0 0 ${KMAP_VIEW} ${KMAP_VIEW}`} width="100%" height="100%"
                role="group" aria-label="Knowledge map of NORCET subjects and topics"
-               style={{ display: 'block', cursor: 'grab', background: T.surface }}
+               style={{ display: 'block', cursor: 'grab', background: CMAP.bg }}
                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
                onPointerUp={endPointer} onPointerCancel={endPointer} onPointerLeave={endPointer}
                onWheel={onWheel}>
             <defs>
-              <pattern id="kmapDots" width="26" height="26" patternUnits="userSpaceOnUse">
-                <circle cx="2" cy="2" r="1.4" fill={dot} />
-              </pattern>
+              <radialGradient id="kmapSpace" cx="50%" cy="50%" r="62%">
+                <stop offset="0%" stopColor="#141C32" />
+                <stop offset="60%" stopColor={CMAP.bg} />
+                <stop offset="100%" stopColor={CMAP.bgEdge} />
+              </radialGradient>
+              <radialGradient id="kmapSun" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor={CMAP.sun} stopOpacity="0.55" />
+                <stop offset="45%" stopColor={CMAP.sun} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={CMAP.sun} stopOpacity="0" />
+              </radialGradient>
             </defs>
-            {/* dot grid background fills the whole logical canvas, panned with content */}
             <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
-              <rect x={-KMAP_VIEW} y={-KMAP_VIEW} width={KMAP_VIEW * 3} height={KMAP_VIEW * 3} fill="url(#kmapDots)" />
+              {/* deep-space backdrop + static star field (panned with content) */}
+              <rect x={-KMAP_VIEW} y={-KMAP_VIEW} width={KMAP_VIEW * 3} height={KMAP_VIEW * 3} fill="url(#kmapSpace)" />
+              {CMAP_STARS.map((st, i) => (
+                <circle key={`star${i}`} cx={st.x} cy={st.y} r={st.r} fill={CMAP.star} opacity={st.o} />
+              ))}
+              {/* ambient sun glow radiating from the NORCET centre */}
+              <circle cx={KMAP_VIEW / 2} cy={KMAP_VIEW / 2} r={300} fill="url(#kmapSun)" className="kmap-sun-glow" />
 
               {/* edges first so nodes sit on top */}
               {layout.edges.map((ed, i) => {
@@ -971,21 +1083,26 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (ed.kind === 'related') {
                   return (
                     <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                          stroke={T.muted} strokeWidth={1.4} strokeLinecap="round"
-                          strokeOpacity={0.5} strokeDasharray="2 7" />
+                          stroke={CMAP.muted} strokeWidth={1.4} strokeLinecap="round"
+                          strokeOpacity={0.4} strokeDasharray="2 7" />
                   );
                 }
                 if (ed.kind === 'bonus') {
                   return (
                     <path key={ed.id || `e${i}`} d={ed.d} fill="none"
                           stroke={KMAP_BONUS_COLOR} strokeWidth={1.6} strokeLinecap="round"
-                          strokeOpacity={0.55} strokeDasharray="1 6" />
+                          strokeOpacity={0.55 * (0.3 + 0.7 * subReveal)} strokeDasharray="1 6" />
                   );
                 }
+                // tree edge: root→subject stays bright; subject→sub fades in with zoom.
+                const isRoot = ed.from === '__root__';
                 return (
                   <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                        stroke={edgeStroke} strokeWidth={ed.from === '__root__' ? 2 : 1.2}
-                        strokeOpacity={0.75} strokeLinecap="round" />
+                        stroke={isRoot ? CMAP.edgeRoot : CMAP.edge}
+                        strokeWidth={isRoot ? 2 : 1.1}
+                        strokeOpacity={isRoot ? 0.7 : 0.55 * subReveal}
+                        strokeLinecap="round"
+                        style={{ transition: 'stroke-opacity 220ms ease' }} />
                 );
               })}
 
@@ -994,8 +1111,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (node.kind === 'root') {
                   return (
                     <g key={node.id}>
+                      <circle cx={node.x} cy={node.y} r={120} fill="url(#kmapSun)" className="kmap-sun-glow" />
                       <circle cx={node.x} cy={node.y} r={46} fill={T.primary} />
-                      <circle cx={node.x} cy={node.y} r={46} fill="none" stroke={T.primary} strokeOpacity={0.25} strokeWidth={10} />
+                      <circle cx={node.x} cy={node.y} r={46} fill="none" stroke={CMAP.sun} strokeOpacity={0.6} strokeWidth={2.5} />
                       <text x={node.x} y={node.y + 5} textAnchor="middle" className="font-display"
                             fontSize={20} fontWeight={700} fill="#FFFFFF">NORCET</text>
                     </g>
@@ -1013,7 +1131,8 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   const ly = node.y + Math.sin(node.angle) * (r + 5);
                   const anchor = Math.cos(node.angle) > 0.3 ? 'start' : Math.cos(node.angle) < -0.3 ? 'end' : 'middle';
                   return (
-                    <g key={node.id} className="kmap-bonus-reveal" style={{ cursor: 'pointer' }}
+                    <g key={node.id} className="kmap-bonus-reveal"
+                       style={{ cursor: 'pointer', opacity: 0.3 + 0.7 * subReveal, pointerEvents: subsInteractive ? 'auto' : 'none' }}
                        onClick={() => activateNode(node)}
                        role="button" tabIndex={0}
                        aria-label={`Bonus: ${b.name}${earned ? ', Explorer badge earned' : ''}`}
@@ -1023,7 +1142,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                             stroke={KMAP_BONUS_COLOR} strokeWidth={2} />
                       <text x={node.x} y={node.y + 5} textAnchor="middle" fontSize={15}>{earned ? '\u2605' : '\u2727'}</text>
                       <text x={lx} y={ly + 4} textAnchor={anchor} className="font-body"
-                            fontSize={11} fontWeight={600} fill={T.inkSoft}>
+                            fontSize={11} fontWeight={600} fill={CMAP.muted}>
                         {b.name}
                       </text>
                     </g>
@@ -1031,81 +1150,117 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 }
                 if (node.kind === 'subject') {
                   const s = node.data;
-                  const st = _kmapNodeStyle(s.state, s.color);
-                  const r = 34;
-                  // label sits outside the ring (pushed radially outward a touch)
+                  const cs = _constNode(s.state, s.color);
+                  const r = 34 * cs.rScale;
                   const lx = node.x + Math.cos(node.angle) * (r + 4);
                   const ly = node.y + Math.sin(node.angle) * (r + 4);
                   const anchor = Math.cos(node.angle) > 0.3 ? 'start' : Math.cos(node.angle) < -0.3 ? 'end' : 'middle';
                   const noted = !!(notes[node.id] && notes[node.id].text);
                   const dimmed = matchSet && !matchSet.has(node.id);
                   const hit = matchSet && matchSet.has(node.id);
+                  const fog = fogSet.get(node.id);
                   return (
-                    <g key={node.id} style={{ cursor: 'pointer', opacity: dimmed ? 0.2 : 1, transition: 'opacity 160ms ease' }}
+                    <g key={node.id} style={{ cursor: 'pointer', opacity: dimmed ? 0.18 : 1, transition: 'opacity 160ms ease' }}
                        onClick={() => activateNode(node)}
                        {...noteGestureProps(node)}
                        role="button" tabIndex={0}
                        aria-label={`${s.name}: ${KMAP_STATE_LABEL[s.state]}, ${Math.round(s.accuracy * 100)}% accuracy${noted ? ', has a note' : ''}`}
                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
+                      {/* fog-of-war shimmer ring for locked-but-adjacent subjects */}
+                      {fog && (
+                        <circle cx={node.x} cy={node.y} r={r + 7} fill="none" stroke={CMAP.sun}
+                                strokeWidth={2} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
+                      )}
                       {hit && (
-                        <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke={T.accent} strokeWidth={3} strokeDasharray="4 4" opacity={0.95} />
+                        <circle cx={node.x} cy={node.y} r={r + 8} fill="none" stroke={T.accent} strokeWidth={3} strokeDasharray="4 4" opacity={0.95} />
                       )}
-                      {st.halo === true && (
-                        <circle cx={node.x} cy={node.y} r={r + 9} fill={s.color} opacity={IS_DARK ? 0.28 : 0.20} />
+                      {/* state glow (radiance / pulse) behind the core */}
+                      {cs.glow && (
+                        <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
+                                opacity={cs.glowOpacity} className={cs.glowClass} />
                       )}
-                      <circle cx={node.x} cy={node.y} r={r} fill={st.fill} stroke={st.stroke}
-                              strokeWidth={s.state === 'mastered' ? 2.5 : 2} opacity={st.opacity} />
-                      <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={20}>{topicIcon(s.id)}</text>
-                      {st.badge && (
-                        <g>
-                          <circle cx={node.x + r - 6} cy={node.y - r + 6} r={9} fill={T.success} stroke={T.surface} strokeWidth={2} />
-                          <path d={`M ${node.x + r - 10} ${node.y - r + 6} l 3 3 l 5 -6`} fill="none" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                      {/* mastered atmosphere — tiny orbiting particles */}
+                      {cs.orbit && (
+                        <g className="kmap-orbit">
+                          {[0, 1, 2].map(k => {
+                            const a = (k / 3) * Math.PI * 2;
+                            return <circle key={k} cx={node.x + Math.cos(a) * (r + 10)} cy={node.y + Math.sin(a) * (r + 10)} r={2.4} fill="#FFE6A6" opacity={0.9} />;
+                          })}
                         </g>
+                      )}
+                      <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring}
+                              strokeWidth={s.state === 'mastered' ? 3 : 2} />
+                      <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={20}
+                            opacity={s.state === 'locked' ? 0.45 : 1}>{topicIcon(s.id)}</text>
+                      {/* mastered crown */}
+                      {cs.crown && (
+                        <text x={node.x} y={node.y - r + 4} textAnchor="middle" fontSize={16} fill="#FFE6A6">{'\u2605'}</text>
                       )}
                       {noted && (
                         <g aria-hidden="true">
-                          <circle cx={node.x - r + 6} cy={node.y - r + 6} r={9} fill={T.surface} stroke={T.border} strokeWidth={1.5} />
+                          <circle cx={node.x - r + 6} cy={node.y - r + 6} r={9} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.5} />
                           <text x={node.x - r + 6} y={node.y - r + 10} textAnchor="middle" fontSize={11}>{'\uD83D\uDCCC'}</text>
                         </g>
                       )}
                       <text x={lx} y={ly + 4} textAnchor={anchor} className="font-display"
-                            fontSize={13} fontWeight={600} fill={st.dim ? T.muted : T.ink}>
+                            fontSize={13} fontWeight={s.state === 'locked' ? 500 : 600}
+                            fill={cs.label} opacity={cs.labelOpacity}>
                         {s.name}
                       </text>
                     </g>
                   );
                 }
-                // sub node
+                // sub node — constellation star, revealed progressively by zoom.
                 const s = node.data;
-                const st = _kmapNodeStyle(s.state, node.color);
-                const r = 11;
+                const cs = _constNode(s.state, node.color);
+                const r = 11 * cs.rScale;
                 const lx = node.x + Math.cos(node.angle) * (r + 3);
                 const ly = node.y + Math.sin(node.angle) * (r + 3);
                 const anchor = Math.cos(node.angle) > 0.2 ? 'start' : Math.cos(node.angle) < -0.2 ? 'end' : 'middle';
                 const subNoted = !!(notes[node.id] && notes[node.id].text);
                 const subDimmed = matchSet && !matchSet.has(node.id);
                 const subHit = matchSet && matchSet.has(node.id);
+                const fog = fogSet.get(node.id);
+                // Search forces full reveal so matches are always findable.
+                const reveal = matchSet ? 1 : subReveal;
+                const labelOn = matchSet ? true : view.k >= 2.3;   // labels only at Topic zoom
                 return (
-                  <g key={node.id} style={{ cursor: 'pointer', opacity: subDimmed ? 0.2 : 1, transition: 'opacity 160ms ease' }}
+                  <g key={node.id}
+                     style={{ cursor: 'pointer', opacity: (subDimmed ? 0.18 : 1) * reveal,
+                              pointerEvents: (subsInteractive || matchSet) ? 'auto' : 'none',
+                              transition: 'opacity 200ms ease' }}
                      onClick={() => activateNode(node)}
                      {...noteGestureProps(node)}
                      role="button" tabIndex={0}
                      aria-label={`${s.sub}: ${s.attempted > 0 ? `${Math.round(s.accuracy * 100)}% accuracy` : 'not started'}${subNoted ? ', has a note' : ''}`}
                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
+                    {fog && (
+                      <circle cx={node.x} cy={node.y} r={r + 4} fill="none" stroke={CMAP.sun}
+                              strokeWidth={1.5} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
+                    )}
                     {subHit && (
                       <circle cx={node.x} cy={node.y} r={r + 5} fill="none" stroke={T.accent} strokeWidth={2.5} strokeDasharray="3 3" opacity={0.95} />
                     )}
-                    <circle cx={node.x} cy={node.y} r={r} fill={st.fill} stroke={st.stroke} strokeWidth={1.6} opacity={st.opacity} />
+                    {cs.glow && (
+                      <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
+                              opacity={cs.glowOpacity} className={cs.glowClass} />
+                    )}
+                    <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring} strokeWidth={1.6} />
+                    {cs.crown && (
+                      <text x={node.x} y={node.y - r + 1} textAnchor="middle" fontSize={9} fill="#FFE6A6">{'\u2605'}</text>
+                    )}
                     {subNoted && (
                       <g aria-hidden="true">
-                        <circle cx={node.x + r - 1} cy={node.y - r + 1} r={6} fill={T.surface} stroke={T.border} strokeWidth={1.2} />
+                        <circle cx={node.x + r - 1} cy={node.y - r + 1} r={6} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.2} />
                         <text x={node.x + r - 1} y={node.y - r + 4} textAnchor="middle" fontSize={8}>{'\uD83D\uDCCC'}</text>
                       </g>
                     )}
-                    <text x={lx} y={ly + 3} textAnchor={anchor} className="font-body"
-                          fontSize={9.5} fill={st.dim ? T.muted : T.inkSoft} opacity={st.dim ? 0.85 : 1}>
-                      {s.sub.length > 22 ? s.sub.slice(0, 21) + '\u2026' : s.sub}
-                    </text>
+                    {labelOn && (
+                      <text x={lx} y={ly + 3} textAnchor={anchor} className="font-body"
+                            fontSize={9.5} fill={cs.label} opacity={cs.labelOpacity}>
+                        {s.sub.length > 22 ? s.sub.slice(0, 21) + '\u2026' : s.sub}
+                      </text>
+                    )}
                   </g>
                 );
               })}
@@ -1148,12 +1303,19 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                                 style={{ '--tx': p.tx + 'px', '--ty': p.ty + 'px', animationDuration: pdur + 'ms', animationDelay: p.delay + 'ms' }} />
                       )
                     ))}
-                    {/* mastered — checkmark badge spring-in + a brief sparkle */}
+                    {/* mastered — flag-planting: gold crown pops in + "Mastered"
+                        floats up from the node and fades (spec moment 4–5). */}
                     {isMaster && (
                       <g className="kmap-celeb-check">
-                        <circle cx={c.x + c.r - 6} cy={c.y - c.r + 6} r={10} fill={T.success} stroke={T.surface} strokeWidth={2} />
-                        <path d={`M ${c.x + c.r - 10.5} ${c.y - c.r + 6} l 3 3.2 l 5.2 -6.4`} fill="none" stroke="#FFFFFF" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+                        <text x={c.x} y={c.y - c.r - 2} textAnchor="middle" fontSize={18} fill="#FFE6A6">{'\u2605'}</text>
                       </g>
+                    )}
+                    {isMaster && (
+                      <text x={c.x} y={c.y - c.r - 16} textAnchor="middle" className="font-display kmap-float-up"
+                            fontSize={13} fontWeight={700} fill="#FFE6A6"
+                            style={{ animationDelay: '500ms' }}>
+                        Mastered
+                      </text>
                     )}
                     {isMaster && (
                       <text x={c.x - c.r} y={c.y - c.r} textAnchor="middle" fontSize={15}
@@ -1165,14 +1327,15 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             </g>
           </svg>
 
-          {/* P11 Feature B — sound toggle (item 5). Off by default; persisted
-              local-only (shared:false). A short chime confirms enabling and
-              unlocks the AudioContext for later state-change chimes. */}
+          {/* #13 — master sound toggle (was Feature B). Off by default; toggles
+              all game sounds. Icon reflects state; a chime confirms enabling and
+              unlocks the AudioContext for later state-change chimes. Animations
+              still play silently when off; device silent mode is respected. */}
           <button onClick={() => { const n = !soundOn; setSoundOn(n); saveMindmapSound(n); if (n) playCelebChime('familiar'); }}
-                  aria-label={soundOn ? 'Unlock sounds: on' : 'Unlock sounds: off'} aria-pressed={soundOn}
+                  aria-label={soundOn ? 'Game sound: on' : 'Game sound: off'} aria-pressed={soundOn}
                   className="no-tap-highlight absolute top-2 left-2 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: soundOn ? T.accent : T.muted, opacity: soundOn ? 1 : 0.72 }}>
-            <Volume2 size={16} />
+                  style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: soundOn ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
+            {soundOn ? <Volume2 size={16} /> : <VolumeX size={16} />}
           </button>
 
           {/* P11 Feature C — search. A compact toggle next to the sound button
@@ -1181,26 +1344,26 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           {!searchOpen && (
             <button onClick={() => setSearchOpen(true)} aria-label="Search the map"
                     className="no-tap-highlight absolute top-2 left-12 z-10 w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                    style={{ background: T.surface, border: `1px solid ${T.border}`, color: queryActive ? T.accent : T.muted, opacity: queryActive ? 1 : 0.72 }}>
+                    style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: queryActive ? CMAP.sun : CMAP.muted, backdropFilter: 'blur(6px)' }}>
               <Search size={16} />
             </button>
           )}
           {searchOpen && (
             <div className="absolute top-2 left-2 right-2 z-20 rounded-xl flex items-center gap-2 px-2.5 anim-fadeup"
-                 style={{ height: 38, background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 6px 20px rgba(0,0,0,0.12)' }}>
-              <Search size={15} style={{ color: T.muted, flexShrink: 0 }} />
+                 style={{ height: 38, background: CMAP.panel, border: `1px solid ${CMAP.border}`, boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
+              <Search size={15} style={{ color: CMAP.muted, flexShrink: 0 }} />
               <input autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
                      placeholder={'Search topics & notes\u2026'}
                      aria-label="Search topics and notes"
                      className="flex-1 bg-transparent outline-none text-sm min-w-0"
-                     style={{ color: T.ink }} />
+                     style={{ color: CMAP.text }} />
               {queryActive && (
-                <span className="text-[11px] font-medium flex-shrink-0" style={{ color: T.muted }}>
+                <span className="text-[11px] font-medium flex-shrink-0" style={{ color: CMAP.muted }}>
                   {matchSet ? matchSet.size : 0} match{(matchSet && matchSet.size === 1) ? '' : 'es'}
                 </span>
               )}
               <button onClick={() => { setQuery(''); setSearchOpen(false); }} aria-label="Close search"
-                      className="no-tap-highlight p-1 rounded-full active:scale-90 flex-shrink-0" style={{ color: T.muted }}>
+                      className="no-tap-highlight p-1 rounded-full active:scale-90 flex-shrink-0" style={{ color: CMAP.muted }}>
                 <X size={16} />
               </button>
             </div>
@@ -1215,33 +1378,69 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             ].map(b => (
               <button key={b.lbl} onClick={b.fn} aria-label={b.lbl}
                       className="no-tap-highlight w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }}>
+                      style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: CMAP.text, backdropFilter: 'blur(6px)' }}>
                 {b.sign}
               </button>
             ))}
           </div>
 
-          {/* Minimap — only when zoomed past default (prompt point 6) */}
+          {/* Minimap — dark, with bright dots; mastered nodes glow brightest. */}
           {minimapVisible && (
             <div className="absolute bottom-3 right-3 rounded-lg overflow-hidden"
-                 style={{ width: 96, height: 96, background: T.surfaceWarm, border: `1px solid ${T.border}` }}
+                 style={{ width: 96, height: 96, background: CMAP.bgEdge, border: `1px solid ${CMAP.border}` }}
                  aria-hidden="true">
               <svg viewBox={`0 0 ${KMAP_VIEW} ${KMAP_VIEW}`} width="100%" height="100%">
-                {layout.nodes.filter(n => n.kind !== 'sub').map(n => (
-                  <circle key={n.id} cx={n.x} cy={n.y} r={n.kind === 'root' ? 40 : 26}
-                          fill={n.kind === 'root' ? T.primary : (n.kind === 'bonus' ? KMAP_BONUS_COLOR : (n.data ? n.data.color : T.muted))} opacity={0.8} />
-                ))}
-                {/* viewport rectangle */}
+                {layout.nodes.filter(n => n.kind !== 'sub').map(n => {
+                  const isRoot = n.kind === 'root';
+                  const isBonus = n.kind === 'bonus';
+                  const mastered = !isRoot && !isBonus && n.data && n.data.state === 'mastered';
+                  const fill = isRoot ? CMAP.sun : isBonus ? KMAP_BONUS_COLOR : (n.data ? n.data.color : CMAP.muted);
+                  const op = isRoot ? 1 : mastered ? 1 : (n.data && mindmapStateRank(n.data.state) >= 1 ? 0.8 : 0.32);
+                  return <circle key={n.id} cx={n.x} cy={n.y} r={isRoot ? 42 : mastered ? 34 : 26} fill={fill} opacity={op} />;
+                })}
                 <rect x={-view.x / view.k} y={-view.y / view.k}
                       width={KMAP_VIEW / view.k} height={KMAP_VIEW / view.k}
-                      fill="none" stroke={T.accent} strokeWidth={10} />
+                      fill="none" stroke={CMAP.sun} strokeWidth={10} />
               </svg>
+            </div>
+          )}
+
+          {/* #13 — first-time cinematic welcome (deferred #15 banner). Shows once
+              ever, after the camera pulls back to the galaxy. Dismissible. */}
+          {intro === 'banner' && (
+            <div className="absolute inset-0 z-30 flex items-end justify-center p-4 kmap-scrim-in"
+                 style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.35), rgba(7,10,20,0.78))' }}
+                 onClick={() => setIntro(null)}>
+              <div className="w-full max-w-xs rounded-2xl p-5 mb-4 text-center kmap-sheet-up"
+                   style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, boxShadow: '0 12px 40px rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
+                   onClick={(e) => e.stopPropagation()}>
+                <div className="text-2xl mb-1">{'\u2728'}</div>
+                <div className="font-display text-xl font-semibold mb-1" style={{ color: CMAP.text }}>
+                  Your universe to conquer
+                </div>
+                <div className="text-[13px] leading-relaxed mb-4" style={{ color: CMAP.muted }}>
+                  Every topic is a star. Practise to light them up — from a first faint
+                  discovery to a fully mastered, crowned constellation.
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={() => setIntro(null)}
+                          className="no-tap-highlight flex-1 py-2.5 rounded-xl text-sm font-medium active:scale-95"
+                          style={{ background: 'rgba(255,255,255,0.08)', color: CMAP.text, border: `1px solid ${CMAP.border}` }}>
+                    Got it
+                  </button>
+                  <button onClick={() => setIntro(null)}
+                          className="no-tap-highlight flex-1 py-2.5 rounded-xl text-sm font-semibold active:scale-95"
+                          style={{ background: T.primary, color: '#fff' }}>
+                    Start Exploring
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         <div className="text-[11px] mt-2 text-center" style={{ color: T.muted }}>
-          Drag to pan {'\u00b7'} pinch or scroll to zoom {'\u00b7'} tap a node for details {'\u00b7'} double-tap to focus
+          Drag to pan {'\u00b7'} pinch or scroll to zoom {'\u00b7'} tap a star for details {'\u00b7'} double-tap to focus
         </div>
       </div>
 
