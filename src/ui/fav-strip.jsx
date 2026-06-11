@@ -1,18 +1,17 @@
 // =====================================================================
-// src/ui/fav-strip.jsx  (FAV — the premium Favourites section on Home)
-// Renders ONLY when the user has turned the section on in Settings AND has
-// at least one favourite — otherwise Home is byte-identical to before.
-// Sits above every other Home section: a glowing header row (heart pulse),
-// then horizontally-snapping premium cards in the USER'S priority order
-// (staggered spring entrance, hue glow, spring press). "Edit" opens the
-// manage screen. Self-syncing via the 'norcet:favs' window event, so a
-// heart tapped anywhere updates the strip without remounting Home.
+// src/ui/fav-strip.jsx  (FAV — the Favourites ENTRY CARD on Home)
+// Reworked per feedback: instead of an inline strip of cards, Favourites is
+// now a SECTION of its own — one premium card on Home (just like Drill
+// Tests) that launches the dedicated honeycomb screen. Renders ONLY when
+// the user has turned the section on in Settings (empty list still shows
+// the card so the section is discoverable once enabled). Self-syncing via
+// the 'norcet:favs' window event.
 // =====================================================================
 import React, { useEffect, useState } from 'react';
-import { ChevronRight, Heart, Pencil } from 'lucide-react';
+import { ChevronRight, Heart } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { favSection, loadFavs } from '../lib/favorites.js';
-import { PremiumFavCard } from './fav-icons.jsx';
+import { FavIcon } from './fav-icons.jsx';
 import { Tip } from './tooltip.jsx';
 
 export default function FavStrip({ onNavigate }) {
@@ -29,43 +28,51 @@ export default function FavStrip({ onNavigate }) {
     return () => { alive = false; window.removeEventListener('norcet:favs', onFavs); };
   }, [profileId]);
 
-  if (!favs || !favs.enabled || favs.order.length === 0) return null;
-  const sections = favs.order.map(favSection).filter(Boolean);
+  if (!favs || !favs.enabled) return null;
+  const top = favs.order.slice(0, 4).map(favSection).filter(Boolean);
 
   return (
-    <div className="mb-4">
-      {/* header row */}
-      <div className="flex items-center justify-between mb-2 px-1">
-        <div className="flex items-center gap-1.5">
-          <Heart size={13} fill="#E0245E" style={{ color: '#E0245E' }} className="fav-beat" />
-          <span className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>
-            Your favourites
-          </span>
-          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full"
-                style={{ background: '#E0245E18', color: '#E0245E' }}>{sections.length}</span>
+    <Tip title="Favourites" text="Your one-stop section — every feature you hearted, in your own priority order.">
+    <div role="button" tabIndex={0}
+         onClick={() => onNavigate({ screen: 'favorites' })}
+         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate({ screen: 'favorites' }); } }}
+         className="no-tap-highlight pressable cursor-pointer rounded-2xl p-4 mb-4 relative overflow-hidden"
+         style={{
+           background: 'linear-gradient(135deg, #E0245E, #9C1A57 70%)',
+           boxShadow: '0 6px 18px rgba(224,36,94,0.30)',
+         }}>
+      {/* soft glow accent */}
+      <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full pointer-events-none"
+           style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.22), transparent 70%)' }} aria-hidden="true" />
+      <div className="flex items-center gap-3 mb-2.5">
+        <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+             style={{ background: 'rgba(255,255,255,0.18)' }}>
+          <Heart size={20} color="#FFF" fill="#FFF" className="fav-beat" />
         </div>
-        <button onClick={() => onNavigate({ screen: 'favorites' })}
-                className="no-tap-highlight inline-flex items-center gap-1 text-[11px] font-semibold active:scale-95 transition px-2 py-1 rounded-full"
-                style={{ color: T.primary, background: T.primary + '10' }}>
-          <Pencil size={10} /> Edit
-        </button>
+        <div className="flex-1 min-w-0">
+          <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Favourites</div>
+          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            {favs.order.length === 0
+              ? 'Tap the hearts around the app to fill this'
+              : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} \u00b7 your one-stop section`}
+          </div>
+        </div>
+        <ChevronRight size={20} color="rgba(255,255,255,0.85)" />
       </div>
-
-      {/* horizontally-snapping premium cards, user's priority order */}
-      <div className="flex gap-2.5 overflow-x-auto pb-1.5 -mx-4 px-4"
-           style={{ scrollbarWidth: 'none', scrollSnapType: 'x proximity' }}>
-        {sections.map((s, i) => (
-          <Tip key={s.id} title={s.label} text={s.blurb}>
-          <PremiumFavCard section={s} compact
-                          surface={T.surface} ink={T.ink} muted={T.muted}
-                          onClick={() => onNavigate({ screen: s.id })}
-                          className="seq-item flex-shrink-0"
-                          style={{ width: 168, scrollSnapAlign: 'start', animationDelay: `${Math.min(i, 6) * 90}ms` }}>
-            <ChevronRight size={14} style={{ color: s.hue, opacity: 0.7 }} className="flex-shrink-0" />
-          </PremiumFavCard>
-          </Tip>
-        ))}
-      </div>
+      {/* mini icon row of the top picks (mirrors the Drill Tests card style) */}
+      {top.length > 0 && (
+        <div className="flex items-center gap-3 pt-2.5" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+          {top.map(sct => (
+            <span key={sct.id} style={{ lineHeight: 0, opacity: 0.92 }}>
+              <FavIcon name={sct.icon} size={15} color="rgba(255,255,255,0.9)" />
+            </span>
+          ))}
+          {favs.order.length > 4 && (
+            <span className="text-[10px] font-bold" style={{ color: 'rgba(255,255,255,0.8)' }}>+{favs.order.length - 4}</span>
+          )}
+        </div>
+      )}
     </div>
+    </Tip>
   );
 }

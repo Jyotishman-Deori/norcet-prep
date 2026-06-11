@@ -263,7 +263,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
   // ===== INDEX PAGE: pure table of contents =====
   return (
     <div className="anim-fadeup">
-      <TopBar title={`Bookmarks (${itemIds.size})`} onBack={onBack} favId="bookmarks-view"
+      <TopBar title={`Bookmarks (${itemIds.size})`} onBack={onBack}
               feedback={{ screen: "Bookmarks" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
 

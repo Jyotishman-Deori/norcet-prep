@@ -262,11 +262,35 @@ export const fontStyles = `
 }
 .drawer-glow { animation: drawerItemIn 0.3s cubic-bezier(0.22,1,0.36,1) both, drawerGlow 1.1s ease-out 0.35s 2; }
 
+/* ── FAV — honeycomb tiles: staggered pop-in, press spring, edit-mode
+   jiggle (iOS-style), picked-tile lift, removal shrink-out. */
+@keyframes favTileIn { 0% { opacity: 0; transform: scale(0.7) translateY(10px); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+.fav-tile-in { animation: favTileIn 0.34s cubic-bezier(0.34,1.56,0.64,1) both; }
+.fav-tile { transition: transform 0.16s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.fav-tile:active { transform: scale(0.94); }
+@keyframes favJiggle {
+  0% { transform: rotate(-1.4deg); } 50% { transform: rotate(1.4deg); } 100% { transform: rotate(-1.4deg); }
+}
+.fav-jiggle { animation: favJiggle 0.32s ease-in-out infinite; }
+.fav-picked { transform: scale(1.08) !important; z-index: 5; }
+@keyframes favTileOut { 0% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(0.6); } }
+.fav-tile-out { animation: favTileOut 0.24s ease-in both; }
+
+/* ── #6 — Home quote swap on pull-to-refresh: the fresh quote slides up
+   into place with a soft blur-settle, like a card being dealt. */
+@keyframes quoteSwap {
+  0% { opacity: 0; transform: translateY(10px); filter: blur(3px); }
+  60% { filter: blur(0); }
+  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.quote-swap { animation: quoteSwap 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
   .card-shimmer, .sheet-up, .fav-beat, .tip-in,
-  .drawer-item-in, .drawer-glow { animation: none !important; }
+  .drawer-item-in, .drawer-glow,
+  .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap { animation: none !important; }
 }
 
 /* ── App blur overlay — covers screen when the app loses focus (Session 4) ──

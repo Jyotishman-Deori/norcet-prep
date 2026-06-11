@@ -95,7 +95,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Dosage calculation test" onBack={onBack} feedback={{ screen: "Dosage calc" }} favId="dosage"
+      <TopBar title="Dosage calculation test" onBack={onBack} feedback={{ screen: "Dosage calc" }}
               right={<div className="text-xs font-semibold tabular-nums" style={{ color: T.muted }}>{index + 1} / {questions.length}</div>} />
 
       <div className="max-w-md mx-auto px-4 pb-40 pt-3">

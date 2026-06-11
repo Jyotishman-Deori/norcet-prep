@@ -81,7 +81,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Leaderboard" onBack={onBack} favId="leaderboard"
+      <TopBar title="Leaderboard" onBack={onBack}
               right={
                 <button onClick={load} disabled={entries === null} aria-label="Refresh"
                         className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">

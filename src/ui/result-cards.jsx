@@ -366,17 +366,36 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
         return s + '\u2026';
       };
 
-      // --- background: theme primary -> primarySoft vertical gradient ---
-      const g = ctx.createLinearGradient(0, 0, 0, S);
+      // --- #11 premium background: diagonal layered gradient with a deep
+      // base, two soft radial glow orbs, and faint diagonal texture lines ---
+      const g = ctx.createLinearGradient(0, 0, S, S);
       g.addColorStop(0, T.primary || '#0F4C4C');
-      g.addColorStop(1, T.primarySoft || '#1A6868');
+      g.addColorStop(0.55, T.primarySoft || '#1A6868');
+      g.addColorStop(1, '#101018');
       ctx.fillStyle = g;
       ctx.fillRect(0, 0, S, S);
+      let orb = ctx.createRadialGradient(S * 0.85, S * 0.12, 0, S * 0.85, S * 0.12, 360);
+      orb.addColorStop(0, 'rgba(255,255,255,0.16)');
+      orb.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = orb; ctx.fillRect(0, 0, S, S);
+      orb = ctx.createRadialGradient(S * 0.1, S * 0.92, 0, S * 0.1, S * 0.92, 420);
+      orb.addColorStop(0, 'rgba(255,255,255,0.10)');
+      orb.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = orb; ctx.fillRect(0, 0, S, S);
+      ctx.strokeStyle = 'rgba(255,255,255,0.045)';
+      ctx.lineWidth = 2;
+      for (let x = -S; x < S * 2; x += 64) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + S, S); ctx.stroke();
+      }
 
-      // subtle inner frame
-      ctx.strokeStyle = 'rgba(255,255,255,0.18)';
+      // double inner frame — hairline + soft outer ring
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
       ctx.lineWidth = 3;
       rr(48, 48, S - 96, S - 96, 40);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 10;
+      rr(36, 36, S - 72, S - 72, 48);
       ctx.stroke();
 
       const cx = S / 2;
@@ -404,11 +423,15 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       ctx.beginPath();
       ctx.arc(ringCx, ringCy, ringR, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = '#FFFFFF';                       // progress
+      ctx.save();                                        // progress + glow
+      ctx.shadowColor = 'rgba(255,255,255,0.55)';
+      ctx.shadowBlur = 26;
+      ctx.strokeStyle = '#FFFFFF';
       const startA = -Math.PI / 2;
       ctx.beginPath();
       ctx.arc(ringCx, ringCy, ringR, startA, startA + Math.PI * 2 * (pct / 100));
       ctx.stroke();
+      ctx.restore();
       ctx.fillStyle = '#FFFFFF';                         // pct in centre
       ctx.font = '700 112px Georgia, "Times New Roman", serif';
       ctx.fillText(`${pct}%`, ringCx, ringCy + 36);
@@ -444,10 +467,17 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(shareMotivation(pct), cx, y);
 
-      // --- footer url ---
-      ctx.font = '500 28px system-ui, -apple-system, "Segoe UI", sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.72)';
-      ctx.fillText('norcet-prep.vercel.app', cx, S - 70);
+      // --- footer url — framed pill so the link reads as the call to action ---
+      const urlText = (typeof window !== 'undefined' && window.location && window.location.host) || 'norcet-prep.vercel.app';
+      ctx.font = '600 30px Georgia, "Times New Roman", serif';
+      const uw = ctx.measureText(urlText).width + 76;
+      rr(cx - uw / 2, S - 118, uw, 64, 32);
+      ctx.fillStyle = 'rgba(255,255,255,0.14)';
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+      ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillText(urlText, cx, S - 74);
 
       canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
     } catch (e) { reject(e); }
@@ -462,10 +492,18 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
     catch (e) { setStatus('error'); setTimeout(() => setStatus('idle'), 3000); return; }
 
     const file = new File([blob], 'norcet-result.png', { type: 'image/png' });
+    // #11 — inviting caption: a friendly challenge + the tappable app link
+    // (share targets auto-link the URL; ?ref=score marks these installs).
+    const appUrl = ((typeof window !== 'undefined' && window.location && window.location.origin) || 'https://norcet-prep.vercel.app') + '/?ref=score';
+    const inviteLine = pct >= 80
+      ? `Just aced a ${quizType || 'practice'} session on NORCET Prep \u2014 ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
+      : pct >= 50
+        ? `Putting in the NORCET reps \u2014 ${safeCorrect}/${safeTotal} this round and climbing \uD83D\uDCAA Join me?`
+        : `Every attempt counts \u2014 grinding NORCET prep one session at a time \uD83C\uDFAF Study with me?`;
     const shareData = {
       files: [file],
       title: 'My NORCET Prep result',
-      text: `I scored ${safeCorrect}/${safeTotal} (${pct}%) on NORCET Prep!`
+      text: `${inviteLine}\nIt's free \u2014 tests, revision notes, PYQs & more: ${appUrl}`
     };
 
     // Mobile: native share sheet (only if it can share THIS file).

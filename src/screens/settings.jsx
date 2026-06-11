@@ -252,11 +252,43 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               </div>
             </Card>
 
-            {/* #31 — Switch profile / Log out moved into the unified PROFILE
-                actions card further down (with Reset), so all profile-state
-                actions live together with clear consequence hierarchy. */}
+            {/* #3 rework — Switch / Log out adjacent (the old 2-col layout,
+                kept because it looked right) directly below the rename card;
+                Log out still confirms via the bottom sheet. */}
+            <div className="grid grid-cols-2 gap-2 mb-2">
+              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={onSwitchProfile}>
+                <RefreshCw size={16} style={{ color: T.success }} />
+                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
+                <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
+              </Card>
+              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setLogoutSheet(true)}>
+                <LogOut size={16} style={{ color: '#D4900A' }} />
+                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
+                <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
+              </Card>
+            </div>
           </>
         )}
+
+        {/* #3 rework — Reset stays with the profile cluster (red row, typed
+            RESET confirmation in the bottom sheet). Available to guests too. */}
+        <Card className="mb-3 p-0 overflow-hidden">
+          <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
+              <Trash2 size={16} style={{ color: T.error }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm" style={{ color: T.error }}>Reset this profile's data</div>
+              <div className="text-[11px] mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
+                Permanently deletes progress, bookmarks, stats & custom questions
+              </div>
+            </div>
+          </button>
+        </Card>
+
+        {/* #4 — Share NORCET Prep lives right below the profile cluster. */}
+        <ShareAppCard />
 
         {/* My feedback */}
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenMyReports}>
@@ -941,55 +973,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           The Crib Sheet shows every question with correct answers and explanations — like a PYQ booklet. You can also share it.
         </div>
 
-        {/* #31 — PROFILE: Switch / Log out / Reset unified in ONE card with a
-            clear consequence ladder (safe green → cautious amber → destructive
-            red). Replaces the old DANGER ZONE section — the red text on the
-            Reset row carries the warning, not a section-level alarm. Log out
-            confirms via a light bottom sheet; Reset requires typing RESET. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
-        <Card className="mb-3 p-0 overflow-hidden">
-          {!isGuest && profile && (
-            <>
-              <button onClick={onSwitchProfile}
-                      className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.successSoft }}>
-                  <RefreshCw size={17} style={{ color: T.success }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium" style={{ color: T.ink }}>Switch profile</div>
-                  <div className="text-xs mt-0.5" style={{ color: T.muted }}>Change to a different saved profile</div>
-                </div>
-                <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
-              </button>
-              <div className="border-t" style={{ borderColor: T.borderSoft }} />
-              <button onClick={() => setLogoutSheet(true)}
-                      className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D4900A20' }}>
-                  <LogOut size={17} style={{ color: '#D4900A' }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium" style={{ color: T.ink }}>Log out</div>
-                  <div className="text-xs mt-0.5" style={{ color: T.muted }}>You can log back in with the same account</div>
-                </div>
-                <AlertTriangle size={14} style={{ color: '#D4900A' }} className="flex-shrink-0" />
-              </button>
-              <div className="border-t" style={{ borderColor: T.error + '30' }} />
-            </>
-          )}
-          <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
-                  className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
-              <Trash2 size={17} style={{ color: T.error }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.error }}>Reset this profile's data</div>
-              <div className="text-xs mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
-                Permanently deletes progress, bookmarks, stats, and custom questions
-              </div>
-            </div>
-          </button>
-        </Card>
-
         {/* P9 / step 33 — "Support the app" section. Quiet, always visible,
             below all functional settings. Opens the shared support modal
             (buy-me-a-chai / UPI). Non-transactional, no "donate" wording. */}
@@ -997,8 +980,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             The support card is visually ELEVATED (primary-tinted fill, heavier
             border, tinted icon block) so it reads as a warm highlight among
             the utilitarian rows — same logic as the Admin card's green tint. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share & support</div>
-        <ShareAppCard />
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Support</div>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => requestSupport()}
               ariaLabel="Support the app"
               style={{ background: T.primary + '0E', border: `1.5px solid ${T.primary}45`, borderRadius: 14 }}>

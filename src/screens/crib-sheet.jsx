@@ -17,8 +17,20 @@
 // an IntersectionObserver sentinel — never all at once on load.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, Check, ChevronLeft, Lightbulb, Minus, Share2, X } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { ArrowUp, BookmarkPlus, Check, ChevronLeft, Lightbulb, Minus, Printer, Share2, X } from 'lucide-react';
+import { useTheme, useProfile } from '../lib/app-context.jsx';
+// #5 — save this sheet into the Revision section (dated, printable).
+import { addCrib } from '../lib/cribs.js';
+import { Tip } from '../ui/tooltip.jsx';
+
+const CRIB_PRINT_STYLES = `
+@media print {
+  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .crib-no-print { display: none !important; }
+  .crib-print-page { padding-bottom: 0 !important; }
+  .crib-card { page-break-inside: avoid; break-inside: avoid; }
+}
+`;
 import { topicName, topicColor } from '../lib/topics.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import { HelpfulToggle } from '../ui/question-widgets.jsx';
@@ -28,7 +40,7 @@ const WINDOW = 25;
 function QuestionCard({ item, num, T, negative, profileId, accent }) {
   const { q, selected, status } = item;
   return (
-    <Card className="p-4" style={{ borderLeft: `3px solid ${accent}`, borderRadius: 12 }}>
+    <Card className="p-4 crib-card" style={{ borderLeft: `3px solid ${accent}`, borderRadius: 12 }}>
       {/* number + tags row */}
       <div className="flex items-center gap-1.5 flex-wrap mb-2">
         <span className="text-[11px] font-mono font-semibold" style={{ color: T.muted }}>Q{num}</span>
@@ -108,8 +120,27 @@ function QuestionCard({ item, num, T, negative, profileId, accent }) {
   );
 }
 
-function CribSheet({ title, subtitle, items, negative = null, profileId = null, onBack }) {
+function CribSheet({ title, subtitle, items, negative = null, profileId = null, savedMode = false, onBack }) {
   const { theme: T } = useTheme();
+  const { profile } = useProfile();
+  const pid = profileId || (profile && profile.id) || 'guest';
+  // #5 — save into Revision (one shot per sheet view).
+  const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
+  const saveToRevision = async () => {
+    if (saveState !== 'idle') return;
+    setSaveState('saving');
+    try {
+      await addCrib(pid, { title, subtitle, items });
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+      setSaveState('saved');
+    } catch (e) { setSaveState('idle'); }
+  };
+  // #5 — print: render EVERYTHING first (the windowed list would otherwise
+  // cut the printout short), then hand over to the browser print dialog.
+  const printSheet = () => {
+    setLimit(items.length);
+    setTimeout(() => { try { window.print(); } catch (e) {} }, 120);
+  };
   const correct = useMemo(() => items.filter(i => i.status === 'correct'), [items]);
   const wrong = useMemo(() => items.filter(i => i.status === 'wrong'), [items]);
   const na = useMemo(() => items.filter(i => i.status === 'na'), [items]);
@@ -194,8 +225,19 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
   const winNa = na.slice(0, Math.max(0, limit - correct.length - wrong.length));
 
   return (
-    <div className="anim-fadeup">
-      <TopBar title="Crib Sheet" onBack={onBack} feedback={{ screen: 'Crib sheet' }} />
+    <div className="anim-fadeup crib-print-page">
+      <style>{CRIB_PRINT_STYLES}</style>
+      <div className="crib-no-print">
+        <TopBar title="Crib Sheet" onBack={onBack} feedback={{ screen: 'Crib sheet' }}
+                right={
+                  <Tip text="Print this sheet, or save it as a PDF from the print dialog">
+                  <button onClick={printSheet} aria-label="Print crib sheet"
+                          className="no-tap-highlight p-2 rounded-full active:bg-black/5">
+                    <Printer size={18} style={{ color: T.muted }} />
+                  </button>
+                  </Tip>
+                } />
+      </div>
       <div className="max-w-md mx-auto px-4 pt-2 pb-28">
         <div className="px-1 mb-4">
           <div className="font-display text-xl font-semibold" style={{ color: T.ink }}>{title}</div>
@@ -230,6 +272,20 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
           </div>
         )}
 
+        {/* #5 — optional: keep this sheet. It lands in Revision → Crib
+            Sheets with today's date, ready to reopen or print any day. */}
+        {!savedMode && (
+          <button onClick={saveToRevision} disabled={saveState !== 'idle'}
+                  className="crib-no-print no-tap-highlight w-full mb-5 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+                  style={saveState === 'saved'
+                    ? { background: T.successSoft, color: T.success, border: `1.5px solid ${T.success}50` }
+                    : { background: T.surface, color: T.primary, border: `1.5px dashed ${T.primary}55` }}>
+            {saveState === 'saved'
+              ? (<><Check size={13} /> Saved — find it in Revision → Crib Sheets</>)
+              : (<><BookmarkPlus size={13} /> {saveState === 'saving' ? 'Saving…' : 'Add to Revision (save this sheet)'}</>)}
+          </button>
+        )}
+
         <Section label="✓ Correct" color={T.success} soft={T.successSoft}
                  icon={<Check size={14} style={{ color: T.success }} />}
                  list={winCorrect} refEl={correctRef} startNum={1}
@@ -256,7 +312,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       </div>
 
       {/* fixed bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
+      <div className="crib-no-print fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md mx-auto flex gap-2">
           <button onClick={onBack}
@@ -276,7 +332,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       {showTop && (
         <button onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }}
                 aria-label="Scroll to top"
-                className="no-tap-highlight fixed right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition anim-fadeup"
+                className="crib-no-print no-tap-highlight fixed right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition anim-fadeup"
                 style={{ bottom: 76, background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}>
           <ArrowUp size={18} style={{ color: T.inkSoft }} />
         </button>

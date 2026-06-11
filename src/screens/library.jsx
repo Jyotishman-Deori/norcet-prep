@@ -63,7 +63,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Question Bank Library" onBack={onBack} favId="library"
+      <TopBar title="Question Bank Library" onBack={onBack}
               feedback={{ screen: "Library" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
 

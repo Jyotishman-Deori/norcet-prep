@@ -21,7 +21,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import {
   Bell, RotateCcw, Flame, BarChart3, Flag, BookOpen, Trophy,
   Megaphone, Sparkles, CalendarClock, Brain, MessageSquare, TrendingUp,
-  CheckCircle2, ChevronRight, X, Target, CalendarDays,
+  CheckCircle2, ChevronRight, X, Target, CalendarDays, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -36,6 +36,11 @@ import { loadDoubts, unresolved } from '../lib/doubts.js';
 import { TOPICS } from '../data/seed.js';
 
 function NotificationCenter({ onBack, onNavigate }) {
+  // #7 rework — each category shows only its LATEST notification; the rest
+  // collapse behind a "See more" expander so the inbox stays clean.
+  const [expandedCats, setExpandedCats] = useState({});
+  // #7 — clear-all is destructive: caution sheet before wiping the inbox.
+  const [confirmClear, setConfirmClear] = useState(false);
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const { profileId } = useProfile();
@@ -154,6 +159,7 @@ function NotificationCenter({ onBack, onNavigate }) {
   const grouped = useMemo(() => {
     const g = { reminders: [], achievements: [], insights: [], updates: [] };
     for (const n of notifications) { const c = categoryOf(n); (g[c] || g.updates).push(n); }
+    for (const c in g) g[c].sort((a, b) => (b.ts || 0) - (a.ts || 0)); // recent first
     return g;
   }, [notifications]);
   const sectionOrder = useMemo(() => {
@@ -403,19 +409,37 @@ function NotificationCenter({ onBack, onNavigate }) {
                        style={{ color: T.muted }}>
                     {CATEGORY_LABELS[cat]}
                   </div>
-                  <div className="space-y-2">{items.map(renderCard)}</div>
+                  {(() => {
+                    const open = !!expandedCats[cat];
+                    const visible = open ? items : items.slice(0, 1);
+                    const hidden = items.length - 1;
+                    return (
+                      <div className="space-y-2">
+                        {visible.map(renderCard)}
+                        {hidden > 0 && (
+                          <button onClick={() => setExpandedCats(p => ({ ...p, [cat]: !open }))}
+                                  className="no-tap-highlight w-full py-2 rounded-xl text-[12px] font-semibold active:scale-[0.98] transition inline-flex items-center justify-center gap-1"
+                                  style={{ background: T.surfaceWarm, color: T.primary, border: `1px dashed ${T.border}` }}>
+                            {open
+                              ? (<>Show less <ChevronUp size={13} /></>)
+                              : (<>See {hidden} more <ChevronDown size={13} /></>)}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="space-y-2">{displayed.map(renderCard)}</div>
+          <div className="space-y-2">{[...displayed].sort((a, b) => (b.ts || 0) - (a.ts || 0)).map(renderCard)}</div>
         )}
 
         {/* Clear all — quiet, destructive, at the very bottom */}
         {notifications.length > 0 && (
           <div className="text-center mt-6">
-            <button onClick={clearAll}
+            <button onClick={() => setConfirmClear(true)}
                     className="no-tap-highlight text-xs px-3 py-1.5 rounded-lg active:bg-black/5"
                     style={{ color: T.muted }}>
               Clear all notifications
@@ -423,6 +447,35 @@ function NotificationCenter({ onBack, onNavigate }) {
           </div>
         )}
       </div>
+
+      {/* #7 — clear-all caution sheet (the wipe is irreversible). */}
+      {confirmClear && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center"
+             style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setConfirmClear(false)}>
+          <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
+               style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: T.border }} />
+            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>
+              Clear all {notifications.length} notifications?
+            </div>
+            <div className="text-sm leading-relaxed mb-5" style={{ color: T.muted }}>
+              This empties the whole inbox — reminders, achievements, insights and updates. It can't be undone.
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setConfirmClear(false)}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
+                      style={{ background: T.primary, color: '#FFF' }}>
+                Keep them
+              </button>
+              <button onClick={() => { setConfirmClear(false); clearAll(); }}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-medium active:scale-95 transition"
+                      style={{ background: T.errorSoft, color: T.error, border: `1.5px solid ${T.error}50` }}>
+                Clear all
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

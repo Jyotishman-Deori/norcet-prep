@@ -15,7 +15,7 @@ import { Tip } from './tooltip.jsx';
 
 let toastShownThisSession = false;
 
-export default function FavHeart({ favId }) {
+export default function FavHeart({ favId, inline = false, size = 18 }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const profileId = (profile && profile.id) || 'guest';
@@ -65,13 +65,13 @@ export default function FavHeart({ favId }) {
   return (
     <>
       <Tip text={isFav ? 'In your favourites — tap to remove' : 'Add this section to your favourites for one-tap access from home'}>
-      <button onClick={onTap}
+      <button onClick={(e) => { if (inline) { e.stopPropagation(); e.preventDefault(); } onTap(); }}
               aria-pressed={isFav}
               aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
-              className="no-tap-highlight p-2 rounded-full active:bg-black/5 flex-shrink-0">
+              className={"no-tap-highlight rounded-full active:bg-black/5 flex-shrink-0 " + (inline ? 'p-1.5' : 'p-2')}>
         <span key={`${isFav}`} className={"inline-block " + (anim === 'pop' ? 'bm-pop' : anim === 'deflate' ? 'bm-deflate' : '')}
               style={{ lineHeight: 0 }}>
-          <Heart size={18}
+          <Heart size={inline ? 14 : size}
                  fill={isFav ? '#E0245E' : 'none'}
                  style={{ color: isFav ? '#E0245E' : T.muted, transition: 'color .2s' }} />
         </span>

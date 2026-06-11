@@ -171,9 +171,18 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
   // Feature 5 — daily quote. New quote on every Home mount (each navigation
   // here); cycles the full set without repeats. Renders only once resolved.
+  // #6 — ALSO swaps on every pull-to-refresh (App dispatches
+  // 'norcet:refreshed'), with a swap animation: the old quote slips away,
+  // the new one settles in (quoteSeq keys the block so CSS re-runs).
   const [dailyQuote, setDailyQuote] = useState(null);
+  const [quoteSeq, setQuoteSeq] = useState(0);
   useEffect(() => {
     getNextQuote().then(q => setDailyQuote(q));
+    const onRefreshed = () => {
+      getNextQuote().then(q => { setDailyQuote(q); setQuoteSeq(n => n + 1); });
+    };
+    window.addEventListener('norcet:refreshed', onRefreshed);
+    return () => window.removeEventListener('norcet:refreshed', onRefreshed);
   }, []);
 
   // Feature 6 — generate inbox notifications from existing signals. Both
@@ -366,7 +375,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
       )}
 
-      {announcement && announcement.id !== data.dismissedAnnouncementId && (() => {
+      {announcement && announcement.id !== data.dismissedAnnouncementId
+        && !(announcement.expiresAt && Date.now() > announcement.expiresAt) && (() => {
         const important = announcement.level === 'important';
         const annAccent = important ? T.accent : T.primary;
         const AnnIcon = important ? AlertTriangle : Flag;
@@ -483,12 +493,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                  style={{ color: T.primary, opacity: 0.25, lineHeight: 1, marginLeft: -2, marginBottom: 0 }}>
               &#8220;
             </div>
-            <p className="text-sm leading-relaxed italic mt-0" style={{ color: T.inkSoft }}>
-              {dailyQuote.text}
-            </p>
-            <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
-              — {dailyQuote.source}
-            </p>
+            <div key={quoteSeq} className={quoteSeq > 0 ? 'quote-swap' : ''}>
+              <p className="text-sm leading-relaxed italic mt-0" style={{ color: T.inkSoft }}>
+                {dailyQuote.text}
+              </p>
+              <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
+                — {dailyQuote.source}
+              </p>
+            </div>
           </div>
         </div>
       )}

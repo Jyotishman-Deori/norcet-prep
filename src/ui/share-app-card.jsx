@@ -1,62 +1,78 @@
 // =====================================================================
-// src/ui/share-app-card.jsx  (#27 — "Share NORCET Prep" card, Settings)
-// One-tap word-of-mouth sharing + a three-tab install guide (Android / iOS /
-// Web). Uses the native OS share sheet via navigator.share where supported;
-// falls back to clipboard copy. The shared URL carries `?ref=share` so
-// in-app-share installs are distinguishable later (the parameter structure
-// also leaves room for per-user referral codes — empty for now by design).
-// Visual treatment mirrors the elevated support card (#20): primary-tinted
-// header so both Feedback-section cards read as intentionally special.
+// src/ui/share-app-card.jsx  (#27 — reworked per #10 feedback)
+// The install guide now travels WITH the link instead of sitting in the
+// card (the sender already knows the app — the FRIEND needs the steps).
+// The user picks who they're sending to — Android / iOS / Web friend, or
+// All — and the outgoing message is composed for that platform: a classy,
+// textured plain-text note with the link and the exact "add to home
+// screen" steps for THAT device. The in-card link pill got the premium
+// treatment (display serif, gradient texture, glow ring).
 // =====================================================================
 import React, { useEffect, useState } from 'react';
 import { Check, Copy, Share2, Smartphone } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
+import { Tip } from './tooltip.jsx';
 
-const TABS = [
-  { id: 'android', label: 'Android' },
-  { id: 'ios', label: 'iOS' },
-  { id: 'web', label: 'Web' },
+const AUDIENCES = [
+  { id: 'android', label: 'Android friend' },
+  { id: 'ios', label: 'iPhone friend' },
+  { id: 'web', label: 'Web / laptop' },
+  { id: 'all', label: 'Everyone' },
 ];
 
 const STEPS = {
-  android: [
-    'Open the link in Chrome for Android',
-    'Tap the three-dot menu (⋮) at the top right',
-    'Tap "Add to Home screen" and confirm',
-    'NORCET Prep appears on your home screen — opens as a full app, no browser bar',
-  ],
-  ios: [
-    'Open the link in Safari — must be Safari, not Chrome',
-    'Tap the Share icon at the bottom of the screen',
-    'Scroll and tap "Add to Home Screen"',
-    'Tap Add — NORCET Prep is now a full-screen app on your iPhone',
-  ],
-  web: [
-    'Open the link in any browser — works as a full website',
-    'Bookmark it for quick access — all your progress syncs automatically',
-    'For the best experience, follow the Android or iOS steps to install it as a home screen app',
-  ],
+  android: ['Open the link in Chrome', 'Tap the \u22ee menu (top right)', 'Tap "Add to Home screen" \u2192 confirm', 'It now opens as a full app \u2014 fast, full-screen, works offline'],
+  ios: ['Open the link in Safari (must be Safari)', 'Tap the Share icon at the bottom', 'Scroll \u2192 "Add to Home Screen" \u2192 Add', 'It now opens as a full app on your iPhone'],
+  web: ['Open the link in any browser', 'Bookmark it \u2014 your progress syncs automatically', 'On a phone later? Add it to your home screen for the full app feel'],
 };
+
+function buildMessage(audience, shareUrl) {
+  const head = [
+    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
+    '   N O R C E T   P R E P',
+    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
+    '',
+    "I've been preparing for AIIMS NORCET with this \u2014 it's completely free, no ads: tests, revision notes, PYQs, dosage drills and more.",
+    '',
+    `\u27a4 ${shareUrl}`,
+    '',
+  ];
+  const block = (title, steps) => [
+    `\u2726 ${title}`,
+    ...steps.map((st, i) => `  ${i + 1}. ${st}`),
+    '',
+  ];
+  let body = [];
+  if (audience === 'all') {
+    body = [
+      ...block('On Android', STEPS.android),
+      ...block('On iPhone', STEPS.ios),
+      ...block('On a laptop', STEPS.web),
+    ];
+  } else {
+    const title = audience === 'web' ? 'Using it' : 'Set it up (takes 20 seconds)';
+    body = block(title, STEPS[audience]);
+  }
+  return [...head, ...body, 'See you on the leaderboard \uD83C\uDF93'].join('\n');
+}
 
 export default function ShareAppCard() {
   const { theme: T } = useTheme();
-  const [tab, setTab] = useState('android'); // most of the user base
+  const [audience, setAudience] = useState('android');
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const [canShare, setCanShare] = useState(false);
-  useEffect(() => {
-    setCanShare(typeof navigator !== 'undefined' && !!navigator.share);
-  }, []);
+  useEffect(() => { setCanShare(typeof navigator !== 'undefined' && !!navigator.share); }, []);
 
   const baseUrl = (typeof window !== 'undefined' && window.location && window.location.origin) || 'https://norcetprep.app';
   const shareUrl = `${baseUrl}/?ref=share`;
   const displayUrl = baseUrl.replace(/^https?:\/\//, '');
-  const shareText = `I've been using NORCET Prep to study for AIIMS NORCET — it's free and really good. Open it in Chrome (Android) or Safari (iOS) and add it to your home screen for the best experience: ${shareUrl}`;
+  const message = buildMessage(audience, shareUrl);
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl);
+      await navigator.clipboard.writeText(message);
       setCopied(true);
       setTimeout(() => setCopied(false), 1800);
     } catch (e) {}
@@ -64,20 +80,17 @@ export default function ShareAppCard() {
   const share = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'NORCET Prep', text: shareText });
+        await navigator.share({ title: 'NORCET Prep', text: message });
         setShared(true);
         setTimeout(() => setShared(false), 1800);
         return;
       }
-    } catch (e) { /* user cancelled / unsupported — fall through */ }
+    } catch (e) { /* cancelled / unsupported */ }
     copy();
   };
 
-  const tabIdx = TABS.findIndex(t => t.id === tab);
-
   return (
     <Card className="mb-3 overflow-hidden p-0">
-      {/* tinted header — same elevation language as the support card */}
       <div className="p-4" style={{ background: T.primary + '12', borderBottom: `1px solid ${T.primary}25` }}>
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
@@ -86,81 +99,72 @@ export default function ShareAppCard() {
           <div className="min-w-0 flex-1">
             <div className="font-medium" style={{ color: T.primary }}>Share NORCET Prep</div>
             <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-              Help a fellow nurse crack NORCET — send them the link
+              The message carries the link AND the setup steps for your friend's device
             </div>
           </div>
         </div>
       </div>
 
       <div className="p-4">
-        {/* shareable URL pill */}
-        <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-xl"
-             style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
-          <span className="font-mono text-xs flex-1 truncate" style={{ color: T.inkSoft }}>{displayUrl}</span>
-          <button onClick={copy} aria-label="Copy link"
-                  className="no-tap-highlight p-1.5 -mr-1 rounded-lg active:bg-black/5">
-            {copied ? <Check size={14} style={{ color: T.success }} /> : <Copy size={14} style={{ color: T.muted }} />}
-          </button>
+        {/* premium link pill — display serif over a textured gradient */}
+        <div className="relative flex items-center justify-center mb-4 px-4 py-3.5 rounded-2xl overflow-hidden"
+             style={{
+               background: `linear-gradient(140deg, ${T.primary}1A 0%, ${T.surface} 45%, ${T.primary}10 100%)`,
+               border: `1.5px solid ${T.primary}45`,
+               boxShadow: `inset 0 1px 0 rgba(255,255,255,0.35), 0 3px 12px ${T.primary}1F`,
+             }}>
+          <div className="absolute inset-0 pointer-events-none opacity-50" aria-hidden="true"
+               style={{ background: `repeating-linear-gradient(125deg, transparent 0 9px, ${T.primary}08 9px 10px)` }} />
+          <span className="font-display text-base font-semibold tracking-wide relative" style={{ color: T.primary }}>
+            {displayUrl}
+          </span>
         </div>
 
-        {/* action buttons */}
-        <div className="grid grid-cols-2 gap-2 mb-4">
+        {/* who's it for? — message adapts to the friend's device */}
+        <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5 inline-flex items-center gap-1" style={{ color: T.muted }}>
+          <Smartphone size={10} /> Sending to
+        </div>
+        <div className="grid grid-cols-2 gap-1.5 mb-3">
+          {AUDIENCES.map(a => {
+            const on = audience === a.id;
+            return (
+              <button key={a.id} onClick={() => setAudience(a.id)}
+                      className="no-tap-highlight py-2 rounded-xl text-[12px] font-semibold transition-colors active:scale-95"
+                      style={{
+                        background: on ? T.primary : T.surfaceWarm,
+                        color: on ? '#FFF' : T.inkSoft,
+                        border: `1px solid ${on ? T.primary : T.border}`,
+                      }}>
+                {a.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* live preview of the outgoing message */}
+        <div className="rounded-xl px-3 py-2.5 mb-3 max-h-36 overflow-y-auto"
+             style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+          <pre className="text-[10.5px] leading-relaxed whitespace-pre-wrap m-0"
+               style={{ color: T.inkSoft, fontFamily: 'inherit' }}>{message}</pre>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
           {canShare && (
+            <Tip text="Opens your phone's share sheet with the full message">
             <button onClick={share}
                     className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
                     style={{ background: shared ? T.success : T.primary, color: '#FFF' }}>
-              <Share2 size={13} /> {shared ? '✓ Link ready!' : 'Share link'}
+              <Share2 size={13} /> {shared ? '\u2713 Sent to share!' : 'Share message'}
             </button>
+            </Tip>
           )}
+          <Tip text="Copies the whole message — paste it into any chat">
           <button onClick={copy}
                   className={"no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition" + (canShare ? '' : ' col-span-2')}
                   style={{ background: copied ? T.success + '18' : T.primary + '14', color: copied ? T.success : T.primary, border: `1px solid ${copied ? T.success + '50' : T.primary + '40'}` }}>
-            <Copy size={13} /> {copied ? '✓ Copied!' : 'Copy link'}
+            <Copy size={13} /> {copied ? '\u2713 Copied!' : 'Copy message'}
           </button>
-        </div>
-
-        {/* divider */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="flex-1 border-t" style={{ borderColor: T.borderSoft }} />
-          <span className="text-[10px] uppercase tracking-wider font-semibold inline-flex items-center gap-1" style={{ color: T.muted }}>
-            <Smartphone size={10} /> Install as app
-          </span>
-          <div className="flex-1 border-t" style={{ borderColor: T.borderSoft }} />
-        </div>
-
-        {/* sliding-pill tabs — equal widths, so the pill is a simple
-            translateX with spring overshoot */}
-        <div className="relative flex p-1 rounded-2xl mb-3" style={{ background: T.surfaceWarm }}>
-          <div className="absolute top-1 bottom-1 rounded-xl pointer-events-none"
-               style={{
-                 left: 4, width: 'calc((100% - 8px) / 3)',
-                 transform: `translateX(${tabIdx * 100}%)`,
-                 background: T.surface,
-                 boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
-                 transition: 'transform 0.32s cubic-bezier(0.34,1.56,0.64,1)',
-               }} aria-hidden="true" />
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-                    className="no-tap-highlight relative flex-1 py-1.5 rounded-xl text-[12px] font-semibold"
-                    style={{ color: tab === t.id ? T.primary : T.muted, transition: 'color 0.25s' }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* steps — keyed on tab so the cross-fade re-runs per switch */}
-        <ol key={tab} className="anim-fadeup space-y-1.5 mb-3 pl-1">
-          {STEPS[tab].map((s, i) => (
-            <li key={i} className="flex gap-2 text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-              <span className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-[9px] font-bold"
-                    style={{ background: T.primary + '15', color: T.primary }}>{i + 1}</span>
-              <span>{s}</span>
-            </li>
-          ))}
-        </ol>
-
-        <div className="text-[11px] leading-relaxed pl-2.5 py-1.5" style={{ color: T.muted, borderLeft: `2.5px solid ${T.primary}50` }}>
-          Works in any browser — but installing as a home screen app gives you faster loading, full screen, and offline access.
+          </Tip>
         </div>
       </div>
     </Card>

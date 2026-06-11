@@ -18,7 +18,7 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Previous Year Papers" onBack={onBack} feedback={{ screen: "Previous year papers" }} favId="previous-papers" />
+      <TopBar title="Previous Year Papers" onBack={onBack} feedback={{ screen: "Previous year papers" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="text-sm leading-relaxed mb-5" style={{ color: T.muted }}>
           Sit a full official AIIMS NORCET paper under exam conditions — or just{' '}

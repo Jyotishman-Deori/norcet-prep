@@ -39,6 +39,7 @@ import { topicName } from '../lib/topics.js';
 function AdminPanel({
   profile, banks, banksLoading,
   announcement, onSaveAnnouncement, onClearAnnouncement,
+  onLoadAnnHistory, onDeleteAnnHistoryItem, onClearAnnHistory,
   onRefreshBanks, onOpenLibrary, onCreateBank,
   onLockAdmin, onBack, allQuestions = [],
   onListUsers, onDeleteProfile
@@ -54,6 +55,10 @@ function AdminPanel({
 
   const [annText, setAnnText] = useState(announcement?.text || '');
   const [annLevel, setAnnLevel] = useState(announcement?.level === 'important' ? 'important' : 'info');
+  // #12 — expiry + history state
+  const [annExpiry, setAnnExpiry] = useState('7');           // days | 'never'
+  const [annHistory, setAnnHistory] = useState([]);
+  const [annHistConfirm, setAnnHistConfirm] = useState(null); // id | 'ALL'
   const [annBusy, setAnnBusy] = useState(false);
   const [annMsg, setAnnMsg] = useState(null);
 
@@ -116,7 +121,8 @@ function AdminPanel({
     // the write because this profile isn't an admin, or network/config error).
     // Show a real failure message instead of optimistically claiming success.
     try {
-      await onSaveAnnouncement(annText.trim(), annLevel);
+      await onSaveAnnouncement(annText.trim(), annLevel, annExpiry === 'never' ? null : Number(annExpiry));
+      if (onLoadAnnHistory) setAnnHistory(await onLoadAnnHistory());
       setAnnMsg({ ok: true, text: 'Posted — all users will see it on their home screen.' });
     } catch (e) {
       setAnnMsg({ ok: false, text: 'Could not post — server rejected the write (are you online and using the admin profile?).' });
@@ -496,7 +502,12 @@ function AdminPanel({
                   </span>
                 </div>
                 <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: T.ink }}>{announcement.text}</div>
-                <div className="text-[10px] mt-1.5" style={{ color: T.muted }}>Posted {fmtWhen(announcement.ts)}</div>
+                <div className="text-[10px] mt-1.5" style={{ color: T.muted }}>
+                  Posted {fmtWhen(announcement.ts)}
+                  {announcement.expiresAt
+                    ? ` · auto-expires in ${Math.max(0, Math.ceil((announcement.expiresAt - Date.now()) / 86400000))} day(s)`
+                    : ' · stays until cleared'}
+                </div>
               </div>
             )}
             <textarea value={annText} onChange={e => { setAnnText(e.target.value); setAnnMsg(null); }}
@@ -527,6 +538,20 @@ function AdminPanel({
               })}
             </div>
 
+            {/* #12 — auto-expiry: never lets a notice become furniture. */}
+            <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: T.muted }}>Auto-expires after</div>
+            <div className="flex gap-1.5 mb-3">
+              {[{ id: '1', l: '1 day' }, { id: '3', l: '3 days' }, { id: '7', l: '7 days' }, { id: '30', l: '30 days' }, { id: 'never', l: 'Never' }].map(o => (
+                <button key={o.id} onClick={() => setAnnExpiry(o.id)}
+                        className="no-tap-highlight flex-1 py-2 rounded-lg text-[11px] font-semibold transition-colors active:scale-95"
+                        style={{ background: annExpiry === o.id ? T.primary : T.surfaceWarm,
+                                 color: annExpiry === o.id ? '#FFF' : T.inkSoft,
+                                 border: `1px solid ${annExpiry === o.id ? T.primary : T.border}` }}>
+                  {o.l}
+                </button>
+              ))}
+            </div>
+
             {annMsg && (
               <div className="text-xs mb-3 px-1" style={{ color: annMsg.ok ? T.success : T.error }}>{annMsg.text}</div>
             )}
@@ -541,6 +566,77 @@ function AdminPanel({
               </Button>
             </div>
           </Card>
+
+          {/* #12 — PAST ANNOUNCEMENTS: every post is recorded here; delete
+              individual entries or wipe the whole history (with an inline
+              two-tap confirm — no accidental wipes). */}
+          {annHistory.length > 0 && (
+            <div className="mt-5">
+              <div className="flex items-center justify-between mb-2 px-1">
+                <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>
+                  Past announcements · {annHistory.length}
+                </div>
+                {annHistConfirm === 'ALL' ? (
+                  <button onClick={async () => { setAnnHistory(await onClearAnnHistory()); setAnnHistConfirm(null); }}
+                          className="no-tap-highlight text-[10px] font-bold px-2.5 py-1 rounded-full active:scale-95 transition"
+                          style={{ background: T.error, color: '#FFF' }}>
+                    Wipe all — sure?
+                  </button>
+                ) : (
+                  <button onClick={() => { setAnnHistConfirm('ALL'); setTimeout(() => setAnnHistConfirm(v => v === 'ALL' ? null : v), 2500); }}
+                          className="no-tap-highlight text-[11px] font-medium active:scale-95 transition"
+                          style={{ color: T.error, opacity: 0.8 }}>
+                    Clear history
+                  </button>
+                )}
+              </div>
+              <div className="space-y-2">
+                {annHistory.map((a, ai) => {
+                  const isLive = announcement && announcement.id === a.id;
+                  const expired = a.expiresAt && Date.now() > a.expiresAt;
+                  return (
+                    <Card key={a.id} className="p-3 seq-item" style={{ animationDelay: `${Math.min(ai, 8) * 60}ms`, opacity: expired && !isLive ? 0.7 : 1 }}>
+                      <div className="flex items-start gap-2.5">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                  style={{ background: a.level === 'important' ? T.accent : T.primary, color: '#FFF' }}>
+                              {a.level === 'important' ? 'Important' : 'Info'}
+                            </span>
+                            {isLive && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                    style={{ background: T.successSoft, color: T.success }}>Live</span>
+                            )}
+                            {expired && (
+                              <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+                                    style={{ background: T.surfaceWarm, color: T.muted }}>Expired</span>
+                            )}
+                            <span className="text-[10px]" style={{ color: T.muted }}>{fmtWhen(a.ts)}</span>
+                          </div>
+                          <div className="text-[13px] leading-snug" style={{ color: T.inkSoft, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                            {a.text}
+                          </div>
+                        </div>
+                        {annHistConfirm === a.id ? (
+                          <button onClick={async () => { setAnnHistory(await onDeleteAnnHistoryItem(a.id)); setAnnHistConfirm(null); }}
+                                  className="no-tap-highlight text-[10px] font-bold px-2 py-1.5 rounded-full active:scale-95 transition flex-shrink-0"
+                                  style={{ background: T.error, color: '#FFF' }}>
+                            Sure?
+                          </button>
+                        ) : (
+                          <button onClick={() => { setAnnHistConfirm(a.id); setTimeout(() => setAnnHistConfirm(v => v === a.id ? null : v), 2500); }}
+                                  aria-label="Delete this announcement from history"
+                                  className="no-tap-highlight p-1.5 rounded-full active:bg-black/10 flex-shrink-0">
+                            <Trash2 size={13} style={{ color: T.muted }} />
+                          </button>
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -661,7 +757,7 @@ function AdminPanel({
                 ? `${announcement.level === 'important' ? '⚠ ' : ''}"${announcement.text.length > 60 ? announcement.text.slice(0, 60).trim() + '…' : announcement.text}"`
                 : 'Post a notice to everyone'
             }
-            onClick={() => setView('announcement')}
+            onClick={() => { setView('announcement'); if (onLoadAnnHistory) onLoadAnnHistory().then(setAnnHistory).catch(() => {}); }}
             signal={
               announcement
                 ? <span className="px-2 py-1 rounded-full text-xs font-bold"

@@ -49,7 +49,6 @@ export const FAV_SECTIONS = [
   { id: 'library',         label: 'Question Banks',      blurb: 'Browse + upload banks',             icon: 'layers',   hue: '#0CA678' },
   { id: 'faq',             label: 'FAQ & Help',          blurb: 'Answers + community Q&A',           icon: 'help',     hue: '#3B5BDB' },
   { id: 'weightage',       label: 'Exam Weightage',      blurb: 'Marks per subject, at a glance',    icon: 'sigma',    hue: '#9C36B5' },
-  { id: 'coverage',        label: 'Syllabus Coverage',   blurb: 'What you have touched so far',      icon: 'mappin',   hue: '#087F5B' },
   { id: 'reference',       label: 'Reference',           blurb: 'Normal values + quick tables',      icon: 'book',     hue: '#862E9C' },
 ];
 

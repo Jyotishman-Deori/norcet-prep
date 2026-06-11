@@ -15,6 +15,11 @@ import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import { TTSButton } from '../ui/question-widgets.jsx';
+// #5 — saved Crib Sheets shelf (dated test reviews, reopenable + printable).
+import { useProfile } from '../lib/app-context.jsx';
+import { loadCribs, removeCrib, daysAgo } from '../lib/cribs.js';
+import { FileText, ListChecks, Trash2 } from 'lucide-react';
+import { Tip } from '../ui/tooltip.jsx';
 
 const PRINT_STYLES = `
 @media print {
@@ -28,9 +33,23 @@ const PRINT_STYLES = `
 }
 `;
 
-function RevisionSheet({ onLogVisit, onBack }) {
+function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
+  const { profile } = useProfile();
+  const cribPid = (profile && profile.id) || 'guest';
+  // #5 — saved Crib Sheets (separate shelf inside Revision).
+  const [cribs, setCribs] = useState([]);
+  const [cribConfirm, setCribConfirm] = useState(null); // id pending delete
+  useEffect(() => {
+    let alive = true;
+    loadCribs(cribPid).then(c => { if (alive) setCribs(c); }).catch(() => {});
+    return () => { alive = false; };
+  }, [cribPid]);
+  const deleteCrib = async (id) => {
+    setCribs(await removeCrib(cribPid, id));
+    setCribConfirm(null);
+  };
   const [includeWrong, setIncludeWrong] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
   const [expanded, setExpanded] = useState({}); // qId -> bool
@@ -148,6 +167,68 @@ function RevisionSheet({ onLogVisit, onBack }) {
               Print / PDF
             </button>
           </div>
+
+          {/* #5 — CRIB SHEETS: every test review you chose to keep, dated.
+              Separate from the live digest below; each opens in the full
+              Crib Sheet view (printable from there). */}
+          {cribs.length > 0 && (
+            <div className="mb-5">
+              <div className="flex items-center gap-1.5 mb-2 px-1">
+                <FileText size={12} style={{ color: T.primary }} />
+                <span className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>
+                  Crib Sheets · {cribs.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                {cribs.map((c, ci) => {
+                  const right = Math.round((c.items.filter(i => i.status === 'correct').length / Math.max(1, c.items.length)) * 100);
+                  return (
+                    <Tip key={c.id} title={c.title} text="A saved test review — tap to reopen with every answer and explanation, or print it.">
+                    <div role="button" tabIndex={0}
+                         onClick={() => onOpenCrib && onOpenCrib(c)}
+                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenCrib && onOpenCrib(c); } }}
+                         className="no-tap-highlight pressable cursor-pointer rounded-2xl p-3.5 seq-item relative overflow-hidden"
+                         style={{
+                           background: `linear-gradient(140deg, ${T.primary}14 0%, ${T.surface} 55%)`,
+                           border: `1.5px solid ${T.primary}35`,
+                           boxShadow: `0 3px 12px ${T.primary}14`,
+                           animationDelay: `${Math.min(ci, 8) * 80}ms`,
+                         }}>
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primary}B3)`, boxShadow: `0 3px 10px ${T.primary}45` }}>
+                          <FileText size={17} color="#FFF" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-display font-semibold truncate" style={{ color: T.ink }}>{c.title}</div>
+                          <div className="text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap" style={{ color: T.muted }}>
+                            <span className="font-semibold" style={{ color: T.primary }}>{daysAgo(c.createdAt)}</span>
+                            <span>· {new Date(c.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <span className="inline-flex items-center gap-0.5">· <ListChecks size={10} /> {c.items.length} Qs</span>
+                            <span>· {right}% right</span>
+                          </div>
+                        </div>
+                        {cribConfirm === c.id ? (
+                          <button onClick={(e) => { e.stopPropagation(); deleteCrib(c.id); }}
+                                  className="no-tap-highlight text-[10px] font-bold px-2.5 py-1.5 rounded-full active:scale-95 transition flex-shrink-0"
+                                  style={{ background: T.error, color: '#FFF' }}>
+                            Sure?
+                          </button>
+                        ) : (
+                          <button onClick={(e) => { e.stopPropagation(); setCribConfirm(c.id); setTimeout(() => setCribConfirm(v => v === c.id ? null : v), 2500); }}
+                                  aria-label="Delete this crib sheet"
+                                  className="no-tap-highlight p-2 rounded-full active:bg-black/10 flex-shrink-0">
+                            <Trash2 size={14} style={{ color: T.muted }} />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    </Tip>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Revision history — tap a past date to revisit that day's set */}
           {pastVisits.length > 0 && (

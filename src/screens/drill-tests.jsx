@@ -21,6 +21,8 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
 import { Tip } from '../ui/tooltip.jsx';
+// FAV #2 — heart on each test-mode card, beside the title.
+import FavHeart from '../ui/fav-heart.jsx';
 
 function DrillTests({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
@@ -35,7 +37,7 @@ function DrillTests({ onBack, onNavigate }) {
   );
 
   // --- Top tier: light, energetic, approachable (white + accent top border) ---
-  const TopCard = ({ icon: Icon, color, title, sub, onClick, tip }) => (
+  const TopCard = ({ icon: Icon, color, title, sub, onClick, tip, fav = null }) => (
     <Tip title={title} text={tip}>
     <Card className="p-4 h-full" onClick={onClick} style={{ borderTop: `3px solid ${color}` }}>
       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: color }}>
@@ -43,6 +45,7 @@ function DrillTests({ onBack, onNavigate }) {
       </div>
       <div className="font-display text-base font-semibold mb-0.5 flex items-center gap-1" style={{ color: T.ink }}>
         {title}
+        {fav && <FavHeart favId={fav} inline />}
       </div>
       <div className="text-xs leading-snug" style={{ color: T.muted }}>{sub}</div>
     </Card>
@@ -50,14 +53,17 @@ function DrillTests({ onBack, onNavigate }) {
   );
 
   // --- Middle tier: tinted background + filled icon — more focused/disciplined ---
-  const MidCard = ({ icon: Icon, color, title, sub, onClick, tip }) => (
+  const MidCard = ({ icon: Icon, color, title, sub, onClick, tip, fav = null }) => (
     <Tip title={title} text={tip}>
     <Card className="p-4 h-full" onClick={onClick}
           style={{ background: color + '12', border: `1px solid ${color}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: color }}>
         <Icon size={18} color="#FFF" />
       </div>
-      <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>{title}</div>
+      <div className="font-display text-base font-semibold mb-0.5 flex items-center gap-1" style={{ color: T.ink }}>
+        {title}
+        {fav && <FavHeart favId={fav} inline />}
+      </div>
       <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>{sub}</div>
     </Card>
     </Tip>
@@ -79,10 +85,10 @@ function DrillTests({ onBack, onNavigate }) {
         <Reveal delay={40}>
           <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
             <TopCard icon={Shuffle}    color={T.sec.quick} title="Quick Test"
-                     sub="Pick count + topic" onClick={() => go('quick-setup')}
+                     sub="Pick count + topic" onClick={() => go('quick-setup')} fav="quick-setup"
                      tip="A fast warm-up: choose how many questions and (optionally) a topic — instant feedback after every answer." />
             <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise"
-                     sub="Pick a subject" onClick={() => go('topic-select')}
+                     sub="Pick a subject" onClick={() => go('topic-select')} fav="topic-select"
                      tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
           </div>
         </Reveal>
@@ -91,10 +97,10 @@ function DrillTests({ onBack, onNavigate }) {
         <Reveal delay={90}>
           <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
             <MidCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
-                     sub="Timed simulation" onClick={() => go('mock-setup')}
+                     sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
             <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc"
-                     sub="Numeric drug-math · type-in" onClick={() => go('dosage')}
+                     sub="Numeric drug-math · type-in" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
         </Reveal>
@@ -114,6 +120,7 @@ function DrillTests({ onBack, onNavigate }) {
                   <div className="font-display text-base font-semibold" style={{ color: '#FFF' }}>
                     Previous Year Papers
                   </div>
+                  <FavHeart favId="previous-papers" inline />
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                         style={{ background: '#FFF', color: T.sec.revision }}>PYQ</span>
                 </div>
@@ -146,6 +153,7 @@ function DrillTests({ onBack, onNavigate }) {
                   <div className="font-display text-lg font-semibold" style={{ color: T.bg }}>
                     Advanced Test
                   </div>
+                  <FavHeart favId="advanced-setup" inline />
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                         style={{ background: T.accent, color: '#FFF' }}>Exam</span>
                 </div>

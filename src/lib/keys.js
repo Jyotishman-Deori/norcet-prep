@@ -108,4 +108,7 @@ export const KEY_PREFIXES = {
   // Shared mirrors for admin insight live in lib/favorites.js (favsec:/favorder:),
   // following the helpful-votes pattern of module-owned shared prefixes.
   FAVORITES: 'favorites:',
+  // #5 — saved Crib Sheets (per profile, local): array of slim sheet
+  // snapshots {id,title,subtitle,createdAt,items[]} shown inside Revision.
+  CRIBS: 'cribs:',
 };

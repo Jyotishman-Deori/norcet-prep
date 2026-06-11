@@ -1,58 +1,74 @@
 // =====================================================================
-// src/screens/favorites.jsx  (FAV — "Your Favourites" manage screen)
-// The one-stop home for everything the user hearted: full premium cards
-// (icon bubble + hue glow + blurb), opened with a tap. PRIORITY is the
-// user's to shape — up/down chevrons reorder with a smooth FLIP-style
-// settle (mobile-friendly; no fiddly long-press drag), #1 wears a "TOP"
-// badge, and the broken-heart button removes with the row fade-out.
-// Order saves instantly (local + shared mirror for admin insight) and the
-// Home strip follows it live.
+// src/screens/favorites.jsx  (FAV — honeycomb Favourites section, reworked)
+// The dedicated Favourites SECTION (launched from its Home card, like Drill
+// Tests): an n-row × 3-column honeycomb of premium tiles — hue-gradient
+// icon bubble, soft glow, label — in the user's priority order, with a
+// staggered pop-in entrance and spring presses. Tap a tile → straight into
+// that feature.
+//
+// EDIT MODE (reworked): tap "Edit" and the grid starts a gentle iOS-style
+// JIGGLE; each tile grows an × badge (remove, with a shrink-out) and
+// reordering is tap-to-move — tap a tile to pick it up (it lifts + glows),
+// then tap the tile whose spot it should take; everything reflows with a
+// smooth settle. Haptic ticks on pick/drop. Order saves instantly (local +
+// shared admin mirror) and the Home card follows live.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ChevronRight, ChevronUp, Heart, HeartCrack, Sparkles } from 'lucide-react';
+import { Check, Heart, Pencil, Sparkles, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 import { favSection, loadFavs, removeFav, setFavOrder, setFavEnabled } from '../lib/favorites.js';
-import { PremiumFavCard } from '../ui/fav-icons.jsx';
+import { FavIcon } from '../ui/fav-icons.jsx';
+import { Tip } from '../ui/tooltip.jsx';
 
-function FavoritesScreen({ onBack, onNavigate, onOpenSettings }) {
+const buzz = (ms) => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} };
+
+function FavoritesScreen({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const profileId = (profile && profile.id) || 'guest';
   const [favs, setFavs] = useState(null);
+  const [editing, setEditing] = useState(false);
+  const [picked, setPicked] = useState(null);     // tile id "lifted" for reorder
   const [removing, setRemoving] = useState(() => new Set());
-  const [movedId, setMovedId] = useState(null);   // brief highlight after a reorder
-  const moveTimer = useRef(null);
 
   useEffect(() => {
     let alive = true;
     loadFavs(profileId).then(f => { if (alive) setFavs(f); }).catch(() => {});
-    return () => { alive = false; if (moveTimer.current) clearTimeout(moveTimer.current); };
+    const onFavs = (e) => { if (e.detail) setFavs(e.detail); };
+    window.addEventListener('norcet:favs', onFavs);
+    return () => { alive = false; window.removeEventListener('norcet:favs', onFavs); };
   }, [profileId]);
 
-  const move = (id, dir) => {
-    if (!favs) return;
+  const sections = favs ? favs.order.map(favSection).filter(Boolean) : [];
+
+  const tapTile = (id) => {
+    if (!editing) { buzz(8); onNavigate({ screen: id }); return; }
+    // edit mode: tap-to-move
+    if (!picked) { setPicked(id); buzz(10); return; }
+    if (picked === id) { setPicked(null); return; }
     const order = [...favs.order];
-    const i = order.indexOf(id);
-    const j = i + dir;
-    if (i < 0 || j < 0 || j >= order.length) return;
-    [order[i], order[j]] = [order[j], order[i]];
+    const from = order.indexOf(picked);
+    const to = order.indexOf(id);
+    if (from < 0 || to < 0) { setPicked(null); return; }
+    order.splice(from, 1);
+    order.splice(to, 0, picked);
     setFavs(f => ({ ...f, order }));
-    setMovedId(id);
-    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {}
-    if (moveTimer.current) clearTimeout(moveTimer.current);
-    moveTimer.current = setTimeout(() => setMovedId(null), 450);
+    setPicked(null);
+    buzz(14);
     setFavOrder(profileId, order);
   };
 
   const drop = (id) => {
     setRemoving(prev => new Set(prev).add(id));
+    buzz(8);
     setTimeout(async () => {
       const f = await removeFav(profileId, id);
       setFavs(f);
       setRemoving(prev => { const n = new Set(prev); n.delete(id); return n; });
-    }, 280);
+      if (picked === id) setPicked(null);
+    }, 240);
   };
 
   const flipEnabled = async () => {
@@ -61,32 +77,106 @@ function FavoritesScreen({ onBack, onNavigate, onOpenSettings }) {
     setFavs(f);
   };
 
-  if (!favs) return <div className="anim-fadeup"><TopBar title="Your Favourites" onBack={onBack} /></div>;
-  const sections = favs.order.map(favSection).filter(Boolean);
+  if (!favs) return <div className="anim-fadeup"><TopBar title="Favourites" onBack={onBack} /></div>;
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Your Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }} />
+      <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }}
+              right={sections.length > 0 ? (
+                <Tip text={editing ? 'Done editing' : 'Reorder tiles (tap to move) or remove them'}>
+                <button onClick={() => { setEditing(e => !e); setPicked(null); buzz(8); }}
+                        className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
+                        style={{ background: editing ? '#E0245E' : T.surfaceWarm,
+                                 border: `1px solid ${editing ? '#E0245E' : T.border}`,
+                                 color: editing ? '#FFF' : T.inkSoft }}>
+                  {editing ? <Check size={14} /> : <Pencil size={13} />}
+                  <span className="text-xs font-medium">{editing ? 'Done' : 'Edit'}</span>
+                </button>
+                </Tip>
+              ) : null} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
             One stop for everything you love
           </div>
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>
-            Tap the <Heart size={12} fill="#E0245E" style={{ color: '#E0245E', display: 'inline', verticalAlign: '-1px' }} /> on
-            any section to collect it here. Use the arrows to set your priority — #1 leads your home screen strip.
+            {editing
+              ? 'Tap a tile to pick it up, then tap where it should go. Use \u00d7 to remove. Priority #1 is top-left.'
+              : <>Tap the <Heart size={12} fill="#E0245E" style={{ color: '#E0245E', display: 'inline', verticalAlign: '-1px' }} /> beside any section's title to collect it here.</>}
           </div>
         </div>
 
-        {/* strip on/off status — one tap to flip, no trip to Settings needed */}
-        <Card className="p-3.5 mb-4 cursor-pointer no-tap-highlight pressable" onClick={flipEnabled}>
+        {sections.length === 0 ? (
+          <EmptyState
+            icon={Heart}
+            title="Nothing hearted yet"
+            text="Open Drill Tests or the menu and tap the heart beside any section's title — Quick Test, Stats, Bookmarks, Dosage and more. They land here, in your order."
+            actionLabel="Browse Drill Tests"
+            onAction={() => onNavigate && onNavigate({ screen: 'drill-tests' })} />
+        ) : (
+          <div className="grid grid-cols-3 gap-2.5">
+            {sections.map((s, i) => {
+              const isPicked = picked === s.id;
+              const isRemoving = removing.has(s.id);
+              return (
+                <Tip key={s.id} title={s.label} text={s.blurb} disabled={editing}>
+                <div role="button" tabIndex={0}
+                     onClick={() => tapTile(s.id)}
+                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tapTile(s.id); } }}
+                     className={
+                       'no-tap-highlight cursor-pointer rounded-2xl relative overflow-visible fav-tile ' +
+                       (isRemoving ? 'fav-tile-out ' : 'fav-tile-in ') +
+                       (editing && !isPicked ? 'fav-jiggle ' : '') +
+                       (isPicked ? 'fav-picked ' : '')
+                     }
+                     style={{
+                       background: `linear-gradient(150deg, ${s.hue}1C 0%, ${T.surface} 60%)`,
+                       border: `1.5px solid ${isPicked ? s.hue : s.hue + '40'}`,
+                       boxShadow: isPicked ? `0 8px 24px ${s.hue}50` : `0 3px 12px ${s.hue}1C`,
+                       animationDelay: isRemoving ? '0ms' : `${Math.min(i, 11) * 55}ms`,
+                       aspectRatio: '1 / 1.06',
+                     }}>
+                  {/* priority number (edit mode) */}
+                  {editing && (
+                    <span className="absolute top-1.5 left-2 text-[9px] font-bold tabular-nums"
+                          style={{ color: s.hue, opacity: 0.8 }}>#{i + 1}</span>
+                  )}
+                  {/* remove badge (edit mode) */}
+                  {editing && (
+                    <button onClick={(e) => { e.stopPropagation(); drop(s.id); }}
+                            aria-label={`Remove ${s.label}`}
+                            className="no-tap-highlight absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center z-10 active:scale-90 transition"
+                            style={{ background: T.ink, color: T.bg, boxShadow: '0 2px 6px rgba(0,0,0,0.3)' }}>
+                      <X size={11} />
+                    </button>
+                  )}
+                  <div className="h-full flex flex-col items-center justify-center gap-2 px-1.5 py-2 text-center">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                         style={{ background: `linear-gradient(135deg, ${s.hue}, ${s.hue}B3)`, boxShadow: `0 4px 12px ${s.hue}55` }}>
+                      <FavIcon name={s.icon} size={19} />
+                    </div>
+                    <div className="text-[11px] font-semibold leading-tight" style={{ color: T.ink }}>{s.label}</div>
+                  </div>
+                </div>
+                </Tip>
+              );
+            })}
+          </div>
+        )}
+
+        {sections.length > 0 && !editing && (
+          <div className="text-[11px] leading-relaxed mt-4 px-2 text-center" style={{ color: T.muted }}>
+            Your order is the priority — top-left first. Tap Edit to rearrange or remove.
+          </div>
+        )}
+
+        {/* section on/off — no Settings trip needed */}
+        <Card className="p-3.5 mt-5 cursor-pointer no-tap-highlight pressable" onClick={flipEnabled}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <Sparkles size={16} style={{ color: favs.enabled ? '#E0245E' : T.muted }} className="flex-shrink-0" />
               <div className="text-[13px]" style={{ color: T.inkSoft }}>
-                {favs.enabled
-                  ? 'Showing on your home screen, in this order'
-                  : 'Home screen strip is OFF — your hearts are saved, flip this on to show them'}
+                {favs.enabled ? 'Favourites card is showing on your home screen' : 'Home card is OFF — hearts still save'}
               </div>
             </div>
             <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
@@ -96,62 +186,6 @@ function FavoritesScreen({ onBack, onNavigate, onOpenSettings }) {
             </div>
           </div>
         </Card>
-
-        {sections.length === 0 ? (
-          <EmptyState
-            icon={Heart}
-            title="Nothing hearted yet"
-            text="Open any section — Quick Test, Stats, Bookmarks, Dosage Calculation and more — and tap the heart at the top. It lands here, in your order."
-            actionLabel="Browse Drill Tests"
-            onAction={() => onNavigate && onNavigate({ screen: 'drill-tests' })} />
-        ) : (
-          <div className="space-y-2.5">
-            {sections.map((s, i) => (
-              <div key={s.id}
-                   className={(removing.has(s.id) ? 'row-fade-out ' : 'seq-item ') + 'transition-transform duration-300'}
-                   style={{
-                     animationDelay: removing.has(s.id) ? '0ms' : `${Math.min(i, 8) * 80}ms`,
-                     transform: movedId === s.id ? 'scale(1.02)' : 'scale(1)',
-                   }}>
-                <PremiumFavCard section={s}
-                                surface={T.surface} ink={T.ink} muted={T.muted}
-                                onClick={() => onNavigate({ screen: s.id })}>
-                  <div className="flex items-center gap-0.5 flex-shrink-0" onClick={e => e.stopPropagation()}>
-                    {i === 0 && (
-                      <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full mr-1 uppercase tracking-wider"
-                            style={{ background: s.hue, color: '#FFF' }}>Top</span>
-                    )}
-                    <div className="flex flex-col">
-                      <button onClick={() => move(s.id, -1)} disabled={i === 0}
-                              aria-label="Move up"
-                              className="no-tap-highlight p-1 rounded-md active:bg-black/10"
-                              style={{ opacity: i === 0 ? 0.25 : 1 }}>
-                        <ChevronUp size={15} style={{ color: T.inkSoft }} />
-                      </button>
-                      <button onClick={() => move(s.id, 1)} disabled={i === sections.length - 1}
-                              aria-label="Move down"
-                              className="no-tap-highlight p-1 rounded-md active:bg-black/10"
-                              style={{ opacity: i === sections.length - 1 ? 0.25 : 1 }}>
-                        <ChevronDown size={15} style={{ color: T.inkSoft }} />
-                      </button>
-                    </div>
-                    <button onClick={() => drop(s.id)}
-                            aria-label={`Remove ${s.label} from favourites`}
-                            className="no-tap-highlight p-1.5 rounded-full active:bg-black/10 ml-0.5">
-                      <HeartCrack size={16} style={{ color: T.muted }} />
-                    </button>
-                  </div>
-                </PremiumFavCard>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {sections.length > 0 && (
-          <div className="text-[11px] leading-relaxed mt-4 px-2 text-center" style={{ color: T.muted }}>
-            Priority #1 appears first on your home screen. Tap a card to open the section.
-          </div>
-        )}
       </div>
     </div>
   );

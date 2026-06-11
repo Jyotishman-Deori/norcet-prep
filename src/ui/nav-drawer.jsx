@@ -23,6 +23,10 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
 import { playTapSound } from '../lib/sound.js';
+// FAV — inline heart beside favoritable section titles (#2 rework).
+import FavHeart from './fav-heart.jsx';
+// TIP #13 — hold/hover info on every drawer row.
+import { Tip } from './tooltip.jsx';
 
 // Remembered across open/close (module-level): the row the user last
 // navigated to, so the NEXT open can welcome them back with a brief glow.
@@ -195,28 +199,29 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   // ---- Category 1 — Study ----
   const study = [
-    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
-    { key: 'library',   icon: Layers,      color: T.sec.library,  label: 'Library',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
-    { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
-    { key: 'doubts',    icon: Flag,        color: T.error,        label: 'My Doubts', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
-    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', sub: 'Your own custom Qs',          action: () => go('add-question', null, 'addq') },
+    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today — plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
+    { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse, upload and manage question banks — yours and the community\'s.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
+    { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', tip: 'Every question you saved, grouped by topic, ready to re-read or retest.', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
+    { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear — resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
+    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', tip: 'Write your own custom questions; they join your practice pool.', sub: 'Your own custom Qs',          action: () => go('add-question', null, 'addq') },
   ];
   // ---- Category 2 — Progress ----
   const progress = [
-    { key: 'stats',       icon: BarChart3, color: T.sec.stats, label: 'Stats',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
-    { key: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
-    { key: 'weightage',   icon: Activity,  color: T.primary,   label: 'Exam weightage', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
+    { key: 'stats',       fav: 'stats', icon: BarChart3, color: T.sec.stats, label: 'Stats', tip: 'Accuracy, streaks and progress, broken down topic by topic.',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
+    { key: 'leaderboard', fav: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard', tip: 'See how your week stacks up against other aspirants.',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
+    { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: 'Exam weightage', tip: 'How many marks each subject carries — study where the marks are.', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
   ];
   // ---- Category 3 — Tools ----
   const tools = [
-    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', sub: 'Countdown & daily goal', action: () => go('exam-date', null, 'examdate') },
-    { key: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
+    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', tip: 'Set your NORCET date for a countdown and a daily target.', sub: 'Countdown & daily goal', action: () => go('exam-date', null, 'examdate') },
+    { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
   ];
 
   const Item = ({ it, index = 0 }) => {
     const Icon = it.icon;
     const glowing = returnGlowKey === it.key;
     return (
+      <Tip title={it.label} text={it.tip || it.sub}>
       <button onClick={it.action}
               className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left drawer-item-in mb-1.5" + (glowing ? ' drawer-glow' : '')}
               style={{
@@ -235,17 +240,20 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           <Icon size={18} style={{ color: it.color }} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-medium text-sm flex items-center gap-1.5" style={{ color: T.ink }}>
+          <div className="font-medium text-sm flex items-center gap-1" style={{ color: T.ink }}>
             {it.label}
             {it.badge != null && it.badge !== 0 && (
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
                     style={{ background: it.color + '18', color: it.color }}>{it.badge}</span>
             )}
+            {/* FAV #2 — heart lives ON the section card, beside the title */}
+            {it.fav && <FavHeart favId={it.fav} inline />}
           </div>
           <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{it.sub}</div>
         </div>
         <ChevronRight size={16} style={{ color: it.color, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
       </button>
+      </Tip>
     );
   };
 
@@ -255,7 +263,8 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   // Help & Learn — elevated cards. More visual weight than a plain row to
   // signal these are richer destinations (a guide / a Q&A experience).
-  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick, index = 0 }) => (
+  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick, index = 0, fav = null, tip = null }) => (
+    <Tip title={title} text={tip || sub}>
     <button onClick={onClick}
             className="no-tap-highlight drawer-row drawer-item-in w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
             style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
@@ -266,6 +275,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>{title}</div>
+          {fav && <FavHeart favId={fav} inline />}
           {badge && (
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
                   style={{ background: badgeTone || T.primary, color: '#FFF' }}>{badge}</span>
@@ -275,6 +285,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       </div>
       <ChevronRight size={16} style={{ color: iconColor, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
     </button>
+    </Tip>
   );
 
   return (
@@ -334,17 +345,18 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           <div className="px-1 mt-1 space-y-2">
             <LearnCard icon={GraduationCap} iconColor={T.primary}
                        title="Study Methods" sub="Learn how to study smarter"
-                       badge="Guide" badgeTone={T.primary} index={10}
+                       badge="Guide" badgeTone={T.primary} index={10} fav="study-methods" tip="Evidence-based techniques — active recall, spaced repetition and how to use this app well."
                        onClick={() => go('study-methods', null, 'methods')} />
             <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
                        title="FAQ" sub="Questions answered by our team"
-                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11}
+                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11} fav="faq" tip="Common questions answered by the team — ask your own too."
                        onClick={() => go('faq', null, 'faq')} />
           </div>
 
           </div>
 
           <div className="my-3 mx-3 border-t" style={{ borderColor: T.borderSoft }} />
+          <Tip title="Settings" text="Themes, sounds, gestures, reminders, backup and your profile.">
           <button onClick={() => go('settings', null, 'settings')}
                   className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
                   style={{ background: T.surface, border: `1px solid ${T.borderSoft}`, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
@@ -357,6 +369,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
             </div>
             <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
           </button>
+          </Tip>
         </div>
       </div>
     </div>

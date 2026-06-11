@@ -91,7 +91,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} favId="advanced-setup" />
+      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
 
         {/* Slimmed tagline — the heavy teal hero became visual noise once

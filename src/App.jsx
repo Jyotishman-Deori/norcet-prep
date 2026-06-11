@@ -1002,10 +1002,26 @@ async function loadAnnouncement() {
     const r = await safeStorage.get(KEYS.ANNOUNCEMENT, true);
     if (r && r.value) {
       const parsed = JSON.parse(r.value);
-      if (parsed && parsed.text) return parsed;
+      // #12 — expiry-aware: a notice past its expiresAt simply stops showing
+      // for everyone (no admin trip needed; history still keeps the record).
+      if (parsed && parsed.text) {
+        if (parsed.expiresAt && Date.now() > parsed.expiresAt) return null;
+        return parsed;
+      }
     }
   } catch (e) { /* none */ }
   return null;
+}
+
+// #12 — announcement HISTORY (shared, admin-write key 'announcement:history'
+// — same announcement:* RLS prefix). Newest first, capped at 30.
+const ANN_HISTORY_KEY = 'announcement:history';
+async function loadAnnouncementHistory() {
+  try {
+    const r = await safeStorage.get(ANN_HISTORY_KEY, true);
+    const v = r && r.value ? JSON.parse(r.value) : [];
+    return Array.isArray(v) ? v.filter(a => a && a.id && a.text) : [];
+  } catch (e) { return []; }
 }
 
 // A4: announcement WRITES are admin-only and now go through the direct
@@ -1014,15 +1030,35 @@ async function loadAnnouncement() {
 // open to everyone. The caller must pass the current admin profile id; the
 // server rejects the write if that id is not in admin_profile_ids, so a
 // DevTools-patched isAdmin no longer buys anything.
-async function saveAnnouncement(text, level, adminProfileId) {
+async function saveAnnouncement(text, level, adminProfileId, expiresDays = null) {
   // Two urgency levels:
   //  - 'info'      → calm teal card; default for routine notices.
   //  - 'important' → terracotta with an alert icon; for time-sensitive items
   //                  (schedule changes, exam reminders) so users notice.
+  // #12 — optional auto-expiry (1/3/7/30 days, or null = until cleared) so a
+  // notice never lingers as a permanent fixture; every post is appended to
+  // the shared history for the admin to audit/delete later.
   const lv = level === 'important' ? 'important' : 'info';
-  const entry = { id: `ann-${Date.now()}`, text: String(text || '').trim(), level: lv, ts: Date.now() };
+  const days = Number(expiresDays);
+  const entry = {
+    id: `ann-${Date.now()}`, text: String(text || '').trim(), level: lv, ts: Date.now(),
+    expiresAt: Number.isFinite(days) && days > 0 ? Date.now() + days * 86400000 : null,
+  };
   await adminWriteShared(KEYS.ANNOUNCEMENT, JSON.stringify(entry), adminProfileId);
+  try {
+    const hist = await loadAnnouncementHistory();
+    await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify([entry, ...hist].slice(0, 30)), adminProfileId);
+  } catch (e) { /* history is best-effort */ }
   return entry;
+}
+
+async function deleteAnnouncementHistoryItem(id, adminProfileId) {
+  const hist = await loadAnnouncementHistory();
+  await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify(hist.filter(a => a.id !== id)), adminProfileId);
+}
+
+async function clearAnnouncementHistory(adminProfileId) {
+  await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify([]), adminProfileId);
 }
 
 async function clearAnnouncement(adminProfileId) {
@@ -2136,7 +2172,33 @@ export default function App() {
     return { weakTopics, dueTopicIds, examDaysLeft };
   }, [data, allQuestions]);
 
-  const navigate = useCallback((n) => setNav(n), []);
+  // ===================================================================
+  // #8 — REAL BACK NAVIGATION. The app previously treated every back press
+  // as "go home", so Drill Tests → Quick Test → back teleported to Home.
+  // Fix: a session nav STACK. `navigate()` pushes the screen it is LEAVING
+  // (browse screens only); `goHome` — wired everywhere as onBack and as the
+  // hardware-back action — now POPS to the previous screen, falling back to
+  // Home when the stack is empty. Transient flows (quiz/test runs, results,
+  // auth, crib-sheet which carries its own backNav) are never pushed, so
+  // back from a results screen can't re-enter a finished test. `goHomeDirect`
+  // (results "Home" buttons, welcome flows) clears the stack and jumps
+  // straight home. The Home double-back-to-exit caution (#30) is unchanged
+  // and still guards accidental exits.
+  // ===================================================================
+  const NAV_NO_STACK = ['quiz', 'advanced-test', 'paper-test', 'results',
+    'advanced-results', 'paper-results', 'crib-sheet', 'auth', 'home'];
+  const navStackRef = useRef([]);
+  const navRef = useRef(nav);
+  navRef.current = nav;
+  const navigate = useCallback((n) => {
+    const cur = navRef.current;
+    if (cur && n && n.screen !== cur.screen && !NAV_NO_STACK.includes(cur.screen)) {
+      const st = navStackRef.current;
+      st.push({ ...cur });
+      if (st.length > 12) st.shift();
+    }
+    setNav(n);
+  }, []);
 
   // F-B — pull-to-refresh action. Signed-in: flush pending local writes, then
   // re-pull the canonical Supabase copy and re-commit (so changes from another
@@ -2160,6 +2222,8 @@ export default function App() {
     } catch (e) {
       try { log.warn('pullRefresh', e); } catch (_) {}
     }
+    // #6 — let live UI react to a completed refresh (Home swaps its quote).
+    try { window.dispatchEvent(new CustomEvent('norcet:refreshed')); } catch (e) {}
   }, [profile]);
 
   // When the screen changes (e.g. completing a test → results), the window can
@@ -2250,10 +2314,27 @@ export default function App() {
     if (cameFromWelcomeRef.current) {
       cameFromWelcomeRef.current = false;
       setShowWelcome(true);
-    } else {
-      restoreNextScrollRef.current = true; // #30 — back to Home restores scroll
-      setNav({ screen: 'home' });
+      return;
     }
+    restoreNextScrollRef.current = true; // #30 — back restores scroll
+    // #8 — pop the nav stack: back returns to the PREVIOUS screen, not Home.
+    const st = navStackRef.current;
+    while (st.length > 0) {
+      const prev = st.pop();
+      if (prev && prev.screen && prev.screen !== navRef.current.screen) {
+        setNav(prev);
+        return;
+      }
+    }
+    setNav({ screen: 'home' });
+  }, []);
+
+  // #8 — explicit "take me Home" (results screens, completed flows): clears
+  // the breadcrumb trail so a later back press from Home just exits-guards.
+  const goHomeDirect = useCallback(() => {
+    navStackRef.current = [];
+    restoreNextScrollRef.current = true;
+    setNav({ screen: 'home' });
   }, []);
 
   // P-NAV (Bug 2) — make the phone's hardware/gesture back button navigate
@@ -2326,7 +2407,16 @@ export default function App() {
         return;
       }
       restoreNextScrollRef.current = true;          // #30 — hardware back restores scroll
-      setNav({ screen: 'home' });                   // 'go-home'
+      // #8 — hardware back also pops the nav stack (same rule as goHome).
+      {
+        const st = navStackRef.current;
+        let popped = null;
+        while (st.length > 0) {
+          const prev = st.pop();
+          if (prev && prev.screen && prev.screen !== navRef.current.screen) { popped = prev; break; }
+        }
+        setNav(popped || { screen: 'home' });
+      }
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
@@ -2980,11 +3070,22 @@ export default function App() {
   // A4: writes go through the admin direct-fetch path and can THROW (network,
   // not-authorised, config). Surface the failure to the caller instead of
   // optimistically flipping local state, so the admin sees a real result.
-  const handleSaveAnnouncement = useCallback(async (text, level) => {
+  const handleSaveAnnouncement = useCallback(async (text, level, expiresDays = null) => {
     const pid = profile ? profile.id : null;
-    const entry = await saveAnnouncement(text, level, pid); // throws on failure
+    const entry = await saveAnnouncement(text, level, pid, expiresDays); // throws on failure
     setAnnouncement(entry);
     return entry;
+  }, [profile]);
+
+  // #12 — history management for the admin panel.
+  const handleLoadAnnHistory = useCallback(() => loadAnnouncementHistory(), []);
+  const handleDeleteAnnHistoryItem = useCallback(async (id) => {
+    await deleteAnnouncementHistoryItem(id, profile ? profile.id : null);
+    return loadAnnouncementHistory();
+  }, [profile]);
+  const handleClearAnnHistory = useCallback(async () => {
+    await clearAnnouncementHistory(profile ? profile.id : null);
+    return [];
   }, [profile]);
 
   const handleClearAnnouncement = useCallback(async () => {
@@ -3794,6 +3895,9 @@ export default function App() {
                     announcement={announcement}
                     onSaveAnnouncement={handleSaveAnnouncement}
                     onClearAnnouncement={handleClearAnnouncement}
+                    onLoadAnnHistory={handleLoadAnnHistory}
+                    onDeleteAnnHistoryItem={handleDeleteAnnHistoryItem}
+                    onClearAnnHistory={handleClearAnnHistory}
                     onRefreshBanks={refreshBanks}
                     onOpenLibrary={() => { setNav({ screen: 'library', adminReturn: true }); refreshBanks(); }}
                     onCreateBank={() => setNav({ screen: 'bank-editor', adminReturn: true })}
@@ -3827,7 +3931,7 @@ export default function App() {
                  quizType={quizTypeLabel(nav.mode)}
                  isGuest={isGuestProfile(profile)}
                  onGuestSignIn={() => setNav({ screen: 'auth' })}
-                 onHome={goHome}
+                 onHome={goHomeDirect}
                  onCribSheet={isCribSheetEnabled() ? () => {
                    // #28 — shape the finished session into Crib Sheet items.
                    // Quiz results carry per-question outcomes; "Show answer"
@@ -3855,6 +3959,7 @@ export default function App() {
         <CribSheet title={nav.cribTitle || 'Test review'}
                    subtitle={nav.cribSubtitle || ''}
                    items={nav.items || []}
+                   savedMode={!!nav.savedMode}
                    negative={nav.cribNegative || null}
                    profileId={profile && !isGuestProfile(profile) ? profile.id : null}
                    onBack={() => setNav(nav.backNav || { screen: 'home' })} />
@@ -3943,7 +4048,7 @@ export default function App() {
                              timePerQ={nav.timePerQ} elapsedSec={nav.elapsedSec}
                              timeMinutes={nav.timeMinutes}
                              auto={nav.auto}
-                             onHome={goHome}
+                             onHome={goHomeDirect}
                              onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                              displayName={profile ? (profile.displayName || profile.id) : null}
                              streak={(data && data.stats && data.stats.streakCurrent) || 0}
@@ -4060,7 +4165,7 @@ export default function App() {
       )}
 
       {nav.screen === 'dosage-results' && (
-        <DosageResults results={nav.results} questions={nav.questions} onHome={goHome}
+        <DosageResults results={nav.results} questions={nav.questions} onHome={goHomeDirect}
                        displayName={profile ? (profile.displayName || profile.id) : null}
                        streak={(data && data.stats && data.stats.streakCurrent) || 0}
                        profile={profile} isAdmin={isAdmin} />
@@ -4072,7 +4177,12 @@ export default function App() {
       )}
 
       {nav.screen === 'revision-sheet' && (
-        <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome} />
+        <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome}
+                       onOpenCrib={(c) => navigate({
+                         screen: 'crib-sheet', items: c.items,
+                         cribTitle: c.title, cribSubtitle: c.subtitle,
+                         savedMode: true, backNav: { screen: 'revision-sheet' },
+                       })} />
       )}
 
       {nav.screen === 'exam-date' && (
