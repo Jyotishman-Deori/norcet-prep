@@ -183,6 +183,75 @@ export const fontStyles = `
 ::-webkit-scrollbar-thumb:hover { background: var(--sb-thumb-hover, rgba(120,120,120,0.6)); background-clip: padding-box; }
 ::-webkit-scrollbar-corner { background: transparent; }
 
+/* ── Round: #22 Sequential card entrance — apply .seq-item + inline
+   animationDelay (index * 110ms, capped). Fade + 16px settle, spring-out. */
+@keyframes seqItem { 0% { opacity: 0; transform: translateY(16px) scale(0.97); } 100% { opacity: 1; transform: translateY(0) scale(1); } }
+.seq-item { animation: seqItem 0.35s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── #23/4 Quiz answer feedback — wrong option shakes (decaying amplitude),
+   correct option pulses with a small spring. Applied on lock-in only. */
+@keyframes qShake {
+  0%, 100% { transform: translateX(0); }
+  12% { transform: translateX(-7px); } 25% { transform: translateX(7px); }
+  40% { transform: translateX(-5px); } 55% { transform: translateX(5px); }
+  70% { transform: translateX(-3px); } 85% { transform: translateX(3px); }
+}
+.q-shake { animation: qShake 0.45s cubic-bezier(0.36,0.07,0.19,0.97) both; }
+@keyframes qPulse { 0% { transform: scale(1); } 45% { transform: scale(1.035); } 100% { transform: scale(1); } }
+.q-pulse { animation: qPulse 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── #23/3 Bookmark / flag micro-interaction — spring pop on set,
+   deflate on unset. Applied to the icon button per toggle direction. */
+@keyframes bmPop { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+.bm-pop { animation: bmPop 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes bmDeflate { 0% { transform: scale(1); } 45% { transform: scale(0.8); } 100% { transform: scale(1); } }
+.bm-deflate { animation: bmDeflate 0.25s ease-in-out both; }
+
+/* ── #19 Unbookmark — row fade-out + collapse before removal from the list. */
+@keyframes rowFadeOut { 0% { opacity: 1; transform: translateX(0); } 100% { opacity: 0; transform: translateX(24px); } }
+.row-fade-out { animation: rowFadeOut 0.28s ease-in both; }
+
+/* ── #23/26 Timer heartbeat — final-10s pulse on the quiz countdown chip. */
+@keyframes timerBeat { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.timer-beat { animation: timerBeat 1s ease-in-out infinite; }
+.timer-beat-fast { animation: timerBeat 0.5s ease-in-out infinite; }
+
+/* ── #30 Exit confirmation snackbar — slide-up pill + depleting progress line. */
+@keyframes exitSnackIn { 0% { opacity: 0; transform: translate(-50%, 60px); } 100% { opacity: 1; transform: translate(-50%, 0); } }
+.exit-snack-in { animation: exitSnackIn 0.28s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes exitSnackBar { from { width: 100%; } to { width: 0%; } }
+.exit-snack-bar { animation: exitSnackBar 2.5s linear both; }
+
+/* ── #26 Library upload-card shimmer — one diagonal light sweep on entry. */
+@keyframes cardShimmer { 0% { transform: translateX(-130%) skewX(-15deg); } 100% { transform: translateX(330%) skewX(-15deg); } }
+.card-shimmer { animation: cardShimmer 0.7s ease-in-out 0.35s both; }
+
+/* ── #26 Bank delete card — destructive colour appears on PRESS only. */
+.bank-delete-card:active { border-color: var(--error, #C04A2E) !important; }
+.bank-delete-card:active svg { color: var(--error, #C04A2E) !important; }
+.bank-delete-card:active .font-display { color: var(--error, #C04A2E) !important; }
+
+/* ── #31 Profile sheets — bottom-sheet spring-up (reuses kmap timing, lighter). */
+@keyframes sheetUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
+.sheet-up { animation: sheetUp 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── FAV — Favourites strip header heart: a gentle double-beat every 3s. */
+@keyframes favBeat {
+  0%, 24%, 100% { transform: scale(1); }
+  8% { transform: scale(1.22); } 16% { transform: scale(1.06); }
+}
+.fav-beat { animation: favBeat 3s ease-in-out infinite; transform-origin: center; }
+
+/* ── TIP — hold/hover tooltip: spring scale-in from the arrow side. */
+@keyframes tipIn { 0% { opacity: 0; transform: scale(0.82); } 100% { opacity: 1; transform: scale(1); } }
+.tip-in { animation: tipIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
+  .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
+  .card-shimmer, .sheet-up, .fav-beat, .tip-in { animation: none !important; }
+}
+
 /* ── App blur overlay — covers screen when the app loses focus (Session 4) ──
    Prevents shoulder-surfing / screen-recording of question content while the
    app is backgrounded. Lifts instantly on return. */

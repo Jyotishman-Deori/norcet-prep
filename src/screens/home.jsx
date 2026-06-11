@@ -20,6 +20,10 @@ import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { pushNotification } from '../lib/notifications.js';
 import { Card, Button } from '../ui/primitives.jsx';
+// FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
+import FavStrip from '../ui/fav-strip.jsx';
+// TIP — hold (mobile) / hover (PC) info bubbles.
+import { Tip } from '../ui/tooltip.jsx';
 import { HomeSupportNudge } from '../ui/home-support-nudge.jsx';
 
 // Feature 3 — brief positive feedback when the spaced-review queue is empty
@@ -293,16 +297,19 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     <div className="max-w-md mx-auto px-4 pb-24 pt-2 anim-fadeup">
       {/* Top bar: menu + notifications + quick settings */}
       <div className="flex items-center justify-between mb-3">
-        <button onClick={onOpenMenu}
-                className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
-                aria-label="Open menu">
-          <Menu size={22} style={{ color: T.ink }} />
-          <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
-        </button>
+        <Tip text="Every section of the app — study, progress, tools and help">
+          <button onClick={onOpenMenu}
+                  className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
+                  aria-label="Open menu">
+            <Menu size={22} style={{ color: T.ink }} />
+            <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
+          </button>
+        </Tip>
 
         <div className="flex items-center gap-1">
           {/* Notification bell — Feature 6 */}
           {onOpenNotifications && (
+            <Tip text="Your daily briefing, reminders, achievements and insights">
             <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
                     className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
                     aria-label="Notifications">
@@ -316,12 +323,15 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 </span>
               )}
             </button>
+            </Tip>
           )}
 
-          <button onClick={() => onNavigate({ screen: 'settings' })}
-                  className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
-            <SettingsIcon size={20} style={{ color: T.muted }} />
-          </button>
+          <Tip text="Themes, reminders, gestures, backup and more">
+            <button onClick={() => onNavigate({ screen: 'settings' })}
+                    className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
+              <SettingsIcon size={20} style={{ color: T.muted }} />
+            </button>
+          </Tip>
         </div>
       </div>
 
@@ -852,10 +862,15 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
+      {/* FAV — the user's Favourites, above every other section (their
+          priority order). Hidden entirely until turned on in Settings. */}
+      <FavStrip onNavigate={onNavigate} />
+
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
           section; all six test modes now live on the dedicated Drill Tests
           screen. Prominent, gradient, with a mini mode-icon row so it reads
           as an entry point to something substantial. */}
+      <Tip title="Drill Tests" text="All six test modes — Quick, Topic, Mock, Dosage, Advanced and Previous Year Papers — in one hub.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'drill-tests' })}
             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
         <div className="flex items-center gap-3">
@@ -876,10 +891,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           ))}
         </div>
       </Card>
+      </Tip>
 
       {/* Learn Topic Wise — stays on Home as its own standalone card
           (learning, not testing); clearly separated from the Drill Tests
           entry above. Same icon/accent/labels as before. */}
+      <Tip title="Learn topic wise" text="Revision notes as concept cards, subject by subject — learn first, then drill it with tests.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'learn-topics' })}
             style={{ borderTop: `3px solid ${T.sec.learn}` }}>
         <div className="flex items-center gap-3">
@@ -893,11 +910,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <ChevronRight size={20} style={{ color: T.muted }} />
         </div>
       </Card>
+      </Tip>
 
       {/* P10 / #13 — Interactive Knowledge Map. The app's USP, so the entry
           card carries the constellation language itself: deep-space gradient,
           a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
           (same state math as the map) to create pull from Home. */}
+      <Tip title="Knowledge Map" text="Your syllabus as a constellation — nodes light up as you master topics. Tap a star to practise it.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'knowledge-map' })}
             style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
                      border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(7,10,20,0.45)' }}>
@@ -926,6 +945,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} />
         </div>
       </Card>
+      </Tip>
 
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}

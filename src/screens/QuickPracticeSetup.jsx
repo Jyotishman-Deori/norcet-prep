@@ -31,7 +31,7 @@ function QuickPracticeSetup({ onStart, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Quick test" onBack={onBack} feedback={{ screen: "Quick practice setup" }} />
+      <TopBar title="Quick test" onBack={onBack} feedback={{ screen: "Quick practice setup" }} favId="quick-setup" />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
         <Card className="p-4 mb-5" style={{ background: T.sec.quick, border: 'none' }}>
           <div className="flex items-center gap-3">

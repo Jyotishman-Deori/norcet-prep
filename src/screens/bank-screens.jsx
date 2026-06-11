@@ -180,14 +180,21 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
             <div className="grid grid-cols-2 gap-2 mb-2">
               <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={onEdit}>
                 <Edit3 size={16} style={{ color: T.primary }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Edit bank</div>
+                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.primary }}>Edit bank</div>
                 <div className="text-[10px]" style={{ color: T.muted }}>Update name or questions (bumps version)</div>
               </Card>
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setConfirmDelete(true)}>
-                <Trash2 size={16} style={{ color: T.error }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Delete bank</div>
+              {/* #26 — destructive action is MUTED at rest (lighter icon, grey
+                  title) and only turns red on press, so Edit reads as the
+                  default and Delete must be consciously chosen. */}
+              <div className="cursor-pointer no-tap-highlight pressable bank-delete-card rounded-2xl p-3"
+                   onClick={() => setConfirmDelete(true)}
+                   role="button" tabIndex={0}
+                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setConfirmDelete(true); } }}
+                   style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+                <Trash2 size={16} style={{ color: T.error + '90' }} />
+                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.muted }}>Delete bank</div>
                 <div className="text-[10px]" style={{ color: T.muted }}>Remove for everyone</div>
-              </Card>
+              </div>
             </div>
           </div>
         )}
@@ -219,21 +226,63 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
         </div>
       </div>
 
-      {/* Delete confirm */}
+      {/* Delete confirm — #26: the destructive button is RED (universal
+          convention; it previously matched the PUBLIC badge colour), Cancel is
+          visually subordinate, and PUBLIC banks (they affect everyone) require
+          typing DELETE before the button activates — same pattern as Vercel /
+          GitHub / Supabase. Private banks stay single-tap. */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setConfirmDelete(false)}>
-          <Card className="p-5 max-w-sm w-full anim-scalein" onClick={e => e.stopPropagation()}>
-            <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>Delete "{bank.name}"?</div>
-            <div className="text-sm mb-4 leading-relaxed" style={{ color: T.muted }}>
-              This removes the bank for everyone, immediately. Users who have already imported its questions keep their copies.
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" onClick={() => setConfirmDelete(false)} className="flex-1">Cancel</Button>
-              <Button variant="accent" onClick={() => { setConfirmDelete(false); onDelete(); }} className="flex-1">Delete</Button>
-            </div>
-          </Card>
-        </div>
+        <DeleteBankConfirm bank={bank}
+                           onCancel={() => setConfirmDelete(false)}
+                           onDelete={() => { setConfirmDelete(false); onDelete(); }} />
       )}
+    </div>
+  );
+}
+
+function DeleteBankConfirm({ bank, onCancel, onDelete }) {
+  const { theme: T } = useTheme();
+  const isPublic = bankVisibility(bank) !== 'private';
+  const [typed, setTyped] = useState('');
+  const armed = !isPublic || typed.trim().toUpperCase() === 'DELETE';
+  const RED = '#E02020';
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onCancel}>
+      <Card className="p-5 max-w-sm w-full anim-scalein" onClick={e => e.stopPropagation()}>
+        <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>Delete "{bank.name}"?</div>
+        <div className="text-sm mb-4 leading-relaxed" style={{ color: T.muted }}>
+          This removes the bank {isPublic ? 'for everyone, immediately' : 'permanently'}. Users who have already imported its questions keep their copies.
+        </div>
+        {isPublic && (
+          <div className="mb-4">
+            <div className="text-xs font-medium mb-1.5" style={{ color: T.inkSoft }}>
+              This is a public bank. Type <span className="font-mono font-bold" style={{ color: RED }}>DELETE</span> to confirm:
+            </div>
+            <input value={typed} onChange={e => setTyped(e.target.value)}
+                   autoFocus autoComplete="off" autoCapitalize="characters"
+                   placeholder="DELETE"
+                   className="w-full rounded-xl px-3 py-2.5 text-sm font-mono"
+                   style={{ background: T.surface, border: `1.5px solid ${armed ? RED : T.border}`, color: T.ink, transition: 'border-color .25s' }} />
+          </div>
+        )}
+        <div className="flex gap-2">
+          <button onClick={onCancel}
+                  className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-medium active:scale-95 transition"
+                  style={{ background: T.surface, color: T.ink, border: `1.5px solid ${T.border}` }}>
+            Cancel
+          </button>
+          <button onClick={() => armed && onDelete()} disabled={!armed}
+                  className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
+                  style={{
+                    background: armed ? RED : T.surfaceWarm,
+                    color: armed ? '#FFF' : T.muted,
+                    opacity: armed ? 1 : 0.7,
+                    transition: 'background .25s, color .25s',
+                  }}>
+            Delete
+          </button>
+        </div>
+      </Card>
     </div>
   );
 }

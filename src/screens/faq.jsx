@@ -78,7 +78,7 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="FAQ & Help" onBack={onBack} feedback={{ screen: 'FAQ' }} />
+      <TopBar title="FAQ & Help" onBack={onBack} feedback={{ screen: 'FAQ' }} favId="faq" />
       <div className="max-w-md mx-auto px-4 pb-28 pt-2">
         {/* Chat-style intro */}
         <div className="flex gap-2.5 mb-4">

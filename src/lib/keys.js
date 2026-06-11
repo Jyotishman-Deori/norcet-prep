@@ -95,4 +95,17 @@ export const KEY_PREFIXES = {
   // throttle timestamp for the 7-day stale-doubt nudge (global).
   DOUBTS: 'doubts:',
   DOUBT_NUDGE_TS: 'doubtnudgets:v1',
+  // #18 — question SOLUTION flags ("explanation still unclear"), per profile,
+  // local. Map id->record; mirrors DOUBTS but for quiz explanations.
+  QDOUBTS: 'qdoubts:',
+  // #21 — sidebar gesture toggles (global per device). JSON
+  // { close: true, open: false } — open defaults OFF (Android back conflict).
+  SIDEBAR_GESTURES: 'sidebargestures:v1',
+  // #28/#29 — show the post-test Crib Sheet button on results screens
+  // (global per device, default on).
+  CRIB_SHEET: 'cribsheet:v1',
+  // FAV — Favourites: per-profile local record { enabled, order:[sectionIds] }.
+  // Shared mirrors for admin insight live in lib/favorites.js (favsec:/favorder:),
+  // following the helpful-votes pattern of module-owned shared prefixes.
+  FAVORITES: 'favorites:',
 };

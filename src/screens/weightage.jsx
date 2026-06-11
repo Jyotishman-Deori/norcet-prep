@@ -119,7 +119,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   if (loaded.length < 2) {
     return (
       <div className="anim-fadeup">
-        <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} />
+        <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} favId="weightage" />
         <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
           <Activity size={48} className="mx-auto mb-4" style={{ color: T.muted, opacity: 0.4 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>Not enough papers yet</div>
@@ -141,7 +141,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} />
+      <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} favId="weightage" />
       <div className="max-w-md mx-auto px-4 pb-24 pt-4">
 
         <div className="text-xs mb-3" style={{ color: T.muted }}>

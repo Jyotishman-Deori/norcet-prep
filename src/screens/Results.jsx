@@ -5,7 +5,7 @@
 // props (results/questions/elapsed/...), so it needs NO useData/useProfile.
 // The result cards it renders now come from ../ui/result-cards.jsx.
 // =====================================================================
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Check, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
@@ -15,7 +15,7 @@ import { GuestSavePrompt, MotivationCard, ShareScoreButton, TimeQuadrant } from 
 
 function Results({ results, questions, elapsed, onHome, onReview,
                    displayName = null, streak = 0, quizType = 'Quick Test',
-                   isGuest = false, onGuestSignIn }) {
+                   isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const total = results.length;
   const correct = results.filter(r => r.correct).length;
@@ -40,6 +40,26 @@ function Results({ results, questions, elapsed, onHome, onReview,
 
   const fmtTime = (s) => `${Math.floor(s / 60)}m ${s % 60}s`;
 
+  // #25 — score reveal: the percentage counts up from 0 alongside the ring
+  // draw (the ring already animates via stroke-dasharray). 800ms ease-out;
+  // reduced-motion users see the final value immediately.
+  const [shownPct, setShownPct] = useState(0);
+  useEffect(() => {
+    let raf = null;
+    const reduce = typeof window !== 'undefined' && window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce || pct === 0) { setShownPct(pct); return; }
+    const start = Date.now();
+    const tick = () => {
+      const t = Math.min(1, (Date.now() - start) / 800);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setShownPct(Math.round(pct * eased));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => { if (raf) cancelAnimationFrame(raf); };
+  }, [pct]);
+
   return (
     <div className="anim-fadeup max-w-md mx-auto px-4 pt-8 pb-24">
       <MotivationCard pct={pct} label="round" />
@@ -60,7 +80,7 @@ function Results({ results, questions, elapsed, onHome, onReview,
                     style={{ transition: 'stroke-dasharray 0.8s ease-out' }} />
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="font-display text-5xl font-semibold" style={{ color: T.ink }}>{pct}<span className="text-2xl" style={{ color: T.muted }}>%</span></div>
+            <div className="font-display text-5xl font-semibold tabular-nums" style={{ color: T.ink }}>{shownPct}<span className="text-2xl" style={{ color: T.muted }}>%</span></div>
           </div>
         </div>
       </div>
@@ -129,6 +149,13 @@ function Results({ results, questions, elapsed, onHome, onReview,
       )}
 
       <div className="space-y-2">
+        {/* #28 — opt-in Crib Sheet review. App passes onCribSheet=null when the
+            Settings toggle (#29) is off, so the prompt vanishes entirely. */}
+        {onCribSheet && (
+          <Button onClick={onCribSheet} size="lg" className="w-full">
+            Review answers — Crib Sheet
+          </Button>
+        )}
         {wrong.length > 0 && (
           <Button onClick={() => onReview(wrong.map(r => r.qId))} variant="ghost" size="lg" className="w-full">
             Re-do the wrong ones

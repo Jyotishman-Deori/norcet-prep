@@ -9,14 +9,15 @@
 // from ui/question-widgets.
 // =====================================================================
 import React, { useState, useMemo } from 'react';
-import { Bookmark, BookmarkCheck, Brain, Check, ChevronLeft, ChevronRight, Lightbulb } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Brain, Check, ChevronLeft, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { TOPICS } from '../data/seed.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { TTSButton } from '../ui/question-widgets.jsx';
+import EmptyState from '../ui/empty-state.jsx';
 
-function BookmarksScreen({ onToggleBookmark, onBack }) {
+function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const fgOnDark = useFgOnDark();
@@ -35,6 +36,19 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
   // scroll, no clutter.
   const [topicFilter, setTopicFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+  // #19 — unbookmark with a smooth exit: ids currently fading out. The actual
+  // removal (onToggleBookmark) fires after the 280ms row-fade-out completes,
+  // so the card never vanishes instantly — and the empty state appears only
+  // after the last animation has finished.
+  const [removing, setRemoving] = useState(() => new Set());
+  const removeWithFade = (qId) => {
+    setRemoving(prev => new Set(prev).add(qId));
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    setTimeout(() => {
+      onToggleBookmark(qId);
+      setRemoving(prev => { const n = new Set(prev); n.delete(qId); return n; });
+    }, 280);
+  };
 
   // Rebuilds whenever data.bookmarks changes so live un-bookmark works.
   const itemIds = useMemo(() => new Set(data.bookmarks || []), [data.bookmarks]);
@@ -76,15 +90,12 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Bookmarks" onBack={onBack} feedback={{ screen: "Bookmarks" }} />
-        <div className="max-w-md mx-auto px-4 pt-16 pb-24 text-center">
-          <Bookmark size={36} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.35 }} />
-          <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No bookmarks yet</div>
-          <div className="text-sm mb-6 leading-relaxed" style={{ color: T.muted }}>
-            Tap the bookmark icon on any question during practice — they'll show up here as
-            a quick-reference study list with the answer and explanation ready to read.
-          </div>
-          <Button onClick={onBack} variant="ghost">Back</Button>
-        </div>
+        <EmptyState
+          icon={Bookmark}
+          title="Nothing saved yet"
+          text="Tap the bookmark icon on any question during a quiz to save it here for later."
+          actionLabel={onStartQuiz ? 'Start a Quiz' : undefined}
+          onAction={onStartQuiz} />
       </div>
     );
   }
@@ -252,7 +263,7 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
   // ===== INDEX PAGE: pure table of contents =====
   return (
     <div className="anim-fadeup">
-      <TopBar title={`Bookmarks (${itemIds.size})`} onBack={onBack}
+      <TopBar title={`Bookmarks (${itemIds.size})`} onBack={onBack} favId="bookmarks-view"
               feedback={{ screen: "Bookmarks" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
 
@@ -296,7 +307,7 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
           {groupedByTopic.map((group, gi) => {
             const t = TOPICS.find(x => x.id === group.topic);
             return (
-              <div key={group.topic}>
+              <div key={group.topic} className="seq-item" style={{ animationDelay: `${Math.min(gi, 8) * 110}ms` }}>
                 <div className="flex items-center gap-1.5 mb-2 px-1 text-[11px] uppercase tracking-wider font-semibold"
                      style={{ color: t?.color || T.muted }}>
                   <span>{t?.icon}</span>
@@ -305,19 +316,28 @@ function BookmarksScreen({ onToggleBookmark, onBack }) {
                 </div>
                 <Card className="overflow-hidden">
                   {group.questions.map((q, qi) => (
-                    <button key={q.id}
-                            onClick={() => setSelectedId(q.id)}
-                            className="no-tap-highlight w-full text-left px-3 py-3 flex items-start gap-2.5 active:bg-black/5 transition-colors"
-                            style={{
-                              borderBottom: qi < group.questions.length - 1 ? `1px solid ${T.borderSoft}` : 'none'
-                            }}>
-                      <span className="text-[10px] flex-shrink-0 mt-1 font-mono tabular-nums"
-                            style={{ color: T.muted }}>{(gi + 1)}.{(qi + 1).toString().padStart(2, '0')}</span>
-                      <span className="text-sm leading-snug flex-1" style={{ color: T.ink }}>
-                        {stemPreview(q.q)}
-                      </span>
-                      <ChevronRight size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.muted }} />
-                    </button>
+                    <div key={q.id}
+                         className={"w-full flex items-start gap-1 " + (removing.has(q.id) ? 'row-fade-out' : '')}
+                         style={{
+                           borderBottom: qi < group.questions.length - 1 ? `1px solid ${T.borderSoft}` : 'none'
+                         }}>
+                      <button onClick={() => setSelectedId(q.id)}
+                              className="no-tap-highlight flex-1 min-w-0 text-left pl-3 py-3 flex items-start gap-2.5 active:bg-black/5 transition-colors">
+                        <span className="text-[10px] flex-shrink-0 mt-1 font-mono tabular-nums"
+                              style={{ color: T.muted }}>{(gi + 1)}.{(qi + 1).toString().padStart(2, '0')}</span>
+                        <span className="text-sm leading-snug flex-1" style={{ color: T.ink }}>
+                          {stemPreview(q.q)}
+                        </span>
+                      </button>
+                      {/* #19 — filled bookmark = saved; one tap removes it
+                          (fade-out, then the data updates). No confirm dialog —
+                          unbookmarking is as frictionless as bookmarking. */}
+                      <button onClick={() => removeWithFade(q.id)}
+                              aria-label="Remove bookmark"
+                              className="no-tap-highlight p-2.5 mt-0.5 flex-shrink-0 rounded-full active:bg-black/5">
+                        <BookmarkCheck size={16} className={removing.has(q.id) ? 'bm-deflate' : ''} style={{ color: T.accent }} />
+                      </button>
+                    </div>
                   ))}
                 </Card>
               </div>

@@ -38,7 +38,7 @@ function TopicSelect({ onPick, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} />
+      <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} favId="topic-select" />
       <div className="max-w-md mx-auto px-4 pb-24 pt-4">
         <div className="space-y-2.5">
           {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {

@@ -120,6 +120,12 @@ import { fontStyles } from './lib/font-styles.js';
 import WelcomeScreen from './screens/welcome.jsx';
 // [A1 slice 14] PreviousPapers screen extracted.
 import PreviousPapers from './screens/previous-papers.jsx';
+// #17 — PYQ Read Mode (calm reading interface over the same paper data).
+import PyqRead from './screens/pyq-read.jsx';
+// #28 — post-test Crib Sheet (PDF-like review of a finished session).
+import CribSheet from './screens/crib-sheet.jsx';
+// FAV — Favourites manage screen (one-stop list + priority reorder).
+import FavoritesScreen from './screens/favorites.jsx';
 // [A1 slice 15] DosageResults screen extracted.
 import DosageResults from './screens/dosage-results.jsx';
 // [A1 slice 29] DosagePractice extracted (T+isDark; useContent; no fgOnDark).
@@ -138,6 +144,10 @@ import StudyMethods from './screens/study-methods.jsx';
 import DrillTests from './screens/drill-tests.jsx';
 // [F-B] Global pull-to-refresh overlay.
 import PullToRefresh from './ui/pull-to-refresh.jsx';
+// #30 — Home back-press exit confirmation pill.
+import ExitSnackbar from './ui/exit-snackbar.jsx';
+// TIP — hold/hover tooltip host (one bubble, app root, viewport-fixed).
+import { TipHost } from './ui/tooltip.jsx';
 // [F-E] Doubts review screen.
 import DoubtsScreen from './screens/doubts.jsx';
 // [F-F] FAQ section (user side).
@@ -195,6 +205,11 @@ import LearnCards from './screens/learn-cards.jsx';
 // Session 2, Feature 6 — in-app notification inbox + its storage helpers.
 import NotificationCenter from './screens/notification-center.jsx';
 import { loadNotifications, pushNotification } from './lib/notifications.js';
+// #18 — question solution flags: auto-resolve on a later correct answer.
+import { loadQDoubts, saveQDoubts, autoResolveQDoubts } from './lib/qdoubts.js';
+import { topicName } from './lib/topics.js';
+// #21/#29 — sidebar gesture + crib-sheet preferences (per-device).
+import { loadUiPrefs, isCribSheetEnabled } from './lib/ui-prefs.js';
 // [F-E] stale-doubt nudge.
 import { loadDoubts as loadDoubtsForNudge, staleUnresolvedCount } from './lib/doubts.js';
 // [A1 slice 45] AdminTile no longer referenced by App (now used only inside AdminPanel).
@@ -1760,6 +1775,14 @@ export default function App() {
     const t = setTimeout(() => { try { prefetchAllContent(); } catch (e) {} }, 2500);
     return () => clearTimeout(t);
   }, []);
+  // #21/#29 — hydrate the per-device UI prefs cache (sidebar gestures + crib
+  // sheet toggle) once at boot so synchronous getters are correct everywhere.
+  const [, setUiPrefsLoaded] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadUiPrefs().then(() => { if (alive) setUiPrefsLoaded(true); }).catch(() => {});
+    return () => { alive = false; };
+  }, []);
   // P1 — offline write queue. When the browser regains connectivity, replay
   // any local saves that didn't reach Supabase. Also fire once on mount
   // (after a short delay so we don't fight boot's own loadProfile) so a user
@@ -2144,17 +2167,34 @@ export default function App() {
   // to "launch from the middle". Reset scroll to the top on every screen
   // change — and re-assert on the next frame + shortly after, because on
   // mobile the first reset can lose a race against mount animations/layout.
+  //
+  // #30 — scroll position RESTORATION on back navigation. Every screen's Y
+  // offset is remembered (session-only, in a ref) at the moment we leave it;
+  // when a BACK navigation returns to a screen (goHome / the hardware back
+  // handler set `restoreNextScrollRef`), the saved offset is re-applied
+  // instantly instead of jumping to the top. Forward navigations still start
+  // at the top. Quiz/test screens preserve their question index, not scroll,
+  // so they never restore (they're never a back target here anyway).
+  const scrollMemRef = useRef({});            // screen -> last Y offset
+  const restoreNextScrollRef = useRef(false); // armed by back navigations only
+  const prevScreenRef = useRef(nav.screen);
   useEffect(() => {
+    // Save the outgoing screen's offset BEFORE any reset runs.
+    try { scrollMemRef.current[prevScreenRef.current] = window.scrollY || 0; } catch (e) {}
+    prevScreenRef.current = nav.screen;
+    const saved = scrollMemRef.current[nav.screen];
+    const target = (restoreNextScrollRef.current && typeof saved === 'number') ? saved : 0;
+    restoreNextScrollRef.current = false;
     const reset = () => {
       try {
-        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+        window.scrollTo({ top: target, left: 0, behavior: 'instant' });
       } catch (e) {
-        try { window.scrollTo(0, 0); } catch (_) {}
+        try { window.scrollTo(0, target); } catch (_) {}
       }
       try {
-        if (document.scrollingElement) document.scrollingElement.scrollTop = 0;
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
+        if (document.scrollingElement) document.scrollingElement.scrollTop = target;
+        document.documentElement.scrollTop = target;
+        document.body.scrollTop = target;
       } catch (e) { /* no-op */ }
     };
     reset();
@@ -2211,6 +2251,7 @@ export default function App() {
       cameFromWelcomeRef.current = false;
       setShowWelcome(true);
     } else {
+      restoreNextScrollRef.current = true; // #30 — back to Home restores scroll
       setNav({ screen: 'home' });
     }
   }, []);
@@ -2236,8 +2277,11 @@ export default function App() {
     navBackRef.current = { screen: nav.screen, overlayOpen, selfGuarded, kind };
     // Arm a sentinel whenever back should stay in-app (and we don't already
     // hold one, and the screen isn't self-guarding its own entry).
+    // #30 — ROOT screens are now armed too: the first back press on Home is
+    // intercepted to show the "Press back again to exit" snackbar; only the
+    // second press (within 2.5s) lets the OS exit.
     if (typeof window !== 'undefined' && window.history) {
-      const needs = !selfGuarded && (overlayOpen || !NAV_ROOT_SCREENS.has(nav.screen));
+      const needs = !selfGuarded;
       if (needs && !sentinelArmedRef.current) {
         try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
       }
@@ -2251,7 +2295,29 @@ export default function App() {
       const s = navBackRef.current;
       const action = decideBackAction(s);
       if (action === 'self-guarded') return;       // Quiz/advanced guard owns it
-      if (action === 'exit') return;                // root + nothing open → OS exits
+      if (action === 'exit') {
+        // #30 — double-back-to-exit. First press: re-arm the sentinel, show
+        // the snackbar, start a 2.5s window. Second press inside the window:
+        // do NOT re-arm — fire one more history.back() past the consumed
+        // sentinel so the OS actually exits / minimises the PWA.
+        if (exitPendingRef.current) {
+          if (exitSnackTimerRef.current) { clearTimeout(exitSnackTimerRef.current); exitSnackTimerRef.current = null; }
+          exitPendingRef.current = false;
+          setExitSnack(false);
+          try { window.history.back(); } catch (e) {}
+          return;
+        }
+        try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
+        exitPendingRef.current = true;
+        setExitSnack(true);
+        if (exitSnackTimerRef.current) clearTimeout(exitSnackTimerRef.current);
+        exitSnackTimerRef.current = setTimeout(() => {
+          exitPendingRef.current = false;
+          setExitSnack(false);
+          exitSnackTimerRef.current = null;
+        }, 2500);
+        return;
+      }
       // Re-arm so subsequent back presses keep being intercepted.
       try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
       if (action === 'close-overlay') {
@@ -2259,11 +2325,16 @@ export default function App() {
         if (s.kind === 'welcome') { setShowWelcome(false); setNav({ screen: 'home' }); }
         return;
       }
+      restoreNextScrollRef.current = true;          // #30 — hardware back restores scroll
       setNav({ screen: 'home' });                   // 'go-home'
     };
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
+  // #30 — exit confirmation snackbar state (Home + hardware back only).
+  const [exitSnack, setExitSnack] = useState(false);
+  const exitPendingRef = useRef(false);
+  const exitSnackTimerRef = useRef(null);
 
   const startQuiz = useCallback((spec) => {
     let qs = [];
@@ -2433,6 +2504,32 @@ export default function App() {
       };
     });
     setNav({ screen: 'results', results, questions: nav.questions, elapsed, mode: nav.mode });
+    // #18 — auto-resolve question solution flags: any still-open flag whose
+    // question was just answered CORRECTLY clears itself, with a small
+    // Achievements notification ("you got it right"). Fire-and-forget; a
+    // storage failure can never block the results screen.
+    if (profile && profile.id && results.some(r => r.correct)) {
+      (async () => {
+        try {
+          const before = await loadQDoubts(profile.id);
+          const { map: after, resolved: justResolved } = autoResolveQDoubts(before, results);
+          if (justResolved.length === 0) return;
+          await saveQDoubts(profile.id, after);
+          const first = justResolved[0];
+          const topicLabel = first && first.topic ? topicName(first.topic) : 'a flagged question';
+          await pushNotification({
+            type: 'doubt_milestone',
+            dedupeMs: 60 * 1000,
+            title: justResolved.length === 1
+              ? `Your doubt on ${topicLabel} was auto-resolved`
+              : `${justResolved.length} question doubts auto-resolved`,
+            body: justResolved.length === 1
+              ? 'You answered it correctly — the flag cleared itself.'
+              : 'You answered them correctly this session — the flags cleared themselves.',
+          });
+        } catch (e) { /* silent — purely additive */ }
+      })();
+    }
     // GUEST MODE (Phase A): bump the local-only guest counter (drives nudges /
     // future explore->convert measurement). No-op for real accounts. Never
     // sent anywhere; purely local.
@@ -2573,6 +2670,24 @@ export default function App() {
       paperName: paper.name
     });
   }, []);
+
+  // #28 — open the Crib Sheet from an answers-map test (Advanced / PYQ paper:
+  // `answers` is qId -> selected indices; blank = not attempted). Negative
+  // marking badges mirror the engine's real scoring (+1 / −⅓).
+  const openAnswersCrib = useCallback((title) => {
+    const items = (nav.questions || []).map(q => {
+      const ans = (nav.answers && nav.answers[q.id]) || [];
+      const status = ans.length === 0 ? 'na' : (arraysEqualUnordered(ans, q.correct) ? 'correct' : 'wrong');
+      return { q, selected: ans, status };
+    });
+    setNav({
+      screen: 'crib-sheet', items,
+      cribTitle: title,
+      cribSubtitle: `${items.length} questions · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`,
+      cribNegative: { plus: '1', minus: '\u2153' },
+      backNav: nav,
+    });
+  }, [nav]);
 
   // Score a finished paper and append the attempt to data.previousPapers[id].
   // Mirrors submitAdvancedTest's scoring (negative marking), but writes to the
@@ -3582,9 +3697,18 @@ export default function App() {
       <SupportHost />
 
       {/* Nav drawer lives at the app root (no transformed ancestor), so its
-          position:fixed is relative to the viewport and it scrolls correctly. */}
+          position:fixed is relative to the viewport and it scrolls correctly.
+          #21 — onOpen lets the drawer's own edge-swipe gesture open itself. */}
       <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
+                 onOpen={() => { if (nav.screen === 'home') setDrawerOpen(true); }}
+                 gesturesAllowed={nav.screen === 'home'}
                  onNavigate={handleHomeNavigate} />
+
+      {/* #30 — "Press back again to exit" snackbar (Home + hardware back). */}
+      <ExitSnackbar visible={exitSnack} />
+
+      {/* TIP — global tooltip bubble (hold on mobile / hover on desktop). */}
+      <TipHost />
 
       {nav.screen === 'home' && (
         <Home whatsNew={whatsNew} onDismissWhatsNew={dismissWhatsNew}
@@ -3704,7 +3828,54 @@ export default function App() {
                  isGuest={isGuestProfile(profile)}
                  onGuestSignIn={() => setNav({ screen: 'auth' })}
                  onHome={goHome}
+                 onCribSheet={isCribSheetEnabled() ? () => {
+                   // #28 — shape the finished session into Crib Sheet items.
+                   // Quiz results carry per-question outcomes; "Show answer"
+                   // reveals (revealed:true) count as Not attempted here.
+                   const items = (nav.results || []).map(r => {
+                     const q = (nav.questions || []).find(qq => qq.id === r.qId);
+                     if (!q) return null;
+                     const status = r.revealed ? 'na' : (r.correct ? 'correct' : 'wrong');
+                     return { q, selected: r.selected || [], status };
+                   }).filter(Boolean);
+                   setNav({
+                     screen: 'crib-sheet', items,
+                     cribTitle: quizTypeLabel(nav.mode),
+                     cribSubtitle: `${items.length} questions · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                     backNav: nav,
+                   });
+                 } : null}
                  onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })} />
+      )}
+
+      {/* #28 — Crib Sheet: PDF-like review of the session just finished.
+          Session-based: `items` live only in nav state; back returns to the
+          exact results screen it was opened from. */}
+      {nav.screen === 'crib-sheet' && (
+        <CribSheet title={nav.cribTitle || 'Test review'}
+                   subtitle={nav.cribSubtitle || ''}
+                   items={nav.items || []}
+                   negative={nav.cribNegative || null}
+                   profileId={profile && !isGuestProfile(profile) ? profile.id : null}
+                   onBack={() => setNav(nav.backNav || { screen: 'home' })} />
+      )}
+
+      {/* FAV — Your Favourites: manage list, priority order, strip toggle. */}
+      {nav.screen === 'favorites' && (
+        <FavoritesScreen onBack={goHome}
+                         onNavigate={handleHomeNavigate}
+                         onOpenSettings={() => setNav({ screen: 'settings' })} />
+      )}
+
+      {/* #17 — PYQ Read Mode: calm, untimed reading of a paper's questions.
+          No scoring, no spaced repetition — bookmarks + helpful bulb only. */}
+      {nav.screen === 'paper-read' && (
+        <PyqRead paper={nav.paper}
+                 bookmarks={data.bookmarks}
+                 onToggleBookmark={toggleBookmarkById}
+                 profileId={profile && profile.id}
+                 isAdmin={isAdmin}
+                 onBack={() => setNav({ screen: 'previous-papers' })} />
       )}
 
       {nav.screen === 'learn-topics' && (
@@ -3778,6 +3949,7 @@ export default function App() {
                              streak={(data && data.stats && data.stats.streakCurrent) || 0}
                              isGuest={isGuestProfile(profile)}
                              onGuestSignIn={() => setNav({ screen: 'auth' })}
+                             onCribSheet={isCribSheetEnabled() ? () => openAnswersCrib('Advanced Test') : null}
                              profileId={profile && profile.id} />
       )}
 
@@ -3789,7 +3961,9 @@ export default function App() {
           resolve — the inline per-question review covers it instead. */}
       {nav.screen === 'previous-papers' && (
         <PreviousPapers papers={allPapers} previousPapers={data.previousPapers}
-                        onStart={startPaperTest} onBack={goHome} />
+                        onStart={startPaperTest}
+                        onRead={(paper) => setNav({ screen: 'paper-read', paper })}
+                        onBack={goHome} />
       )}
 
       {nav.screen === 'paper-test' && (
@@ -3806,6 +3980,7 @@ export default function App() {
                              auto={nav.auto}
                              label={nav.paperName}
                              onHome={() => setNav({ screen: 'previous-papers' })}
+                             onCribSheet={isCribSheetEnabled() ? () => openAnswersCrib(nav.paperName || 'Previous Year Paper') : null}
                              displayName={profile ? (profile.displayName || profile.id) : null}
                              streak={(data && data.stats && data.stats.streakCurrent) || 0}
                              isGuest={isGuestProfile(profile)}
@@ -3922,6 +4097,7 @@ export default function App() {
                   onOpenFeedbackInbox={() => setNav({ screen: 'feedback-inbox' })}
                   onOpenAdminPanel={() => setNav({ screen: 'admin-panel' })}
                   onOpenMyReports={() => setNav({ screen: 'my-reports' })}
+                  onOpenFavorites={() => setNav({ screen: 'favorites' })}
                   onRenameProfile={handleRenameProfile}
                   onToggleReviewReminders={toggleReviewReminders}
                   onToggleIncludeGkInStats={toggleIncludeGkInStats}

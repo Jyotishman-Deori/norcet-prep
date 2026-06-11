@@ -80,7 +80,7 @@ function Reference({ onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Reference" onBack={onBack} feedback={{ screen: "Reference" }}
+      <TopBar title="Reference" onBack={onBack} feedback={{ screen: "Reference" }} favId="reference"
               right={!searching && (
                 <div className="text-[11px] font-medium tabular-nums px-2 py-1 rounded-full"
                      style={{ background: metaFor(cat).color + '14', color: metaFor(cat).color }}>

@@ -161,7 +161,7 @@ function StudyMethods({ onBack, onNavigate, progress }) {
   // ---------- LIST VIEW ----------
   return (
     <div className="min-h-screen" style={{ background: T.bg }}>
-      <TopBar title="Study Methods" onBack={onBack} feedback={{ screen: 'Study methods' }} />
+      <TopBar title="Study Methods" onBack={onBack} feedback={{ screen: 'Study methods' }} favId="study-methods" />
       <div className="max-w-md mx-auto px-4 pt-3 pb-24">
         <div className="mb-4">
           <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>

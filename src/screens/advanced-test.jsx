@@ -91,7 +91,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} />
+      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} favId="advanced-setup" />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
 
         {/* Slimmed tagline — the heavy teal hero became visual noise once
@@ -519,7 +519,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label }) {
 // ADVANCED TEST — RESULTS
 // =====================================================================
 function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, onHome, onReview, label, timeMinutes, profileId,
-                              displayName = null, streak = 0, isGuest = false, onGuestSignIn }) {
+                              displayName = null, streak = 0, isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const summary = useMemo(() => {
     let correct = 0, wrong = 0, blank = 0;
@@ -744,6 +744,13 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
         )}
 
         <div className="space-y-2 mt-6">
+          {/* #28 — opt-in Crib Sheet review (hidden when the Settings toggle
+              is off; App passes onCribSheet=null in that case). */}
+          {onCribSheet && (
+            <Button onClick={onCribSheet} size="lg" className="w-full">
+              Review answers — Crib Sheet
+            </Button>
+          )}
           {wrongAndBlank.length > 0 && onReview && (
             <Button variant="ghost" onClick={() => onReview(wrongAndBlank.map(d => d.q.id))} size="lg" className="w-full">
               Practice the missed ones

@@ -4,7 +4,7 @@
 // to the originals; the only changes are the A7 hook lines and Library's
 // signature dropping `isAdmin` (now from useProfile). `profileId` stays a prop.
 // =====================================================================
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { bankVisibility, isBankOwner } from '../lib/banks.js';
@@ -45,27 +45,47 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
     return banks;
   }, [banks, profileId, filter]);
 
+  // #26/1.4 — enrich the count label with the total question count.
+  const totalQs = useMemo(() => visibleBanks.reduce((a, b) => a + ((b.questions && b.questions.length) || 0), 0), [visibleBanks]);
+
+  // #26/1.2 — sliding-pill filter chips: the active background physically
+  // travels (left + width morph, spring curve) instead of swapping colour.
+  const chipRefs = useRef({});
+  const [pill, setPill] = useState(null); // { left, width }
+  useEffect(() => {
+    const el = chipRefs.current[filter];
+    if (!el) { setPill(null); return; }
+    const measure = () => setPill({ left: el.offsetLeft, width: el.offsetWidth });
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [filter, banks.length]);
+
   return (
     <div className="anim-fadeup">
-      <TopBar title="Question Bank Library" onBack={onBack}
+      <TopBar title="Question Bank Library" onBack={onBack} favId="library"
               feedback={{ screen: "Library" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
 
-        {/* Anyone can upload a bank */}
-        <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={onCreateNew}
-              style={{ background: T.ink, border: 'none' }}>
+        {/* Anyone can upload a bank. #26/1.1 — app-gradient card (was a dark
+            slab that read like a different app), warmer copy, and a single
+            shimmer sweep on entry (reduced-motion safe). */}
+        <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable relative overflow-hidden" onClick={onCreateNew}
+              style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', borderRadius: 14 }}>
+          <div className="card-shimmer absolute inset-y-0 w-16 pointer-events-none"
+               style={{ background: 'rgba(255,255,255,0.18)' }} aria-hidden="true" />
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: 'rgba(255,255,255,0.15)' }}>
+                 style={{ background: 'rgba(255,255,255,0.18)' }}>
               <Plus size={18} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Upload a new bank</div>
-              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                Choose private (just you) or public (everyone)
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.75)' }}>
+                Share with the community or keep it just for you
               </div>
             </div>
-            <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.5)' }} />
+            <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
           </div>
         </Card>
 
@@ -77,9 +97,19 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
         </div>
 
         {/* Filter chips — quickly switch between everything, just mine, just others.
-            Only show when there's something to filter (>1 bank or mixed ownership). */}
+            #26/1.2 — a sliding active pill travels between chips (left + width
+            morph, spring) instead of an abrupt colour swap. Only shown when
+            there's something to filter (>1 bank or mixed ownership). */}
         {banks.length > 1 && (
-          <div className="flex gap-2 mb-3">
+          <div className="relative flex gap-2 mb-3">
+            {pill && (
+              <div className="absolute top-0 bottom-0 rounded-full pointer-events-none"
+                   style={{
+                     left: pill.left, width: pill.width,
+                     background: T.primary,
+                     transition: 'left 0.32s cubic-bezier(0.34,1.56,0.64,1), width 0.32s cubic-bezier(0.34,1.56,0.64,1)',
+                   }} aria-hidden="true" />
+            )}
             {[
               { id: 'all',    label: 'All',         count: counts.all },
               { id: 'mine',   label: 'Mine',        count: counts.mine },
@@ -88,11 +118,13 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
               const active = filter === opt.id;
               return (
                 <button key={opt.id} onClick={() => setFilter(opt.id)}
-                        className="no-tap-highlight px-3 py-1.5 rounded-full text-xs font-medium transition-colors flex-shrink-0"
+                        ref={el => { chipRefs.current[opt.id] = el; }}
+                        className="no-tap-highlight relative px-3 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
                         style={{
-                          background: active ? T.primary : T.surface,
+                          background: active ? 'transparent' : T.surface,
                           color: active ? '#FFF' : T.inkSoft,
-                          border: `1px solid ${active ? T.primary : T.border}`
+                          border: `1px solid ${active ? 'transparent' : T.border}`,
+                          transition: 'color 0.25s',
                         }}>
                   {opt.label} <span style={{ opacity: 0.7 }}>· {opt.count}</span>
                 </button>
@@ -101,11 +133,12 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           </div>
         )}
 
-        {/* Header row — count label + refresh */}
+        {/* Header row — count label + refresh. #26/1.4 — the label carries the
+            total question count across the visible banks. */}
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
             {banks.length > 0
-              ? `${visibleBanks.length} ${filter === 'mine' ? 'mine' : filter === 'others' ? 'from others' : (visibleBanks.length === 1 ? 'bank' : 'banks')}`
+              ? `${visibleBanks.length} ${filter === 'mine' ? 'mine' : filter === 'others' ? 'from others' : (visibleBanks.length === 1 ? 'bank' : 'banks')}${totalQs > 0 ? ` · ${totalQs} questions` : ''}`
               : 'Available banks'}
           </div>
           <button onClick={onRefresh} disabled={loading}
@@ -143,17 +176,22 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           </div>
         ) : (
           <div className="space-y-2.5">
-            {visibleBanks.map(b => {
+            {visibleBanks.map((b, bi) => {
               const date = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
               const mine = isBankOwner(b, profileId);
               const owner = mine ? 'You' : (b.ownerName || 'Admin');
+              const priv = bankVisibility(b) === 'private';
               return (
-                <Card key={b.id} className="p-4" onClick={() => onOpen(b.id)}>
+                /* #26/1.3 — left accent bar (green = public, grey = private,
+                   same language as topic rows), question count as a badge,
+                   and the global sequential entrance (#22). */
+                <Card key={b.id} className="p-4 seq-item" onClick={() => onOpen(b.id)}
+                      style={{ borderLeft: `3px solid ${priv ? T.border : T.success}`, animationDelay: `${Math.min(bi, 8) * 110}ms` }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>{b.name}</div>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
                               style={{ background: T.primary + '15', color: T.primary }}>v{b.version}</span>
                         <VisibilityPill bank={b} />
                         {disabledBanks && disabledBanks[b.id] && (
@@ -163,10 +201,14 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
                           </span>
                         )}
                       </div>
-                      <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
-                        {b.questions.length} question{b.questions.length === 1 ? '' : 's'}
-                        {` · by ${owner}`}
-                        {date && ` · ${date}`}
+                      <div className="text-xs leading-relaxed flex items-center gap-1.5 flex-wrap" style={{ color: T.muted }}>
+                        <span className="font-semibold px-1.5 py-0.5 rounded"
+                              style={{ background: T.surfaceWarm, color: T.inkSoft }}>
+                          {b.questions.length} question{b.questions.length === 1 ? '' : 's'}
+                        </span>
+                        <span>by {owner}</span>
+                        {date && <span>· {date}</span>}
+                        <span>· {priv ? 'Only you' : 'Shared with everyone'}</span>
                       </div>
                       {b.description && (
                         <div className="text-xs mt-1.5 leading-snug" style={{ color: T.inkSoft }}>{b.description}</div>

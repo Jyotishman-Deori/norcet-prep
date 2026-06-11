@@ -168,7 +168,7 @@ function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
   if (data.stats.totalAttempted === 0) {
     return (
       <div className="anim-fadeup">
-        <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
+        <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} favId="stats" />
         <div className="max-w-md mx-auto px-4 pt-6">
           <EmptyState
             icon={BarChart3}
@@ -192,7 +192,7 @@ function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
+      <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} favId="stats" />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
 
         {/* Headline */}

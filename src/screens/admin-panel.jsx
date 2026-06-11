@@ -29,6 +29,10 @@ import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { loadHelpfulnessReport } from '../lib/helpful-votes.js';
+// FAV — Favourites insights: hearts + average priority rank per section.
+import { loadFavInsights } from '../lib/favorites.js';
+import { FavIcon } from '../ui/fav-icons.jsx';
+import { Heart } from 'lucide-react';
 import { fmtWhen } from '../lib/format.js';
 import { topicName } from '../lib/topics.js';
 
@@ -68,6 +72,15 @@ function AdminPanel({
     setHelpful(rows);
     setHelpfulLoading(false);
   }, [allQuestions]);
+
+  // FAV — Favourites insights
+  const [favIns, setFavIns] = useState({ rows: [], users: 0 });
+  const [favInsLoading, setFavInsLoading] = useState(true);
+  const refreshFavIns = useCallback(async () => {
+    setFavInsLoading(true);
+    try { setFavIns(await loadFavInsights()); } catch (e) {}
+    setFavInsLoading(false);
+  }, []);
 
   const refreshUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -239,6 +252,69 @@ function AdminPanel({
                   </Card>
                 );
               })}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // FAV — Favourites insights: which sections users love (hearts), how they
+  // rank them (avg priority), and which aren't attracting anyone (0 hearts,
+  // shown dimmed on purpose — that's the "needs work" signal).
+  if (view === 'favourites') {
+    const maxHearts = Math.max(1, ...favIns.rows.map(r => r.hearts));
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Favourites insights" onBack={backToDash}
+                right={
+                  <button onClick={refreshFavIns} disabled={favInsLoading} aria-label="Refresh"
+                          className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">
+                    <RefreshCw size={18} style={{ color: T.muted }} className={favInsLoading ? 'animate-spin' : ''} />
+                  </button>
+                } />
+        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
+            Which sections users heart, and where they place them in their priority order.
+            High hearts + low avg rank = a hit feature worth doubling down on.
+            Zero hearts (dimmed) = a section that isn't attracting users — candidates for improvement or better discovery.
+            Guests are excluded; counts reflect CURRENT hearts (un-hearting removes it).
+          </div>
+          <Card className="p-3 mb-3" style={{ background: '#E0245E10', border: '1px solid #E0245E30' }}>
+            <div className="text-[13px]" style={{ color: T.ink }}>
+              <span className="font-semibold" style={{ color: '#E0245E' }}>{favIns.users}</span> user{favIns.users === 1 ? '' : 's'} with at least one favourite
+            </div>
+          </Card>
+          {favInsLoading ? (
+            <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
+          ) : (
+            <div className="space-y-2">
+              {favIns.rows.map(r => (
+                <Card key={r.id} className="p-3.5" style={{ opacity: r.hearts === 0 ? 0.55 : 1 }}>
+                  <div className="flex items-center gap-2.5 mb-2">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style={{ background: r.hue + '20' }}>
+                      <FavIcon name={r.icon} size={15} color={r.hue} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium truncate" style={{ color: T.ink }}>{r.label}</div>
+                      <div className="text-[11px]" style={{ color: T.muted }}>
+                        {r.hearts === 0
+                          ? 'No hearts yet — not attracting users'
+                          : <>avg priority <span className="font-semibold" style={{ color: T.inkSoft }}>#{r.avgRank ? r.avgRank.toFixed(1) : '—'}</span>{r.top3 > 0 ? <> · in a top-3 for {r.top3}</> : null}</>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Heart size={12} fill={r.hearts > 0 ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
+                      <span className="text-sm font-semibold tabular-nums" style={{ color: r.hearts > 0 ? T.ink : T.muted }}>{r.hearts}</span>
+                    </div>
+                  </div>
+                  <div className="h-1.5 rounded-full" style={{ background: T.borderSoft }}>
+                    <div className="h-1.5 rounded-full transition-all duration-500"
+                         style={{ background: r.hue, width: `${Math.round((r.hearts / maxHearts) * 100)}%` }} />
+                  </div>
+                </Card>
+              ))}
             </div>
           )}
         </div>
@@ -546,6 +622,15 @@ function AdminPanel({
             hint="Explanation ratings"
             onClick={() => { setView('helpfulness'); refreshHelpful(); }}
             signal={<Lightbulb size={18} style={{ color: T.muted }} />} />
+
+          {/* FAV — Favourites insights: section popularity + priority ranks */}
+          <AdminTile
+            icon={<Heart size={22} style={{ color: '#E0245E' }} />}
+            accent={'#E0245E'}
+            label="Favourites"
+            hint="Section popularity"
+            onClick={() => { setView('favourites'); refreshFavIns(); }}
+            signal={<Heart size={18} style={{ color: T.muted }} />} />
 
           {/* Manage admins — add/remove who has admin access */}
           <AdminTile

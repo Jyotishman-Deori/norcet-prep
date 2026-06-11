@@ -8,8 +8,8 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
-  GraduationCap, Heart, Lock, LogOut, RefreshCw, RotateCcw, Sigma, Trash2,
+  AlertCircle, AlertTriangle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
+  FileText, GraduationCap, Hand, Heart, Lock, LogOut, RefreshCw, RotateCcw, Sigma, Trash2,
   Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
@@ -18,15 +18,53 @@ import { requestRename } from '../ui/rename-channel.js';
 import { LIGHT_THEMES } from '../lib/light-themes.js';
 import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
+// #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
+import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
+// FAV — Favourites strip toggle (per profile, OFF by default).
+import { loadFavs, setFavEnabled } from '../lib/favorites.js';
+import ShareAppCard from '../ui/share-app-card.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile, isAdmin } = useProfile();
-  const [confirming, setConfirming] = useState(false);
+  // #21/#29 — per-device UI prefs (hydrated at App boot; re-read here so a
+  // fresh Settings mount always reflects storage truth).
+  const [gestures, setGestures] = useState(() => getSidebarGestures());
+  const [cribOn, setCribOn] = useState(() => isCribSheetEnabled());
+  // FAV — Favourites strip (per profile; hydrated below with the ui prefs).
+  const [favs, setFavs] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    loadUiPrefs().then(({ gestures: g, cribEnabled }) => {
+      if (!alive) return;
+      setGestures(g); setCribOn(cribEnabled);
+    }).catch(() => {});
+    loadFavs((profile && profile.id) || 'guest').then(f => { if (alive) setFavs(f); }).catch(() => {});
+    return () => { alive = false; };
+  }, [profile && profile.id]);
+  const flipFavs = async () => {
+    if (!favs) return;
+    const f = await setFavEnabled((profile && profile.id) || 'guest', !favs.enabled);
+    setFavs(f);
+  };
+  const flipGesture = (which) => {
+    const next = !gestures[which];
+    setGestures(g => ({ ...g, [which]: next }));
+    setSidebarGesture(which, next);
+  };
+  const flipCrib = () => {
+    const next = !cribOn;
+    setCribOn(next);
+    setCribSheetEnabled(next);
+  };
+  // #31 — Profile actions bottom sheets.
+  const [logoutSheet, setLogoutSheet] = useState(false);
+  const [resetSheet, setResetSheet] = useState(false);
+  const [resetTyped, setResetTyped] = useState('');
   const [importMsg, setImportMsg] = useState(null);
   const fileInputRef = useRef(null);
   // P11 Feature C — topic-notes export/import (separate from the data backup;
@@ -214,18 +252,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               </div>
             </Card>
 
-            <div className="grid grid-cols-2 gap-2 mb-6">
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={onSwitchProfile}>
-                <RefreshCw size={16} style={{ color: T.ink }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
-                <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
-              </Card>
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={onLogout}>
-                <LogOut size={16} style={{ color: T.error }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
-                <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
-              </Card>
-            </div>
+            {/* #31 — Switch profile / Log out moved into the unified PROFILE
+                actions card further down (with Reset), so all profile-state
+                actions live together with clear consequence hierarchy. */}
           </>
         )}
 
@@ -546,6 +575,77 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </Card>
         )}
 
+        {/* #21 — Sidebar gestures. Swipe-to-close defaults ON (no system
+            conflict); swipe-to-open defaults OFF (clashes with the Android
+            10+ back gesture on many phones). Contextual notes appear only
+            when relevant; tap-backdrop is a locked, always-on fallback. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('close')}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+                <Hand size={18} style={{ color: T.primary }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  {gestures.close
+                    ? 'Swipe left on the open sidebar to close it'
+                    : 'Off — you can still close it by tapping the backdrop or the menu icon'}
+                </div>
+              </div>
+            </div>
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: gestures.close ? T.success : T.border }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: gestures.close ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
+          </div>
+        </Card>
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('open')}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+                <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  Swipe right from the screen edge to open the sidebar
+                </div>
+              </div>
+            </div>
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: gestures.open ? T.success : T.border }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: gestures.open ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
+          </div>
+          {gestures.open && (
+            <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
+                 style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
+              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
+              <span>On some Android devices this gesture may conflict with the system back button. If the sidebar opens unexpectedly, turn this off.</span>
+            </div>
+          )}
+        </Card>
+        <Card className="p-4 mb-3" style={{ opacity: 0.75 }}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+                <Lock size={16} style={{ color: T.muted }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Tap backdrop to close</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on — cannot be disabled</div>
+              </div>
+            </div>
+            <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0" style={{ background: T.success, opacity: 0.5 }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow" style={{ transform: 'translateX(20px)' }} />
+            </div>
+          </div>
+        </Card>
+
         {/* Help */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Help</div>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onShowWelcome}>
@@ -776,48 +876,144 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </Card>
         )}
 
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Danger zone</div>
-        {!confirming ? (
-          <Card className="p-4 cursor-pointer" onClick={() => setConfirming(true)}>
-            <div className="flex items-center gap-3">
-              <Trash2 size={18} style={{ color: T.error }} />
-              <div>
-                <div className="font-medium" style={{ color: T.ink }}>Reset this profile's data</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Progress, bookmarks, custom questions, stats</div>
+        {/* FAV — Favourites: opt-in home-screen strip of hearted sections.
+            OFF by default; hearts always save regardless, so flipping this on
+            instantly reveals everything collected so far. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Favourites</div>
+        <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={flipFavs}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E0245E18' }}>
+                <Heart size={18} fill={favs && favs.enabled ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Favourites section on home</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  {favs && favs.enabled
+                    ? `Showing ${favs.order.length === 0 ? 'on your home screen — heart some sections to fill it' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen`}`
+                    : 'Off — tap the heart on any section to collect favourites, then turn this on to pin them to your home screen'}
+                </div>
               </div>
             </div>
-          </Card>
-        ) : (
-          <Card className="p-4" style={{ background: T.errorSoft, border: `1px solid ${T.error}` }}>
-            <div className="font-medium mb-2" style={{ color: T.error }}>This cannot be undone.</div>
-            <div className="text-xs mb-3" style={{ color: T.inkSoft }}>
-              Affects {profile ? profile.displayName + "'s" : 'this'} progress only. Other profiles are not touched. Consider downloading a backup first.
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: favs && favs.enabled ? T.success : T.border }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: favs && favs.enabled ? 'translateX(20px)' : 'translateX(0)' }} />
             </div>
-            <div className="flex gap-2 mt-3">
-              <Button variant="ghost" onClick={() => setConfirming(false)} className="flex-1">Cancel</Button>
-              <Button variant="accent" onClick={() => { onClearAll(); setConfirming(false); }} className="flex-1">Reset</Button>
+          </div>
+        </Card>
+        {favs && favs.order.length > 0 && onOpenFavorites && (
+          <Card className="p-3.5 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenFavorites}>
+            <div className="flex items-center justify-between gap-3">
+              <div className="text-[13px] font-medium" style={{ color: T.primary }}>
+                Manage favourites & priority order
+              </div>
+              <ChevronRight size={16} style={{ color: T.primary, opacity: 0.7 }} />
             </div>
           </Card>
         )}
 
+        {/* #29 — Tests: the single control for the post-test Crib Sheet. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Tests</div>
+        <Card className="p-4 mb-1 cursor-pointer no-tap-highlight pressable" onClick={flipCrib}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+                <FileText size={18} style={{ color: T.primary }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Show Crib Sheet after tests</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  {cribOn
+                    ? 'Review correct, wrong, and missed questions after every test'
+                    : 'Crib Sheet is hidden — results screen only after tests'}
+                </div>
+              </div>
+            </div>
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: cribOn ? T.success : T.border }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: cribOn ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
+          </div>
+        </Card>
+        <div className="text-[11px] leading-relaxed mb-3 px-2" style={{ color: T.muted }}>
+          The Crib Sheet shows every question with correct answers and explanations — like a PYQ booklet. You can also share it.
+        </div>
+
+        {/* #31 — PROFILE: Switch / Log out / Reset unified in ONE card with a
+            clear consequence ladder (safe green → cautious amber → destructive
+            red). Replaces the old DANGER ZONE section — the red text on the
+            Reset row carries the warning, not a section-level alarm. Log out
+            confirms via a light bottom sheet; Reset requires typing RESET. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
+        <Card className="mb-3 p-0 overflow-hidden">
+          {!isGuest && profile && (
+            <>
+              <button onClick={onSwitchProfile}
+                      className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.successSoft }}>
+                  <RefreshCw size={17} style={{ color: T.success }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium" style={{ color: T.ink }}>Switch profile</div>
+                  <div className="text-xs mt-0.5" style={{ color: T.muted }}>Change to a different saved profile</div>
+                </div>
+                <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+              </button>
+              <div className="border-t" style={{ borderColor: T.borderSoft }} />
+              <button onClick={() => setLogoutSheet(true)}
+                      className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
+                <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#D4900A20' }}>
+                  <LogOut size={17} style={{ color: '#D4900A' }} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium" style={{ color: T.ink }}>Log out</div>
+                  <div className="text-xs mt-0.5" style={{ color: T.muted }}>You can log back in with the same account</div>
+                </div>
+                <AlertTriangle size={14} style={{ color: '#D4900A' }} className="flex-shrink-0" />
+              </button>
+              <div className="border-t" style={{ borderColor: T.error + '30' }} />
+            </>
+          )}
+          <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-4 text-left active:bg-black/5 transition-colors">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
+              <Trash2 size={17} style={{ color: T.error }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium" style={{ color: T.error }}>Reset this profile's data</div>
+              <div className="text-xs mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
+                Permanently deletes progress, bookmarks, stats, and custom questions
+              </div>
+            </div>
+          </button>
+        </Card>
+
         {/* P9 / step 33 — "Support the app" section. Quiet, always visible,
             below all functional settings. Opens the shared support modal
             (buy-me-a-chai / UPI). Non-transactional, no "donate" wording. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Support</div>
+        {/* #27 + #20 — Share & support: the two "help this project" cards.
+            The support card is visually ELEVATED (primary-tinted fill, heavier
+            border, tinted icon block) so it reads as a warm highlight among
+            the utilitarian rows — same logic as the Admin card's green tint. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share & support</div>
+        <ShareAppCard />
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => requestSupport()}
-              ariaLabel="Support the app">
+              ariaLabel="Support the app"
+              style={{ background: T.primary + '0E', border: `1.5px solid ${T.primary}45`, borderRadius: 14 }}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.primary + '15' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: T.primary + '20' }}>
               <Heart size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Keep NORCET Prep free {'\u2615'}</div>
+              <div className="font-medium" style={{ color: T.primary }}>Keep NORCET Prep free {'\u2615'}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 Free and ad-free {'\u00b7'} buy me a chai to help with server costs
               </div>
             </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
+            <ChevronRight size={18} style={{ color: T.primary, opacity: 0.7 }} />
           </div>
         </Card>
 
@@ -828,6 +1024,85 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           Version: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
         </div>
       </div>
+
+      {/* #31 — Log out confirm: a light bottom sheet (amber = cautious, not
+          destructive). Primary action is the SAFE one (Cancel). */}
+      {logoutSheet && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center"
+             style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setLogoutSheet(false)}>
+          <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
+               style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: T.border }} />
+            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>Log out of this profile?</div>
+            <div className="text-sm leading-relaxed mb-5" style={{ color: T.muted }}>
+              Your progress is saved to your account — nothing is deleted. You can log back in anytime.
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setLogoutSheet(false)}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
+                      style={{ background: T.primary, color: '#FFF' }}>
+                Cancel
+              </button>
+              <button onClick={() => { setLogoutSheet(false); onLogout(); }}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-medium active:scale-95 transition"
+                      style={{ background: '#D4900A20', color: '#D4900A', border: '1.5px solid #D4900A60' }}>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* #31 — Reset confirm: destructive bottom sheet with type-to-confirm
+          (RESET). The red button stays disabled until the word matches; copy
+          names the profile so there's no ambiguity about scope. */}
+      {resetSheet && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center"
+             style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setResetSheet(false)}>
+          <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
+               style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: T.border }} />
+            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.error }}>
+              Reset {profile ? `${profile.displayName}'s` : "this profile's"} data?
+            </div>
+            <div className="text-sm leading-relaxed mb-4" style={{ color: T.muted }}>
+              This permanently deletes progress, bookmarks, stats, and custom questions for this profile only.
+              Other profiles are untouched. <span style={{ color: T.inkSoft, fontWeight: 500 }}>This cannot be undone</span> —
+              consider downloading a backup first (Settings → Backup).
+            </div>
+            <div className="text-xs font-medium mb-1.5" style={{ color: T.inkSoft }}>
+              Type <span className="font-mono font-bold" style={{ color: T.error }}>RESET</span> to confirm:
+            </div>
+            <input value={resetTyped} onChange={e => setResetTyped(e.target.value)}
+                   autoFocus autoComplete="off" autoCapitalize="characters"
+                   placeholder="RESET"
+                   className="w-full rounded-xl px-3 py-2.5 text-sm font-mono mb-4"
+                   style={{
+                     background: T.surfaceWarm, color: T.ink,
+                     border: `1.5px solid ${resetTyped.trim().toUpperCase() === 'RESET' ? T.error : T.border}`,
+                     transition: 'border-color .25s',
+                   }} />
+            <div className="flex gap-2">
+              <button onClick={() => setResetSheet(false)}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
+                      style={{ background: T.surfaceWarm, color: T.ink, border: `1.5px solid ${T.border}` }}>
+                Cancel
+              </button>
+              <button disabled={resetTyped.trim().toUpperCase() !== 'RESET'}
+                      onClick={() => { if (resetTyped.trim().toUpperCase() === 'RESET') { setResetSheet(false); onClearAll(); } }}
+                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
+                      style={{
+                        background: resetTyped.trim().toUpperCase() === 'RESET' ? T.error : T.surfaceWarm,
+                        color: resetTyped.trim().toUpperCase() === 'RESET' ? '#FFF' : T.muted,
+                        opacity: resetTyped.trim().toUpperCase() === 'RESET' ? 1 : 0.7,
+                        transition: 'background .25s, color .25s',
+                      }}>
+                Reset data
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

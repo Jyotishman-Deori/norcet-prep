@@ -20,8 +20,9 @@
 import React, { useEffect, useRef } from 'react';
 import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { getSidebarGestures } from '../lib/ui-prefs.js';
 
-function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
+function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, faqUnread = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const panelRef = useRef(null);
@@ -48,6 +49,117 @@ function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
+
+  // ===================================================================
+  // #21 — Sidebar gesture controls. Two opt-in gestures, both governed by
+  // the Settings → Sidebar gestures toggles (lib/ui-prefs.js, read LIVE at
+  // touchstart so a settings change applies without remounting):
+  //   swipe-to-CLOSE (default ON)  — leftward drag anywhere on the open
+  //     panel; the panel tracks the finger 1:1, commits past 38% width or a
+  //     fast leftward flick, otherwise springs back open.
+  //   swipe-to-OPEN  (default OFF) — rightward drag starting in the left
+  //     20% screen-edge zone while the drawer is closed (Home only, via
+  //     gesturesAllowed). Same threshold/velocity logic, mirrored.
+  // Tap-backdrop and the hamburger/X button are ALWAYS available — gestures
+  // are additive, never the only way out. Direct style mutation during the
+  // drag (no re-renders) keeps tracking smooth on low-end phones.
+  // ===================================================================
+  const dragRef = useRef(null); // { mode:'close'|'open', startX, startY, lastX, lastT, vx, active }
+  const setPanelX = (px, animate) => {
+    const el = panelRef.current; if (!el) return;
+    el.style.transition = animate ? '' : 'none';
+    el.style.transform = `translateX(${px}px)`;
+  };
+  const clearPanelInline = () => {
+    const el = panelRef.current; if (!el) return;
+    el.style.transition = '';
+    el.style.transform = '';
+  };
+
+  // -- swipe-to-close: handlers attached to the panel itself --
+  const onPanelTouchStart = (e) => {
+    if (!open) return;
+    if (!getSidebarGestures().close) return;
+    const t = e.touches && e.touches[0]; if (!t) return;
+    dragRef.current = { mode: 'close', startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastT: Date.now(), vx: 0, active: false };
+  };
+  const onPanelTouchMove = (e) => {
+    const d = dragRef.current; if (!d || d.mode !== 'close') return;
+    const t = e.touches && e.touches[0]; if (!t) return;
+    const dx = t.clientX - d.startX;
+    const dy = t.clientY - d.startY;
+    // Only claim clearly-horizontal leftward drags; let vertical scrolls win.
+    if (!d.active) {
+      if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+      d.active = true;
+    }
+    const now = Date.now();
+    d.vx = (t.clientX - d.lastX) / Math.max(1, now - d.lastT);
+    d.lastX = t.clientX; d.lastT = now;
+    setPanelX(Math.min(0, dx), false);
+  };
+  const onPanelTouchEnd = () => {
+    const d = dragRef.current; dragRef.current = null;
+    if (!d || d.mode !== 'close' || !d.active) return;
+    const el = panelRef.current; if (!el) return;
+    const w = el.offsetWidth || 300;
+    const dx = d.lastX - d.startX;
+    const commit = (-dx) > w * 0.38 || d.vx < -0.4; // distance OR fast flick left
+    clearPanelInline();
+    if (commit) onClose();
+  };
+
+  // -- swipe-to-open: a document-level edge listener while closed --
+  useEffect(() => {
+    if (open || !gesturesAllowed || typeof document === 'undefined') return;
+    const onStart = (e) => {
+      if (!getSidebarGestures().open) return;
+      const t = e.touches && e.touches[0]; if (!t) return;
+      const edge = (typeof window !== 'undefined' ? window.innerWidth : 360) * 0.2;
+      if (t.clientX > edge) return;
+      dragRef.current = { mode: 'open', startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastT: Date.now(), vx: 0, active: false };
+    };
+    const onMove = (e) => {
+      const d = dragRef.current; if (!d || d.mode !== 'open') return;
+      const t = e.touches && e.touches[0]; if (!t) return;
+      const dx = t.clientX - d.startX;
+      const dy = t.clientY - d.startY;
+      if (!d.active) {
+        if (dx < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        d.active = true;
+      }
+      const now = Date.now();
+      d.vx = (t.clientX - d.lastX) / Math.max(1, now - d.lastT);
+      d.lastX = t.clientX; d.lastT = now;
+      const el = panelRef.current; if (!el) return;
+      const w = el.offsetWidth || 300;
+      setPanelX(Math.min(0, -w + dx), false);
+    };
+    const onEnd = () => {
+      const d = dragRef.current; dragRef.current = null;
+      if (!d || d.mode !== 'open' || !d.active) return;
+      const el = panelRef.current;
+      const w = (el && el.offsetWidth) || 300;
+      const dx = d.lastX - d.startX;
+      const commit = dx > w * 0.38 || d.vx > 0.4;
+      clearPanelInline();
+      if (commit && onOpen) onOpen();
+    };
+    document.addEventListener('touchstart', onStart, { passive: true });
+    document.addEventListener('touchmove', onMove, { passive: true });
+    document.addEventListener('touchend', onEnd, { passive: true });
+    document.addEventListener('touchcancel', onEnd, { passive: true });
+    return () => {
+      document.removeEventListener('touchstart', onStart);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onEnd);
+      document.removeEventListener('touchcancel', onEnd);
+    };
+  }, [open, gesturesAllowed, onOpen]);
+
+  // The drag mutates the panel's inline transform; make sure a state-driven
+  // open/close always wins by clearing leftovers whenever `open` flips.
+  useEffect(() => { clearPanelInline(); }, [open]);
 
   const go = (screen, extra) => { onClose(); onNavigate(extra ? { screen, ...extra } : { screen }); };
 
@@ -128,6 +240,10 @@ function NavDrawer({ open, onClose, onNavigate, faqUnread = 0 }) {
           so scrolling works on every device without relying on flexbox. */}
       <div ref={panelRef}
            data-no-ptr
+           onTouchStart={onPanelTouchStart}
+           onTouchMove={onPanelTouchMove}
+           onTouchEnd={onPanelTouchEnd}
+           onTouchCancel={onPanelTouchEnd}
            className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
            style={{
              background: T.bg,

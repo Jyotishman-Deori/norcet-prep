@@ -19,6 +19,8 @@ import React from 'react';
 import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+// TIP — hold (mobile) / hover (PC) info bubbles per test mode.
+import { Tip } from '../ui/tooltip.jsx';
 
 function DrillTests({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
@@ -33,7 +35,8 @@ function DrillTests({ onBack, onNavigate }) {
   );
 
   // --- Top tier: light, energetic, approachable (white + accent top border) ---
-  const TopCard = ({ icon: Icon, color, title, sub, onClick }) => (
+  const TopCard = ({ icon: Icon, color, title, sub, onClick, tip }) => (
+    <Tip title={title} text={tip}>
     <Card className="p-4 h-full" onClick={onClick} style={{ borderTop: `3px solid ${color}` }}>
       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: color }}>
         <Icon size={18} color="#FFF" />
@@ -43,10 +46,12 @@ function DrillTests({ onBack, onNavigate }) {
       </div>
       <div className="text-xs leading-snug" style={{ color: T.muted }}>{sub}</div>
     </Card>
+    </Tip>
   );
 
   // --- Middle tier: tinted background + filled icon — more focused/disciplined ---
-  const MidCard = ({ icon: Icon, color, title, sub, onClick }) => (
+  const MidCard = ({ icon: Icon, color, title, sub, onClick, tip }) => (
+    <Tip title={title} text={tip}>
     <Card className="p-4 h-full" onClick={onClick}
           style={{ background: color + '12', border: `1px solid ${color}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: color }}>
@@ -55,6 +60,7 @@ function DrillTests({ onBack, onNavigate }) {
       <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>{title}</div>
       <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>{sub}</div>
     </Card>
+    </Tip>
   );
 
   return (
@@ -73,9 +79,11 @@ function DrillTests({ onBack, onNavigate }) {
         <Reveal delay={40}>
           <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
             <TopCard icon={Shuffle}    color={T.sec.quick} title="Quick Test"
-                     sub="Pick count + topic" onClick={() => go('quick-setup')} />
+                     sub="Pick count + topic" onClick={() => go('quick-setup')}
+                     tip="A fast warm-up: choose how many questions and (optionally) a topic — instant feedback after every answer." />
             <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise"
-                     sub="Pick a subject" onClick={() => go('topic-select')} />
+                     sub="Pick a subject" onClick={() => go('topic-select')}
+                     tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
           </div>
         </Reveal>
 
@@ -83,14 +91,17 @@ function DrillTests({ onBack, onNavigate }) {
         <Reveal delay={90}>
           <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
             <MidCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
-                     sub="Timed simulation" onClick={() => go('mock-setup')} />
+                     sub="Timed simulation" onClick={() => go('mock-setup')}
+                     tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
             <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc"
-                     sub="Numeric drug-math · type-in" onClick={() => go('dosage')} />
+                     sub="Numeric drug-math · type-in" onClick={() => go('dosage')}
+                     tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
         </Reveal>
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={150}>
+          <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers — sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
           <Card className="p-4 mb-3" onClick={() => go('previous-papers')}
                 style={{ background: T.sec.revision, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}>
             <div className="flex items-center gap-3">
@@ -113,10 +124,12 @@ function DrillTests({ onBack, onNavigate }) {
               <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
             </div>
           </Card>
+          </Tip>
         </Reveal>
 
         {/* Bottom tier — Advanced Test (the final boss: darkest + most elevated) */}
         <Reveal delay={210}>
+          <Tip title="Advanced Test" text="The full exam-hall experience: countdown clock, negative marking and a question palette to jump around — scores feed your best-net history.">
           <Card className="p-5" onClick={() => go('advanced-setup')}
                 style={{
                   background: `linear-gradient(135deg, ${T.sec.advanced} 55%, rgba(0,0,0,0.22))`,
@@ -147,6 +160,7 @@ function DrillTests({ onBack, onNavigate }) {
               Real exam conditions, start to finish. Reserved for when you're ready to test yourself for real.
             </div>
           </Card>
+          </Tip>
         </Reveal>
 
       </div>

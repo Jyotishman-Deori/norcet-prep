@@ -10,10 +10,13 @@
 // was dead in the body and has been dropped.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Eye, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
+import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Eye, Flag, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
+import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
+// TIP — hold (mobile) / hover (PC) info bubbles on quiz chrome.
+import { Tip } from '../ui/tooltip.jsx';
 import { Card, Button, Pill, PyqBadge, TopBar } from '../ui/primitives.jsx';
 import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
@@ -36,6 +39,23 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [elapsed, setElapsed] = useState(0);
   const [hintShown, setHintShown] = useState(false);
   const [altShown, setAltShown] = useState(false);
+  // #18 — question solution flags ("explanation still unclear"). Loaded once;
+  // toggled from the explanation card; persisted on every toggle.
+  const [qDoubts, setQDoubts] = useState({});
+  useEffect(() => {
+    let alive = true;
+    if (profileId) loadQDoubts(profileId).then(m => { if (alive) setQDoubts(m); }).catch(() => {});
+    return () => { alive = false; };
+  }, [profileId]);
+  const toggleSolutionFlag = () => {
+    if (!profileId) return;
+    const next = toggleQDoubt(qDoubts, q);
+    setQDoubts(next);
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+    saveQDoubts(profileId, next);
+  };
+  // #19/#23 — bookmark micro-interaction: pop on set, deflate on unset.
+  const [bmAnim, setBmAnim] = useState(null); // 'pop' | 'deflate' | null
 
   // Skip queue. When the user taps "Skip" we move the current question to the
   // end of the round so they can try the rest first. Tracking is by question
@@ -237,8 +257,9 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   const toggleBookmark = () => {
     const newSet = new Set(bookmarkedLocal);
-    if (newSet.has(q.id)) newSet.delete(q.id);
-    else newSet.add(q.id);
+    if (newSet.has(q.id)) { newSet.delete(q.id); setBmAnim('deflate'); }
+    else { newSet.add(q.id); setBmAnim('pop'); }
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     setBookmarkedLocal(newSet);
   };
 
@@ -262,24 +283,37 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               const displaySec = isCountdown ? secondsRemaining : elapsed;
               const lowTime   = isCountdown && secondsRemaining <= 60 && secondsRemaining > 0;
               const noTime    = isCountdown && secondsRemaining === 0;
+              // #26 — heartbeat pulse on the timer chip as the countdown ends:
+              // 1 pulse/s under 10s, 2 pulses/s under 3s. Reduced-motion safe.
+              const beatClass = isCountdown && secondsRemaining > 0
+                ? (secondsRemaining <= 3 ? ' timer-beat-fast' : secondsRemaining <= 10 ? ' timer-beat' : '')
+                : '';
               const bg = noTime ? T.errorSoft : (lowTime ? T.errorSoft : T.surfaceWarm);
               const fg = (lowTime || noTime) ? T.error : T.ink;
               return (
-                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums"
+                <Tip text={isCountdown ? 'Time remaining — the chip pulses in the final seconds' : 'Time elapsed on this session'}>
+                <div className={"flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums" + beatClass}
                      style={{ background: bg, color: fg }}>
                   <Timer size={12} />
                   {fmtTime(displaySec)}
                 </div>
+                </Tip>
               );
             })()}
+            <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
             <button onClick={toggleBookmark}
                     aria-pressed={bookmarkedLocal.has(q.id)}
                     aria-label={bookmarkedLocal.has(q.id) ? 'Remove bookmark' : 'Bookmark this question'}
                     className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5">
-              {bookmarkedLocal.has(q.id)
-                ? <BookmarkCheck size={20} className="text-accent" />
-                : <Bookmark size={20} className="text-muted" />}
+              <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
+                    key={bmAnim ? `${q.id}:${bookmarkedLocal.has(q.id)}` : q.id}
+                    style={{ lineHeight: 0 }}>
+                {bookmarkedLocal.has(q.id)
+                  ? <BookmarkCheck size={20} className="text-accent" />
+                  : <Bookmark size={20} className="text-muted" />}
+              </span>
             </button>
+            </Tip>
           </div>
         }
       />
@@ -372,6 +406,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               dotBg = T.primary;
               dotColor = '#FFF';
             }
+            // #23/4 — answer feedback: the correct option pulses on lock-in;
+            // a wrongly-selected option shakes (decaying amplitude, CSS).
+            const fbClass = isLocked
+              ? (isCorrect ? ' q-pulse' : (submitted && isSelected ? ' q-shake' : ''))
+              : '';
             return (
               <div key={i} onClick={() => toggleSelect(i)}
                    onContextMenu={e => e.preventDefault()}
@@ -387,7 +426,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                        toggleSelect(i);
                      }
                    }}
-                   className="no-tap-highlight rounded-2xl px-4 py-3.5 flex items-start gap-3 transition-colors cursor-pointer active:scale-[0.99]"
+                   className={"no-tap-highlight rounded-2xl px-4 py-3.5 flex items-start gap-3 transition-colors cursor-pointer active:scale-[0.99]" + fbClass}
                    style={{ background: bg, border: `1.5px solid ${border}` }}>
                 <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold"
                      style={{ background: dotBg, border: `1.5px solid ${isLocked && isCorrect ? T.success : (isSelected ? border : T.border)}`, color: dotColor }}>
@@ -425,6 +464,26 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                 <TTSButton text={q.exp} />
               </div>
               <div className="text-sm leading-relaxed whitespace-pre-wrap text-ink">{q.exp}</div>
+              {/* #18 — Question Solution Flag. One tap = "this explanation is
+                  still unclear"; toggles off on a second tap. Saved per
+                  profile; surfaces in Doubts → Questions; auto-resolves when
+                  this question is later answered correctly. Hidden for guests
+                  (no profile to store against). */}
+              {profileId && (
+                <button onClick={toggleSolutionFlag}
+                        aria-pressed={!!(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)}
+                        className="no-tap-highlight w-full mt-3 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition"
+                        style={(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)
+                          ? { background: T.error + '15', color: T.error, border: `1.5px solid ${T.error}60` }
+                          : { background: T.surface, color: T.muted, border: `1.5px dashed ${T.border}` }}>
+                  <span className={"inline-block " + ((qDoubts[q.id] && !qDoubts[q.id].resolvedAt) ? 'bm-pop' : '')} style={{ lineHeight: 0 }}>
+                    <Flag size={12} fill={(qDoubts[q.id] && !qDoubts[q.id].resolvedAt) ? 'currentColor' : 'none'} />
+                  </span>
+                  {(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)
+                    ? 'Flagged — explanation unclear (tap to unflag)'
+                    : 'Still confused? Flag this explanation'}
+                </button>
+              )}
               {/* P8 — "Was this helpful?" (question is finished + explanation visible) */}
               <HelpfulToggle questionId={q.id} explanation={q.exp} profileId={profileId} />
             </Card>
