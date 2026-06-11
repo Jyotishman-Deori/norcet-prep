@@ -246,10 +246,27 @@ export const fontStyles = `
 @keyframes tipIn { 0% { opacity: 0; transform: scale(0.82); } 100% { opacity: 1; transform: scale(1); } }
 .tip-in { animation: tipIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── DRAWER — premium row micro-interactions. Rows slide in from the left
+   with a stagger every time the menu opens; the chevron nudges toward the
+   destination on press; the last-visited row glows once on return. */
+@keyframes drawerItemIn { 0% { opacity: 0; transform: translateX(-14px); } 100% { opacity: 1; transform: translateX(0); } }
+.drawer-item-in { animation: drawerItemIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+.drawer-row { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.drawer-row:active { transform: scale(0.975); }
+.drawer-row .drawer-chev { transition: transform 0.18s cubic-bezier(0.34,1.56,0.64,1), opacity 0.18s ease; }
+.drawer-row:active .drawer-chev { transform: translateX(3px); opacity: 1 !important; }
+@keyframes drawerGlow {
+  0% { box-shadow: 0 0 0 0 var(--row-glow, #888); }
+  60% { box-shadow: 0 0 0 5px transparent; }
+  100% { box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+}
+.drawer-glow { animation: drawerItemIn 0.3s cubic-bezier(0.22,1,0.36,1) both, drawerGlow 1.1s ease-out 0.35s 2; }
+
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
-  .card-shimmer, .sheet-up, .fav-beat, .tip-in { animation: none !important; }
+  .card-shimmer, .sheet-up, .fav-beat, .tip-in,
+  .drawer-item-in, .drawer-glow { animation: none !important; }
 }
 
 /* ── App blur overlay — covers screen when the app loses focus (Session 4) ──

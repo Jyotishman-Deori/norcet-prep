@@ -59,3 +59,26 @@ export function playRefreshSound() {
     note(783.99, 0.07, 0.22, 0.075); // G5
   } catch (e) {}
 }
+
+// DRAWER — a single soft "tick" (one short sine blip, <90ms) for nav-drawer
+// row taps. Deliberately quieter + shorter than the refresh pop so rapid
+// navigation never gets noisy. Same gate (Settings → sound toggle), same
+// feature detection, always called from a tap (user gesture).
+export function playTapSound() {
+  if (!_soundEnabled) return;
+  try {
+    const c = getCtx();
+    if (!c) return;
+    const now = c.currentTime;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(659.25, now);            // E5
+    osc.frequency.exponentialRampToValueAtTime(880, now + 0.05); // glide to A5
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.05, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.085);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(now); osc.stop(now + 0.1);
+  } catch (e) {}
+}

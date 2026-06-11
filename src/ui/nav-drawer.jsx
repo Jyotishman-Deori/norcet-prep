@@ -17,10 +17,16 @@
 // [A7] theme via useTheme(), bookmarks count via useData().
 // open/onClose/onNavigate stay props.
 // =====================================================================
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
+// DRAWER — soft tick on row taps (gated by the Settings sound toggle).
+import { playTapSound } from '../lib/sound.js';
+
+// Remembered across open/close (module-level): the row the user last
+// navigated to, so the NEXT open can welcome them back with a brief glow.
+let _lastVisitedKey = null;
 
 function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, faqUnread = 0 }) {
   const { theme: T } = useTheme();
@@ -70,10 +76,15 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     el.style.transition = animate ? '' : 'none';
     el.style.transform = `translateX(${px}px)`;
   };
-  const clearPanelInline = () => {
+  // BUGFIX (post-#21): never clear the inline transform to '' — React owns
+  // `transform` via the style prop, and a direct wipe leaves the panel stuck
+  // at translateX(0) ("sidebar stuck open at launch") because React's style
+  // diff still believes the old value is applied and won't rewrite it.
+  // Instead, always RESTORE the explicit state-correct transform.
+  const restorePanel = (isOpen) => {
     const el = panelRef.current; if (!el) return;
     el.style.transition = '';
-    el.style.transform = '';
+    el.style.transform = isOpen ? 'translateX(0)' : 'translateX(-102%)';
   };
 
   // -- swipe-to-close: handlers attached to the panel itself --
@@ -105,7 +116,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const w = el.offsetWidth || 300;
     const dx = d.lastX - d.startX;
     const commit = (-dx) > w * 0.38 || d.vx < -0.4; // distance OR fast flick left
-    clearPanelInline();
+    restorePanel(!commit);            // committed → animate to closed; else spring back open
     if (commit) onClose();
   };
 
@@ -142,7 +153,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       const w = (el && el.offsetWidth) || 300;
       const dx = d.lastX - d.startX;
       const commit = dx > w * 0.38 || d.vx > 0.4;
-      clearPanelInline();
+      restorePanel(commit);           // committed → animate to open; else slide back out
       if (commit && onOpen) onOpen();
     };
     document.addEventListener('touchstart', onStart, { passive: true });
@@ -158,45 +169,82 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   }, [open, gesturesAllowed, onOpen]);
 
   // The drag mutates the panel's inline transform; make sure a state-driven
-  // open/close always wins by clearing leftovers whenever `open` flips.
-  useEffect(() => { clearPanelInline(); }, [open]);
+  // open/close always wins by re-asserting the explicit transform whenever
+  // `open` flips (and on mount — same value React rendered, so harmless).
+  useEffect(() => { restorePanel(open); }, [open]);
 
-  const go = (screen, extra) => { onClose(); onNavigate(extra ? { screen, ...extra } : { screen }); };
+  // DRAWER micro-interactions: every open replays the staggered row
+  // entrance (openCount keys the list), and the row last visited glows
+  // briefly to welcome the user back to where they left from.
+  const [openCount, setOpenCount] = useState(0);
+  const [returnGlowKey, setReturnGlowKey] = useState(null);
+  useEffect(() => {
+    if (!open) return;
+    setOpenCount(c => c + 1);
+    setReturnGlowKey(_lastVisitedKey);
+    _lastVisitedKey = null;
+  }, [open]);
+
+  const go = (screen, extra, key) => {
+    _lastVisitedKey = key || screen;
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    playTapSound();
+    onClose();
+    onNavigate(extra ? { screen, ...extra } : { screen });
+  };
 
   // ---- Category 1 — Study ----
   const study = [
-    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet') },
-    { key: 'library',   icon: Layers,      color: T.sec.library,  label: 'Library',   sub: 'Question banks',                 action: () => go('library') },
-    { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: `${data.bookmarks.length} saved`,  action: () => go('bookmarks-view') },
-    { key: 'doubts',    icon: Flag,        color: T.error,        label: 'My Doubts', sub: 'Points you flagged to revisit',  action: () => go('doubts') },
-    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', sub: 'Your own custom Qs',          action: () => go('add-question') },
+    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
+    { key: 'library',   icon: Layers,      color: T.sec.library,  label: 'Library',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
+    { key: 'bookmarks', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
+    { key: 'doubts',    icon: Flag,        color: T.error,        label: 'My Doubts', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
+    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', sub: 'Your own custom Qs',          action: () => go('add-question', null, 'addq') },
   ];
   // ---- Category 2 — Progress ----
   const progress = [
-    { key: 'stats',       icon: BarChart3, color: T.sec.stats, label: 'Stats',          sub: 'Progress by topic',          action: () => go('stats') },
-    { key: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard',    sub: 'Compare with other users',   action: () => go('leaderboard') },
-    { key: 'weightage',   icon: Activity,  color: T.primary,   label: 'Exam weightage', sub: 'What the exam tests most',    action: () => go('weightage') },
+    { key: 'stats',       icon: BarChart3, color: T.sec.stats, label: 'Stats',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
+    { key: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
+    { key: 'weightage',   icon: Activity,  color: T.primary,   label: 'Exam weightage', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
   ];
   // ---- Category 3 — Tools ----
   const tools = [
-    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', sub: 'Countdown & daily goal', action: () => go('exam-date') },
-    { key: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', sub: 'Labs, drugs, values',    action: () => go('reference') },
+    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', sub: 'Countdown & daily goal', action: () => go('exam-date', null, 'examdate') },
+    { key: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
   ];
 
-  const Item = ({ it }) => {
+  const Item = ({ it, index = 0 }) => {
     const Icon = it.icon;
+    const glowing = returnGlowKey === it.key;
     return (
       <button onClick={it.action}
-              className="no-tap-highlight w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:bg-black/5 transition-colors text-left">
+              className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left drawer-item-in mb-1.5" + (glowing ? ' drawer-glow' : '')}
+              style={{
+                background: T.surface,
+                border: `1px solid ${glowing ? it.color + '70' : T.borderSoft}`,
+                boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
+                animationDelay: `${Math.min(index, 9) * 45}ms`,
+                '--row-glow': it.color,
+              }}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-             style={{ background: it.color + '18' }}>
+             style={{
+               background: `linear-gradient(135deg, ${it.color}26, ${it.color}10)`,
+               border: `1px solid ${it.color}30`,
+               boxShadow: `0 2px 8px ${it.color}1F`,
+             }}>
           <Icon size={18} style={{ color: it.color }} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="font-medium text-sm" style={{ color: T.ink }}>{it.label}</div>
-          <div className="text-[11px]" style={{ color: T.muted }}>{it.sub}</div>
+          <div className="font-medium text-sm flex items-center gap-1.5" style={{ color: T.ink }}>
+            {it.label}
+            {it.badge != null && it.badge !== 0 && (
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                    style={{ background: it.color + '18', color: it.color }}>{it.badge}</span>
+            )}
+          </div>
+          <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{it.sub}</div>
         </div>
-        <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+        <ChevronRight size={16} style={{ color: it.color, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
       </button>
     );
   };
@@ -207,10 +255,11 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   // Help & Learn — elevated cards. More visual weight than a plain row to
   // signal these are richer destinations (a guide / a Q&A experience).
-  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick }) => (
+  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick, index = 0 }) => (
     <button onClick={onClick}
-            className="no-tap-highlight w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left active:scale-[0.99] transition-transform"
-            style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+            className="no-tap-highlight drawer-row drawer-item-in w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
+            style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
+                     animationDelay: `${Math.min(index, 12) * 45}ms` }}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconColor }}>
         <Icon size={20} color="#FFF" />
       </div>
@@ -224,7 +273,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
         </div>
         <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>
       </div>
-      <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+      <ChevronRight size={16} style={{ color: iconColor, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
     </button>
   );
 
@@ -271,30 +320,34 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
         {/* Nav list */}
         <div className="px-2 py-2 pb-10">
+          <div key={openCount}>{/* remount per open → entrance replays */}
           <GroupLabel>Study</GroupLabel>
-          {study.map(it => <Item key={it.key} it={it} />)}
+          {study.map((it, i) => <Item key={it.key} it={it} index={i} />)}
 
           <GroupLabel>Progress</GroupLabel>
-          {progress.map(it => <Item key={it.key} it={it} />)}
+          {progress.map((it, i) => <Item key={it.key} it={it} index={study.length + i} />)}
 
           <GroupLabel>Tools</GroupLabel>
-          {tools.map(it => <Item key={it.key} it={it} />)}
+          {tools.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + i} />)}
 
           <GroupLabel>Help &amp; Learn</GroupLabel>
           <div className="px-1 mt-1 space-y-2">
             <LearnCard icon={GraduationCap} iconColor={T.primary}
                        title="Study Methods" sub="Learn how to study smarter"
-                       badge="Guide" badgeTone={T.primary}
-                       onClick={() => go('study-methods')} />
+                       badge="Guide" badgeTone={T.primary} index={10}
+                       onClick={() => go('study-methods', null, 'methods')} />
             <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
                        title="FAQ" sub="Questions answered by our team"
-                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error}
-                       onClick={() => go('faq')} />
+                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11}
+                       onClick={() => go('faq', null, 'faq')} />
+          </div>
+
           </div>
 
           <div className="my-3 mx-3 border-t" style={{ borderColor: T.borderSoft }} />
-          <button onClick={() => go('settings')}
-                  className="no-tap-highlight w-full flex items-center gap-3 px-3 py-3 rounded-2xl active:bg-black/5 transition-colors text-left">
+          <button onClick={() => go('settings', null, 'settings')}
+                  className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
+                  style={{ background: T.surface, border: `1px solid ${T.borderSoft}`, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
               <SettingsIcon size={18} style={{ color: T.inkSoft }} />
             </div>
