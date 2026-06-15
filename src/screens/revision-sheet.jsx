@@ -50,6 +50,10 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
     setCribs(await removeCrib(cribPid, id));
     setCribConfirm(null);
   };
+  // Issues round — the screen is split into two selectable TABS: the live
+  // Revision digest (with its date history) and the saved Crib Sheets shelf.
+  // Each tab shows only its own content; both get proper empty states.
+  const [tab, setTab] = useState('digest'); // 'digest' | 'cribs'
   const [includeWrong, setIncludeWrong] = useState(false);
   const [topicFilter, setTopicFilter] = useState('all');
   const [expanded, setExpanded] = useState({}); // qId -> bool
@@ -154,31 +158,55 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
       <div className="max-w-md mx-auto px-4 pb-24 pt-2 revision-print-page">
 
         <div className="no-print mb-5">
-          {/* Intro + Print/PDF. Print/PDF now lives here in the body, clearly
-              separated from the Report button (which stays in the top bar). */}
+          {/* Intro + Print/PDF (digest only — saved sheets print from their
+              own Crib Sheet view). */}
           <div className="flex items-start justify-between gap-3 mb-4">
             <div className="text-xs leading-relaxed flex-1 pt-1" style={{ color: T.muted }}>
-              Everything visible at once for fast revision. Save or print it for offline study.
+              {tab === 'digest'
+                ? 'Everything visible at once for fast revision. Save or print it for offline study.'
+                : 'Test reviews you chose to keep — dated, reopenable and printable.'}
             </div>
-            <button onClick={handlePrint}
-                    className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold flex-shrink-0 active:scale-95 transition"
-                    style={{ background: T.primary, color: '#FFF', boxShadow: `0 2px 8px ${T.primary}40` }}>
-              <Printer size={14} />
-              Print / PDF
-            </button>
+            {tab === 'digest' && (
+              <button onClick={handlePrint}
+                      className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold flex-shrink-0 active:scale-95 transition"
+                      style={{ background: T.primary, color: '#FFF', boxShadow: `0 2px 8px ${T.primary}40` }}>
+                <Printer size={14} />
+                Print / PDF
+              </button>
+            )}
           </div>
 
-          {/* #5 — CRIB SHEETS: every test review you chose to keep, dated.
-              Separate from the live digest below; each opens in the full
-              Crib Sheet view (printable from there). */}
-          {cribs.length > 0 && (
-            <div className="mb-5">
-              <div className="flex items-center gap-1.5 mb-2 px-1">
-                <FileText size={12} style={{ color: T.primary }} />
-                <span className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>
-                  Crib Sheets · {cribs.length}
-                </span>
+          {/* Tab bar — two clearly-labelled, selectable tabs */}
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            {[
+              { id: 'digest', label: 'Revision History', Icon: CalendarDays },
+              { id: 'cribs',  label: `Crib Sheets${cribs.length ? ` · ${cribs.length}` : ''}`, Icon: FileText },
+            ].map(t => {
+              const active = tab === t.id;
+              const TI = t.Icon;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                        className="no-tap-highlight py-2.5 rounded-xl text-[13px] font-semibold inline-flex items-center justify-center gap-1.5 transition-all active:scale-95"
+                        style={{ background: active ? T.primary : T.surface,
+                                 color: active ? '#FFF' : T.inkSoft,
+                                 border: `1.5px solid ${active ? T.primary : T.border}` }}>
+                  <TI size={14} /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* ── CRIB SHEETS TAB ── */}
+          {tab === 'cribs' && (
+            cribs.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText size={36} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
+                <div className="font-display text-lg mb-1" style={{ color: T.ink }}>No saved Crib Sheets yet</div>
+                <div className="text-sm leading-relaxed px-4" style={{ color: T.muted }}>
+                  Finish any test, open its Crib Sheet and tap "Add to Revision" — it lands here, dated and ready to revisit.
+                </div>
               </div>
+            ) : (
               <div className="space-y-2">
                 {cribs.map((c, ci) => {
                   const right = Math.round((c.items.filter(i => i.status === 'correct').length / Math.max(1, c.items.length)) * 100);
@@ -227,9 +255,10 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
                   );
                 })}
               </div>
-            </div>
+            )
           )}
 
+          {tab === 'digest' && (<>
           {/* Revision history — tap a past date to revisit that day's set */}
           {pastVisits.length > 0 && (
             <div className="mb-4">
@@ -345,8 +374,10 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
               </button>
             </div>
           )}
+          </>)}
         </div>
 
+        {tab === 'digest' && (<>
         {/* Print header (visible only in print) */}
         <div className="hidden print:block mb-6">
           <h1 className="text-2xl font-display font-bold mb-1">NORCET Revision Sheet</h1>
@@ -461,6 +492,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
             </div>
           ))
         )}
+        </>)}
       </div>
     </div>
   );

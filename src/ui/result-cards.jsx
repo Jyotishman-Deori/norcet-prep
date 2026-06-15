@@ -330,7 +330,7 @@ function quadrantOf(outcome, seconds, slowSec) {
 
 
 function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = null,
-                            displayName = null, streak = 0, className = '' }) {
+                            displayName = null, streak = 0, className = '', size = 'lg' }) {
   const { theme: T } = useTheme();
   // status: 'idle' | 'working' | 'downloaded' | 'error'
   const [status, setStatus] = useState('idle');
@@ -401,25 +401,44 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       const cx = S / 2;
       ctx.textAlign = 'center';
 
+      // ── PREMIUM POSTER LAYOUT (issues round) ─────────────────────────
+      // Fixed vertical rhythm with a RESERVED footer zone, so the
+      // motivational line and the URL pill can never collide (the old
+      // layout let them overlap when a streak line pushed things down).
+      //
+      //   140  brand name            (display serif)
+      //   188  tagline
+      //   268  aspirant name
+      //   470  progress ring centre  (r=150)
+      //   708  score line
+      //   780  quiz-type pill
+      //   872  stats line  (streak · date)
+      //   936  motivational line
+      //  1006  footer URL pill       (own zone, nothing below/above it)
+
       // --- brand ---
       ctx.fillStyle = '#FFFFFF';
-      ctx.font = '700 66px Georgia, "Times New Roman", serif';
-      ctx.fillText('NORCET Prep', cx, 170);
-      ctx.font = '500 30px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.font = '700 64px Georgia, "Times New Roman", serif';
+      ctx.fillText('NORCET Prep', cx, 140);
+      ctx.font = '500 28px system-ui, -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.78)';
-      ctx.fillText('Nursing Exam Preparation', cx, 216);
+      ctx.fillText('Free nursing exam preparation', cx, 188);
+      // hairline under the brand block
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(cx - 110, 214); ctx.lineTo(cx + 110, 214); ctx.stroke();
 
       // --- display name ---
       const who = (displayName && String(displayName).trim()) || 'NORCET Aspirant';
-      ctx.font = '600 40px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.font = '600 38px system-ui, -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(fit(who, S - 220), cx, 300);
+      ctx.fillText(fit(who, S - 240), cx, 272);
 
-      // --- progress ring ---
-      const ringCx = cx, ringCy = 520, ringR = 150, ringW = 26;
+      // --- progress ring, prominently centred ---
+      const ringCx = cx, ringCy = 470, ringR = 150, ringW = 26;
       ctx.lineWidth = ringW;
       ctx.lineCap = 'round';
-      ctx.strokeStyle = 'rgba(255,255,255,0.22)';      // track
+      ctx.strokeStyle = 'rgba(255,255,255,0.20)';      // track
       ctx.beginPath();
       ctx.arc(ringCx, ringCy, ringR, 0, Math.PI * 2);
       ctx.stroke();
@@ -433,51 +452,49 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       ctx.stroke();
       ctx.restore();
       ctx.fillStyle = '#FFFFFF';                         // pct in centre
-      ctx.font = '700 112px Georgia, "Times New Roman", serif';
-      ctx.fillText(`${pct}%`, ringCx, ringCy + 36);
+      ctx.font = '700 110px Georgia, "Times New Roman", serif';
+      ctx.fillText(`${pct}%`, ringCx, ringCy + 38);
 
       // --- score line ---
-      ctx.font = '700 66px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.font = '700 58px system-ui, -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(`${safeCorrect} / ${safeTotal} correct`, cx, 762);
+      ctx.fillText(`${safeCorrect} / ${safeTotal} correct`, cx, 712);
 
       // --- quiz type (+ topic) pill ---
       let typeText = quizType || 'Practice quiz';
       if (topicLabel) typeText += ` \u00B7 ${topicLabel}`;
-      ctx.font = '600 30px system-ui, -apple-system, "Segoe UI", sans-serif';
-      const padX = 36, pillH = 70;
-      const pillW = Math.min(S - 160, ctx.measureText(typeText).width + padX * 2);
-      rr(cx - pillW / 2, 802, pillW, pillH, pillH / 2);
+      ctx.font = '600 28px system-ui, -apple-system, "Segoe UI", sans-serif';
+      const padX = 34, pillH = 62;
+      const pillW = Math.min(S - 200, ctx.measureText(typeText).width + padX * 2);
+      rr(cx - pillW / 2, 752, pillW, pillH, pillH / 2);
       ctx.fillStyle = 'rgba(255,255,255,0.16)';
       ctx.fill();
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(fit(typeText, pillW - padX * 2), cx, 847);
+      ctx.fillText(fit(typeText, pillW - padX * 2), cx, 793);
 
-      // --- streak (only when > 0) + motivational line ---
-      let y = 932;
-      if (streak > 0) {
-        ctx.font = '600 36px system-ui, -apple-system, "Segoe UI", sans-serif';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText(`\uD83D\uDD25 ${streak} day streak`, cx, y);  // 🔥
-        y += 56;
-      } else {
-        y += 6;
-      }
-      ctx.font = '600 40px system-ui, -apple-system, "Segoe UI", sans-serif';
+      // --- structured stats line: streak · date (one clean row) ---
+      const dateStr = new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+      const statsLine = streak > 0 ? `\uD83D\uDD25 ${streak} day streak  \u00B7  ${dateStr}` : dateStr;
+      ctx.font = '600 30px system-ui, -apple-system, "Segoe UI", sans-serif';
+      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillText(statsLine, cx, 872);
+
+      // --- motivational line (no emoji collisions — its own row) ---
+      ctx.font = '600 36px system-ui, -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(shareMotivation(pct), cx, y);
+      ctx.fillText(shareMotivation(pct), cx, 936);
 
-      // --- footer url — framed pill so the link reads as the call to action ---
+      // --- footer url — refined pill, alone in its reserved zone ---
       const urlText = (typeof window !== 'undefined' && window.location && window.location.host) || 'norcet-prep.vercel.app';
-      ctx.font = '600 30px Georgia, "Times New Roman", serif';
+      ctx.font = '600 28px Georgia, "Times New Roman", serif';
       const uw = ctx.measureText(urlText).width + 76;
-      rr(cx - uw / 2, S - 118, uw, 64, 32);
+      rr(cx - uw / 2, S - 114, uw, 58, 29);
       ctx.fillStyle = 'rgba(255,255,255,0.14)';
       ctx.fill();
       ctx.strokeStyle = 'rgba(255,255,255,0.35)';
       ctx.lineWidth = 2; ctx.stroke();
       ctx.fillStyle = '#FFFFFF';
-      ctx.fillText(urlText, cx, S - 74);
+      ctx.fillText(urlText, cx, S - 75);
 
       canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
     } catch (e) { reject(e); }
@@ -533,9 +550,9 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
 
   return (
     <div className={className}>
-      <Button onClick={onShare} variant="soft" size="lg" className="w-full"
-              icon={<Upload size={18} />} disabled={status === 'working'}>
-        {status === 'working' ? 'Creating card\u2026' : 'Share score'}
+      <Button onClick={onShare} variant={size === 'md' ? 'ghost' : 'soft'} size={size} className="w-full"
+              icon={<Upload size={size === 'md' ? 16 : 18} />} disabled={status === 'working'}>
+        {status === 'working' ? 'Creating\u2026' : 'Share score'}
       </Button>
       {status === 'downloaded' && (
         <div className="text-xs text-center mt-2 anim-fadeup" role="status" aria-live="polite" style={{ color: T.muted }}>

@@ -148,7 +148,11 @@ function Results({ results, questions, elapsed, onHome, onReview,
         </div>
       )}
 
-      <div className="space-y-2">
+      {/* Post-test actions (issues round) — one clear hierarchy:
+            PRIMARY    Review answers — Crib Sheet (the learning action)
+            SECONDARY  Re-do the wrong ones · Share score (a balanced pair)
+            TERTIARY   Back to home (a quiet text action, never competing) */}
+      <div className="space-y-2.5">
         {/* #28 — opt-in Crib Sheet review. App passes onCribSheet=null when the
             Settings toggle (#29) is off, so the prompt vanishes entirely. */}
         {onCribSheet && (
@@ -156,16 +160,21 @@ function Results({ results, questions, elapsed, onHome, onReview,
             Review answers — Crib Sheet
           </Button>
         )}
-        {wrong.length > 0 && (
-          <Button onClick={() => onReview(wrong.map(r => r.qId))} variant="ghost" size="lg" className="w-full">
-            Re-do the wrong ones
-          </Button>
-        )}
-        <ShareScoreButton correct={correct} total={total} quizType={quizType}
-                          topicName={shareTopic} displayName={displayName} streak={streak} />
-        <Button onClick={onHome} size="lg" className="w-full">
+        <div className={`grid gap-2.5 ${wrong.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+          {wrong.length > 0 && (
+            <Button onClick={() => onReview(wrong.map(r => r.qId))} variant="ghost" size="md" className="w-full">
+              Re-do wrong ones
+            </Button>
+          )}
+          <ShareScoreButton correct={correct} total={total} quizType={quizType}
+                            topicName={shareTopic} displayName={displayName} streak={streak}
+                            size="md" />
+        </div>
+        <button onClick={onHome}
+                className="no-tap-highlight w-full py-3 text-sm font-medium active:scale-95 transition rounded-xl"
+                style={{ color: T.muted, background: 'transparent' }}>
           Back to home
-        </Button>
+        </button>
       </div>
     </div>
   );

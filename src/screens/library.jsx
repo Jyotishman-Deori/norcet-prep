@@ -5,8 +5,8 @@
 // signature dropping `isAdmin` (now from useProfile). `profileId` stays a prop.
 // =====================================================================
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye } from 'lucide-react';
-import { useTheme, useProfile } from '../lib/app-context.jsx';
+import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye, PenLine, Target } from 'lucide-react';
+import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { bankVisibility, isBankOwner } from '../lib/banks.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 
@@ -25,6 +25,9 @@ function VisibilityPill({ bank }) {
 function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, onBack, disabledBanks }) {
   const { theme: T } = useTheme();
   const { isAdmin } = useProfile();
+  // Issues round — the Custom-questions + Total-practice counters moved here
+  // from Settings (this is where question content lives).
+  const { data } = useData();
   // Filter chips: All / Mine / From others. "Mine" = banks I uploaded.
   // "From others" = banks anyone else uploaded (including admin's seeds).
   // Default to All so the user immediately sees discoverable content.
@@ -88,6 +91,32 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
             <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
           </div>
         </Card>
+
+        {/* Your numbers — moved from Settings (issues round): structured,
+            consistently-styled stat tiles that belong with the question
+            content they describe. */}
+        <div className="grid grid-cols-2 gap-2.5 mb-4">
+          <Card className="p-3.5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+                <PenLine size={14} style={{ color: T.primary }} />
+              </div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Custom questions</div>
+            </div>
+            <div className="font-display text-xl font-semibold leading-none" style={{ color: T.ink }}>{(data.customQuestions || []).length}</div>
+            <div className="text-[10px] mt-1" style={{ color: T.muted }}>written by you</div>
+          </Card>
+          <Card className="p-3.5">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.success + '18' }}>
+                <Target size={14} style={{ color: T.success }} />
+              </div>
+              <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Total practice</div>
+            </div>
+            <div className="font-display text-xl font-semibold leading-none" style={{ color: T.ink }}>{(data.stats && data.stats.totalAttempted) || 0}</div>
+            <div className="text-[10px] mt-1" style={{ color: T.muted }}>questions answered</div>
+          </Card>
+        </div>
 
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
           Browse banks and import them into your own practice.{' '}

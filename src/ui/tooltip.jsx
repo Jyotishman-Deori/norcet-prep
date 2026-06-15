@@ -196,8 +196,11 @@ export function TipHost() {
            maxWidth: `min(${W_MAX}px, calc(100vw - 20px))`,
            visibility: measured ? 'visible' : 'hidden',
            transformOrigin: measured ? `${pos.arrowLeft}px ${pos.below ? '0%' : '100%'}` : 'center',
-           background: 'linear-gradient(160deg, rgba(38,20,52,0.97), rgba(15,8,26,0.97))',
-           backdropFilter: 'blur(10px)',
+           // NOTE: no backdrop-filter here on purpose. blur() behind the
+           // bubble triggered GPU compositing corruption (garbage stripes
+           // across the screen) on some Android devices during long-press.
+           // The gradient is already ~97% opaque, so nothing is lost.
+           background: 'linear-gradient(160deg, rgba(38,20,52,0.985), rgba(15,8,26,0.985))',
            border: '1px solid rgba(255,255,255,0.14)',
            borderRadius: 14,
            boxShadow: '0 10px 32px rgba(0,0,0,0.38), 0 0 0 0.5px rgba(255,255,255,0.06) inset',
@@ -218,7 +221,7 @@ export function TipHost() {
                position: 'absolute', left: pos.arrowLeft - 5,
                [pos.below ? 'top' : 'bottom']: -5,
                width: 10, height: 10, transform: 'rotate(45deg)',
-               background: pos.below ? 'rgba(38,20,52,0.97)' : 'rgba(15,8,26,0.97)',
+               background: pos.below ? 'rgba(38,20,52,0.985)' : 'rgba(15,8,26,0.985)',
                borderLeft: pos.below ? '1px solid rgba(255,255,255,0.14)' : 'none',
                borderTop: pos.below ? '1px solid rgba(255,255,255,0.14)' : 'none',
                borderRight: pos.below ? 'none' : '1px solid rgba(255,255,255,0.14)',

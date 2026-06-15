@@ -15,7 +15,7 @@
 // A7: was a bare-T reader -> useTheme(). No IS_DARK / fgOnDark / fontStyles, no
 // data/setData context (profile + allQuestions are props). Renders the already-
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   AlertCircle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Trash2, Upload, User
@@ -23,6 +23,7 @@ import {
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
 import AdminTile from '../ui/admin-tile.jsx';
+import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import AdminManager from '../ui/admin-manager.jsx';
 import AdminFaqManager from '../ui/admin-faq-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
@@ -47,6 +48,39 @@ function AdminPanel({
   const { theme: T } = useTheme();
   // Which screen we're on: the tile dashboard, or one detail view a level deeper.
   const [view, setView] = useState('dashboard');
+
+  // ── Issues round: HARDWARE-BACK GUARD ──────────────────────────────
+  // The Admin Panel is registered as self-guarded in App (its NAV_SELF_
+  // GUARDED_SCREENS), so the global handler stands aside. On mount we push
+  // our own history entry; every device back press then mirrors exactly what
+  // the app's own back does inside the panel:
+  //   • inside a detail view → return to the dashboard (and re-arm)
+  //   • on the dashboard     → show a "Leave Admin Panel?" confirmation;
+  //                            only an explicit "Leave" exits the panel.
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  const leaveRef = useRef(false); // true once the user confirms — stop re-arming
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.history) return;
+    try { window.history.pushState({ adminGuard: true }, ''); } catch (e) {}
+    const onPop = () => {
+      if (leaveRef.current) return;             // exiting — let App take over
+      try { window.history.pushState({ adminGuard: true }, ''); } catch (e) {}
+      if (viewRef.current !== 'dashboard') {
+        setView('dashboard');                   // mirror the in-panel back
+      } else {
+        setLeaveConfirm(true);                  // confirm before leaving
+      }
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  const confirmLeave = () => {
+    leaveRef.current = true;
+    setLeaveConfirm(false);
+    onBack();
+  };
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
@@ -654,7 +688,9 @@ function AdminPanel({
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
-      <TopBar title="Admin" onBack={onBack}
+      {/* Issues round — the in-app back goes through the same leave
+          confirmation as the device back, so the two always mirror. */}
+      <TopBar title="Admin" onBack={() => setLeaveConfirm(true)}
               right={
                 <button onClick={onLockAdmin}
                         className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5"
@@ -771,6 +807,13 @@ function AdminPanel({
             } />
         </div>
       </div>
+      {/* Leave-confirmation for the device back button (issues round) */}
+      <ConfirmDialog open={leaveConfirm}
+                     title="Leave Admin Panel?"
+                     body="Any unsaved changes will be lost."
+                     confirmLabel="Leave" cancelLabel="Stay" tone="danger"
+                     onConfirm={confirmLeave}
+                     onCancel={() => setLeaveConfirm(false)} />
     </div>
   );
 }

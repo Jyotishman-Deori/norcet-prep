@@ -335,7 +335,8 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label }) {
 
   return (
     <div className="anim-fadeup">
-      <div className="sticky top-0 z-20" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}` }}>
+      {/* issues round — pad for the device status bar (same fix as TopBar) */}
+      <div className="sticky top-0 z-20" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <button onClick={() => setConfirm('abort')} className="no-tap-highlight p-1.5 rounded-lg active:bg-black/5">
             <X size={20} style={{ color: T.muted }} />

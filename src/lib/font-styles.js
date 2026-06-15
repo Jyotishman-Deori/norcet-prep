@@ -7,9 +7,16 @@ export const fontStyles = `
 .font-display { font-family: 'Fraunces', Georgia, serif; font-feature-settings: 'ss01'; letter-spacing: -0.01em; }
 .font-body { font-family: 'DM Sans', system-ui, sans-serif; }
 .no-tap-highlight { -webkit-tap-highlight-color: transparent; }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+/* IMPORTANT — the \`to\` keyframes end in \`transform: none\` (NOT translateY(0)/
+   scale(1)). With fill-mode:both, a retained identity transform makes the
+   screen root a CONTAINING BLOCK for position:fixed descendants on
+   spec-compliant browsers — fixed modals/top bars then anchor to the page
+   instead of the viewport (the "dialog appears at the scroll position" and
+   "top bar scrolls away" bugs). \`none\` releases the containing block the
+   moment the entrance finishes. */
+@keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .anim-fadeup { animation: fadeUp 0.35s ease-out both; }
-@keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
 .anim-scalein { animation: scaleIn 0.25s ease-out both; }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
@@ -279,18 +286,58 @@ export const fontStyles = `
 /* ── #6 — Home quote swap on pull-to-refresh: the fresh quote slides up
    into place with a soft blur-settle, like a card being dealt. */
 @keyframes quoteSwap {
-  0% { opacity: 0; transform: translateY(10px); filter: blur(3px); }
-  60% { filter: blur(0); }
-  100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
 }
-.quote-swap { animation: quoteSwap 0.55s cubic-bezier(0.22,1,0.36,1) both; }
+.quote-swap { animation: quoteSwap 0.4s ease-out both; }
+
+/* ── Sidebar launch — shared-axis forward transition. NavDrawer tags the
+   <html> element with .nav-fwd for ~400ms when a row is tapped; the incoming
+   screen's entrance becomes a rightward shared-axis slide+fade instead of
+   the default fade-up. 280ms, smooth ease-in-out. */
+@keyframes sharedAxisIn {
+  0% { opacity: 0; transform: translateX(26px); }
+  100% { opacity: 1; transform: none; }
+}
+.nav-fwd .anim-fadeup { animation: sharedAxisIn 0.28s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+/* ── Premium favourite heart — restrained spring on fill: instant subtle
+   compress (~0.85) → settle with a gentle overshoot (~1.08) → rest at 1.
+   Unfavourite never bounces: the fill simply fades (CSS transitions on the
+   SVG fill/stroke handle that). ~340ms total. */
+@keyframes heartSpring {
+  0% { transform: scale(1); }
+  22% { transform: scale(0.85); }
+  64% { transform: scale(1.08); }
+  100% { transform: none; }
+}
+.heart-spring { animation: heartSpring 0.34s cubic-bezier(0.33, 1, 0.68, 1) both; }
+
+/* ── press-safe — suppresses the native long-press callout / text selection
+   on touch cards (the tap-and-hold visual glitch on home cards). */
+.press-safe, .press-safe * {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* ── Dosage answer field — its placeholder must read as a HINT, never as a
+   pre-filled value (the old placeholder="0" looked like an entered answer). */
+.dosage-input::placeholder {
+  font-size: 15px;
+  font-weight: 400;
+  font-family: inherit;
+  opacity: 0.55;
+  letter-spacing: 0;
+}
 
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
-  .card-shimmer, .sheet-up, .fav-beat, .tip-in,
+  .card-shimmer, .sheet-up, .fav-beat, .tip-in, .heart-spring,
   .drawer-item-in, .drawer-glow,
   .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap { animation: none !important; }
+  .nav-fwd .anim-fadeup { animation: none !important; }
 }
 
 /* ── App blur overlay — covers screen when the app loses focus (Session 4) ──

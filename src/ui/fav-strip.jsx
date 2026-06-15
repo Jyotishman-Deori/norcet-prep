@@ -12,7 +12,6 @@ import { ChevronRight, Heart } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { favSection, loadFavs } from '../lib/favorites.js';
 import { FavIcon } from './fav-icons.jsx';
-import { Tip } from './tooltip.jsx';
 
 export default function FavStrip({ onNavigate }) {
   const { theme: T } = useTheme();
@@ -32,11 +31,11 @@ export default function FavStrip({ onNavigate }) {
   const top = favs.order.slice(0, 4).map(favSection).filter(Boolean);
 
   return (
-    <Tip title="Favourites" text="Your one-stop section — every feature you hearted, in your own priority order.">
     <div role="button" tabIndex={0}
          onClick={() => onNavigate({ screen: 'favorites' })}
+         onContextMenu={(e) => e.preventDefault()}
          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate({ screen: 'favorites' }); } }}
-         className="no-tap-highlight pressable cursor-pointer rounded-2xl p-4 mb-4 relative overflow-hidden"
+         className="no-tap-highlight pressable press-safe cursor-pointer rounded-2xl p-4 mb-4 relative overflow-hidden"
          style={{
            background: 'linear-gradient(135deg, #E0245E, #9C1A57 70%)',
            boxShadow: '0 6px 18px rgba(224,36,94,0.30)',
@@ -45,7 +44,7 @@ export default function FavStrip({ onNavigate }) {
       <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full pointer-events-none"
            style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.22), transparent 70%)' }} aria-hidden="true" />
       <div className="flex items-center gap-3 mb-2.5">
-        <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
              style={{ background: 'rgba(255,255,255,0.18)' }}>
           <Heart size={20} color="#FFF" fill="#FFF" className="fav-beat" />
         </div>
@@ -73,6 +72,5 @@ export default function FavStrip({ onNavigate }) {
         </div>
       )}
     </div>
-    </Tip>
   );
 }

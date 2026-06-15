@@ -193,13 +193,21 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     _lastVisitedKey = key || screen;
     try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     playTapSound();
+    // Shared-axis forward launch (issues round): tag <html> for ~400ms so the
+    // destination screen's entrance becomes a refined slide-in-from-right
+    // (280ms ease-in-out, see .nav-fwd in font-styles) instead of the
+    // default fade-up. Self-clearing; reduced-motion users see no motion.
+    try {
+      document.documentElement.classList.add('nav-fwd');
+      setTimeout(() => { try { document.documentElement.classList.remove('nav-fwd'); } catch (e) {} }, 420);
+    } catch (e) {}
     onClose();
     onNavigate(extra ? { screen, ...extra } : { screen });
   };
 
   // ---- Category 1 — Study ----
   const study = [
-    { key: 'revision',  icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today — plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
+    { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today — plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
     { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse, upload and manage question banks — yours and the community\'s.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
     { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', tip: 'Every question you saved, grouped by topic, ready to re-read or retest.', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
     { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear — resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
@@ -246,11 +254,13 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
                     style={{ background: it.color + '18', color: it.color }}>{it.badge}</span>
             )}
-            {/* FAV #2 — heart lives ON the section card, beside the title */}
-            {it.fav && <FavHeart favId={it.fav} inline />}
           </div>
           <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{it.sub}</div>
         </div>
+        {/* FAV (issues round) — hearts live in a dedicated action column just
+            before the chevron, so every heart in the sidebar sits on the
+            same vertical line instead of trailing the title text. */}
+        {it.fav && <span className="flex-shrink-0 -mr-1"><FavHeart favId={it.fav} inline /></span>}
         <ChevronRight size={16} style={{ color: it.color, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
       </button>
       </Tip>
@@ -275,7 +285,6 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1.5">
           <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>{title}</div>
-          {fav && <FavHeart favId={fav} inline />}
           {badge && (
             <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
                   style={{ background: badgeTone || T.primary, color: '#FFF' }}>{badge}</span>
@@ -283,6 +292,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
         </div>
         <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>
       </div>
+      {fav && <span className="flex-shrink-0 -mr-1"><FavHeart favId={fav} inline /></span>}
       <ChevronRight size={16} style={{ color: iconColor, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
     </button>
     </Tip>

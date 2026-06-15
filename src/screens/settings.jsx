@@ -9,25 +9,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, AlertTriangle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
-  FileText, GraduationCap, Hand, Heart, Lock, LogOut, RefreshCw, RotateCcw, Sigma, Trash2,
-  Upload, User, UserPlus, Volume2
+  FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
+  Sigma, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
 import { requestRename } from '../ui/rename-channel.js';
-import { LIGHT_THEMES } from '../lib/light-themes.js';
 import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 // #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
-import ShareAppCard from '../ui/share-app-card.jsx';
+import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile, isAdmin } = useProfile();
@@ -61,8 +60,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     setCribOn(next);
     setCribSheetEnabled(next);
   };
-  // #31 — Profile actions bottom sheets.
+  // Issues round — Log out AND Switch now confirm via a true CENTRED modal
+  // (ConfirmDialog), never a bottom sheet anchored to scroll position.
   const [logoutSheet, setLogoutSheet] = useState(false);
+  const [switchSheet, setSwitchSheet] = useState(false);
   const [resetSheet, setResetSheet] = useState(false);
   const [resetTyped, setResetTyped] = useState('');
   const [importMsg, setImportMsg] = useState(null);
@@ -256,7 +257,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 kept because it looked right) directly below the rename card;
                 Log out still confirms via the bottom sheet. */}
             <div className="grid grid-cols-2 gap-2 mb-2">
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={onSwitchProfile}>
+              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setSwitchSheet(true)}>
                 <RefreshCw size={16} style={{ color: T.success }} />
                 <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
                 <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
@@ -287,8 +288,22 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </button>
         </Card>
 
-        {/* #4 — Share NORCET Prep lives right below the profile cluster. */}
-        <ShareAppCard />
+        {/* #4 / issues round — Share NORCET Prep is now a DEDICATED PAGE; this
+            row launches it (the full platform picker + preview moved there). */}
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
+              <Share2 size={18} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                Send a friend the link + setup steps for their device
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+          </div>
+        </Card>
 
         {/* My feedback */}
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenMyReports}>
@@ -309,14 +324,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
-        <Card className="p-4 mb-3">
-          <div className="text-xs uppercase tracking-wider mb-1" style={{ color: T.muted }}>Custom questions</div>
-          <div className="font-display text-xl" style={{ color: T.ink }}>{data.customQuestions.length} added</div>
-        </Card>
-        <Card className="p-4 mb-3">
-          <div className="text-xs uppercase tracking-wider mb-1" style={{ color: T.muted }}>Total practice</div>
-          <div className="font-display text-xl" style={{ color: T.ink }}>{data.stats.totalAttempted} questions</div>
-        </Card>
+        {/* Custom-questions + Total-practice counters moved into the Library
+            screen where they're contextually relevant (issues round). */}
 
         {/* Reminders — at the moment, just the spaced-revision card on Home.
             Toggling this off removes the green "Review due" card from Home
@@ -471,141 +480,25 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
-        {/* Appearance */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Appearance</div>
-
-        {/* Mode selector — Light / Dark */}
-        <Card className="p-4 mb-3">
-          <div className="text-xs font-medium mb-3" style={{ color: T.muted }}>Mode</div>
-          <div className="grid grid-cols-2 gap-2">
-            {[
-              { id: 'light', label: 'Light', icon: '☀️', desc: 'Default'      },
-              { id: 'dark',  label: 'Dark',  icon: '🌙', desc: 'Easy on eyes' },
-            ].map(opt => {
-              const active = opt.id === 'dark' ? themeMode === 'dark' : themeMode !== 'dark';
-              const isDarkOpt = opt.id === 'dark';
-              return (
-                <button key={opt.id}
-                        onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
-                        className="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl no-tap-highlight pressable"
-                        style={{
-                          background: active ? (isDarkOpt ? '#1A1A1A' : T.primary + '12') : T.surfaceWarm,
-                          border: `1.5px solid ${active ? (isDarkOpt ? '#444' : T.primary) : T.border}`,
-                        }}>
-                  <span className="text-xl leading-none">{opt.icon}</span>
-                  <span className="text-xs font-semibold"
-                        style={{ color: active ? (isDarkOpt ? '#FFF' : T.primary) : T.ink }}>
-                    {opt.label}
-                  </span>
-                  <span className="text-[9px]"
-                        style={{ color: active ? (isDarkOpt ? '#999' : T.primarySoft) : T.muted }}>
-                    {opt.desc}
-                  </span>
-                </button>
-              );
-            })}
+        {/* Appearance → renamed "Themes", now a DEDICATED SUB-PAGE (issues
+            round). The full mode selector + colour picker moved to
+            screens/themes.jsx; Settings keeps this single row. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Themes</div>
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenThemes}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.accent})` }}>
+              <Palette size={18} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium" style={{ color: T.ink }}>Themes</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                {themeMode === 'dark' ? 'Dark mode' : 'Light mode'} {'\u00b7'} pick a mode and colour palette
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
           </div>
         </Card>
-
-        {/* Colour theme picker — hidden in dark mode */}
-        {themeMode !== 'dark' && (
-          <Card className="p-4 mb-3">
-
-            {/* Row 1 — Soft */}
-            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Soft</div>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {LIGHT_THEMES.slice(0, 4).map(opt => {
-                const active = themeMode === opt.id;
-                return (
-                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
-                          className="flex flex-col items-center gap-1.5 no-tap-highlight"
-                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
-                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
-                         style={{ background: opt.bg,
-                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
-                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}28` : 'none' }}>
-                      <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch, opacity: 0.85 }} />
-                      {active && (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full"
-                             style={{ background: opt.swatch + '18' }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M3.5 8.5l3 3 6-6" stroke={opt.swatch} strokeWidth="2.2"
-                                  strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-medium leading-tight"
-                          style={{ color: active ? opt.swatch : T.muted }}>{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Row 2 — Vivid */}
-            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Vivid</div>
-            <div className="grid grid-cols-4 gap-2 mb-4">
-              {LIGHT_THEMES.slice(4).map(opt => {
-                const active = themeMode === opt.id;
-                return (
-                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
-                          className="flex flex-col items-center gap-1.5 no-tap-highlight"
-                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
-                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
-                         style={{ background: opt.bg,
-                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
-                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}38` : 'none' }}>
-                      <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch }} />
-                      {active && (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full"
-                             style={{ background: opt.swatch + '20' }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M3.5 8.5l3 3 6-6" stroke={opt.swatch} strokeWidth="2.2"
-                                  strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-medium leading-tight"
-                          style={{ color: active ? opt.swatch : T.muted }}>{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Row 3 — Minimal */}
-            <div className="text-xs font-medium mb-2" style={{ color: T.muted }}>Minimal</div>
-            <div className="flex gap-2">
-              {[{ id: 'midnight', label: 'Midnight', swatch: '#000000', bg: '#FFFFFF' }].map(opt => {
-                const active = themeMode === opt.id;
-                return (
-                  <button key={opt.id} onClick={() => onSetColorTheme && onSetColorTheme(opt.id)}
-                          className="flex flex-col items-center gap-1.5 no-tap-highlight"
-                          style={{ background:'none', border:'none', padding:0, cursor:'pointer' }}>
-                    <div className="relative w-12 h-12 rounded-full flex items-center justify-center"
-                         style={{ background: opt.bg,
-                                  border: active ? `2.5px solid ${opt.swatch}` : `2px solid ${T.border}`,
-                                  boxShadow: active ? `0 0 0 3px ${opt.swatch}22` : 'none' }}>
-                      <div className="w-6 h-6 rounded-full" style={{ background: opt.swatch }} />
-                      {active && (
-                        <div className="absolute inset-0 flex items-center justify-center rounded-full"
-                             style={{ background: opt.swatch + '10' }}>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                            <path d="M3.5 8.5l3 3 6-6" stroke={opt.swatch} strokeWidth="2.2"
-                                  strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[10px] font-medium leading-tight"
-                          style={{ color: active ? opt.swatch : T.muted }}>{opt.label}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-          </Card>
-        )}
 
         {/* #21 — Sidebar gestures. Swipe-to-close defaults ON (no system
             conflict); swipe-to-open defaults OFF (clashes with the Android
@@ -643,7 +536,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               <div className="min-w-0">
                 <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  Swipe right from the screen edge to open the sidebar
+                  Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.
                 </div>
               </div>
             </div>
@@ -790,7 +683,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Admin</div>
         {isAdmin ? (
           <>
-          <Card className="p-4 mb-3" style={{ background: T.successSoft, border: `1px solid ${T.success}40` }}>
+          <Card className="p-4 mb-3">
             <div className="flex items-center justify-between gap-3 mb-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
@@ -798,7 +691,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                   <Check size={16} color="#FFF" />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-medium text-sm" style={{ color: T.ink }}>Admin mode is on</div>
+                  <div className="font-medium text-sm flex items-center gap-1.5" style={{ color: T.ink }}>
+                    Admin mode
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+                          style={{ background: T.success + '18', color: T.success }}>On</span>
+                  </div>
                   <div className="text-xs" style={{ color: T.muted }}>Banks · users · feedback · announcements</div>
                 </div>
               </div>
@@ -1007,33 +904,26 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         </div>
       </div>
 
-      {/* #31 — Log out confirm: a light bottom sheet (amber = cautious, not
-          destructive). Primary action is the SAFE one (Cancel). */}
-      {logoutSheet && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center"
-             style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setLogoutSheet(false)}>
-          <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
-               style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: T.border }} />
-            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>Log out of this profile?</div>
-            <div className="text-sm leading-relaxed mb-5" style={{ color: T.muted }}>
-              Your progress is saved to your account — nothing is deleted. You can log back in anytime.
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setLogoutSheet(false)}
-                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
-                      style={{ background: T.primary, color: '#FFF' }}>
-                Cancel
-              </button>
-              <button onClick={() => { setLogoutSheet(false); onLogout(); }}
-                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-medium active:scale-95 transition"
-                      style={{ background: '#D4900A20', color: '#D4900A', border: '1.5px solid #D4900A60' }}>
-                Log out
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Issues round — Log out confirm: a TRUE CENTRED modal (fixed overlay,
+          vertical+horizontal centre of the viewport, dimmed backdrop —
+          visible no matter how far Settings is scrolled). Button hierarchy
+          fixed: Log out = red danger primary, Cancel = quiet secondary. */}
+      <ConfirmDialog open={logoutSheet}
+                     icon={<LogOut size={18} style={{ color: T.error }} />}
+                     title="Log out of this profile?"
+                     body="Your progress is saved and you can log back in anytime. Nothing is deleted."
+                     confirmLabel="Log out" cancelLabel="Cancel" tone="danger"
+                     onConfirm={() => { setLogoutSheet(false); onLogout(); }}
+                     onCancel={() => setLogoutSheet(false)} />
+
+      {/* Issues round — Switch profile now confirms too (it was instant). */}
+      <ConfirmDialog open={switchSheet}
+                     icon={<RefreshCw size={18} style={{ color: T.primary }} />}
+                     title="Switch profile?"
+                     body="You will be moved to a different profile. Your current progress is saved."
+                     confirmLabel="Switch" cancelLabel="Cancel" tone="primary"
+                     onConfirm={() => { setSwitchSheet(false); onSwitchProfile(); }}
+                     onCancel={() => setSwitchSheet(false)} />
 
       {/* #31 — Reset confirm: destructive bottom sheet with type-to-confirm
           (RESET). The red button stays disabled until the word matches; copy

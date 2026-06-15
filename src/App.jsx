@@ -118,6 +118,9 @@ import { fontStyles } from './lib/font-styles.js';
 // fgOnDark, statusMetaFor via feedbackStatusMeta) were dead bridge wrappers, now
 // deleted. The hooks (useFgOnDark/useStatusMeta) live in the screens that use them.
 import WelcomeScreen from './screens/welcome.jsx';
+// Issues round — new dedicated sub-pages split out of Settings.
+import ShareAppScreen from './screens/share-app.jsx';
+import ThemesScreen from './screens/themes.jsx';
 // [A1 slice 14] PreviousPapers screen extracted.
 import PreviousPapers from './screens/previous-papers.jsx';
 // #17 — PYQ Read Mode (calm reading interface over the same paper data).
@@ -145,7 +148,7 @@ import DrillTests from './screens/drill-tests.jsx';
 // [F-B] Global pull-to-refresh overlay.
 import PullToRefresh from './ui/pull-to-refresh.jsx';
 // #30 — Home back-press exit confirmation pill.
-import ExitSnackbar from './ui/exit-snackbar.jsx';
+import ExitConfirmDialog from './ui/exit-snackbar.jsx';
 // TIP — hold/hover tooltip host (one bubble, app root, viewport-fixed).
 import { TipHost } from './ui/tooltip.jsx';
 // [F-E] Doubts review screen.
@@ -1756,7 +1759,7 @@ function quizTypeLabel(mode) {
 // Screens that run their OWN popstate back-guard (the Quiz / Advanced-test
 // confirm-exit dialogs push+intercept their own history entry). The global
 // handler must NOT also act on these, or back would be handled twice.
-const NAV_SELF_GUARDED_SCREENS = new Set(['quiz', 'advanced-test', 'paper-test']);
+const NAV_SELF_GUARDED_SCREENS = new Set(['quiz', 'advanced-test', 'paper-test', 'admin-panel']);
 // Screens that are "roots": pressing back here exits the app (default OS
 // behaviour) rather than navigating in-app.
 const NAV_ROOT_SCREENS = new Set(['home']);
@@ -2377,12 +2380,14 @@ export default function App() {
       const action = decideBackAction(s);
       if (action === 'self-guarded') return;       // Quiz/advanced guard owns it
       if (action === 'exit') {
-        // #30 — double-back-to-exit. First press: re-arm the sentinel, show
-        // the snackbar, start a 2.5s window. Second press inside the window:
-        // do NOT re-arm — fire one more history.back() past the consumed
-        // sentinel so the OS actually exits / minimises the PWA.
+        // #30 reworked (issues round) — exit CONFIRMATION dialog. First back
+        // press on Home: re-arm the sentinel and open the centred "Exit app?"
+        // dialog (Cancel / Exit). The app only closes when the user confirms:
+        // tapping Exit fires one more history.back() past the consumed
+        // sentinel, and a second hardware back press while the dialog is open
+        // does the same (the power-user double-back shortcut still works).
+        // No auto-timeout — the dialog waits for an explicit choice.
         if (exitPendingRef.current) {
-          if (exitSnackTimerRef.current) { clearTimeout(exitSnackTimerRef.current); exitSnackTimerRef.current = null; }
           exitPendingRef.current = false;
           setExitSnack(false);
           try { window.history.back(); } catch (e) {}
@@ -2391,19 +2396,18 @@ export default function App() {
         try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
         exitPendingRef.current = true;
         setExitSnack(true);
-        if (exitSnackTimerRef.current) clearTimeout(exitSnackTimerRef.current);
-        exitSnackTimerRef.current = setTimeout(() => {
-          exitPendingRef.current = false;
-          setExitSnack(false);
-          exitSnackTimerRef.current = null;
-        }, 2500);
         return;
       }
       // Re-arm so subsequent back presses keep being intercepted.
       try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
       if (action === 'close-overlay') {
         if (s.kind === 'merge') return;             // forced choice → no dismiss on back
-        if (s.kind === 'welcome') { setShowWelcome(false); setNav({ screen: 'home' }); }
+        if (s.kind === 'welcome') {
+          // Issues round — the tour mirrors the app's own back button: its
+          // open help popup closes first; at the tour root a leave-
+          // confirmation is shown. welcome.jsx listens for this event.
+          try { window.dispatchEvent(new CustomEvent('norcet:welcome-back')); } catch (e) {}
+        }
         return;
       }
       restoreNextScrollRef.current = true;          // #30 — hardware back restores scroll
@@ -2421,10 +2425,20 @@ export default function App() {
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
-  // #30 — exit confirmation snackbar state (Home + hardware back only).
+  // #30 reworked — exit confirmation dialog state (Home + hardware back only).
   const [exitSnack, setExitSnack] = useState(false);
   const exitPendingRef = useRef(false);
-  const exitSnackTimerRef = useRef(null);
+  const cancelExit = useCallback(() => {
+    exitPendingRef.current = false;
+    setExitSnack(false);
+  }, []);
+  const confirmExit = useCallback(() => {
+    // exitPendingRef stays true: the history.back() below consumes the armed
+    // sentinel, the popstate handler sees the pending flag and fires one more
+    // back() past it, letting the OS minimise/close the PWA.
+    setExitSnack(false);
+    try { window.history.back(); } catch (e) {}
+  }, []);
 
   const startQuiz = useCallback((spec) => {
     let qs = [];
@@ -3806,7 +3820,7 @@ export default function App() {
                  onNavigate={handleHomeNavigate} />
 
       {/* #30 — "Press back again to exit" snackbar (Home + hardware back). */}
-      <ExitSnackbar visible={exitSnack} />
+      <ExitConfirmDialog visible={exitSnack} onCancel={cancelExit} onExit={confirmExit} />
 
       {/* TIP — global tooltip bubble (hold on mobile / hover on desktop). */}
       <TipHost />
@@ -3957,6 +3971,7 @@ export default function App() {
           exact results screen it was opened from. */}
       {nav.screen === 'crib-sheet' && (
         <CribSheet title={nav.cribTitle || 'Test review'}
+                   onHome={goHomeDirect}
                    subtitle={nav.cribSubtitle || ''}
                    items={nav.items || []}
                    savedMode={!!nav.savedMode}
@@ -3967,7 +3982,7 @@ export default function App() {
 
       {/* FAV — Your Favourites: manage list, priority order, strip toggle. */}
       {nav.screen === 'favorites' && (
-        <FavoritesScreen onBack={goHome}
+        <FavoritesScreen onBack={goHome} startInEdit={!!nav.edit}
                          onNavigate={handleHomeNavigate}
                          onOpenSettings={() => setNav({ screen: 'settings' })} />
       )}
@@ -4194,6 +4209,17 @@ export default function App() {
                         onBack={goHome} />
       )}
 
+      {/* Issues round — dedicated Share page (was inline in Settings). */}
+      {nav.screen === 'share-app' && (
+        <ShareAppScreen onBack={goHome} />
+      )}
+
+      {/* Issues round — dedicated Themes page (was the inline Appearance
+          block in Settings). */}
+      {nav.screen === 'themes' && (
+        <ThemesScreen themeMode={themeMode} onSetColorTheme={setColorTheme} onBack={goHome} />
+      )}
+
       {nav.screen === 'settings' && (
         <Settings themeMode={themeMode}
                   isGuest={isGuestProfile(profile)}
@@ -4207,7 +4233,9 @@ export default function App() {
                   onOpenFeedbackInbox={() => setNav({ screen: 'feedback-inbox' })}
                   onOpenAdminPanel={() => setNav({ screen: 'admin-panel' })}
                   onOpenMyReports={() => setNav({ screen: 'my-reports' })}
-                  onOpenFavorites={() => setNav({ screen: 'favorites' })}
+                  onOpenShare={() => navigate({ screen: 'share-app' })}
+                  onOpenThemes={() => navigate({ screen: 'themes' })}
+                  onOpenFavorites={() => navigate({ screen: 'favorites', edit: true })}
                   onRenameProfile={handleRenameProfile}
                   onToggleReviewReminders={toggleReviewReminders}
                   onToggleIncludeGkInStats={toggleIncludeGkInStats}

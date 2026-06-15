@@ -47,8 +47,16 @@ export default function FavHeart({ favId, inline = false, size = 18 }) {
   if (!isFavoritable(favId)) return null;
 
   const onTap = async () => {
-    setAnim(isFav ? 'deflate' : 'pop');
-    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    // Premium micro-interaction (issues round): FILLING springs — subtle
+    // compress, colour fill, gentle 1.08 overshoot, settle (CSS .heart-spring,
+    // ~340ms). UNFILLING never bounces — the colour simply fades back to the
+    // white-interior outline via the SVG fill/stroke transitions below.
+    const filling = !isFav;
+    setAnim(filling ? 'fill' : 'unfill');
+    if (filling) {
+      // precisely-timed light haptic at the moment the fill begins
+      try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+    }
     const { favs, added } = await toggleFav(profileId, favId);
     setIsFav(added);
     setEnabled(favs.enabled);
@@ -69,11 +77,17 @@ export default function FavHeart({ favId, inline = false, size = 18 }) {
               aria-pressed={isFav}
               aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
               className={"no-tap-highlight rounded-full active:bg-black/5 flex-shrink-0 " + (inline ? 'p-1.5' : 'p-2')}>
-        <span key={`${isFav}`} className={"inline-block " + (anim === 'pop' ? 'bm-pop' : anim === 'deflate' ? 'bm-deflate' : '')}
+        <span className={"inline-block " + (anim === 'fill' ? 'heart-spring' : '')}
               style={{ lineHeight: 0 }}>
           <Heart size={inline ? 14 : size}
-                 fill={isFav ? '#E0245E' : 'none'}
-                 style={{ color: isFav ? '#E0245E' : T.muted, transition: 'color .2s' }} />
+                 fill={isFav ? '#E0245E' : '#FFFFFF'}
+                 strokeWidth={2.2}
+                 style={{
+                   color: isFav ? '#E0245E' : T.muted,
+                   // fluid, flicker-free: colour + fill transition together;
+                   // unfavourite is a graceful fade with zero bounce.
+                   transition: 'color .28s ease, fill .3s ease',
+                 }} />
         </span>
       </button>
       </Tip>

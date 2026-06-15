@@ -63,7 +63,7 @@ function PyqBadge({ q, className = '' }) {
   );
 }
 
-function Card({ children, onClick, className = '', style = {}, ariaLabel }) {
+function Card({ children, onClick, className = '', style = {}, ariaLabel, ...rest }) {
   // A8: the static surface + hairline border now come from the .surface-card
   // utility (CSS vars) instead of a per-render style object. Callers can still
   // pass `style` to override or extend (e.g. a coloured left border); those
@@ -87,7 +87,8 @@ function Card({ children, onClick, className = '', style = {}, ariaLabel }) {
          onKeyDown={onKeyDown}
          aria-label={ariaLabel}
          className={`no-tap-highlight rounded-2xl surface-card ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''} ${className}`}
-         style={style}>
+         style={style}
+         {...rest}>
       {children}
     </div>
   );
@@ -116,33 +117,45 @@ function Button({ children, onClick, variant = 'primary', size = 'md', disabled 
 function TopBar({ title, onBack, right, feedback, favId }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   // Theme-aware translucent background
-  const tbBg = IS_DARK ? 'rgba(21,19,15,0.85)' : T.bg + 'D9';
+  const tbBg = IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0';
+  // FIXED top bar (issues round): the bar is pinned to the viewport on every
+  // screen so navigation/Help/Report never scroll out of reach, and it pads
+  // itself by env(safe-area-inset-top) so the title/counter can never collide
+  // with the device status bar or notch. A spacer div keeps the page content
+  // from sliding underneath. (Screens that want an immersive view — the
+  // Knowledge Map — simply don't render a TopBar.)
   return (
-    <div className="sticky top-0 z-20 backdrop-blur-md" style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}` }}>
-      <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          {onBack && (
-            <Tip text="Go back to the previous screen">
-              <button onClick={onBack} aria-label="Go back" className="no-tap-highlight p-2 -ml-2 rounded-full active:bg-black/5">
-                <ArrowLeft size={20} color={T.ink} />
-              </button>
-            </Tip>
-          )}
-          <div className="font-display text-lg truncate" style={{ color: T.ink }}>{title}</div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {/* FAV — heart on favoritable sections (registry-gated; renders
-              nothing for ids outside lib/favorites.js). */}
-          {favId && <FavHeart favId={favId} />}
-          {right}
-          {feedback && <HelpButton screen={feedback.screen} />}
-          {feedback && (
-            <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
-                            profileId={feedback.profileId} profileName={feedback.profileName} />
-          )}
+    <>
+      <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
+           style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
+                    paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+        <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            {onBack && (
+              <Tip text="Go back to the previous screen">
+                <button onClick={onBack} aria-label="Go back" className="no-tap-highlight p-2 -ml-2 rounded-full active:bg-black/5">
+                  <ArrowLeft size={20} color={T.ink} />
+                </button>
+              </Tip>
+            )}
+            <div className="font-display text-lg truncate" style={{ color: T.ink }}>{title}</div>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {/* FAV — heart on favoritable sections (registry-gated; renders
+                nothing for ids outside lib/favorites.js). */}
+            {favId && <FavHeart favId={favId} />}
+            {right}
+            {feedback && <HelpButton screen={feedback.screen} />}
+            {feedback && (
+              <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
+                              profileId={feedback.profileId} profileName={feedback.profileName} />
+            )}
+          </div>
         </div>
       </div>
-    </div>
+      {/* spacer — same height as the fixed bar (row ≈ 60px) + the safe area */}
+      <div aria-hidden="true" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
+    </>
   );
 }
 

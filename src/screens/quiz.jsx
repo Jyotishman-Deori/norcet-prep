@@ -470,6 +470,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                   this question is later answered correctly. Hidden for guests
                   (no profile to store against). */}
               {profileId && (
+                <Tip text="Flagged questions are saved to My Doubts — find them in the sidebar.">
                 <button onClick={toggleSolutionFlag}
                         aria-pressed={!!(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)}
                         className="no-tap-highlight w-full mt-3 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition"
@@ -483,6 +484,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                     ? 'Flagged — explanation unclear (tap to unflag)'
                     : 'Still confused? Flag this explanation'}
                 </button>
+                </Tip>
               )}
               {/* P8 — "Was this helpful?" (question is finished + explanation visible) */}
               <HelpfulToggle questionId={q.id} explanation={q.exp} profileId={profileId} />

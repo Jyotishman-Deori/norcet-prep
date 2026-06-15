@@ -8,13 +8,15 @@
 // load lazily via useContent('dosage'); shuffle from lib/utils.
 // =====================================================================
 import React, { useState, useMemo } from 'react';
-import { Calculator, Check, X, Eye, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
+import { Calculator, Check, X, Eye, FlaskConical, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useContent } from '../lib/content.js';
 import { ContentGate } from '../ui/content-gate.jsx';
 import { shuffle } from '../lib/utils.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
+// Issues round — the same quick Reference lookup the other quiz modes have.
+import { ReferenceLookupModal } from './reference.jsx';
 
 function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -23,6 +25,8 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
   const [submitted, setSubmitted] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState([]);
+  // Issues round — Reference overlay (labs/drugs/values), same as Quick/Topic/Mock.
+  const [showReference, setShowReference] = useState(false);
   // A2 — dosage questions loaded lazily from /public/data/dosage.json.
   const { data: dosageData, loading, error, reload } = useContent('dosage');
   const questions = useMemo(() => dosageData ? shuffle(dosageData).slice(0, 10) : [], [dosageData]);
@@ -95,8 +99,13 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Dosage calculation test" onBack={onBack} feedback={{ screen: "Dosage calc" }}
-              right={<div className="text-xs font-semibold tabular-nums" style={{ color: T.muted }}>{index + 1} / {questions.length}</div>} />
+      {/* Issues round — the counter is a separated chip (was running straight
+          into the title as "Dosage calculation test1/10"). */}
+      <TopBar title="Dosage calculation" onBack={onBack} feedback={{ screen: "Dosage calc" }}
+              right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full flex-shrink-0"
+                          style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
+                       {index + 1} / {questions.length}
+                     </div>} />
 
       <div className="max-w-md mx-auto px-4 pb-40 pt-3">
         {/* Progress */}
@@ -125,8 +134,8 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
                  onChange={e => setInput(e.target.value)}
                  onKeyDown={e => { if (e.key === 'Enter' && !done) submit(); }}
                  disabled={done}
-                 placeholder="0"
-                 className="w-full rounded-2xl pl-5 pr-24 py-5 text-3xl font-display font-semibold tabular-nums outline-none"
+                 placeholder="Enter your answer"
+                 className="w-full rounded-2xl pl-5 pr-24 py-5 text-3xl font-display font-semibold tabular-nums outline-none dosage-input"
                  style={{ background: T.surface,
                           border: `1.5px solid ${submitted ? (isCorrect ? T.success : T.error) : revealed ? T.primary : T.border}`,
                           color: submitted ? (isCorrect ? T.success : T.error) : T.ink,
@@ -222,6 +231,16 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3 backdrop-blur-md"
            style={{ background: IS_DARK ? 'rgba(21,19,15,0.9)' : T.bg + 'E6', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md mx-auto">
+          {/* Quick reference — identical position + behaviour to the other
+              quiz modes (issues round: it was missing from Dosage). */}
+          <div className="flex justify-center mb-2">
+            <button onClick={() => setShowReference(true)}
+                    className="no-tap-highlight inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition"
+                    style={{ background: T.surfaceWarm, color: T.accent, border: `1px solid ${T.border}` }}>
+              <FlaskConical size={12} />
+              Reference
+            </button>
+          </div>
           {!done ? (
             <div className="space-y-2.5">
               <Button onClick={submit} disabled={!isValidInput} size="lg" className="w-full" icon={<Check size={18} />}>
@@ -243,6 +262,9 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
           )}
         </div>
       </div>
+
+      {/* Reference lookup overlay */}
+      <ReferenceLookupModal open={showReference} onClose={() => setShowReference(false)} />
     </div>
   );
 }

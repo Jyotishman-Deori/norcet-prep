@@ -9,10 +9,10 @@
 // bridge). No data / profile / storage coupling — pure presentation.
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertCircle, Lightbulb, Square, Volume2 } from 'lucide-react';
+import { AlertCircle, Square, Volume2 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicName } from '../lib/topics.js';
-import { loadHelpfulState, toggleHelpful } from '../lib/helpful-votes.js';
+import HelpfulBulb from './helpful-bulb.jsx';
 
 
 function QuestionImage({ q }) {
@@ -107,80 +107,16 @@ function TTSButton({ text, size = 14, label, className = '', tone = 'soft' }) {
 
 
 
-// First-tap-per-session flag for the "thanks" confirmation (resets on reload).
-let helpfulThanksShownThisSession = false;
-
+// P8 reworked (issues round): the lightbulb-link toggle is replaced by the
+// tactile Dosage-style HelpfulBulb everywhere — same shared vote keys, so
+// existing tallies carry over untouched. This wrapper keeps the old
+// signature so quiz.jsx / crib-sheet.jsx call sites stay one-liners.
 function HelpfulToggle({ questionId, explanation, profileId }) {
-  const { theme: T } = useTheme();
-  const [state, setState] = useState('silent'); // 'silent' | 'helpful' | 'notHelpful'
-  const [busy, setBusy] = useState(false);
-  const [thanks, setThanks] = useState(false);
-  const mounted = useRef(true);
-
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; };
-  }, []);
-
-  // Load this user's current state for this question.
-  useEffect(() => {
-    if (!questionId || !profileId) return;
-    let alive = true;
-    loadHelpfulState(questionId, profileId).then(s => { if (alive && mounted.current) setState(s); }).catch(() => {});
-    return () => { alive = false; };
-  }, [questionId, profileId]);
-
-  // Edge cases: no profile, or nothing to evaluate -> render nothing.
   if (!profileId || !questionId) return null;
   if (!explanation || !String(explanation).trim()) return null;
-
-  const lit = state === 'helpful';
-  const accent = T.accent;
-
-  const onTap = async () => {
-    if (busy) return;
-    const prev = state;
-    const next = prev === 'helpful' ? 'notHelpful' : 'helpful';
-    setState(next);           // optimistic
-    setBusy(true);
-    try {
-      await toggleHelpful(questionId, profileId, prev);
-      if (!helpfulThanksShownThisSession) {
-        helpfulThanksShownThisSession = true;
-        if (mounted.current) {
-          setThanks(true);
-          setTimeout(() => { if (mounted.current) setThanks(false); }, 2600);
-        }
-      }
-    } catch (e) {
-      // Offline / write failed — revert quietly, no error toast (edge case).
-      if (mounted.current) setState(prev);
-    } finally {
-      if (mounted.current) setBusy(false);
-    }
-  };
-
   return (
-    <div className="flex items-center gap-2 mt-3">
-      <span className="text-xs" style={{ color: T.muted }}>Was this helpful?</span>
-      <button onClick={onTap} disabled={busy}
-              className="no-tap-highlight p-1 rounded-full active:scale-95"
-              style={{ transition: 'transform 120ms ease-out' }}
-              aria-pressed={lit}
-              aria-label={lit ? 'Marked helpful — tap to mark not helpful' : 'Mark explanation helpful'}>
-        <Lightbulb size={18}
-                   style={{
-                     color: lit ? accent : T.muted,
-                     fill: lit ? accent : 'transparent',
-                     filter: lit ? `drop-shadow(0 0 5px ${accent}AA)` : 'none',
-                     transition: 'color 200ms ease-out, fill 200ms ease-out, filter 200ms ease-out'
-                   }} />
-      </button>
-      {thanks && (
-        <span className="text-xs anim-fadeup" role="status" aria-live="polite" style={{ color: T.success }}>
-          Thanks — your feedback helps us improve.
-        </span>
-      )}
+    <div className="mt-3">
+      <HelpfulBulb voteId={questionId} profileId={profileId} compact />
     </div>
   );
 }

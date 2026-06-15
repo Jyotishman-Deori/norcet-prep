@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -26,7 +26,7 @@ import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
-import { TopBar } from '../ui/primitives.jsx';
+import { requestHelp } from '../ui/primitives.jsx';
 import MindmapNodePopup from './mindmap-node-popup.jsx';
 import MindmapNoteEditor from './mindmap-note-editor.jsx';
 
@@ -990,9 +990,27 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Knowledge Map" onBack={onBack} feedback={{ screen: 'Knowledge Map' }} />
+      {/* Issues round — IMMERSIVE MODE: the Knowledge Map is the one screen
+          where the fixed top bar is intentionally HIDDEN (it's a full-screen
+          game view). A minimal floating chrome row replaces it: a glass back
+          button + a quiet help button, safe-area aware. The standard top bar
+          returns automatically on every other screen. */}
+      <div className="fixed left-3 right-3 z-40 flex items-center justify-between pointer-events-none"
+           style={{ top: 'calc(10px + env(safe-area-inset-top, 0px))' }}>
+        <button onClick={onBack} aria-label="Exit Knowledge Map"
+                className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+          <ArrowLeft size={18} style={{ color: T.ink }} />
+        </button>
+        <button onClick={() => requestHelp({ screen: 'Knowledge Map' })} aria-label="What is this screen?"
+                className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+          <HelpCircle size={17} style={{ color: T.primary }} />
+        </button>
+      </div>
 
-      <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+      <div className="max-w-md mx-auto px-4 pb-24"
+           style={{ paddingTop: 'calc(58px + env(safe-area-inset-top, 0px))' }}>
         {/* Encouraging banner for users with no progress (edge case 10),
             re-voiced for the constellation metaphor. */}
         {model.totalAttempted === 0 && (

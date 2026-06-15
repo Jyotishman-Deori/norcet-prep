@@ -5,7 +5,7 @@
 // render site passes a computed `allPapers`, not data.papers). No IS_DARK/fgOnDark.
 // =====================================================================
 import React, { useState, useMemo } from 'react';
-import { Activity, Target, ChevronRight, ChevronUp, ChevronDown, ClipboardList } from 'lucide-react';
+import { Activity, Target, ChevronRight, ChevronUp, ChevronDown, ClipboardList, Play, X } from 'lucide-react';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
@@ -17,6 +17,10 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const [view, setView] = useState('mix'); // 'mix' | 'yoy'
+  // Issues round — tapping a subject row NO LONGER launches a quiz directly.
+  // It opens this confirmation sheet (subject, weightage, your accuracy,
+  // explicit "Start practice" CTA); the quiz only starts on that tap.
+  const [confirmRow, setConfirmRow] = useState(null); // { id, name, icon, color, weightage, accuracy, coverage }
   const includeGk = data.preferences && data.preferences.includeGkInStats === true;
 
   // Only papers that actually carry questions are units of analysis.
@@ -161,7 +165,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
             </div>
             <div className="space-y-2">
               {model.leverage.map(l => (
-                <button key={l.id} onClick={() => onDrill && onDrill('topic', l.id)}
+                <button key={l.id} onClick={() => setConfirmRow(l)}
                         className="no-tap-highlight w-full flex items-center gap-3 p-2 rounded-xl pressable text-left"
                         style={{ background: T.surface, border: `1px solid ${T.border}` }}>
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base flex-shrink-0" style={{ background: l.color + '18' }}>{l.icon}</div>
@@ -197,7 +201,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
             {model.rows.map(r => {
               const hot = leverageIds.has(r.id);
               return (
-                <Card key={r.id} className="p-3.5" onClick={r.inBank && onDrill ? () => onDrill('topic', r.id) : undefined}
+                <Card key={r.id} className="p-3.5" onClick={r.inBank ? () => setConfirmRow(r) : undefined}
                       style={hot ? { border: `1px solid ${T.primary}40` } : {}}>
                   <div className="flex items-center gap-3 mb-2">
                     <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: r.color + '15' }}>{r.icon}</div>
@@ -266,7 +270,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
                   <div className="space-y-2">
                     <div className="text-[11px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>Biggest shifts</div>
                     {model.movers.map(m => (
-                      <Card key={m.id} className="p-3" onClick={() => onDrill && onDrill('topic', m.id)}>
+                      <Card key={m.id} className="p-3" onClick={() => { const r = model.rows.find(x => x.id === m.id); if (r && r.inBank) setConfirmRow(r); }}>
                         <div className="flex items-center gap-2">
                           {m.rising ? <ChevronUp size={16} style={{ color: RISE }} /> : <ChevronDown size={16} style={{ color: FALL }} />}
                           <span className="text-sm" style={{ color: T.ink }}>
@@ -284,6 +288,64 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
           </div>
         )}
       </div>
+
+      {/* Start-practice confirmation (issues round) — context first, quiz
+          only after an explicit choice. */}
+      {confirmRow && (
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+             style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setConfirmRow(null)}>
+          <div className="sheet-up w-full max-w-md sm:mx-4 rounded-t-3xl sm:rounded-3xl p-5 pb-8"
+               style={{ background: T.surface }} onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+                     style={{ background: confirmRow.color + '18' }}>{confirmRow.icon}</div>
+                <div className="min-w-0">
+                  <div className="font-display text-lg font-semibold leading-tight" style={{ color: T.ink }}>{confirmRow.name}</div>
+                  <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>10-question topic drill</div>
+                </div>
+              </div>
+              <button onClick={() => setConfirmRow(null)} aria-label="Close"
+                      className="no-tap-highlight p-1.5 -m-1 rounded-full active:bg-black/5 flex-shrink-0">
+                <X size={18} style={{ color: T.muted }} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-px rounded-xl overflow-hidden mb-5"
+                 style={{ background: T.borderSoft, border: `1px solid ${T.borderSoft}` }}>
+              <div className="py-3 text-center" style={{ background: T.surfaceWarm }}>
+                <div className="font-display text-lg font-semibold leading-none" style={{ color: confirmRow.color }}>
+                  {Math.round(confirmRow.weightage)}%
+                </div>
+                <div className="text-[9px] uppercase tracking-wider font-semibold mt-1.5" style={{ color: T.muted }}>of exam</div>
+              </div>
+              <div className="py-3 text-center" style={{ background: T.surfaceWarm }}>
+                <div className="font-display text-lg font-semibold leading-none" style={{ color: T.ink }}>
+                  {confirmRow.accuracy == null ? '—' : `${Math.round(confirmRow.accuracy * 100)}%`}
+                </div>
+                <div className="text-[9px] uppercase tracking-wider font-semibold mt-1.5" style={{ color: T.muted }}>your accuracy</div>
+              </div>
+              <div className="py-3 text-center" style={{ background: T.surfaceWarm }}>
+                <div className="font-display text-lg font-semibold leading-none" style={{ color: T.ink }}>
+                  {confirmRow.coverage == null ? '—' : `${Math.round(confirmRow.coverage * 100)}%`}
+                </div>
+                <div className="text-[9px] uppercase tracking-wider font-semibold mt-1.5" style={{ color: T.muted }}>coverage</div>
+              </div>
+            </div>
+
+            <button onClick={() => { const id = confirmRow.id; setConfirmRow(null); onDrill && onDrill('topic', id); }}
+                    className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition"
+                    style={{ background: T.primary, color: '#FFF', boxShadow: `0 4px 14px ${T.primary}50` }}>
+              <Play size={15} /> Start practice
+            </button>
+            <button onClick={() => setConfirmRow(null)}
+                    className="no-tap-highlight w-full py-3 mt-1.5 text-sm font-medium active:scale-95 transition"
+                    style={{ color: T.muted, background: 'transparent' }}>
+              Not now
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

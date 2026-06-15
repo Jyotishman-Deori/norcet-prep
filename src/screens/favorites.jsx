@@ -14,22 +14,22 @@
 // shared admin mirror) and the Home card follows live.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Check, Heart, Pencil, Sparkles, X } from 'lucide-react';
+import { Check, Heart, Pencil, Plus, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
-import { Card, TopBar } from '../ui/primitives.jsx';
+import { TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
-import { favSection, loadFavs, removeFav, setFavOrder, setFavEnabled } from '../lib/favorites.js';
+import { favSection, loadFavs, removeFav, setFavOrder } from '../lib/favorites.js';
 import { FavIcon } from '../ui/fav-icons.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 
 const buzz = (ms) => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} };
 
-function FavoritesScreen({ onBack, onNavigate }) {
+function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const profileId = (profile && profile.id) || 'guest';
   const [favs, setFavs] = useState(null);
-  const [editing, setEditing] = useState(false);
+  const [editing, setEditing] = useState(!!startInEdit);
   const [picked, setPicked] = useState(null);     // tile id "lifted" for reorder
   const [removing, setRemoving] = useState(() => new Set());
 
@@ -69,12 +69,6 @@ function FavoritesScreen({ onBack, onNavigate }) {
       setRemoving(prev => { const n = new Set(prev); n.delete(id); return n; });
       if (picked === id) setPicked(null);
     }, 240);
-  };
-
-  const flipEnabled = async () => {
-    if (!favs) return;
-    const f = await setFavEnabled(profileId, !favs.enabled);
-    setFavs(f);
   };
 
   if (!favs) return <div className="anim-fadeup"><TopBar title="Favourites" onBack={onBack} /></div>;
@@ -161,6 +155,24 @@ function FavoritesScreen({ onBack, onNavigate }) {
                 </Tip>
               );
             })}
+            {/* "+ add more" ghost tile (issues round): completes the row for
+                small collections so the grid never trails into bare
+                whitespace, and doubles as the add-more prompt. */}
+            {!editing && sections.length % 3 !== 0 && (
+              <div role="button" tabIndex={0}
+                   onClick={() => onNavigate && onNavigate({ screen: 'drill-tests' })}
+                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate && onNavigate({ screen: 'drill-tests' }); } }}
+                   className="no-tap-highlight cursor-pointer rounded-2xl fav-tile-in flex flex-col items-center justify-center gap-1.5 px-1.5 py-2 text-center"
+                   style={{ border: `1.5px dashed ${T.border}`, background: T.surfaceWarm,
+                            aspectRatio: '1 / 1.06',
+                            animationDelay: `${Math.min(sections.length, 11) * 55}ms` }}>
+                <div className="w-9 h-9 rounded-2xl flex items-center justify-center"
+                     style={{ background: T.surface, border: `1.5px dashed ${T.border}` }}>
+                  <Plus size={16} style={{ color: T.muted }} />
+                </div>
+                <div className="text-[10px] font-medium leading-tight" style={{ color: T.muted }}>Heart more sections</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -170,22 +182,8 @@ function FavoritesScreen({ onBack, onNavigate }) {
           </div>
         )}
 
-        {/* section on/off — no Settings trip needed */}
-        <Card className="p-3.5 mt-5 cursor-pointer no-tap-highlight pressable" onClick={flipEnabled}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <Sparkles size={16} style={{ color: favs.enabled ? '#E0245E' : T.muted }} className="flex-shrink-0" />
-              <div className="text-[13px]" style={{ color: T.inkSoft }}>
-                {favs.enabled ? 'Favourites card is showing on your home screen' : 'Home card is OFF — hearts still save'}
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: favs.enabled ? T.success : T.border }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: favs.enabled ? 'translateX(20px)' : 'translateX(0)' }} />
-            </div>
-          </div>
-        </Card>
+        {/* The home-screen on/off toggle was REMOVED from this screen — the
+            single source of truth is Settings → Favourites (issues round). */}
       </div>
     </div>
   );

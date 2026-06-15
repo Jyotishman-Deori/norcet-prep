@@ -17,10 +17,10 @@
 // an IntersectionObserver sentinel — never all at once on load.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, BookmarkPlus, Check, ChevronLeft, Lightbulb, Minus, Printer, Share2, X } from 'lucide-react';
+import { ArrowUp, BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 // #5 — save this sheet into the Revision section (dated, printable).
-import { addCrib } from '../lib/cribs.js';
+import { addCrib, cribSignature, findCribBySig } from '../lib/cribs.js';
 import { Tip } from '../ui/tooltip.jsx';
 
 const CRIB_PRINT_STYLES = `
@@ -120,12 +120,25 @@ function QuestionCard({ item, num, T, negative, profileId, accent }) {
   );
 }
 
-function CribSheet({ title, subtitle, items, negative = null, profileId = null, savedMode = false, onBack }) {
+function CribSheet({ title, subtitle, items, negative = null, profileId = null, savedMode = false, onBack, onHome = null }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const pid = profileId || (profile && profile.id) || 'guest';
-  // #5 — save into Revision (one shot per sheet view).
+  // #5 — save into Revision. PERSISTENTLY one-shot (issues round): the
+  // sheet's content signature is checked against the saved shelf on mount,
+  // so returning to an already-saved Crib Sheet shows "Added to Revision ✓"
+  // (disabled) instead of allowing a duplicate save. addCrib also dedupes
+  // server-side-of-truth, so a double-tap can never write twice either.
   const [saveState, setSaveState] = useState('idle'); // idle | saving | saved
+  const sheetSig = useMemo(() => cribSignature(title, items), [title, items]);
+  useEffect(() => {
+    let alive = true;
+    if (savedMode) return; // viewing an already-saved sheet — button hidden
+    findCribBySig(pid, sheetSig).then(found => {
+      if (alive && found) setSaveState('saved');
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [pid, sheetSig, savedMode]);
   const saveToRevision = async () => {
     if (saveState !== 'idle') return;
     setSaveState('saving');
@@ -173,18 +186,39 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
   const jump = (ref) => { try { ref.current && ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (e) {} };
 
   const share = async () => {
-    const lines = [
-      `${title} — Crib Sheet`,
-      subtitle,
-      `✓ ${correct.length} correct · ✕ ${wrong.length} wrong · — ${na.length} not attempted`,
+    // Premium branded share output (issues round): a clean typographic
+    // header with the app name + one-line description, well-spaced
+    // question/answer blocks, and the URL as a subtle footer — the shared
+    // sheet doubles as a high-quality ambassador for the app.
+    const RULE = '\u2500'.repeat(26);
+    const baseUrl = ((typeof window !== 'undefined' && window.location && window.location.host) || 'norcet-prep.vercel.app');
+    const head = [
+      `\u2727${RULE}\u2727`,
+      '      N O R C E T   P R E P',
+      '         Crib Sheet',
+      `\u2727${RULE}\u2727`,
       '',
-      ...items.slice(0, 50).map((it, i) => {
-        const ans = it.q.correct.map(c => String.fromCharCode(65 + c)).join(',');
-        return `Q${i + 1}. ${it.q.q}\nAnswer: ${ans}${it.q.exp ? `\n${it.q.exp}` : ''}\n`;
-      }),
-      items.length > 50 ? `…and ${items.length - 50} more questions.` : '',
+      `${title}${subtitle ? ` \u00b7 ${subtitle}` : ''}`,
+      `\u2713 ${correct.length} correct  \u00b7  \u2715 ${wrong.length} wrong  \u00b7  \u2014 ${na.length} skipped`,
+      '',
+    ];
+    const qBlocks = items.slice(0, 50).map((it, i) => {
+      const ans = it.q.correct.map(c => `${String.fromCharCode(65 + c)}. ${it.q.options[c] || ''}`).join('  /  ');
+      return [
+        `\u2726 Q${i + 1}. ${it.q.q}`,
+        `   ANSWER: ${ans}`,
+        it.q.exp ? `   ${String(it.q.exp).replace(/\n+/g, '\n   ')}` : null,
+        '',
+      ].filter(Boolean).join('\n');
+    });
+    const foot = [
+      items.length > 50 ? `\u2026and ${items.length - 50} more questions inside the app.` : null,
+      RULE,
+      'NORCET Prep \u2014 Free nursing exam prep:',
+      'tests, revision notes, PYQs, dosage drills.',
+      `\u27a4 ${baseUrl}`,
     ].filter(Boolean);
-    const text = lines.join('\n');
+    const text = [...head, ...qBlocks, ...foot].join('\n');
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({ title: `${title} — Crib Sheet`, text });
@@ -198,9 +232,9 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
   const abandoned = correct.length === 0 && wrong.length === 0 && na.length === items.length && items.length > 0;
 
   const Section = ({ label, icon, color, soft, list, refEl, startNum, empty }) => (
-    <div ref={refEl} style={{ scrollMarginTop: 64 }}>
+    <div ref={refEl} style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
       <div className="sticky z-10 flex items-center gap-2 px-3 py-2 rounded-xl mb-2.5"
-           style={{ top: 8, background: soft, border: `1px solid ${color}30`, backdropFilter: 'blur(6px)' }}>
+           style={{ top: 'calc(64px + env(safe-area-inset-top, 0px))', background: soft, border: `1px solid ${color}30` }}>
         {icon}
         <span className="text-[12px] font-semibold" style={{ color }}>{label} — {list.length} question{list.length === 1 ? '' : 's'}</span>
       </div>
@@ -239,51 +273,75 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
                 } />
       </div>
       <div className="max-w-md mx-auto px-4 pt-2 pb-28">
-        <div className="px-1 mb-4">
-          <div className="font-display text-xl font-semibold" style={{ color: T.ink }}>{title}</div>
-          <div className="text-xs mt-0.5" style={{ color: T.muted }}>{subtitle}</div>
+        {/* PREMIUM RESULTS HEADER (issues round) — clear typographic
+            hierarchy, structured score summary and an intentional Add-to-
+            Revision action, instead of the old plain metadata list. */}
+        <div className="crib-card rounded-2xl overflow-hidden mb-5"
+             style={{ background: `linear-gradient(150deg, ${T.primary}14 0%, ${T.surface} 58%)`,
+                      border: `1px solid ${T.primary}30`, boxShadow: `0 4px 16px ${T.primary}14` }}>
+          <div className="p-4 pb-3.5">
+            <div className="text-[10px] uppercase tracking-[0.18em] font-semibold mb-1" style={{ color: T.primary }}>
+              Crib Sheet
+            </div>
+            <div className="font-display text-2xl font-semibold leading-tight" style={{ color: T.ink }}>{title}</div>
+            {subtitle && (
+              <div className="flex items-center gap-1.5 text-xs mt-1.5" style={{ color: T.muted }}>
+                <CalendarDays size={12} className="flex-shrink-0" />
+                <span>{subtitle}</span>
+              </div>
+            )}
+          </div>
+
+          {!abandoned && (
+            <div className="grid gap-px mx-4 mb-4 rounded-xl overflow-hidden"
+                 style={{ gridTemplateColumns: na.length > 0 ? '1fr 1fr 1fr' : '1fr 1fr', background: T.borderSoft, border: `1px solid ${T.borderSoft}` }}>
+              <button onClick={() => jump(correctRef)}
+                      className="no-tap-highlight py-2.5 text-center active:scale-95 transition"
+                      style={{ background: T.successSoft }}>
+                <div className="font-display text-lg font-semibold leading-none" style={{ color: T.success }}>{correct.length}</div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold mt-1" style={{ color: T.success }}>Correct</div>
+              </button>
+              <button onClick={() => jump(wrongRef)}
+                      className="no-tap-highlight py-2.5 text-center active:scale-95 transition"
+                      style={{ background: T.errorSoft }}>
+                <div className="font-display text-lg font-semibold leading-none" style={{ color: T.error }}>{wrong.length}</div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold mt-1" style={{ color: T.error }}>Wrong</div>
+              </button>
+              {na.length > 0 && (
+                <button onClick={() => jump(naRef)}
+                        className="no-tap-highlight py-2.5 text-center active:scale-95 transition"
+                        style={{ background: T.surfaceWarm }}>
+                  <div className="font-display text-lg font-semibold leading-none" style={{ color: T.muted }}>{na.length}</div>
+                  <div className="text-[10px] uppercase tracking-wider font-semibold mt-1" style={{ color: T.muted }}>Skipped</div>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* #5 — keep this sheet. It lands in Revision → Crib Sheets with
+              today's date. Once added it can NEVER be added again for the
+              same session — the button locks into its confirmed state. */}
+          {!savedMode && (
+            <div className="px-4 pb-4 crib-no-print">
+              <button onClick={saveToRevision} disabled={saveState !== 'idle'}
+                      className="no-tap-highlight w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+                      style={saveState === 'saved'
+                        ? { background: T.successSoft, color: T.success, border: `1.5px solid ${T.success}50`, cursor: 'default' }
+                        : { background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}45` }}>
+                {saveState === 'saved'
+                  ? (<><Check size={13} /> Added to Revision ✓</>)
+                  : (<><BookmarkPlus size={13} /> {saveState === 'saving' ? 'Saving…' : 'Add to Revision (save this sheet)'}</>)}
+              </button>
+            </div>
+          )}
         </div>
 
-        {abandoned ? (
-          <Card className="p-5 text-center">
+        {abandoned && (
+          <Card className="p-5 text-center mb-5">
             <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
               Looks like this test wasn't completed — here are all the questions with their answers, whenever you're ready.
             </div>
           </Card>
-        ) : (
-          <div className="flex gap-2 mb-5">
-            <button onClick={() => jump(correctRef)}
-                    className="no-tap-highlight flex-1 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition"
-                    style={{ background: T.successSoft, color: T.success, border: `1px solid ${T.success}40` }}>
-              ✓ {correct.length} Correct
-            </button>
-            <button onClick={() => jump(wrongRef)}
-                    className="no-tap-highlight flex-1 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition"
-                    style={{ background: T.errorSoft, color: T.error, border: `1px solid ${T.error}40` }}>
-              ✕ {wrong.length} Wrong
-            </button>
-            {na.length > 0 && (
-              <button onClick={() => jump(naRef)}
-                      className="no-tap-highlight flex-1 py-2 rounded-full text-[12px] font-semibold active:scale-95 transition"
-                      style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>
-                — {na.length} Skipped
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* #5 — optional: keep this sheet. It lands in Revision → Crib
-            Sheets with today's date, ready to reopen or print any day. */}
-        {!savedMode && (
-          <button onClick={saveToRevision} disabled={saveState !== 'idle'}
-                  className="crib-no-print no-tap-highlight w-full mb-5 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
-                  style={saveState === 'saved'
-                    ? { background: T.successSoft, color: T.success, border: `1.5px solid ${T.success}50` }
-                    : { background: T.surface, color: T.primary, border: `1.5px dashed ${T.primary}55` }}>
-            {saveState === 'saved'
-              ? (<><Check size={13} /> Saved — find it in Revision → Crib Sheets</>)
-              : (<><BookmarkPlus size={13} /> {saveState === 'saving' ? 'Saving…' : 'Add to Revision (save this sheet)'}</>)}
-          </button>
         )}
 
         <Section label="✓ Correct" color={T.success} soft={T.successSoft}
@@ -318,8 +376,16 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
           <button onClick={onBack}
                   className="no-tap-highlight flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition"
                   style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
-            <ChevronLeft size={15} /> Back to results
+            <ChevronLeft size={15} /> {savedMode ? 'Back' : 'Back to results'}
           </button>
+          {/* direct route home — one tap, no retracing (issues round) */}
+          {onHome && (
+            <button onClick={onHome} aria-label="Back to home"
+                    className="no-tap-highlight inline-flex items-center justify-center px-3.5 py-2.5 rounded-xl active:scale-95 transition flex-shrink-0"
+                    style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
+              <Home size={16} />
+            </button>
+          )}
           <button onClick={share}
                   className="no-tap-highlight flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold active:scale-95 transition"
                   style={{ background: T.primary, color: '#FFF' }}>

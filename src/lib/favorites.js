@@ -41,6 +41,7 @@ export const FAV_SECTIONS = [
   { id: 'advanced-setup',  label: 'Advanced Test',       blurb: 'Negative marking + palette',        icon: 'flask',    hue: '#C2255C' },
   { id: 'dosage',          label: 'Dosage Calculation',  blurb: 'Numeric drug-math drills',          icon: 'syringe',  hue: '#2F9E44' },
   { id: 'previous-papers', label: 'Previous Papers',     blurb: 'Official NORCET PYQs',              icon: 'scroll',   hue: '#E67700' },
+  { id: 'revision-sheet',  label: 'Revision',            blurb: 'High-yield digest + crib sheets',   icon: 'file',     hue: '#A61E4D' },
   { id: 'study-methods',   label: 'Study Methods',       blurb: 'How to study smarter',              icon: 'grad',     hue: '#1971C2' },
   { id: 'stats',           label: 'Your Stats',          blurb: 'Accuracy, streaks, trends',         icon: 'chart',    hue: '#6741D9' },
   { id: 'leaderboard',     label: 'Leaderboard',         blurb: 'Where you rank this week',          icon: 'trophy',   hue: '#F08C00' },

@@ -18,13 +18,14 @@
 // arms cameFromWelcome so Back returns here) and onDismiss() ends the tour.
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
 import { useContent } from '../lib/content.js';
 import { safeStorage } from '../lib/safe-storage.js';
+import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import { KEYS } from '../lib/keys.js';
 
 function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
@@ -50,6 +51,21 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
 
   const [selected, setSelected] = useState(null); // item whose popup is open
   const [visited, setVisited] = useState(() => new Set());
+  // Issues round — the DEVICE back button mirrors the tour's own back:
+  // App re-arms its history sentinel and dispatches 'norcet:welcome-back';
+  // here it closes the open help popup first (one step back), and at the
+  // tour root it opens a leave-confirmation instead of exiting abruptly.
+  const [leaveConfirm, setLeaveConfirm] = useState(false);
+  const selectedRef = useRef(selected);
+  selectedRef.current = selected;
+  useEffect(() => {
+    const onBack = () => {
+      if (selectedRef.current) setSelected(null);
+      else setLeaveConfirm(true);
+    };
+    window.addEventListener('norcet:welcome-back', onBack);
+    return () => window.removeEventListener('norcet:welcome-back', onBack);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -88,15 +104,27 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
   ].filter(s => s.text) : [];
 
   return (
-    <div className="anim-fadeup max-w-md mx-auto px-4 pt-8 pb-12">
-      <div className="text-center mb-6">
-        <div className="welcome-float inline-flex items-center justify-center w-14 h-14 rounded-2xl mb-3"
-             style={{ background: T.primary, boxShadow: `0 8px 22px ${T.primary}45` }}>
-          <GraduationCap size={28} color="#FFF" />
+    <div className="anim-fadeup max-w-md mx-auto px-4 pb-12"
+         style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+      {/* skip — always reachable, deliberately quiet (issues round) */}
+      <div className="flex justify-end mb-1">
+        <button onClick={() => setLeaveConfirm(true)}
+                className="no-tap-highlight text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
+                style={{ color: T.muted }}>
+          Skip tour
+        </button>
+      </div>
+      <div className="text-center mb-6 relative">
+        {/* soft radial glow behind the hero icon — product-reveal feel */}
+        <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 -top-6 w-48 h-48 rounded-full pointer-events-none"
+             style={{ background: `radial-gradient(circle, ${T.primary}1F, transparent 65%)` }} />
+        <div className="welcome-float relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+             style={{ background: `linear-gradient(140deg, ${T.primary}, ${T.primarySoft || T.primary})`, boxShadow: `0 10px 26px ${T.primary}50` }}>
+          <GraduationCap size={30} color="#FFF" />
         </div>
-        <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>Welcome{displayName ? `, ${displayName}` : ''}</div>
-        <h1 className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>Here's what's inside</h1>
-        <div className="text-sm" style={{ color: T.muted }}>Tap any section to see what it does, then jump in. You can reopen this from Settings.</div>
+        <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>Welcome{displayName ? `, ${displayName}` : ''}</div>
+        <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>Here's what's inside</h1>
+        <div className="text-sm relative" style={{ color: T.muted }}>Tap any section to see what it does, then jump in. You can reopen this from Settings.</div>
       </div>
 
       {/* Tour progress — fills as rows are explored. */}
@@ -204,6 +232,15 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
           </div>
         </div>
       )}
+
+      {/* Leave-tour confirmation (issues round) — the device back button (or
+          Skip) never exits abruptly; only an explicit choice ends the tour. */}
+      <ConfirmDialog open={leaveConfirm}
+                     title="Leave the tour?"
+                     body="You can reopen it anytime from Settings → Show welcome tour."
+                     confirmLabel="Leave" cancelLabel="Stay" tone="primary"
+                     onConfirm={() => { setLeaveConfirm(false); onDismiss(); }}
+                     onCancel={() => setLeaveConfirm(false)} />
     </div>
   );
 }

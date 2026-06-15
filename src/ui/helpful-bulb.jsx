@@ -1,15 +1,24 @@
 // =====================================================================
-// src/ui/helpful-bulb.jsx  (Feature F-F)
-// The "Was this helpful?" glowing bulb. Off = dim outline; On = amber fill
-// with a soft halo + radiating rays. One tap toggles (helpful <-> off), with
-// a light haptic. State + tallies reuse lib/helpful-votes.js (the same shared
-// keys), so counts stay consistent app-wide. Counts are shown to admins only.
-// Guests see a static (non-writing) bulb — they can't move the shared tally.
+// src/ui/helpful-bulb.jsx  (Feature F-F, reworked in the issues round)
+// The "Was this helpful?" glowing bulb — now the SINGLE helpfulness
+// interaction used app-wide (regular quizzes and crib sheets render it via
+// HelpfulToggle in ui/question-widgets.jsx, which delegates here).
+//
+// Issues-round changes:
+//   • The "0 helpful / 0 not" tally is HIDDEN for everyone (it was
+//     meaningless to users and cluttered the row). Admins read the numbers
+//     in the Admin Panel → Helpfulness view instead.
+//   • Un-tapping is now acknowledged: "Changed your mind? No worries!"
+//     appears in the same slot where "Glad it helped" lives.
+//   • Easter egg: toggling more than twice in a row earns a light tease
+//     ("Still deciding? Take your time 😄" / "You're really keeping me on
+//     my toes!") — warm, never disruptive, resets after a quiet moment.
+// State reuses lib/helpful-votes.js (same shared keys), so tallies stay
+// consistent app-wide. Guests see a static (non-writing) bulb.
 // =====================================================================
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../lib/app-context.jsx';
 import { loadHelpfulState, toggleHelpful } from '../lib/helpful-votes.js';
-import { loadHelpfulCounts } from '../lib/faq.js';
 import { GUEST_ID } from '../lib/profiles.js';
 
 const AMBER = '#F5A623';
@@ -19,19 +28,27 @@ const RAYS = Array.from({ length: 8 }, (_, i) => {
   return { x1: cx + Math.cos(a) * 13, y1: cy + Math.sin(a) * 13, x2: cx + Math.cos(a) * 19, y2: cy + Math.sin(a) * 19 };
 });
 
+const TEASES = [
+  'Still deciding? Take your time \uD83D\uDE04',
+  "You're really keeping me on my toes!",
+];
+
 export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compact = false }) {
   const { theme: T } = useTheme();
   const [state, setState] = useState('silent'); // 'silent' | 'helpful' | 'notHelpful'
-  const [counts, setCounts] = useState(null);
+  // 'none' | 'unhelped' | 'tease' — drives the secondary copy under the title
+  const [moment, setMoment] = useState('none');
+  const [teaseIdx, setTeaseIdx] = useState(0);
+  const togglesRef = useRef(0);           // rapid back-and-forth counter
+  const calmTimer = useRef(null);         // resets the counter after a pause
   const isGuest = !profileId || profileId === GUEST_ID || profileId === '__guest__';
   const on = state === 'helpful';
 
   useEffect(() => {
     let alive = true;
     if (!isGuest) loadHelpfulState(voteId, profileId).then(s => { if (alive) setState(s); }).catch(() => {});
-    if (isAdmin) loadHelpfulCounts(voteId).then(c => { if (alive) setCounts(c); }).catch(() => {});
-    return () => { alive = false; };
-  }, [voteId, profileId, isAdmin, isGuest]);
+    return () => { alive = false; if (calmTimer.current) clearTimeout(calmTimer.current); };
+  }, [voteId, profileId, isGuest]);
 
   const tap = async () => {
     if (isGuest) return;
@@ -39,12 +56,33 @@ export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compac
     const next = prev === 'helpful' ? 'notHelpful' : 'helpful';
     setState(next); // optimistic
     try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+
+    // moment + easter-egg bookkeeping
+    togglesRef.current += 1;
+    if (calmTimer.current) clearTimeout(calmTimer.current);
+    calmTimer.current = setTimeout(() => { togglesRef.current = 0; setMoment('none'); }, 6000);
+    if (togglesRef.current > 2) {
+      setTeaseIdx(togglesRef.current % 2 === 1 ? 0 : 1);
+      setMoment('tease');
+    } else if (next === 'notHelpful') {
+      setMoment('unhelped');           // un-tapped — acknowledge it kindly
+    } else {
+      setMoment('none');
+    }
+
     try { await toggleHelpful(voteId, profileId, prev); }
     catch (e) { setState(prev); return; } // revert on write failure
-    if (isAdmin) { try { setCounts(await loadHelpfulCounts(voteId)); } catch (e) {} }
   };
 
   const color = on ? AMBER : T.muted;
+
+  // line 1 (title) + line 2 (hint / acknowledgement / tease)
+  let title, hint, hintColor = T.muted;
+  if (isGuest) { title = 'Was this helpful?'; hint = 'Sign in to vote'; }
+  else if (moment === 'tease') { title = on ? 'Glad it helped' : 'Was this helpful?'; hint = TEASES[teaseIdx]; hintColor = T.primary; }
+  else if (on) { title = 'Glad it helped'; hint = 'Tap the bulb to undo'; }
+  else if (moment === 'unhelped') { title = 'Changed your mind? No worries!'; hint = 'Tap the bulb if it clicks later'; }
+  else { title = 'Was this helpful?'; hint = 'Tap the bulb'; }
 
   return (
     <div className="flex items-center gap-2.5">
@@ -69,12 +107,11 @@ export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compac
       </button>
 
       <div className="min-w-0">
-        <div className="text-[12px] font-semibold leading-tight" style={{ color: on ? AMBER : T.muted }}>
-          {isGuest ? 'Was this helpful?' : on ? 'Glad it helped' : 'Was this helpful?'}
+        <div className="text-[12px] font-semibold leading-tight" style={{ color: on ? AMBER : T.inkSoft }} aria-live="polite">
+          {title}
         </div>
-        <div className="text-[10px] leading-tight" style={{ color: T.muted }}>
-          {isGuest ? 'Sign in to vote' : on ? 'Tap the bulb to undo' : 'Tap the bulb'}
-          {isAdmin && counts ? `  ·  ${counts.yes} helpful / ${counts.no} not` : ''}
+        <div className="text-[10px] leading-tight mt-0.5" style={{ color: hintColor }}>
+          {hint}
         </div>
       </div>
     </div>

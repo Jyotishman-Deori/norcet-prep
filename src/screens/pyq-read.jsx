@@ -73,7 +73,7 @@ function PyqRead({ paper, bookmarks, onToggleBookmark, profileId, isAdmin = fals
               feedback={{ screen: 'PYQ read mode' }} />
 
       {/* sticky progress strip — calm, no countdown */}
-      <div className="sticky z-20 max-w-md mx-auto px-4" style={{ top: 0 }}>
+      <div className="sticky z-20 max-w-md mx-auto px-4" style={{ top: 'calc(60px + env(safe-area-inset-top, 0px))' }}>
         <div className="rounded-b-2xl px-3 py-2" style={{ background: T.bg + 'F2', backdropFilter: 'blur(8px)' }}>
           <div className="flex items-center justify-between text-[11px] mb-1.5" style={{ color: T.muted }}>
             <span className="inline-flex items-center gap-1"><BookOpen size={11} /> Question {Math.min(current, qs.length)} of {qs.length}</span>

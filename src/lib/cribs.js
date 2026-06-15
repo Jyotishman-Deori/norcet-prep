@@ -37,11 +37,35 @@ async function persist(profileId, cribs) {
   try { await safeStorage.set(`${KEY_PREFIXES.CRIBS}${profileId || 'guest'}`, JSON.stringify(cribs), false); } catch (e) {}
 }
 
-// Returns the fresh list; newest first; capped.
+// Stable content signature for one test session: title + every question's
+// id/outcome/selection. Two saves of the SAME session produce the same sig,
+// so addCrib can refuse duplicates and the Crib Sheet screen can show
+// "Added ✓" when the user returns to an already-saved sheet.
+export const cribSignature = (title, items) => {
+  const parts = (items || []).map(it =>
+    `${(it.q && it.q.id) || '?'}:${it.status || 'na'}:${(Array.isArray(it.selected) ? it.selected : []).join('.')}`
+  );
+  return `${String(title || '')}|${parts.join('|')}`;
+};
+
+export async function findCribBySig(profileId, sig) {
+  if (!sig) return null;
+  const cribs = await loadCribs(profileId);
+  return cribs.find(c => c.sig === sig) || null;
+}
+
+// Returns the fresh list; newest first; capped. DEDUPED: if a crib with the
+// same content signature already exists, it is returned as-is (duplicate:
+// true) and nothing new is written — the same test session is never
+// persisted twice no matter how the user navigates back and forth.
 export async function addCrib(profileId, { title, subtitle, items }) {
   const cribs = await loadCribs(profileId);
+  const sig = cribSignature(title, items);
+  const existing = cribs.find(c => c.sig === sig);
+  if (existing) return { entry: existing, cribs, duplicate: true };
   const entry = {
     id: `crib-${Date.now()}`,
+    sig,
     title: String(title || 'Test review'),
     subtitle: String(subtitle || ''),
     createdAt: Date.now(),
@@ -49,7 +73,7 @@ export async function addCrib(profileId, { title, subtitle, items }) {
   };
   const next = [entry, ...cribs].slice(0, CAP);
   await persist(profileId, next);
-  return { entry, cribs: next };
+  return { entry, cribs: next, duplicate: false };
 }
 
 export async function removeCrib(profileId, id) {

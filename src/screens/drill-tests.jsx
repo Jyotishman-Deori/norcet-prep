@@ -37,15 +37,18 @@ function DrillTests({ onBack, onNavigate }) {
   );
 
   // --- Top tier: light, energetic, approachable (white + accent top border) ---
+  // FAV (issues round) — hearts live in a dedicated TOP-RIGHT action area on
+  // every card (never inline with the title), so all hearts across the screen
+  // align on the same horizontal line.
   const TopCard = ({ icon: Icon, color, title, sub, onClick, tip, fav = null }) => (
     <Tip title={title} text={tip}>
-    <Card className="p-4 h-full" onClick={onClick} style={{ borderTop: `3px solid ${color}` }}>
+    <Card className="p-4 h-full relative" onClick={onClick} style={{ borderTop: `3px solid ${color}` }}>
+      {fav && <span className="absolute top-2 right-2"><FavHeart favId={fav} inline /></span>}
       <div className="w-10 h-10 rounded-full flex items-center justify-center mb-3" style={{ background: color }}>
         <Icon size={18} color="#FFF" />
       </div>
-      <div className="font-display text-base font-semibold mb-0.5 flex items-center gap-1" style={{ color: T.ink }}>
+      <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>
         {title}
-        {fav && <FavHeart favId={fav} inline />}
       </div>
       <div className="text-xs leading-snug" style={{ color: T.muted }}>{sub}</div>
     </Card>
@@ -55,14 +58,14 @@ function DrillTests({ onBack, onNavigate }) {
   // --- Middle tier: tinted background + filled icon — more focused/disciplined ---
   const MidCard = ({ icon: Icon, color, title, sub, onClick, tip, fav = null }) => (
     <Tip title={title} text={tip}>
-    <Card className="p-4 h-full" onClick={onClick}
+    <Card className="p-4 h-full relative" onClick={onClick}
           style={{ background: color + '12', border: `1px solid ${color}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+      {fav && <span className="absolute top-2 right-2"><FavHeart favId={fav} inline /></span>}
       <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: color }}>
         <Icon size={18} color="#FFF" />
       </div>
-      <div className="font-display text-base font-semibold mb-0.5 flex items-center gap-1" style={{ color: T.ink }}>
+      <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>
         {title}
-        {fav && <FavHeart favId={fav} inline />}
       </div>
       <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>{sub}</div>
     </Card>
@@ -108,8 +111,9 @@ function DrillTests({ onBack, onNavigate }) {
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={150}>
           <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers — sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
-          <Card className="p-4 mb-3" onClick={() => go('previous-papers')}
+          <Card className="p-4 mb-3 relative" onClick={() => go('previous-papers')}
                 style={{ background: T.sec.revision, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}>
+            <span className="absolute top-2 right-2"><FavHeart favId="previous-papers" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                    style={{ background: 'rgba(255,255,255,0.16)' }}>
@@ -120,7 +124,6 @@ function DrillTests({ onBack, onNavigate }) {
                   <div className="font-display text-base font-semibold" style={{ color: '#FFF' }}>
                     Previous Year Papers
                   </div>
-                  <FavHeart favId="previous-papers" inline />
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                         style={{ background: '#FFF', color: T.sec.revision }}>PYQ</span>
                 </div>
@@ -137,12 +140,13 @@ function DrillTests({ onBack, onNavigate }) {
         {/* Bottom tier — Advanced Test (the final boss: darkest + most elevated) */}
         <Reveal delay={210}>
           <Tip title="Advanced Test" text="The full exam-hall experience: countdown clock, negative marking and a question palette to jump around — scores feed your best-net history.">
-          <Card className="p-5" onClick={() => go('advanced-setup')}
+          <Card className="p-5 relative" onClick={() => go('advanced-setup')}
                 style={{
                   background: `linear-gradient(135deg, ${T.sec.advanced} 55%, rgba(0,0,0,0.22))`,
                   border: 'none',
                   boxShadow: '0 10px 28px rgba(0,0,0,0.30)',
                 }}>
+            <span className="absolute top-2 right-2"><FavHeart favId="advanced-setup" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                    style={{ background: 'rgba(255,255,255,0.14)' }}>
@@ -153,7 +157,6 @@ function DrillTests({ onBack, onNavigate }) {
                   <div className="font-display text-lg font-semibold" style={{ color: T.bg }}>
                     Advanced Test
                   </div>
-                  <FavHeart favId="advanced-setup" inline />
                   <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                         style={{ background: T.accent, color: '#FFF' }}>Exam</span>
                 </div>

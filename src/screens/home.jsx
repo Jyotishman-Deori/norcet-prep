@@ -303,7 +303,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         : `An admin responded to ${replies.length} of your reports.`);
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-24 pt-2 anim-fadeup">
+    <div className="max-w-md mx-auto px-4 pb-24 anim-fadeup"
+         style={{ paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))' }}>
       {/* Top bar: menu + notifications + quick settings */}
       <div className="flex items-center justify-between mb-3">
         <Tip text="Every section of the app — study, progress, tools and help">
@@ -522,7 +523,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {data.stats.streakCurrent}
           </div>
-          <div className="text-[10px]" style={{ color: T.muted }}>
+          <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
             day{data.stats.streakCurrent === 1 ? '' : 's'}
           </div>
         </Card>
@@ -539,7 +540,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {accuracy}<span className="text-base font-medium">%</span>
           </div>
-          <div className="text-[10px]" style={{ color: T.muted }}>
+          <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
             {data.stats.totalAttempted} done
           </div>
         </Card>
@@ -556,7 +557,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {todayCount}
           </div>
-          <div className="text-[10px]" style={{ color: T.muted }}>
+          <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
             question{todayCount === 1 ? '' : 's'}
           </div>
         </Card>
@@ -882,20 +883,27 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           section; all six test modes now live on the dedicated Drill Tests
           screen. Prominent, gradient, with a mini mode-icon row so it reads
           as an entry point to something substantial. */}
-      <Tip title="Drill Tests" text="All six test modes — Quick, Topic, Mock, Dosage, Advanced and Previous Year Papers — in one hub.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'drill-tests' })}
+      {/* Unified home-card template (issues round): every section card below
+          shares the same grid — p-4, rounded-2xl, w-11 h-11 rounded-xl icon
+          zone, text-base display title, text-xs subtitle, right chevron —
+          with per-section accent treatments on top. press-safe + a suppressed
+          context menu kill the native long-press glitch; the hold-tooltips
+          were removed from these cards because each already carries a
+          visible subtitle (the bubble only blocked the card below). */}
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
+            onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
-            <Dumbbell size={22} color="#FFF" />
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+            <Dumbbell size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display text-lg font-semibold mb-0.5" style={{ color: '#FFF' }}>Drill Tests</div>
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Drill Tests</div>
             <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>
               Quick {'\u00b7'} Topic Wise {'\u00b7'} Mock {'\u00b7'} Advanced {'\u00b7'} Dosage {'\u00b7'} PYQ
             </div>
           </div>
-          <ChevronRight size={22} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
+          <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
         </div>
         <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
           {[Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass].map((Ic, i) => (
@@ -903,37 +911,35 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           ))}
         </div>
       </Card>
-      </Tip>
 
       {/* Learn Topic Wise — stays on Home as its own standalone card
           (learning, not testing); clearly separated from the Drill Tests
           entry above. Same icon/accent/labels as before. */}
-      <Tip title="Learn topic wise" text="Revision notes as concept cards, subject by subject — learn first, then drill it with tests.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'learn-topics' })}
-            style={{ borderTop: `3px solid ${T.sec.learn}` }}>
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ borderTop: `3px solid ${T.sec.learn}`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.sec.learn }}>
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.sec.learn }}>
             <Brain size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Learn topic wise</div>
-            <div className="text-xs" style={{ color: T.muted }}>Concept cards {'\u00b7'} learn before you test</div>
+            <div className="text-xs leading-snug" style={{ color: T.muted }}>Concept cards {'\u00b7'} learn before you test</div>
           </div>
-          <ChevronRight size={20} style={{ color: T.muted }} />
+          <ChevronRight size={20} style={{ color: T.muted }} className="flex-shrink-0" />
         </div>
       </Card>
-      </Tip>
 
       {/* P10 / #13 — Interactive Knowledge Map. The app's USP, so the entry
           card carries the constellation language itself: deep-space gradient,
           a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
           (same state math as the map) to create pull from Home. */}
-      <Tip title="Knowledge Map" text="Your syllabus as a constellation — nodes light up as you master topics. Tap a star to practise it.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'knowledge-map' })}
+      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
+            onContextMenu={(e) => e.preventDefault()}
             style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
-                     border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 8px 24px rgba(7,10,20,0.45)' }}>
+                     border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 6px 18px rgba(7,10,20,0.40)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0 relative"
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 relative"
                style={{ background: 'rgba(255,210,122,0.14)', border: '1px solid rgba(255,210,122,0.35)' }}>
             <Network size={20} color="#FFD27A" />
           </div>
@@ -954,10 +960,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 : <>A universe of topics, waiting to light up</>}
             </div>
           </div>
-          <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} />
+          <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} className="flex-shrink-0" />
         </div>
       </Card>
-      </Tip>
 
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}
