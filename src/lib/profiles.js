@@ -31,7 +31,45 @@ import { log } from './log.js';
 import * as kvStorage from '../storage';
 import { DEFAULT_DATA } from '../data/seed.js';
 import { STORAGE_OP_TIMEOUT_MS, raceStorage, safeStorage } from './safe-storage.js';
-import { normalizeProfileId, genSalt, genUid, hashPassword } from './profile-crypto.js';
+import { normalizeProfileId, genUid } from './profile-crypto.js';
+
+// =====================================================================
+// STAGE 1 (C-1 + C-2): credentials moved OFF the public kv_shared table.
+// Password/DOB hashing + verification now happen server-side in the
+// `auth-secure` Edge Function (service-role, RLS-bypassing). The browser
+// no longer hashes anything or reads any salt/hash — it only POSTs the
+// plaintext password over TLS (exactly like any login API) and gets back
+// { ok }. profile_secrets is unreadable by the anon key, so the bulk
+// hash-scrape from the audit (C-2) is no longer possible.
+// =====================================================================
+const SUPABASE_URL_FOR_AUTH = (typeof import.meta !== 'undefined' && import.meta.env)
+  ? import.meta.env.VITE_SUPABASE_URL : undefined;
+const SUPABASE_ANON_KEY_FOR_AUTH = (typeof import.meta !== 'undefined' && import.meta.env)
+  ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined;
+
+// POST an action to the auth-secure Edge Function. The anon key is only a
+// transport credential (lets the request reach the function); the function
+// authorizes nothing on it. Throws on network/config failure so callers can
+// tell "couldn't reach the server" apart from "wrong password" ({ ok:false }).
+async function callAuthFn(action, body) {
+  if (!SUPABASE_URL_FOR_AUTH || !SUPABASE_ANON_KEY_FOR_AUTH) {
+    throw new Error('Sign-in service is not configured');
+  }
+  const r = await fetch(`${SUPABASE_URL_FOR_AUTH}/functions/v1/auth-secure`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_ANON_KEY_FOR_AUTH,
+      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_AUTH}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ action, ...body }),
+  });
+  if (!r.ok) {
+    const text = await r.text().catch(() => '');
+    throw new Error(`auth-secure ${action} failed: ${r.status} ${text}`.trim());
+  }
+  return r.json();
+}
 
 // =====================================================================
 // GUEST MODE  (Pipeline step 26 / P-GUEST, Phase A)
@@ -348,7 +386,7 @@ export function normalizeDob(dob) {
   return s;
 }
 
-export async function createProfile({ displayName, password, dob, importData }) {
+export async function createProfile({ displayName, password, dob, email, importData }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
   if (password.length < 4) throw new Error('Password must be at least 4 characters');
@@ -356,20 +394,32 @@ export async function createProfile({ displayName, password, dob, importData }) 
   if (!normDob) throw new Error('Pick your date of birth — used to recover your password if you forget it');
   const existing = await loadProfile(id);
   if (existing) throw new Error('That display name is already taken — pick another, or log in instead');
-  const salt = genSalt();
-  const passwordHash = await hashPassword(password, salt);
-  // DOB gets its OWN salt so a compromised password salt doesn't help an
-  // attacker brute-force the DOB (dates have low entropy).
-  const dobSalt = genSalt();
-  const dobHash = await hashPassword(normDob, dobSalt);
+  const uid = genUid();  // permanent, name-independent handle (survives renames)
+
+  // STAGE 1: credentials are created server-side and stored ONLY in the
+  // protected profile_secrets table. The browser never sees a hash or salt.
+  const reg = await callAuthFn('register', {
+    id, uid,
+    displayName: displayName.trim(),
+    password,
+    dob: normDob,
+    // Optional, unverified email. Stored ONLY in profile_secrets (never in
+    // the public blob below), so it isn't PII-exposed via the anon key.
+    email: (email && String(email).trim()) || null,
+  });
+  if (!reg || reg.ok !== true) {
+    if (reg && reg.reason === 'exists') {
+      throw new Error('That display name is already taken — pick another, or log in instead');
+    }
+    throw new Error('Could not create your account. Check your connection and try again.');
+  }
+
+  // The PUBLIC profile blob now carries NO credentials — just identity +
+  // progress. (passwordHash/salt/dobHash/dobSalt deliberately absent.)
   const profile = {
     id,
-    uid: genUid(),  // permanent, name-independent handle (survives renames)
+    uid,
     displayName: displayName.trim(),
-    passwordHash,
-    salt,
-    dobHash,
-    dobSalt,
     createdAt: Date.now(),
     // Run migrations on legacy/imported data so an old shape gets walked
     // forward to current before it's stored. DEFAULT_DATA is already at
@@ -384,33 +434,68 @@ export async function createProfile({ displayName, password, dob, importData }) 
 export async function authenticateProfile(displayName, password) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Enter your display name');
+  // STAGE 1: password check happens server-side. The function returns ok:false
+  // for BOTH "no such account" and "wrong password" — one generic message, so
+  // we no longer leak which display names exist (fixes the enumeration finding).
+  const res = await callAuthFn('verify', { id, password });
+  if (!res || res.ok !== true) {
+    throw new Error('Display name or password is incorrect');
+  }
+  // Credentials are valid; load the (now hash-free) profile blob for the app.
   const profile = await loadProfile(id);
-  if (!profile) throw new Error('No profile with that name. Check the spelling or create a new profile.');
-  const hash = await hashPassword(password, profile.salt);
-  if (hash !== profile.passwordHash) throw new Error('Incorrect password');
+  if (!profile) {
+    throw new Error("Signed in, but your profile data couldn't be loaded. Check your connection and try again.");
+  }
   return profile;
 }
 
-// Older profiles that pre-date the DOB requirement will have no dobHash —
-// for those, recovery is impossible and we say so honestly.
+// DOB-gated recovery. The DOB check now runs server-side against
+// profile_secrets; the client only sends name + DOB + new password.
+// (DOB is a weak recovery factor — a known C-2 item to harden later.)
 export async function recoverPasswordWithDob(displayName, dob, newPassword) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Enter your display name');
-  const profile = await loadProfile(id);
-  if (!profile) throw new Error('No profile with that name');
-  if (!profile.dobHash || !profile.dobSalt) {
-    throw new Error("This profile doesn't have a date of birth on file, so password recovery isn't available. Create a new profile.");
-  }
   const normDob = normalizeDob(dob);
   if (!normDob) throw new Error('Pick a valid date of birth');
-  const tryHash = await hashPassword(normDob, profile.dobSalt);
-  if (tryHash !== profile.dobHash) throw new Error("That date of birth doesn't match what's on file for this profile");
   if (!newPassword || newPassword.length < 4) throw new Error('New password must be at least 4 characters');
-  const newSalt = genSalt();
-  const newHash = await hashPassword(newPassword, newSalt);
-  const updated = { ...profile, salt: newSalt, passwordHash: newHash };
-  await saveProfile(updated);
-  return updated;
+  const res = await callAuthFn('reset', { id, dob: normDob, newPassword });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'no-dob') {
+      throw new Error("This profile doesn't have a date of birth on file, so password recovery isn't available. Create a new profile.");
+    }
+    if (res && res.reason === 'no-account') {
+      throw new Error('No profile with that name');
+    }
+    if (res && res.reason === 'weak-password') {
+      throw new Error('New password must be at least 4 characters');
+    }
+    // dob-mismatch / bad-dob → generic, don't confirm what's on file.
+    throw new Error("That date of birth doesn't match what's on file for this profile");
+  }
+  // Return the current profile blob so callers can proceed if they want.
+  const profile = await loadProfile(id);
+  return profile || { id };
+}
+
+// STAGE 1: re-key the protected credential row when a profile's id (slug)
+// changes on rename. Without this, a renamed user would have NO secret under
+// their new id and could not log in. Throws on failure so renameProfile can
+// abort cleanly before it deletes the old keys.
+export async function renameCredentials(oldId, newId, displayName) {
+  const res = await callAuthFn('rename', { id: newId, oldId, displayName });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'exists') {
+      throw new Error('That name is already taken by another profile. Pick a different name.');
+    }
+    throw new Error('Could not move your account credentials. Rename cancelled — please try again.');
+  }
+  return true;
+}
+
+// STAGE 1: remove the protected credential row when an account is deleted, so
+// the display name can be registered again later. Best-effort (never throws).
+export async function deleteCredentials(id) {
+  try { await callAuthFn('delete', { id }); } catch (e) { try { log.warn('auth.deleteCredentials', e); } catch (_) {} }
 }
 
 export async function loadSession() {

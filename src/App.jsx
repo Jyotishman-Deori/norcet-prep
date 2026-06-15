@@ -31,7 +31,8 @@ import {
   loadProfileCached, saveProfile, clearPendingSync, flushPendingSync,
   loadOneProfileMeta, saveProfileMeta, loadProfileIndex,
   touchProfileActivity, createProfile, authenticateProfile,
-  recoverPasswordWithDob, loadSession, saveSession, peekLegacyData
+  recoverPasswordWithDob, loadSession, saveSession, peekLegacyData,
+  renameCredentials, deleteCredentials
 } from './lib/profiles.js';
 // [A1 step 35 / Pipeline] session-2 infra extraction. APPLY IN FULL REPO:
 // src/lib/safe-storage.js + src/lib/profile-crypto.js ship alongside this file.
@@ -695,6 +696,19 @@ async function renameProfile(profile, newDisplayName) {
     throw new Error("Couldn't save the new profile name. Try again.");
   }
 
+  // 2.5) STAGE 1 — move the PROTECTED credential row to the new id. Credentials
+  //      no longer live in the profile blob, so without this the renamed user
+  //      would have no secret under their new id and couldn't log in. If it
+  //      fails, roll back the just-written new blob and abort (old id is still
+  //      fully intact, so the user can keep logging in with the old name).
+  try {
+    await renameCredentials(profile.id, newId, trimmed);
+  } catch (e) {
+    try { await safeStorage.delete(KEYS.profile(newId), true); } catch (_) {}
+    try { await safeStorage.delete(KEYS.userdata(newId), false); } catch (_) {}
+    throw e;
+  }
+
   // 3) Write new metadata entry.
   const prevMeta = await loadOneProfileMeta(profile.id);
   await saveProfileMeta({
@@ -969,6 +983,8 @@ async function adminDeleteProfile(id) {
   // 1) Their private blob + lightweight metadata
   try { await safeStorage.delete(KEYS.profile(id), true); } catch (e) {}
   try { await safeStorage.delete(KEYS.profileMeta(id), true); } catch (e) {}
+  // 1a) STAGE 1 — their protected credential row, so the name can be reused.
+  try { await deleteCredentials(id); } catch (e) {}
   // 1b) P1 — local cache + pending-sync flag (only matters if the admin
   //     is operating on their OWN device's cache; harmless no-op otherwise).
   try { await safeStorage.delete(KEYS.userdata(id), false); } catch (e) {}

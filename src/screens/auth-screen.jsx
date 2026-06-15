@@ -15,7 +15,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   Check, AlertCircle, AlertTriangle, ArrowLeft,
   GraduationCap, User, UserPlus, LogIn, Lock, Eye, EyeOff, RefreshCw,
-  CalendarDays
+  CalendarDays, Mail
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
@@ -40,6 +40,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');          // YYYY-MM-DD from <input type="date">
+  const [email, setEmail] = useState('');      // OPTIONAL, unverified; stored only in profile_secrets
   const [showPassword, setShowPassword] = useState(false);
   const [importExisting, setImportExisting] = useState(!!legacyData);
   const [error, setError] = useState(null);
@@ -145,6 +146,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
           displayName,
           password,
           dob,
+          email,
           importData: (importExisting && legacyData) ? legacyData : undefined
         });
         // One-time migration: after first profile creation on this device,
@@ -293,6 +295,32 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
                 value={dob}
                 onChange={e => setDob(e.target.value)}
                 max={todayISO}
+                className="w-full rounded-xl pl-10 pr-4 py-3 text-sm"
+                style={inputStyle}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Email — OPTIONAL, create mode only. Unverified for now; stored only
+            in the protected profile_secrets table (never the public blob). */}
+        {mode === 'create' && !recovering && (
+          <>
+            <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between" style={{ color: T.muted }}>
+              <span>Email</span>
+              <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>Optional</span>
+            </div>
+            <div className="relative mb-4">
+              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="you@example.com (optional)"
+                autoCapitalize="none"
+                autoCorrect="off"
+                autoComplete="email"
+                inputMode="email"
                 className="w-full rounded-xl pl-10 pr-4 py-3 text-sm"
                 style={inputStyle}
               />
