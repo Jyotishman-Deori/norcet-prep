@@ -122,6 +122,60 @@ function supabaseHeaders(extra = {}) {
   };
 }
 
+// ---------------------------------------------------------------------
+// STAGE 2 (C-1 writes): all SHARED WRITES now go through the `kv-write`
+// Edge Function (the "broker"), which holds the service-role key and
+// enforces per-user authorization. The anon key can no longer write
+// kv_shared at all once the open anon policies are dropped. READS stay
+// on the direct anon path above — public content is still world-readable.
+//
+// The broker needs to know WHO is writing: a signed session token issued
+// by `auth-secure` at login. The app sets it via setAuthToken() on login
+// and on boot (restored from local storage by profiles.js). Writes attach
+// it. No token (e.g. a guest, who only writes LOCAL data) → the broker is
+// never called for shared writes, so guests are unaffected.
+// ---------------------------------------------------------------------
+const KV_WRITE_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/kv-write` : null;
+let _authToken = null;
+let _onAuthError = null;
+
+// Set the current session token (called on login + on boot-restore).
+export function setAuthToken(token) { _authToken = token || null; }
+export function getAuthToken() { return _authToken; }
+// Optional hook: invoked when the broker rejects a write for an expired/
+// invalid token, so the app can nudge a re-login. Data is never lost — the
+// failed write returns null and the caller's pending-sync queue retries it
+// after the next successful login mints a fresh token.
+export function setOnAuthError(cb) { _onAuthError = (typeof cb === 'function') ? cb : null; }
+
+async function brokerWrite(op, key, value) {
+  if (!SUPABASE_OK || !KV_WRITE_URL) throw new Error('Supabase not configured');
+  const res = await fetch(KV_WRITE_URL, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type':  'application/json',
+    },
+    body: JSON.stringify({
+      op, key, token: _authToken,
+      ...(op === 'set' ? { value: String(value) } : {}),
+    }),
+  });
+  if (!res.ok) {
+    // 401 = token missing/expired/invalid. Signal the app (best-effort) so it
+    // can prompt a re-login; the write still fails and queues locally.
+    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
+    throw new Error(`kv-write ${op} ${res.status} ${await safeText(res)}`);
+  }
+}
+
+// Strict shared write/delete that THROW on failure (no silent swallow).
+// Used by the admin announcement path, where a silent failure would corrupt
+// the admin's mental model of what they just posted.
+export async function setSharedStrict(key, value) { await brokerWrite('set', key, value); }
+export async function delSharedStrict(key)        { await brokerWrite('del', key); }
+
 async function supabaseGet(key) {
   if (!SUPABASE_OK) return null;
   const url = `${REST_URL}?key=eq.${encodeURIComponent(key)}&select=value`;
@@ -134,26 +188,14 @@ async function supabaseGet(key) {
 
 async function supabaseSet(key, value) {
   if (!SUPABASE_OK) throw new Error('Supabase not configured');
-  // Upsert: POST with `Prefer: resolution=merge-duplicates` overwrites
-  // if the primary key (`key`) already exists.
-  const res = await fetch(REST_URL, {
-    method: 'POST',
-    headers: supabaseHeaders({
-      'Prefer': 'resolution=merge-duplicates,return=minimal'
-    }),
-    body: JSON.stringify({ key, value: String(value) })
-  });
-  if (!res.ok) throw new Error(`Supabase SET ${res.status} ${await safeText(res)}`);
+  // STAGE 2: writes go through the broker (service-role), not direct anon
+  // PostgREST. The broker authorizes by session token + key ownership.
+  await brokerWrite('set', key, value);
 }
 
 async function supabaseDel(key) {
   if (!SUPABASE_OK) throw new Error('Supabase not configured');
-  const url = `${REST_URL}?key=eq.${encodeURIComponent(key)}`;
-  const res = await fetch(url, {
-    method: 'DELETE',
-    headers: supabaseHeaders({ 'Prefer': 'return=minimal' })
-  });
-  if (!res.ok) throw new Error(`Supabase DEL ${res.status} ${await safeText(res)}`);
+  await brokerWrite('del', key);
 }
 
 async function supabaseList(prefix) {

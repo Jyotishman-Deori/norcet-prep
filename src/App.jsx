@@ -1043,12 +1043,11 @@ async function loadAnnouncementHistory() {
   } catch (e) { return []; }
 }
 
-// A4: announcement WRITES are admin-only and now go through the direct
-// PostgREST path (with the x-profile-id header) so the server-side RLS policy
-// can enforce them. `loadAnnouncement` (read) stays on safeStorage — reads are
-// open to everyone. The caller must pass the current admin profile id; the
-// server rejects the write if that id is not in admin_profile_ids, so a
-// DevTools-patched isAdmin no longer buys anything.
+// A4→Stage 2: announcement WRITES are admin-only and go through the kv-write
+// broker (which authorizes them by the admin's session token, server-side).
+// `loadAnnouncement` (read) stays on safeStorage — reads are open to everyone.
+// The `adminProfileId` argument is retained for call-site compatibility but the
+// real check is the token; a DevTools-patched isAdmin buys nothing.
 async function saveAnnouncement(text, level, adminProfileId, expiresDays = null) {
   // Two urgency levels:
   //  - 'info'      → calm teal card; default for routine notices.
@@ -1181,50 +1180,20 @@ async function checkServerAdmin(profileId, uid) {
 // a real error to the user (the safeStorage helpers swallow failures, which
 // would be wrong here — a silent failure would corrupt the admin's mental
 // model of what they just did).
+// A4→Stage 2: admin-only writes (announcement:*) now go through the SAME
+// write broker as everything else (kv-write), which authorizes them by the
+// admin's session token against `admin_profile_ids` server-side. The old
+// `x-profile-id` header path is gone (it was never actually enforced by any
+// RLS policy, and the header was spoofable). The broker throws on failure, so
+// these still surface real errors to the admin instead of swallowing them.
+// `adminProfileId` is retained in the signature for call-site compatibility
+// but is no longer used — identity comes from the token.
 async function adminWriteShared(key, valueJson, adminProfileId) {
-  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
-    throw new Error('Supabase URL / anon key not configured');
-  }
-  if (!adminProfileId) throw new Error('Missing admin profile id');
-  const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/kv_shared`;
-  const r = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'resolution=merge-duplicates,return=minimal',
-      'x-profile-id': adminProfileId,
-    },
-    body: JSON.stringify({ key, value: valueJson }),
-  });
-  if (!r.ok) {
-    const text = await r.text().catch(() => '');
-    throw new Error(`admin write failed: ${r.status} ${text || ''}`.trim());
-  }
+  await safeStorage.setSharedStrict(key, valueJson);
 }
 
-// A4: Direct PostgREST delete for admin-only keys. Same header story as
-// adminWriteShared. 404 is treated as success (idempotent delete).
 async function adminDeleteShared(key, adminProfileId) {
-  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
-    throw new Error('Supabase URL / anon key not configured');
-  }
-  if (!adminProfileId) throw new Error('Missing admin profile id');
-  const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/kv_shared`
-    + `?key=eq.${encodeURIComponent(key)}`;
-  const r = await fetch(url, {
-    method: 'DELETE',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
-      'x-profile-id': adminProfileId,
-    },
-  });
-  if (!r.ok && r.status !== 404) {
-    const text = await r.text().catch(() => '');
-    throw new Error(`admin delete failed: ${r.status} ${text || ''}`.trim());
-  }
+  await safeStorage.delSharedStrict(key);
 }
 
 // A4: ADMIN_STATUS local cache is a UX shortcut so admin stays unlocked

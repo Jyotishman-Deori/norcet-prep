@@ -72,6 +72,34 @@ async function callAuthFn(action, body) {
 }
 
 // =====================================================================
+// STAGE 2: session token plumbing. auth-secure returns a signed token on
+// login/signup/reset; we (a) activate it in the storage layer so shared
+// writes are authorized, and (b) persist it LOCALLY (per-device) so it
+// survives reloads. On boot, loadSession() restores it. On logout,
+// saveSession(null) clears it.
+// =====================================================================
+const AUTH_TOKEN_KEY = 'authToken';
+
+async function persistAuthToken(token) {
+  kvStorage.setAuthToken(token || null);
+  try { await safeStorage.set(AUTH_TOKEN_KEY, token || '', false); } catch (_) {}
+}
+async function clearAuthToken() {
+  kvStorage.setAuthToken(null);
+  try { await safeStorage.delete(AUTH_TOKEN_KEY, false); } catch (_) {}
+}
+// Re-activate a previously-saved token into the storage layer (called on boot
+// via loadSession). Returns the token string or null.
+export async function restoreAuthToken() {
+  try {
+    const r = await safeStorage.get(AUTH_TOKEN_KEY, false);
+    if (r && r.value) { kvStorage.setAuthToken(r.value); return r.value; }
+  } catch (_) {}
+  kvStorage.setAuthToken(null);
+  return null;
+}
+
+// =====================================================================
 // GUEST MODE  (Pipeline step 26 / P-GUEST, Phase A)
 // ---------------------------------------------------------------------
 // Anonymous-first: anyone can open the app and use it fully WITHOUT an
@@ -414,6 +442,10 @@ export async function createProfile({ displayName, password, dob, email, importD
     throw new Error('Could not create your account. Check your connection and try again.');
   }
 
+  // STAGE 2: activate the session token BEFORE saveProfile — saveProfile does a
+  // shared write, which now requires a valid token at the broker.
+  await persistAuthToken(reg.token);
+
   // The PUBLIC profile blob now carries NO credentials — just identity +
   // progress. (passwordHash/salt/dobHash/dobSalt deliberately absent.)
   const profile = {
@@ -441,6 +473,8 @@ export async function authenticateProfile(displayName, password) {
   if (!res || res.ok !== true) {
     throw new Error('Display name or password is incorrect');
   }
+  // STAGE 2: activate + persist the session token so shared writes are authorized.
+  await persistAuthToken(res.token);
   // Credentials are valid; load the (now hash-free) profile blob for the app.
   const profile = await loadProfile(id);
   if (!profile) {
@@ -472,6 +506,9 @@ export async function recoverPasswordWithDob(displayName, dob, newPassword) {
     // dob-mismatch / bad-dob → generic, don't confirm what's on file.
     throw new Error("That date of birth doesn't match what's on file for this profile");
   }
+  // STAGE 2: a successful reset proves identity → activate a fresh token so the
+  // user is effectively logged in (and any immediate shared write is authorized).
+  await persistAuthToken(res.token);
   // Return the current profile blob so callers can proceed if they want.
   const profile = await loadProfile(id);
   return profile || { id };
@@ -499,6 +536,10 @@ export async function deleteCredentials(id) {
 }
 
 export async function loadSession() {
+  // STAGE 2: re-activate the saved session token into the storage layer so that
+  // shared writes work immediately on boot for an already-logged-in user,
+  // before any auth function runs. Safe for guests (no token → stays null).
+  try { await restoreAuthToken(); } catch (_) {}
   try {
     const result = await safeStorage.get(KEYS.SESSION);
     if (result && result.value) return JSON.parse(result.value);
@@ -510,7 +551,9 @@ export async function saveSession(session) {
   if (session) {
     await safeStorage.set(KEYS.SESSION, JSON.stringify(session));
   } else {
+    // Logout / switch-profile: clear the session pointer AND the token.
     try { await safeStorage.delete(KEYS.SESSION); } catch (e) {}
+    try { await clearAuthToken(); } catch (e) {}
   }
 }
 

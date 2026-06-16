@@ -29,6 +29,11 @@
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+// STAGE 2: shared signing secret for session tokens. Set it with:
+//   supabase secrets set SESSION_SIGNING_SECRET="<long random string>"
+// The kv-write broker MUST use the exact same secret to verify tokens.
+const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
+const TOKEN_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -76,6 +81,30 @@ async function hashPassword(password: string, salt: string): Promise<string> {
     keyMaterial, 256,
   );
   return toHex(bits);
+}
+
+// ---- session token: base64url(payload).base64url(HMAC-SHA256(payload)) ----
+function b64url(bytes: Uint8Array): string {
+  let s = btoa(String.fromCharCode(...bytes));
+  return s.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+async function hmac(data: string): Promise<Uint8Array> {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", enc.encode(SESSION_SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
+  return new Uint8Array(sig);
+}
+// Mint a signed token carrying { id, uid, iat, exp }. The kv-write broker
+// verifies the signature with the same secret and reads id/uid for authz.
+async function mintToken(id: string, uid: string | null): Promise<string> {
+  if (!SESSION_SECRET) throw new Error("SESSION_SIGNING_SECRET is not set on auth-secure");
+  const payload = { id, uid: uid ?? null, iat: Date.now(), exp: Date.now() + TOKEN_TTL_MS };
+  const enc = new TextEncoder();
+  const payloadB64 = b64url(enc.encode(JSON.stringify(payload)));
+  const sigB64 = b64url(await hmac(payloadB64));
+  return `${payloadB64}.${sigB64}`;
 }
 
 // Normalize DOB the same way the client does (YYYY-MM-DD only).
@@ -140,7 +169,7 @@ Deno.serve(async (req: Request) => {
         if (r.status === 409) return json({ ok: false, reason: "exists" });
         return json({ error: `register failed: ${r.status} ${await r.text().catch(() => "")}`.trim() }, 502);
       }
-      return json({ ok: true });
+      return json({ ok: true, token: await mintToken(id, uid) });
     }
 
     // -------------------------------------------------------------
@@ -153,7 +182,8 @@ Deno.serve(async (req: Request) => {
       const row = await getSecret(id);
       if (!row || !row.password_hash || !row.salt) return json({ ok: false });
       const tryHash = await hashPassword(password, String(row.salt));
-      return json({ ok: safeEqual(tryHash, String(row.password_hash)) });
+      if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false });
+      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid)) });
     }
 
     // -------------------------------------------------------------
@@ -184,7 +214,7 @@ Deno.serve(async (req: Request) => {
         },
       );
       if (!r.ok) return json({ error: `reset failed: ${r.status}` }, 502);
-      return json({ ok: true });
+      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid)) });
     }
 
     // -------------------------------------------------------------

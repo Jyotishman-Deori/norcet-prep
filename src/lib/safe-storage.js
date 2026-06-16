@@ -34,6 +34,9 @@ export const safeStorage = {
   set:    (key, value, shared) => kvStorage.set(key, value, shared),
   delete: (key, shared)        => kvStorage.del(key, shared),
   list:   (prefix, shared)     => kvStorage.list(prefix, shared),
+  // STAGE 2: strict shared write/delete that THROW on failure (admin path).
+  setSharedStrict: (key, value) => kvStorage.setSharedStrict(key, value),
+  delSharedStrict: (key)        => kvStorage.delSharedStrict(key),
 };
 
 export async function checkStorageBridge() {
