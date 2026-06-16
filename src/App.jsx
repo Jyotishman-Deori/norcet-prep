@@ -820,8 +820,12 @@ async function subscribeToPush(reminderTime) {
       body: JSON.stringify({ subscription: sub, reminderTime: reminderTime || '20:00' }),
     });
     if (!res.ok) return null;
-    const { id } = await res.json();
-    if (id) { try { await safeStorage.set(KEYS.PUSH_SUB_ID, id); } catch (e) {} }
+    const { id, token } = await res.json();
+    if (id) {
+      try { await safeStorage.set(KEYS.PUSH_SUB_ID, id); } catch (e) {}
+      // C-5: store the capability token so pingActive can prove ownership.
+      try { if (token) await safeStorage.set(KEYS.PUSH_SUB_TOKEN, token); } catch (e) {}
+    }
     return id || null;
   } catch (e) { return null; }
 }
@@ -832,10 +836,12 @@ async function pingActive() {
     const r = await safeStorage.get(KEYS.PUSH_SUB_ID);
     const id = r && r.value;
     if (!id) return;
+    let token = null;
+    try { const t = await safeStorage.get(KEYS.PUSH_SUB_TOKEN); token = t && t.value; } catch (e) {}
     await fetch('/api/active', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscriptionId: id }),
+      body: JSON.stringify({ subscriptionId: id, token }),
     });
   } catch (e) {}
 }

@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
     // -------------------------------------------------------------
     if (action === "register") {
       const password = String(payload.password ?? "");
-      if (password.length < 4) return json({ ok: false, reason: "weak-password" });
+      if (password.length < 8) return json({ ok: false, reason: "weak-password" });
       const normDob = normalizeDob(payload.dob);
       if (!normDob) return json({ ok: false, reason: "bad-dob" });
 
@@ -201,7 +201,7 @@ Deno.serve(async (req: Request) => {
       if (!normDob) return json({ ok: false, reason: "bad-dob" });
       const tryHash = await hashPassword(normDob, String(row.dob_salt));
       if (!safeEqual(tryHash, String(row.dob_hash))) return json({ ok: false, reason: "dob-mismatch" });
-      if (newPassword.length < 4) return json({ ok: false, reason: "weak-password" });
+      if (newPassword.length < 8) return json({ ok: false, reason: "weak-password" });
 
       const salt = genSalt();
       const password_hash = await hashPassword(newPassword, salt);

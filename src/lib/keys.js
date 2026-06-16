@@ -39,6 +39,7 @@ export const KEYS = {
   QUOTES_SHOWN:  'norcet:quotes-shown:v1',   // JSON array of shown quote indices
   NOTIFICATIONS: 'norcet:notifications:v1',  // JSON array of notification objects
   PUSH_SUB_ID:   'norcet:push-sub-id:v1',    // Vercel KV subscription id (Session 5)
+  PUSH_SUB_TOKEN:'norcet:push-sub-token:v1', // C-5 capability token for /api/active
 
   // -- Shared / cross-device (private blobs, but visible across devices) --
   ANNOUNCEMENT:  'announcement:current',

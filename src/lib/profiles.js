@@ -417,7 +417,7 @@ export function normalizeDob(dob) {
 export async function createProfile({ displayName, password, dob, email, importData }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
-  if (password.length < 4) throw new Error('Password must be at least 4 characters');
+  if (password.length < 8) throw new Error('Password must be at least 8 characters');
   const normDob = normalizeDob(dob);
   if (!normDob) throw new Error('Pick your date of birth — used to recover your password if you forget it');
   const existing = await loadProfile(id);
@@ -491,7 +491,7 @@ export async function recoverPasswordWithDob(displayName, dob, newPassword) {
   if (!id) throw new Error('Enter your display name');
   const normDob = normalizeDob(dob);
   if (!normDob) throw new Error('Pick a valid date of birth');
-  if (!newPassword || newPassword.length < 4) throw new Error('New password must be at least 4 characters');
+  if (!newPassword || newPassword.length < 8) throw new Error('New password must be at least 8 characters');
   const res = await callAuthFn('reset', { id, dob: normDob, newPassword });
   if (!res || res.ok !== true) {
     if (res && res.reason === 'no-dob') {
@@ -501,7 +501,7 @@ export async function recoverPasswordWithDob(displayName, dob, newPassword) {
       throw new Error('No profile with that name');
     }
     if (res && res.reason === 'weak-password') {
-      throw new Error('New password must be at least 4 characters');
+      throw new Error('New password must be at least 8 characters');
     }
     // dob-mismatch / bad-dob → generic, don't confirm what's on file.
     throw new Error("That date of birth doesn't match what's on file for this profile");

@@ -46,5 +46,13 @@ ALTER TABLE profile_secrets ENABLE ROW LEVEL SECURITY;
 -- without someone also re-granting here.
 REVOKE ALL ON profile_secrets FROM anon, authenticated;
 
+-- IMPORTANT: service_role is NOT a superuser — it bypasses RLS but still needs
+-- table-level privileges. A freshly-created table does not always inherit DML
+-- for service_role from Supabase's default privileges (observed during deploy:
+-- the table came up with only TRUNCATE/REFERENCES/TRIGGER). Grant it explicitly
+-- so the auth-secure Edge Function (which connects as service_role) can read and
+-- write this table, and so a from-scratch recreate is fully self-contained.
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE profile_secrets TO service_role;
+
 -- NOTE: we intentionally create NO policies for anon/authenticated. Do not
 -- add any. All access goes through the auth-secure Edge Function only.

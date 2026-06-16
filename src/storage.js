@@ -170,6 +170,65 @@ async function brokerWrite(op, key, value) {
   }
 }
 
+// ---------------------------------------------------------------------
+// STAGE 3 (C-1 reads): private prefixes are no longer anon-SELECTable.
+// `profile:` and `myfeedback:` are served only to their owner by the
+// `kv-read` broker (service-role + the same session token). Everything
+// else (announcement/bank/favsec/favorder/helpful/notHelpful/leaderboard/
+// profilemeta) stays on the direct anon read path below — profilemeta is
+// display-name + timestamps that the profile switcher must read for all
+// users, and the rest is genuinely public content.
+// ---------------------------------------------------------------------
+const KV_READ_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/kv-read` : null;
+const PRIVATE_READ_PREFIXES = ['profile:', 'myfeedback:'];
+function isPrivateReadKey(key) {
+  return typeof key === 'string' && PRIVATE_READ_PREFIXES.some(p => key.startsWith(p));
+}
+function isPrivateReadPrefix(prefix) {
+  return typeof prefix === 'string' && PRIVATE_READ_PREFIXES.some(p => prefix === p || prefix.startsWith(p));
+}
+
+async function brokerGet(key) {
+  // No token (guest, or token not yet restored) → behave like "no row".
+  // Guests never have private shared keys, and a logged-in user always has
+  // a token before loadProfile runs (restoreAuthToken is awaited in loadSession).
+  if (!SUPABASE_OK || !KV_READ_URL || !_authToken) return null;
+  const res = await fetch(KV_READ_URL, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type':  'application/json',
+    },
+    body: JSON.stringify({ op: 'get', key, token: _authToken }),
+  });
+  if (!res.ok) {
+    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
+    throw new Error(`kv-read get ${res.status} ${await safeText(res)}`);
+  }
+  const j = await res.json();
+  return (j && j.value != null) ? j.value : null;
+}
+
+async function brokerList(prefix) {
+  if (!SUPABASE_OK || !KV_READ_URL || !_authToken) return [];
+  const res = await fetch(KV_READ_URL, {
+    method: 'POST',
+    headers: {
+      'apikey':        SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type':  'application/json',
+    },
+    body: JSON.stringify({ op: 'list', prefix, token: _authToken }),
+  });
+  if (!res.ok) {
+    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
+    throw new Error(`kv-read list ${res.status} ${await safeText(res)}`);
+  }
+  const j = await res.json();
+  return (j && Array.isArray(j.keys)) ? j.keys : [];
+}
+
 // Strict shared write/delete that THROW on failure (no silent swallow).
 // Used by the admin announcement path, where a silent failure would corrupt
 // the admin's mental model of what they just posted.
@@ -178,6 +237,8 @@ export async function delSharedStrict(key)        { await brokerWrite('del', key
 
 async function supabaseGet(key) {
   if (!SUPABASE_OK) return null;
+  // STAGE 3: private prefixes go through the read broker (owner-scoped).
+  if (isPrivateReadKey(key)) return await brokerGet(key);
   const url = `${REST_URL}?key=eq.${encodeURIComponent(key)}&select=value`;
   const res = await fetch(url, { headers: supabaseHeaders() });
   if (!res.ok) throw new Error(`Supabase GET ${res.status} ${await safeText(res)}`);
@@ -200,6 +261,8 @@ async function supabaseDel(key) {
 
 async function supabaseList(prefix) {
   if (!SUPABASE_OK) return [];
+  // STAGE 3: listing a private prefix is owner-scoped via the read broker.
+  if (isPrivateReadPrefix(prefix)) return await brokerList(prefix);
   // PostgREST accepts `*` as a `like` wildcard (translated to SQL `%`).
   // URL-safer than putting raw `%` in the query string.
   const pattern = prefix ? `${prefix}*` : '*';

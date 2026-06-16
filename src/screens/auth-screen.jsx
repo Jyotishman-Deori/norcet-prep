@@ -340,7 +340,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                placeholder={mode === 'create' ? 'Choose a password (min 4 chars)' : 'Your password'}
+                placeholder={mode === 'create' ? 'Choose a password (min 8 chars)' : 'Your password'}
                 autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
                 onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
@@ -377,7 +377,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="Choose a new password (min 4 chars)"
+                placeholder="Choose a new password (min 8 chars)"
                 autoComplete="new-password"
                 onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
