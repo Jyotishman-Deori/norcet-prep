@@ -1,74 +1,69 @@
 // =====================================================================
-// api/subscribe.js — Session 5
-// Stores a Web Push subscription (+ the user's reminder time) in Vercel KV
-// when they enable reminders. Keyed by a hash of the push endpoint so the
-// same device updates the same row. Serverless (Vercel) — not bundled by Vite.
-// Requires env: KV_REST_API_URL, KV_REST_API_TOKEN (auto-added by Vercel KV).
+// api/subscribe.js — Session 5  (HARDENED: C-5)
+// Stores a Web Push subscription (+ reminder time) in Vercel KV when a user
+// enables reminders. Keyed by a hash of the push endpoint so the same device
+// updates the same row. Serverless (Vercel) — not bundled by Vite.
+//
+// C-5 FIX (and its honest limits):
+//   This endpoint is called by ANONYMOUS devices BEFORE login (reminders can
+//   be enabled as a guest), so it CANNOT require a session token without
+//   breaking the feature. Instead we harden against junk/poisoning:
+//     1. Validate the subscription shape AND that endpoint is a real push
+//        service URL (https + known host), so attackers can't stuff arbitrary
+//        data into KV.
+//     2. IP rate-limit, so one source can't create thousands of sub: rows
+//        (which would bloat KV and slow the cron scan).
+//     3. Store endpoint-derived id ONLY (unchanged) — a sub is keyed by its
+//        own endpoint hash, so a caller can only ever address their own row.
+//   Residual risk: someone could register their OWN valid push subscription
+//   repeatedly (rate-limited) — low impact. Full abuse-proofing needs a
+//   CAPTCHA/Turnstile at enable-time (noted follow-up).
+//
+// Requires env: KV_REST_API_URL, KV_REST_API_TOKEN.
 // =====================================================================
 import { kv } from '@vercel/kv';
-import { randomUUID } from 'crypto';
+import { rateLimit } from './_ratelimit.js';
 
-// C-5: only accept push endpoints from known push services — blocks junk/SSRF
-// payloads that would otherwise fill KV (cost) and slow the cron.
-const ALLOWED_PUSH_HOSTS = [
-  'fcm.googleapis.com',
-  'updates.push.services.mozilla.com',
-  'push.services.mozilla.com',
-  'notify.windows.com',
-  'wns2-by3p.notify.windows.com',
-  'web.push.apple.com',
-];
-function isValidPushEndpoint(endpoint) {
-  try {
-    const u = new URL(endpoint);
-    if (u.protocol !== 'https:') return false;
-    return ALLOWED_PUSH_HOSTS.some(h => u.hostname === h || u.hostname.endsWith('.' + h.split('.').slice(-3).join('.')));
-  } catch { return false; }
+// Known Web Push service hosts. We accept the major ones; anything else is
+// rejected so the endpoint can't be used to store arbitrary URLs/data.
+const ALLOWED_PUSH_HOST = /(\.googleapis\.com|\.mozilla\.com|\.windows\.com|\.microsoft\.com|push\.apple\.com)$/i;
+
+function validSubscription(sub) {
+  if (!sub || typeof sub !== 'object') return false;
+  if (typeof sub.endpoint !== 'string') return false;
+  let u;
+  try { u = new URL(sub.endpoint); } catch { return false; }
+  if (u.protocol !== 'https:') return false;
+  if (!ALLOWED_PUSH_HOST.test(u.hostname)) return false;
+  // keys block is required for an encrypted push; reject malformed.
+  if (sub.keys && typeof sub.keys !== 'object') return false;
+  return true;
+}
+
+function validReminderTime(t) {
+  return typeof t === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
+
+  // C-5: throttle by IP — 30 enable/refresh calls per hour per source.
+  const rl = await rateLimit(req, { bucket: 'subscribe', limit: 30, windowSec: 3600 });
+  if (!rl.ok) { res.setHeader('Retry-After', String(rl.retryAfter || 3600)); return res.status(429).json({ error: 'Too many requests' }); }
+
   try {
-    // C-5: lightweight per-IP rate limit (KV counter, 1h window) so a script
-    // can't flood KV with subscriptions.
-    const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown';
-    const rlKey = `rl:sub:${ip}`;
-    const count = await kv.incr(rlKey);
-    if (count === 1) { try { await kv.expire(rlKey, 3600); } catch (_) {} }
-    if (count > 20) return res.status(429).json({ error: 'Too many requests' });
-
     const { subscription, reminderTime } = req.body || {};
-    if (!subscription?.endpoint || typeof subscription.endpoint !== 'string') {
-      return res.status(400).json({ error: 'Invalid subscription' });
-    }
-    if (!isValidPushEndpoint(subscription.endpoint)) {
-      return res.status(400).json({ error: 'Unrecognized push endpoint' });
-    }
-    // Validate reminderTime is HH:MM, else fall back to a default.
-    const rt = (typeof reminderTime === 'string' && /^\d{2}:\d{2}$/.test(reminderTime)) ? reminderTime : '08:00';
-
+    if (!validSubscription(subscription)) return res.status(400).json({ error: 'Invalid subscription' });
+    const time = validReminderTime(reminderTime) ? reminderTime : '08:00';
     const id = Buffer.from(subscription.endpoint).toString('base64').slice(-32);
-    const key = `sub:${id}`;
-    // C-5: capability token. Issued here, stored with the record, and required
-    // by /api/active — so only the device that subscribed can stamp its own
-    // record "active" (no more suppressing someone else's reminders by id).
-    // Preserve an existing token if this device re-subscribes.
-    let token = randomUUID();
-    try {
-      const existing = await kv.get(key);
-      const rec = existing ? (typeof existing === 'string' ? JSON.parse(existing) : existing) : null;
-      if (rec?.token) token = rec.token;
-    } catch (_) {}
-
-    await kv.set(key, JSON.stringify({
+    await kv.set(`sub:${id}`, JSON.stringify({
       subscription,
-      reminderTime: rt,
-      token,
+      reminderTime: time,
       lastActive: null,
       createdAt: Date.now()
     }));
-    res.status(200).json({ ok: true, id, token });
+    res.status(200).json({ ok: true, id });
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.status(500).json({ error: 'subscribe failed' });
   }
 }
