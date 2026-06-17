@@ -340,22 +340,22 @@ export async function saveProfileMeta(meta) {
 // exists, fold its entries into per-user meta keys and remove it. Subsequent
 // reads use only the new keys.
 export async function listProfileMetas() {
-  // Migrate the legacy list, if present, then continue. The migration writes
-  // one new key per old entry, so it's tolerant of partial failures: any
-  // entry that was missed will simply not appear until it's touched again,
-  // at which point it gets written fresh.
+  // Read the legacy monolithic list if present — but DON'T delete it yet.
+  let legacyArr = null;
   try {
     const legacy = await safeStorage.get(KEYS.PROFILE_INDEX, true);
     if (legacy && legacy.value) {
       const arr = JSON.parse(legacy.value);
       if (Array.isArray(arr) && arr.length > 0) {
+        legacyArr = arr;
+        // Fold each old entry into a per-user meta key (tolerant of partial
+        // failure: a missed entry simply reappears when it's next touched).
         await Promise.all(arr.map(p => p && p.id ? saveProfileMeta({
           id: p.id,
           displayName: p.displayName || p.id,
           createdAt: p.createdAt || null,
           lastActive: p.lastActive || null
         }) : null));
-        try { await safeStorage.delete(KEYS.PROFILE_INDEX, true); } catch (e) {}
       }
     }
   } catch (e) { /* no legacy list — fine */ }
@@ -364,15 +364,37 @@ export async function listProfileMetas() {
   try {
     const r = await safeStorage.list(KEY_PREFIXES.PROFILE_META, true);
     keys = (r && r.keys) ? r.keys : [];
-  } catch (e) { return []; }
-  const metas = await Promise.all(keys.map(async k => {
+  } catch (e) { keys = []; }
+  const metas = (await Promise.all(keys.map(async k => {
     try {
       const r = await safeStorage.get(k, true);
       if (r && r.value) return JSON.parse(r.value);
     } catch (e) {}
     return null;
-  }));
-  return metas.filter(Boolean);
+  }))).filter(Boolean);
+
+  // #27a — only RETIRE the legacy list once the per-user writes have verifiably
+  // landed (metas read back non-empty). Previously the delete ran unconditionally
+  // right after the writes, so if those writes were blocked (e.g. by a
+  // restrictive RLS policy) we'd delete the ONLY copy of the directory and the
+  // admin Users list would be permanently empty ("No profiles yet").
+  if (legacyArr && metas.length > 0) {
+    try { await safeStorage.delete(KEYS.PROFILE_INDEX, true); } catch (e) {}
+  }
+
+  // #27a — if per-user metas are unavailable but the legacy list still exists,
+  // fall back to it so the directory still populates instead of showing empty.
+  if (metas.length === 0 && legacyArr) {
+    return legacyArr
+      .filter(p => p && p.id)
+      .map(p => ({
+        id: p.id,
+        displayName: p.displayName || p.id,
+        createdAt: p.createdAt || null,
+        lastActive: p.lastActive || null
+      }));
+  }
+  return metas;
 }
 
 // Back-compat shim: anywhere old code called loadProfileIndex(), keep returning

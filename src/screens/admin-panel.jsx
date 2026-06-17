@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  AlertCircle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  AlertCircle, AlertTriangle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Trash2, Upload, User
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -30,6 +30,7 @@ import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { loadHelpfulnessReport } from '../lib/helpful-votes.js';
+import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
 // FAV — Favourites insights: hearts + average priority rank per section.
 import { loadFavInsights } from '../lib/favorites.js';
 import { FavIcon } from '../ui/fav-icons.jsx';
@@ -115,10 +116,32 @@ function AdminPanel({
   // FAV — Favourites insights
   const [favIns, setFavIns] = useState({ rows: [], users: 0 });
   const [favInsLoading, setFavInsLoading] = useState(true);
+  // #29 — crash reports
+  const [errs, setErrs] = useState([]);
+  const [errsLoading, setErrsLoading] = useState(true);
+  const [errFilter, setErrFilter] = useState('open'); // 'open' | 'resolved' | 'all'
+  const [errOpen, setErrOpen] = useState(null);        // expanded signature
+  const [errDelConfirm, setErrDelConfirm] = useState(null);
   const refreshFavIns = useCallback(async () => {
     setFavInsLoading(true);
     try { setFavIns(await loadFavInsights()); } catch (e) {}
     setFavInsLoading(false);
+  }, []);
+
+  // #29 — crash reports loader + actions
+  const refreshErrs = useCallback(async () => {
+    setErrsLoading(true);
+    try { setErrs(await listErrorGroups()); } catch (e) { setErrs([]); }
+    setErrsLoading(false);
+  }, []);
+  const resolveErr = useCallback(async (sig, val) => {
+    setErrs(prev => prev.map(e => e.sig === sig ? { ...e, resolved: val } : e));
+    await setErrorResolved(sig, val);
+  }, []);
+  const deleteErr = useCallback(async (sig) => {
+    setErrs(prev => prev.filter(e => e.sig !== sig));
+    setErrDelConfirm(null);
+    await deleteErrorGroup(sig);
   }, []);
 
   const refreshUsers = useCallback(async () => {
@@ -676,6 +699,123 @@ function AdminPanel({
     );
   }
 
+  // =================== DETAIL VIEW: CRASH REPORTS (#29) ===================
+  if (view === 'errors') {
+    const unresolved = errs.filter(e => !e.resolved);
+    const resolved = errs.filter(e => e.resolved);
+    const shown = errFilter === 'all' ? errs : errFilter === 'resolved' ? resolved : unresolved;
+    const filters = [
+      { id: 'open', label: 'Open', count: unresolved.length },
+      { id: 'resolved', label: 'Resolved', count: resolved.length },
+      { id: 'all', label: 'All', count: errs.length },
+    ];
+    const sevColor = (s) => (s === 'crash' ? T.error : T.accent);
+    return (
+      <>
+      <div className="anim-fadeup">
+        <TopBar title="Crash reports" onBack={backToDash}
+                right={
+                  <button onClick={refreshErrs} disabled={errsLoading} aria-label="Refresh"
+                          className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">
+                    <RefreshCw size={18} style={{ color: T.muted }} className={errsLoading ? 'animate-spin' : ''} />
+                  </button>
+                } />
+        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
+            Uncaught errors, promise rejections and render crashes from across the app, grouped by signature and newest first. The count is how many times each has happened. A re-occurrence reopens a resolved group.
+          </div>
+
+          {!errsLoading && errs.length > 0 && (
+            <div className="flex gap-2 mb-4">
+              {filters.map(f => {
+                const active = errFilter === f.id;
+                return (
+                  <button key={f.id} onClick={() => setErrFilter(f.id)}
+                          className="no-tap-highlight flex-1 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold transition-colors active:scale-95"
+                          style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
+                                   border: `1px solid ${active ? T.primary : T.border}` }}>
+                    {f.label}
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums"
+                          style={{ background: active ? 'rgba(255,255,255,0.22)' : T.surfaceWarm, color: active ? '#FFF' : T.muted }}>{f.count}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {errsLoading ? (
+            <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
+          ) : errs.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Check size={32} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
+              <div className="font-display text-lg mb-0.5" style={{ color: T.ink }}>No crashes recorded</div>
+              <div className="text-sm" style={{ color: T.muted }}>Nothing has thrown an uncaught error. That's the goal.</div>
+            </Card>
+          ) : shown.length === 0 ? (
+            <Card className="p-8 text-center">
+              <Check size={28} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
+              <div className="font-display text-base mb-0.5" style={{ color: T.ink }}>{errFilter === 'open' ? 'All clear' : 'Nothing here'}</div>
+              <div className="text-sm" style={{ color: T.muted }}>{errFilter === 'open' ? 'No open crashes — every group is resolved.' : 'No groups match this filter.'}</div>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {shown.map(e => {
+                const isOpen = errOpen === e.sig;
+                return (
+                  <Card key={e.sig} className="p-3.5" style={e.resolved ? { opacity: 0.6 } : undefined}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                            style={{ background: sevColor(e.severity) + '1A', color: sevColor(e.severity) }}>
+                        {e.severity === 'crash' ? 'Crash' : 'Error'}
+                      </span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums font-semibold"
+                            style={{ background: T.surfaceWarm, color: T.inkSoft }}>×{e.count}</span>
+                      <span className="text-[10px]" style={{ color: T.muted }}>{e.source}</span>
+                      <span className="text-[10px] ml-auto" style={{ color: T.muted }}>{fmtWhen(e.lastSeen)}</span>
+                    </div>
+                    <div className="text-[13px] font-medium break-words mb-1" style={{ color: T.ink }}>{e.message}</div>
+                    <div className="text-[10px] mb-2" style={{ color: T.muted }}>
+                      {e.lastScreen ? <>on <span style={{ color: T.inkSoft }}>{e.lastScreen}</span> · </> : null}
+                      {e.stackTop || 'no stack'}
+                    </div>
+                    {isOpen && e.sampleStack && (
+                      <pre className="text-[10px] leading-relaxed p-2.5 rounded-lg mb-2 overflow-x-auto whitespace-pre-wrap break-words"
+                           style={{ background: T.bg, color: T.inkSoft, border: `1px solid ${T.borderSoft}`, maxHeight: 200 }}>{e.sampleStack}</pre>
+                    )}
+                    <div className="flex items-center gap-2">
+                      {e.sampleStack && (
+                        <button onClick={() => setErrOpen(isOpen ? null : e.sig)}
+                                className="no-tap-highlight text-xs font-medium px-2.5 py-1.5 rounded-lg active:scale-95 transition"
+                                style={{ background: T.surfaceWarm, color: T.inkSoft }}>
+                          {isOpen ? 'Hide stack' : 'View stack'}
+                        </button>
+                      )}
+                      <button onClick={() => resolveErr(e.sig, !e.resolved)}
+                              className="no-tap-highlight text-xs font-medium px-2.5 py-1.5 rounded-lg active:scale-95 transition"
+                              style={{ background: e.resolved ? T.surfaceWarm : T.success + '1A', color: e.resolved ? T.muted : T.success }}>
+                        {e.resolved ? 'Reopen' : 'Resolve'}
+                      </button>
+                      <button onClick={() => setErrDelConfirm(e.sig)} aria-label="Delete group"
+                              className="no-tap-highlight ml-auto p-1.5 rounded-lg active:scale-95 transition" style={{ color: T.muted }}>
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+      <ConfirmDialog open={!!errDelConfirm}
+                     title="Delete this crash group?"
+                     body="Removes the grouped record for everyone. If it happens again it'll reappear as a new group."
+                     confirmLabel="Delete" cancelLabel="Cancel" tone="danger"
+                     onConfirm={() => deleteErr(errDelConfirm)} onCancel={() => setErrDelConfirm(null)} />
+      </>
+    );
+  }
+
   // =================== DETAIL VIEW: MANAGE ADMINS ===================
   if (view === 'manageAdmins') {
     return <AdminManager onBack={backToDash} />;
@@ -763,6 +903,15 @@ function AdminPanel({
             hint="Section popularity"
             onClick={() => { setView('favourites'); refreshFavIns(); }}
             signal={<Heart size={18} style={{ color: T.muted }} />} />
+
+          {/* #29 — Crash reports: grouped client errors + render crashes */}
+          <AdminTile
+            icon={<AlertTriangle size={22} style={{ color: T.error }} />}
+            accent={T.error}
+            label="Crash reports"
+            hint="Errors & crashes"
+            onClick={() => { setView('errors'); refreshErrs(); }}
+            signal={<AlertTriangle size={18} style={{ color: T.muted }} />} />
 
           {/* Manage admins — add/remove who has admin access */}
           <AdminTile

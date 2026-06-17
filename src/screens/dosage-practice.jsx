@@ -98,7 +98,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
   const progress = ((index + (done ? 1 : 0)) / questions.length) * 100;
 
   return (
-    <div className="anim-fadeup">
+    <div className="test-enter">
       {/* Issues round — the counter is a separated chip (was running straight
           into the title as "Dosage calculation test1/10"). */}
       <TopBar title="Dosage calculation" onBack={onBack} feedback={{ screen: "Dosage calc" }}

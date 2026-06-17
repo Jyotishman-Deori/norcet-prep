@@ -18,7 +18,7 @@ import { Check, Heart, Pencil, Plus, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
-import { favSection, loadFavs, removeFav, setFavOrder } from '../lib/favorites.js';
+import { favSection, loadFavs, removeFav, setFavOrder, toggleFav, FAV_SECTIONS } from '../lib/favorites.js';
 import { FavIcon } from '../ui/fav-icons.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 
@@ -32,6 +32,18 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
   const [editing, setEditing] = useState(!!startInEdit);
   const [picked, setPicked] = useState(null);     // tile id "lifted" for reorder
   const [removing, setRemoving] = useState(() => new Set());
+  const [adding, setAdding] = useState(false);     // #3 — "add any section" picker
+
+  // #3 — sections in the registry the user hasn't collected yet. This is the
+  // whole point of the rework: the grid is no longer limited to Drill modes —
+  // ANY favoritable section (Stats, Leaderboard, Reference, Weightage, …) can
+  // be added straight from here, not just by finding a heart on some screen.
+  const addable = favs ? FAV_SECTIONS.filter(s => !favs.order.includes(s.id)) : [];
+  const addSection = async (id) => {
+    buzz(10);
+    const { favs: next } = await toggleFav(profileId, id);
+    setFavs(next);
+  };
 
   useEffect(() => {
     let alive = true;
@@ -76,18 +88,32 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }}
-              right={sections.length > 0 ? (
-                <Tip text={editing ? 'Done editing' : 'Reorder tiles (tap to move) or remove them'}>
-                <button onClick={() => { setEditing(e => !e); setPicked(null); buzz(8); }}
-                        className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
-                        style={{ background: editing ? '#E0245E' : T.surfaceWarm,
-                                 border: `1px solid ${editing ? '#E0245E' : T.border}`,
-                                 color: editing ? '#FFF' : T.inkSoft }}>
-                  {editing ? <Check size={14} /> : <Pencil size={13} />}
-                  <span className="text-xs font-medium">{editing ? 'Done' : 'Edit'}</span>
-                </button>
-                </Tip>
-              ) : null} />
+              right={(
+                <div className="flex items-center gap-1.5">
+                  {addable.length > 0 && (
+                    <Tip text="Add any section to your favourites">
+                    <button onClick={() => { setAdding(true); setEditing(false); buzz(8); }}
+                            aria-label="Add sections"
+                            className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
+                            style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+                      <Plus size={14} /><span className="text-xs font-medium">Add</span>
+                    </button>
+                    </Tip>
+                  )}
+                  {sections.length > 0 && (
+                    <Tip text={editing ? 'Done editing' : 'Reorder tiles (tap to move) or remove them'}>
+                    <button onClick={() => { setEditing(e => !e); setPicked(null); buzz(8); }}
+                            className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
+                            style={{ background: editing ? '#E0245E' : T.surfaceWarm,
+                                     border: `1px solid ${editing ? '#E0245E' : T.border}`,
+                                     color: editing ? '#FFF' : T.inkSoft }}>
+                      {editing ? <Check size={14} /> : <Pencil size={13} />}
+                      <span className="text-xs font-medium">{editing ? 'Done' : 'Edit'}</span>
+                    </button>
+                    </Tip>
+                  )}
+                </div>
+              )} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
@@ -96,7 +122,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>
             {editing
               ? 'Tap a tile to pick it up, then tap where it should go. Use \u00d7 to remove. Priority #1 is top-left.'
-              : <>Tap the <Heart size={12} fill="#E0245E" style={{ color: '#E0245E', display: 'inline', verticalAlign: '-1px' }} /> beside any section's title to collect it here.</>}
+              : <>Tap <span style={{ color: T.primary, fontWeight: 600 }}>Add</span> to collect any section here, or the <Heart size={12} fill="#E0245E" style={{ color: '#E0245E', display: 'inline', verticalAlign: '-1px' }} /> beside a section's title.</>}
           </div>
         </div>
 
@@ -104,9 +130,9 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
           <EmptyState
             icon={Heart}
             title="Nothing hearted yet"
-            text="Open Drill Tests or the menu and tap the heart beside any section's title — Quick Test, Stats, Bookmarks, Dosage and more. They land here, in your order."
-            actionLabel="Browse Drill Tests"
-            onAction={() => onNavigate && onNavigate({ screen: 'drill-tests' })} />
+            text="Add any section — Quick Test, Stats, Bookmarks, Leaderboard, Reference, Dosage and more. They land here, in your order."
+            actionLabel="Add sections"
+            onAction={() => setAdding(true)} />
         ) : (
           <div className="grid grid-cols-3 gap-2.5">
             {sections.map((s, i) => {
@@ -158,10 +184,10 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
             {/* "+ add more" ghost tile (issues round): completes the row for
                 small collections so the grid never trails into bare
                 whitespace, and doubles as the add-more prompt. */}
-            {!editing && sections.length % 3 !== 0 && (
+            {!editing && addable.length > 0 && sections.length % 3 !== 0 && (
               <div role="button" tabIndex={0}
-                   onClick={() => onNavigate && onNavigate({ screen: 'drill-tests' })}
-                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onNavigate && onNavigate({ screen: 'drill-tests' }); } }}
+                   onClick={() => setAdding(true)}
+                   onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setAdding(true); } }}
                    className="no-tap-highlight cursor-pointer rounded-2xl fav-tile-in flex flex-col items-center justify-center gap-1.5 px-1.5 py-2 text-center"
                    style={{ border: `1.5px dashed ${T.border}`, background: T.surfaceWarm,
                             aspectRatio: '1 / 1.06',
@@ -185,6 +211,55 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
         {/* The home-screen on/off toggle was REMOVED from this screen — the
             single source of truth is Settings → Favourites (issues round). */}
       </div>
+
+      {/* #3 — ADD picker. A centred sheet listing every favoritable section not
+          already collected, so the grid can be built from ANYWHERE (not just
+          Drill modes). Tap a row to add it instantly; it appears in the grid
+          and drops off this list. */}
+      {adding && (
+        <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
+             style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setAdding(false)}>
+          <div className="anim-scalein w-full max-w-sm rounded-3xl flex flex-col max-h-[82vh]"
+               style={{ background: T.surface, boxShadow: '0 18px 48px rgba(0,0,0,0.32)' }}
+               onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+              <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>Add to favourites</div>
+              <button onClick={() => setAdding(false)} aria-label="Close"
+                      className="no-tap-highlight p-1.5 -m-1 rounded-full active:bg-black/5">
+                <X size={18} style={{ color: T.muted }} />
+              </button>
+            </div>
+            <div className="px-4 pb-4 overflow-y-auto">
+              {addable.length === 0 ? (
+                <div className="text-sm text-center py-8" style={{ color: T.muted }}>
+                  Everything's already in your favourites. 🎉
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {addable.map(s => (
+                    <button key={s.id} onClick={() => addSection(s.id)}
+                            className="no-tap-highlight w-full flex items-center gap-3 p-3 rounded-2xl text-left active:scale-[0.98] transition-transform"
+                            style={{ background: `linear-gradient(150deg, ${s.hue}14 0%, ${T.surface} 60%)`, border: `1px solid ${s.hue}33` }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                           style={{ background: `linear-gradient(135deg, ${s.hue}, ${s.hue}B3)`, boxShadow: `0 3px 10px ${s.hue}45` }}>
+                        <FavIcon name={s.icon} size={17} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-semibold truncate" style={{ color: T.ink }}>{s.label}</div>
+                        <div className="text-[11px] truncate" style={{ color: T.muted }}>{s.blurb}</div>
+                      </div>
+                      <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                           style={{ background: s.hue + '1A', color: s.hue }}>
+                        <Plus size={16} />
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

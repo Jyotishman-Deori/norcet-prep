@@ -270,7 +270,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   return (
     <>
-    <div className="anim-fadeup">
+    <div className="test-enter">
       <TopBar
         title={`Q ${scheduleIndex + 1} of ${schedule.length}`}
         onBack={() => setConfirmExit(true)}

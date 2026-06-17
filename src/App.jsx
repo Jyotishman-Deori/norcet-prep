@@ -54,6 +54,7 @@ import {
 // [A1 slice 49 / tidy-up] quick-practice selection logic extracted.
 import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/quick-practice.js';
 import { examTopicWeightage } from './lib/weightage.js';
+import { captureError, setErrorContext } from './lib/errorlog.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -249,6 +250,9 @@ export class ErrorBoundary extends React.Component {
       const stack = (info && info.componentStack) ? String(info.componentStack).slice(0, 2000) : '';
       log.error('errorBoundary.render', error);
       if (stack) log.warn('errorBoundary.componentStack', stack);
+      // #29 — also record into the grouped, admin-visible crash store (a React
+      // render crash is the highest-severity kind).
+      captureError(error, { source: 'react', severity: 'crash', stack });
     } catch (e) { /* logger is fail-safe; nothing more to do */ }
   }
   handleReload = () => {
@@ -2185,6 +2189,9 @@ export default function App() {
   const navStackRef = useRef([]);
   const navRef = useRef(nav);
   navRef.current = nav;
+  // #29 — keep the error logger's context pointed at the current screen so
+  // captured crashes record where they happened.
+  useEffect(() => { setErrorContext({ screen: nav.screen }); }, [nav.screen]);
   const navigate = useCallback((n) => {
     const cur = navRef.current;
     if (cur && n && n.screen !== cur.screen && !NAV_NO_STACK.includes(cur.screen)) {

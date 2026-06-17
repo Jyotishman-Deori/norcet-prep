@@ -18,8 +18,9 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
 import { playTapSound } from '../lib/sound.js';
@@ -361,6 +362,14 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
                        title="FAQ" sub="Questions answered by our team"
                        badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11} fav="faq" tip="Common questions answered by the team — ask your own too."
                        onClick={() => go('faq', null, 'faq')} />
+            {/* #18 — general Feedback/Report entry. Opens the SAME report modal
+                used contextually elsewhere, tagged source:'feedback' so it lands
+                in the one admin inbox distinguishable from screen/question
+                reports. Not a favoritable destination, so no heart. */}
+            <LearnCard icon={Megaphone} iconColor={T.accent}
+                       title="Send feedback" sub="Report a bug or suggest a feature"
+                       index={12} tip="Tell us anything — a bug, an idea, or what would make the app better. Goes straight to the team."
+                       onClick={() => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); }} />
           </div>
 
           </div>

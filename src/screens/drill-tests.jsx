@@ -28,10 +28,13 @@ function DrillTests({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
   const go = (screen) => onNavigate({ screen });
 
-  // Staggered page-load reveal — a single orchestrated cascade reads as
-  // "considered", per the ascending-journey concept.
+  // #15 — premium opening: a single orchestrated cascade where each card flips
+  // up with a slight 3D tilt and settles, top→bottom, reinforcing the
+  // ascending-journey concept. (The literal "Tests multiplies into titles"
+  // idea reads as gimmicky at speed; the staggered tilt-in is the cleaner,
+  // premium alternative the brief allowed.)
   const Reveal = ({ delay = 0, children }) => (
-    <div className="anim-fadeup" style={{ animationDelay: `${delay}ms`, animationFillMode: 'both' }}>
+    <div className="drill-card-in" style={{ animationDelay: `${delay}ms` }}>
       {children}
     </div>
   );

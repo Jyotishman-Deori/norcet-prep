@@ -10,10 +10,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, AlertTriangle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
   FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
-  Sigma, Trash2, Upload, User, UserPlus, Volume2
+  Shield, Sigma, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
+import { LegalScreen } from './legal.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
@@ -113,6 +114,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // Notification permission so we can show a "blocked" hint without storing it.
   const reminder = (data.preferences && data.preferences.dailyReminder) || { enabled: false, time: '20:00' };
   const [drPerm, setDrPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
+  // #16 — Legal pages render as a self-contained sub-view of Settings (no app
+  // routing needed). Set to 'privacy' | 'terms' to open; back returns here.
+  const [legalView, setLegalView] = useState(null);
   const [drBusy, setDrBusy] = useState(false);
   const reminderOn = !!reminder.enabled;
   const onToggleReminder = async () => {
@@ -193,6 +197,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     reader.onerror = () => setNotesMsg({ ok: false, text: 'Could not read file' });
     reader.readAsText(file);
   };
+
+  if (legalView) return <LegalScreen doc={legalView} onBack={() => setLegalView(null)} />;
 
   return (
     <div className="anim-fadeup">
@@ -869,6 +875,35 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         <div className="text-[11px] leading-relaxed mb-3 px-2" style={{ color: T.muted }}>
           The Crib Sheet shows every question with correct answers and explanations — like a PYQ booklet. You can also share it.
         </div>
+
+        {/* #16 — Legal. Privacy Policy + Terms as sub-pages (rendered by the
+            legalView sub-view above). Sits just above Support. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Legal</div>
+        <Card className="p-0 mb-3 overflow-hidden">
+          <button onClick={() => setLegalView('privacy')}
+                  className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+              <Shield size={17} style={{ color: T.primary }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} />
+          </button>
+          <div className="mx-4 border-t" style={{ borderColor: T.borderSoft }} />
+          <button onClick={() => setLegalView('terms')}
+                  className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+              <FileText size={17} style={{ color: T.primary }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} />
+          </button>
+        </Card>
 
         {/* P9 / step 33 — "Support the app" section. Quiet, always visible,
             below all functional settings. Opens the shared support modal

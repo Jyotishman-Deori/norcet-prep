@@ -8,6 +8,7 @@
 import React, { useState, useEffect } from 'react';
 import { Check, X, RefreshCw, Send } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
+import { useProfile } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { registerFeedbackOpener, Button } from '../ui/primitives.jsx';
 import { newFeedbackId, saveFeedback, addToMyFeedbackIndex } from '../lib/feedback.js';
@@ -22,17 +23,29 @@ function FeedbackHost() {
   return (
     <FeedbackModal screen={ctx.screen} questionId={ctx.questionId}
                    profileId={ctx.profileId} profileName={ctx.profileName}
-                   onClose={() => setCtx(null)} />
+                   source={ctx.source} onClose={() => setCtx(null)} />
   );
 }
 
-function FeedbackModal({ screen, questionId, profileId, profileName, onClose }) {
+function FeedbackModal({ screen, questionId, profileId, profileName, source, onClose }) {
   const { theme: T } = useTheme();
+  const { profile } = useProfile();
+  // Fall back to the active profile so callers that don't thread it through
+  // (e.g. the sidebar "Send feedback" entry, #18) still attribute the report.
+  const authorId = profileId || (profile && profile.id) || null;
+  const authorName = profileName || (profile && profile.displayName) || null;
   const [report, setReport] = useState('');
   const [fix, setFix] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
   const [err, setErr] = useState(null);
+
+  // #18 — every submission carries a `source` so the admin inbox can tell a
+  // contextual screen/question report apart from general sidebar feedback.
+  const resolvedSource = source || (questionId ? 'question' : 'screen');
+  const isGeneral = resolvedSource === 'feedback';
+  const fromLabel = isGeneral ? 'General feedback' : (screen || 'unknown');
+  const heading = isGeneral ? 'Send feedback' : 'Report or suggest';
 
   const submit = async () => {
     if (!report.trim()) { setErr('Please describe the issue or suggestion'); return; }
@@ -42,16 +55,17 @@ function FeedbackModal({ screen, questionId, profileId, profileName, onClose }) 
       await saveFeedback({
         id,
         ts: Date.now(),
-        screen: screen || 'unknown',
+        screen: screen || (isGeneral ? 'Sidebar feedback' : 'unknown'),
+        source: resolvedSource,
         questionId: questionId || null,
         report: report.trim(),
         fix: fix.trim() || null,
-        profileId: profileId || null,
-        profileName: profileName || null
+        profileId: authorId,
+        profileName: authorName
       });
       // Point the author's own index at this report so their device can find it
       // without ever fetching anyone else's feedback.
-      if (profileId) await addToMyFeedbackIndex(profileId, id);
+      if (authorId) await addToMyFeedbackIndex(authorId, id);
       setDone(true);
       setTimeout(onClose, 1200);
     } catch (e) {
@@ -73,7 +87,7 @@ function FeedbackModal({ screen, questionId, profileId, profileName, onClose }) 
          style={{ background: 'rgba(0,0,0,0.5)' }}
          onClick={onClose}>
       <div onClick={e => e.stopPropagation()}
-           ref={dialogRef} role="dialog" aria-modal="true" aria-label="Report or suggest"
+           ref={dialogRef} role="dialog" aria-modal="true" aria-label={heading}
            className="w-full max-w-md anim-scalein flex flex-col rounded-2xl overflow-hidden"
            style={{
              background: T.surface,
@@ -94,7 +108,7 @@ function FeedbackModal({ screen, questionId, profileId, profileName, onClose }) 
           <>
             {/* Pinned header — always visible */}
             <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
-              <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>Report or suggest</div>
+              <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>{heading}</div>
               <button onClick={onClose} className="no-tap-highlight p-1.5 -m-1.5 rounded-lg active:bg-black/5" aria-label="Close">
                 <X size={18} style={{ color: T.muted }} />
               </button>
@@ -106,7 +120,7 @@ function FeedbackModal({ screen, questionId, profileId, profileName, onClose }) 
               <div className="mb-4 px-2.5 py-1.5 rounded-lg inline-flex items-center gap-1.5 text-xs"
                    style={{ background: T.surfaceWarm, color: T.muted }}>
                 <span>From:</span>
-                <span className="font-medium" style={{ color: T.inkSoft }}>{screen || 'unknown'}</span>
+                <span className="font-medium" style={{ color: T.inkSoft }}>{fromLabel}</span>
                 {questionId && (<><span>·</span><span className="font-mono">{questionId}</span></>)}
               </div>
 

@@ -18,6 +18,21 @@ export const fontStyles = `
 .anim-fadeup { animation: fadeUp 0.35s ease-out both; }
 @keyframes scaleIn { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
 .anim-scalein { animation: scaleIn 0.25s ease-out both; }
+/* #15 — Drill Tests premium opening: each mode card flips up around its top
+   edge with a slight 3D tilt and settles. Staggered (see drill-tests.jsx) so
+   the grid assembles top→bottom in ~500ms. Ends at transform:none. */
+@keyframes drillCardIn {
+  from { opacity: 0; transform: perspective(720px) rotateX(15deg) translateY(15px) scale(0.97); }
+  60%  { opacity: 1; }
+  to   { opacity: 1; transform: none; }
+}
+.drill-card-in { animation: drillCardIn 0.42s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: top center; }
+/* #23 — pre-test interstitial: the first question scales up from 0.96 as the
+   test screen mounts, so launching a test feels like stepping into it. Plays
+   once on entry (the root mounts once); question-to-question changes don't
+   remount it. Ends at transform:none. */
+@keyframes testEnter { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: none; } }
+.test-enter { animation: testEnter 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
 @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 .shimmer { background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
 /* Session 0 — branded loading splash: three staggered bouncing dots. */
@@ -341,7 +356,8 @@ export const fontStyles = `
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
   .card-shimmer, .sheet-up, .fav-beat, .tip-in, .heart-spring,
   .drawer-item-in, .drawer-glow,
-  .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap { animation: none !important; }
+  .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap,
+  .drill-card-in, .test-enter { animation: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
 }
 

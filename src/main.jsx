@@ -3,6 +3,10 @@ import ReactDOM from 'react-dom/client';
 import App, { ErrorBoundary } from './App.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
+import { installGlobalErrorCapture } from './lib/errorlog.js';
+// #29 — capture uncaught errors + unhandled promise rejections from the very
+// start, grouped for the admin crash dashboard. Fail-safe (never throws).
+installGlobalErrorCapture();
 // Register the service worker. autoUpdate (configured in vite.config.js)
 // silently fetches a new SW in the background; this callback gets called
 // when a fresh build is fully installed and waiting. We auto-reload so the

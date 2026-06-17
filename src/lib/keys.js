@@ -54,6 +54,9 @@ export const KEYS = {
   faq:           (id)        => `faq:${id}`,
   faqQuestion:   (faqId, qid)=> `faqq:${faqId}:${qid}`,
   bank:          (id)        => `bank:${id}`,
+  // #29 — client error/crash groups (shared, admin-readable). One row per
+  // error SIGNATURE so repeated crashes aggregate instead of flooding.
+  errlog:        (sig)       => `errlog:${sig}`,
 
   // -- Forward-compat for PROMPT 1 (cloud sync). Not yet used by any
   //    call site. P1 will switch from KEYS.USERDATA to KEYS.userdata(id)
@@ -112,4 +115,7 @@ export const KEY_PREFIXES = {
   // #5 — saved Crib Sheets (per profile, local): array of slim sheet
   // snapshots {id,title,subtitle,createdAt,items[]} shown inside Revision.
   CRIBS: 'cribs:',
+  // #29 — client error/crash groups (shared, admin-readable), grouped by
+  // signature. Uses the same anon shared-write path as feedback:/favsec:.
+  ERRLOG: 'errlog:',
 };
