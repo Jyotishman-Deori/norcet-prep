@@ -292,10 +292,10 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
       {/* Start-practice confirmation (issues round) — context first, quiz
           only after an explicit choice. */}
       {confirmRow && (
-        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center"
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
              style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setConfirmRow(null)}>
-          <div className="sheet-up w-full max-w-md sm:mx-4 rounded-t-3xl sm:rounded-3xl p-5 pb-8"
-               style={{ background: T.surface }} onClick={(e) => e.stopPropagation()}>
+          <div className="anim-scalein w-full max-w-sm rounded-3xl p-5 max-h-[88vh] overflow-y-auto"
+               style={{ background: T.surface, boxShadow: '0 18px 48px rgba(0,0,0,0.32)' }} onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-4">
               <div className="flex items-center gap-3 min-w-0">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"

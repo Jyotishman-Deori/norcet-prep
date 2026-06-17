@@ -63,10 +63,27 @@ export async function addCrib(profileId, { title, subtitle, items }) {
   const sig = cribSignature(title, items);
   const existing = cribs.find(c => c.sig === sig);
   if (existing) return { entry: existing, cribs, duplicate: true };
+  // #4 — smart de-duplicated display name. Two different sessions from the same
+  // source (e.g. two Quick Tests) have different content signatures, so both
+  // are kept — but they'd otherwise share an identical title. Append an
+  // incrementing "#N" (delete-safe: always max-existing + 1) so the list never
+  // shows two identically-named sheets.
+  const baseTitle = (String(title || 'Test review').trim()) || 'Test review';
+  const prefix = baseTitle + ' #';
+  let maxN = 1, baseSeen = false;
+  for (const c of cribs) {
+    const t = String(c.title || '');
+    if (t === baseTitle) baseSeen = true;
+    else if (t.startsWith(prefix)) {
+      const n = parseInt(t.slice(prefix.length), 10);
+      if (!isNaN(n)) { maxN = Math.max(maxN, n); baseSeen = true; }
+    }
+  }
+  const displayTitle = baseSeen ? `${baseTitle} #${maxN + 1}` : baseTitle;
   const entry = {
     id: `crib-${Date.now()}`,
     sig,
-    title: String(title || 'Test review'),
+    title: displayTitle,
     subtitle: String(subtitle || ''),
     createdAt: Date.now(),
     items: (items || []).map(slimItem),

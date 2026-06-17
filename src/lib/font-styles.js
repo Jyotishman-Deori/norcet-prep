@@ -320,6 +320,11 @@ export const fontStyles = `
   -webkit-user-select: none;
   user-select: none;
 }
+/* manipulation = no double-tap-zoom / 300ms delay and, importantly, no native
+   long-press magnifier/selection repaint — the GPU-compositing artifact that
+   bled into the area above the home cards (issues #1/#2). Long-press still
+   reaches our JS Tip handler; only the native gesture chrome is suppressed. */
+.press-safe { touch-action: manipulation; }
 
 /* ── Dosage answer field — its placeholder must read as a HINT, never as a
    pre-filled value (the old placeholder="0" looked like an entered answer). */

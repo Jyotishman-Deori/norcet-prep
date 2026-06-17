@@ -276,7 +276,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick, index = 0, fav = null, tip = null }) => (
     <Tip title={title} text={tip || sub}>
     <button onClick={onClick}
-            className="no-tap-highlight drawer-row drawer-item-in w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
+            className="no-tap-highlight drawer-row drawer-item-in w-full flex items-center gap-3.5 px-3.5 py-3.5 rounded-2xl text-left"
             style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
                      animationDelay: `${Math.min(index, 12) * 45}ms` }}>
       <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconColor }}>
@@ -290,7 +290,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
                   style={{ background: badgeTone || T.primary, color: '#FFF' }}>{badge}</span>
           )}
         </div>
-        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>
+        <div className="text-[11px] mt-1 leading-snug" style={{ color: T.muted }}>{sub}</div>
       </div>
       {fav && <span className="flex-shrink-0 -mr-1"><FavHeart favId={fav} inline /></span>}
       <ChevronRight size={16} style={{ color: iconColor, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
@@ -352,7 +352,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           {tools.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + i} />)}
 
           <GroupLabel>Help &amp; Learn</GroupLabel>
-          <div className="px-1 mt-1 space-y-2">
+          <div className="px-1 mt-1 space-y-2.5">
             <LearnCard icon={GraduationCap} iconColor={T.primary}
                        title="Study Methods" sub="Learn how to study smarter"
                        badge="Guide" badgeTone={T.primary} index={10} fav="study-methods" tip="Evidence-based techniques — active recall, spaced repetition and how to use this app well."

@@ -2363,34 +2363,48 @@ export default function App() {
     }
   }, [nav.screen, pendingMerge, showWelcome]);
 
+  // #5/#12 — back-button DEBOUNCE + a single exit path. A rapid double-tap of
+  // the hardware back was popping more history than existed and crashing the
+  // PWA (and the same in the Welcome Tour). Two guards close this:
+  //   • lastPopRef debounces consecutive popstates within 350ms into ONE step.
+  //   • the app now exits ONLY when the user taps Exit in the dialog
+  //     (programmaticExitRef) — a hardware back never closes the app, so a
+  //     fast double-back can no longer fall out of the app accidentally (#6).
+  const lastPopRef = useRef(0);
+  const programmaticExitRef = useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined' || !window.history) return;
+    const reArm = () => {
+      try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
+    };
     const onPop = () => {
+      // Exit button path: confirmExit() set this flag and called history.back()
+      // to pop the re-armed sentinel; pop ONE more past it so the OS closes the
+      // PWA. This is the ONLY code path that ever exits the app.
+      if (programmaticExitRef.current) {
+        programmaticExitRef.current = false;
+        try { window.history.back(); } catch (e) {}
+        return;
+      }
       sentinelArmedRef.current = false;            // the sentinel was just consumed
+      const now = Date.now();
+      const rapid = now - lastPopRef.current < 350; // #5/#12 — collapse fast double-taps
+      lastPopRef.current = now;
       const s = navBackRef.current;
       const action = decideBackAction(s);
       if (action === 'self-guarded') return;       // Quiz/advanced guard owns it
+      // A second back within the debounce window is treated as part of the same
+      // gesture: re-arm the sentinel and do nothing else (no double pop / crash).
+      if (rapid) { reArm(); return; }
       if (action === 'exit') {
-        // #30 reworked (issues round) — exit CONFIRMATION dialog. First back
-        // press on Home: re-arm the sentinel and open the centred "Exit app?"
-        // dialog (Cancel / Exit). The app only closes when the user confirms:
-        // tapping Exit fires one more history.back() past the consumed
-        // sentinel, and a second hardware back press while the dialog is open
-        // does the same (the power-user double-back shortcut still works).
-        // No auto-timeout — the dialog waits for an explicit choice.
-        if (exitPendingRef.current) {
-          exitPendingRef.current = false;
-          setExitSnack(false);
-          try { window.history.back(); } catch (e) {}
-          return;
-        }
-        try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
+        // #6 — show the centred "Exit app?" dialog and re-arm; the back press
+        // itself NEVER closes the app. Exit happens only via confirmExit().
+        reArm();
         exitPendingRef.current = true;
         setExitSnack(true);
         return;
       }
-      // Re-arm so subsequent back presses keep being intercepted.
-      try { window.history.pushState({ navGuard: true }, ''); sentinelArmedRef.current = true; } catch (e) {}
+      reArm();                                      // keep intercepting subsequent backs
       if (action === 'close-overlay') {
         if (s.kind === 'merge') return;             // forced choice → no dismiss on back
         if (s.kind === 'welcome') {
@@ -2422,12 +2436,15 @@ export default function App() {
   const cancelExit = useCallback(() => {
     exitPendingRef.current = false;
     setExitSnack(false);
+    // The sentinel re-armed when the dialog opened stays in place, so the next
+    // back press simply re-shows this dialog — never an accidental exit.
   }, []);
   const confirmExit = useCallback(() => {
-    // exitPendingRef stays true: the history.back() below consumes the armed
-    // sentinel, the popstate handler sees the pending flag and fires one more
-    // back() past it, letting the OS minimise/close the PWA.
+    // The ONLY exit path: pop the re-armed sentinel; the popstate handler sees
+    // programmaticExitRef and pops once more past it, letting the OS close.
     setExitSnack(false);
+    exitPendingRef.current = false;
+    programmaticExitRef.current = true;
     try { window.history.back(); } catch (e) {}
   }, []);
 

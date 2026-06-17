@@ -12,6 +12,7 @@
 // module global directly, so this module owns the whole request channel.
 // =====================================================================
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { isPYQ, pyqLabel } from '../lib/pyq.js';
 import { ArrowLeft, HelpCircle, AlertCircle, History } from 'lucide-react';
@@ -118,41 +119,52 @@ function TopBar({ title, onBack, right, feedback, favId }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   // Theme-aware translucent background
   const tbBg = IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0';
-  // FIXED top bar (issues round): the bar is pinned to the viewport on every
-  // screen so navigation/Help/Report never scroll out of reach, and it pads
-  // itself by env(safe-area-inset-top) so the title/counter can never collide
-  // with the device status bar or notch. A spacer div keeps the page content
-  // from sliding underneath. (Screens that want an immersive view — the
-  // Knowledge Map — simply don't render a TopBar.)
-  return (
-    <>
-      <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
-           style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
-                    paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {onBack && (
-              <Tip text="Go back to the previous screen">
-                <button onClick={onBack} aria-label="Go back" className="no-tap-highlight p-2 -ml-2 rounded-full active:bg-black/5">
-                  <ArrowLeft size={20} color={T.ink} />
-                </button>
-              </Tip>
-            )}
-            <div className="font-display text-lg truncate" style={{ color: T.ink }}>{title}</div>
-          </div>
-          <div className="flex items-center gap-1.5">
-            {/* FAV — heart on favoritable sections (registry-gated; renders
-                nothing for ids outside lib/favorites.js). */}
-            {favId && <FavHeart favId={favId} />}
-            {right}
-            {feedback && <HelpButton screen={feedback.screen} />}
-            {feedback && (
-              <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
-                              profileId={feedback.profileId} profileName={feedback.profileName} />
-            )}
-          </div>
+  // FIXED top bar (issues round, hardened): the bar is pinned to the viewport
+  // on every screen so navigation/Help/Report never scroll out of reach, and it
+  // pads itself by env(safe-area-inset-top) so the title/counter never collide
+  // with the status bar/notch. A spacer keeps page content from sliding under.
+  //
+  // #13 — the bar is rendered through a PORTAL into <body>. Every screen wraps
+  // its TopBar in a `.anim-fadeup` div; while that entrance animation runs the
+  // wrapper holds a transform, and ANY transformed ancestor turns position:fixed
+  // into "fixed to that ancestor" (so the bar scrolled away). Portaling the bar
+  // out of the screen subtree makes it a child of <body> — no screen wrapper,
+  // animation, overflow container or future layout can ever contain it again.
+  // useTheme still works through the portal (React context follows the tree,
+  // not the DOM). The spacer stays in flow to reserve the bar's height.
+  const bar = (
+    <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
+         style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
+                  paddingTop: 'env(safe-area-inset-top, 0px)' }}>
+      <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {onBack && (
+            <Tip text="Go back to the previous screen">
+              <button onClick={onBack} aria-label="Go back" className="no-tap-highlight p-2 -ml-2 rounded-full active:bg-black/5">
+                <ArrowLeft size={20} color={T.ink} />
+              </button>
+            </Tip>
+          )}
+          <div className="font-display text-lg truncate" style={{ color: T.ink }}>{title}</div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {/* FAV — heart on favoritable sections (registry-gated; renders
+              nothing for ids outside lib/favorites.js). */}
+          {favId && <FavHeart favId={favId} />}
+          {right}
+          {feedback && <HelpButton screen={feedback.screen} />}
+          {feedback && (
+            <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
+                            profileId={feedback.profileId} profileName={feedback.profileName} />
+          )}
         </div>
       </div>
+    </div>
+  );
+  const target = (typeof document !== 'undefined') ? document.body : null;
+  return (
+    <>
+      {target ? createPortal(bar, target) : bar}
       {/* spacer — same height as the fixed bar (row ≈ 60px) + the safe area */}
       <div aria-hidden="true" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
     </>

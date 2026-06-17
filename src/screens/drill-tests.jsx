@@ -90,7 +90,7 @@ function DrillTests({ onBack, onNavigate }) {
             <TopCard icon={Shuffle}    color={T.sec.quick} title="Quick Test"
                      sub="Pick count + topic" onClick={() => go('quick-setup')} fav="quick-setup"
                      tip="A fast warm-up: choose how many questions and (optionally) a topic — instant feedback after every answer." />
-            <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise"
+            <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise Test"
                      sub="Pick a subject" onClick={() => go('topic-select')} fav="topic-select"
                      tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
           </div>
@@ -102,7 +102,7 @@ function DrillTests({ onBack, onNavigate }) {
             <MidCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
-            <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc"
+            <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
                      sub="Numeric drug-math · type-in" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>

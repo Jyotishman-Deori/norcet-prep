@@ -889,7 +889,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           with per-section accent treatments on top. press-safe + a suppressed
           context menu kill the native long-press glitch; the hold-tooltips
           were removed from these cards because each already carries a
-          visible subtitle (the bubble only blocked the card below). */}
+          visible subtitle (the bubble only blocked the card below). The
+          tap-and-hold INFO tip is restored here (issues #2) — it is
+          glitch-free now that the bubble carries no backdrop-filter and the
+          card suppresses the native long-press chrome. */}
+      <Tip title="Drill Tests" text="All your test modes in one place — Quick, Topic Wise, Mock, Dosage and Advanced — plus previous-year papers.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
@@ -911,10 +915,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           ))}
         </div>
       </Card>
+      </Tip>
 
       {/* Learn Topic Wise — stays on Home as its own standalone card
           (learning, not testing); clearly separated from the Drill Tests
           entry above. Same icon/accent/labels as before. */}
+      <Tip title="Learn topic wise" text="Concept cards that teach each topic — learn the material before you test yourself on it.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ borderTop: `3px solid ${T.sec.learn}`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
@@ -929,11 +935,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <ChevronRight size={20} style={{ color: T.muted }} className="flex-shrink-0" />
         </div>
       </Card>
+      </Tip>
 
       {/* P10 / #13 — Interactive Knowledge Map. The app's USP, so the entry
           card carries the constellation language itself: deep-space gradient,
           a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
           (same state math as the map) to create pull from Home. */}
+      <Tip title="Knowledge Map" text="Your whole syllabus as a constellation — topics light up as you discover, practise and master them.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
@@ -963,6 +971,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} className="flex-shrink-0" />
         </div>
       </Card>
+      </Tip>
 
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}

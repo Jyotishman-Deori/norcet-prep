@@ -204,12 +204,13 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     ];
     const qBlocks = items.slice(0, 50).map((it, i) => {
       const ans = it.q.correct.map(c => `${String.fromCharCode(65 + c)}. ${it.q.options[c] || ''}`).join('  /  ');
-      return [
-        `\u2726 Q${i + 1}. ${it.q.q}`,
-        `   ANSWER: ${ans}`,
-        it.q.exp ? `   ${String(it.q.exp).replace(/\n+/g, '\n   ')}` : null,
-        '',
-      ].filter(Boolean).join('\n');
+      // A blank line sits between the question, the answer and the explanation
+      // so each block reads with clear vertical rhythm (issue #10 — the old
+      // `.filter(Boolean)` was silently dropping the '' separators, leaving
+      // every line stacked tight). Blocks are joined with a full blank line.
+      const lines = [`\u2726 Q${i + 1}. ${it.q.q}`, '', `   ANSWER: ${ans}`];
+      if (it.q.exp) { lines.push('', `   ${String(it.q.exp).replace(/\n+/g, '\n   ')}`); }
+      return lines.join('\n');
     });
     const foot = [
       items.length > 50 ? `\u2026and ${items.length - 50} more questions inside the app.` : null,
@@ -218,7 +219,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       'tests, revision notes, PYQs, dosage drills.',
       `\u27a4 ${baseUrl}`,
     ].filter(Boolean);
-    const text = [...head, ...qBlocks, ...foot].join('\n');
+    const text = [...head, qBlocks.join('\n\n'), '', ...foot].join('\n');
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
         await navigator.share({ title: `${title} — Crib Sheet`, text });

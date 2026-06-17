@@ -4,7 +4,7 @@
 // (T -> useTheme). Props stay { profile, onRename, onClose } (profile is a prop
 // passed by RenameProfileHost). Opened via the rename-channel.
 // =====================================================================
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { AlertCircle, RefreshCw, Save, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
@@ -24,6 +24,16 @@ function RenameProfileModal({ profile, onRename, onClose }) {
 
   const close = () => { if (!busy) onClose(); };
   const dialogRef = useFocusTrap(close);
+  // #7 — On Android the soft keyboard resizes the viewport between touchstart
+  // and click, so a tap that begins INSIDE the input can release on the
+  // backdrop and dismiss the dialog. Only dismiss when the gesture BOTH starts
+  // and ends on the backdrop itself (target === currentTarget on both events).
+  const downOnBackdrop = useRef(false);
+  const onBackdropPointerDown = (e) => { downOnBackdrop.current = (e.target === e.currentTarget); };
+  const onBackdropClick = (e) => {
+    if (e.target === e.currentTarget && downOnBackdrop.current) close();
+    downOnBackdrop.current = false;
+  };
 
   const submit = async () => {
     if (busy) return;
@@ -45,8 +55,10 @@ function RenameProfileModal({ profile, onRename, onClose }) {
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
          style={{ background: 'rgba(0,0,0,0.5)' }}
-         onClick={close}>
+         onPointerDown={onBackdropPointerDown}
+         onClick={onBackdropClick}>
       <Card className="w-full max-w-md anim-scalein"
+            onPointerDown={e => e.stopPropagation()}
             onClick={e => e.stopPropagation()}>
         <div className="p-5" ref={dialogRef} role="dialog" aria-modal="true" aria-label="Rename profile">
           <div className="flex items-center justify-between mb-3">
