@@ -11,19 +11,28 @@ import { KEY_PREFIXES } from './keys.js';
 
 const CAP = 12;
 
-const slimItem = (it) => ({
-  q: {
-    id: it.q.id,
-    q: String(it.q.q || ''),
-    options: (it.q.options || []).map(String),
-    correct: Array.isArray(it.q.correct) ? it.q.correct : [],
-    exp: it.q.exp ? String(it.q.exp) : '',
-    topic: it.q.topic || null,
-    sub: it.q.sub || null,
-  },
-  selected: Array.isArray(it.selected) ? it.selected : [],
-  status: it.status === 'correct' || it.status === 'wrong' ? it.status : 'na',
-});
+const slimItem = (it) => {
+  const sq = (it && it.q) || {};
+  const q = {
+    id: sq.id,
+    q: String(sq.q || ''),
+    options: (sq.options || []).map(String),
+    correct: Array.isArray(sq.correct) ? sq.correct : [],
+    exp: sq.exp ? String(sq.exp) : '',
+    topic: sq.topic || null,
+    sub: sq.sub || null,
+  };
+  // #25 — preserve PYQ provenance so a saved Crib Sheet can tag PYQs too.
+  if (sq.isPYQ) q.isPYQ = true;
+  if (typeof sq.source === 'string' && sq.source) q.source = sq.source;
+  if (typeof sq.pyqYear === 'number' && sq.pyqYear > 0) q.pyqYear = sq.pyqYear;
+  if (typeof sq.pyqExam === 'string' && sq.pyqExam.trim()) q.pyqExam = sq.pyqExam;
+  return {
+    q,
+    selected: Array.isArray(it.selected) ? it.selected : [],
+    status: it.status === 'correct' || it.status === 'wrong' ? it.status : 'na',
+  };
+};
 
 export async function loadCribs(profileId) {
   try {

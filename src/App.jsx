@@ -52,7 +52,8 @@ import {
   normalizeStem, stemSimilarity, getISOWeek
 } from './lib/utils.js';
 // [A1 slice 49 / tidy-up] quick-practice selection logic extracted.
-import { selectQuickPracticeQuestions } from './lib/quick-practice.js';
+import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/quick-practice.js';
+import { examTopicWeightage } from './lib/weightage.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -2472,7 +2473,10 @@ export default function App() {
           return s === spec.sub;
         });
       }
-      qs = shuffle(pool).slice(0, spec.count || 10);
+      // #21 — unseen-first so Topic Wise Test never repeats a question across
+      // sessions until the topic's bank is exhausted (was a raw shuffle, which
+      // could re-serve the same questions every time).
+      qs = selectQuickPracticeQuestions(pool, spec.count || 10, data ? data.history : {});
     } else if (spec.mode === 'weak-topic') {
       // Practice mode launched from the Weak Areas screen. Bias the question
       // selection toward questions she's previously got WRONG in this topic
@@ -3624,14 +3628,14 @@ export default function App() {
   }, []);
 
   // ===== Quick Practice setup =====
-  const startQuickPractice = useCallback(({ count, topic, pyqOnly }) => {
-    setData(prev => ({ ...prev, preferences: { ...prev.preferences, quickCount: count, quickTopic: topic } }));
-    // P16 — optional PYQ-only narrowing (the setup screen guards against an
-    // empty pool, so by the time we get here there is enough to select from).
-    let pool = pyqOnly ? allQuestions.filter(isPYQ) : allQuestions;
-    if (topic !== 'all') pool = pool.filter(q => q.topic === topic);
-    // Prioritise fresh/unseen, then weakest/stalest; never repeats within a session.
-    const qs = selectQuickPracticeQuestions(pool, count, data ? data.history : {});
+  const startQuickPractice = useCallback(({ count }) => {
+    setData(prev => ({ ...prev, preferences: { ...prev.preferences, quickCount: count } }));
+    // #20 — Quick Test is a topic-balanced black box: sample the whole syllabus
+    // in proportion to the real exam's topic weightage (derived from the PYQ
+    // papers), preferring fresh/unseen questions (#21) and naturally blending
+    // in PYQ-tagged items (#25, they live in allQuestions).
+    const weights = examTopicWeightage(PREVIOUS_YEAR_PAPERS, false);
+    const qs = selectBalancedQuestions(allQuestions, count, weights, data ? data.history : {});
     setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false });
   }, [allQuestions, data]);
 
@@ -3931,7 +3935,7 @@ export default function App() {
 
       {nav.screen === 'topic-select' && (
         <TopicSelect
-                     onPick={(topic, pyqOnly) => startQuiz({ mode: 'topic', topic, count: 10, pyqOnly })}
+                     onPick={(topic, count) => startQuiz({ mode: 'topic', topic, count: count || 10 })}
                      onBack={goHome} />
       )}
 

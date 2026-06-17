@@ -22,6 +22,7 @@ import { useTheme, useProfile } from '../lib/app-context.jsx';
 // #5 — save this sheet into the Revision section (dated, printable).
 import { addCrib, cribSignature, findCribBySig } from '../lib/cribs.js';
 import { Tip } from '../ui/tooltip.jsx';
+import { PyqBadge } from '../ui/primitives.jsx';
 
 const CRIB_PRINT_STYLES = `
 @media print {
@@ -71,6 +72,7 @@ function QuestionCard({ item, num, T, negative, profileId, accent }) {
       </div>
 
       {/* full stem — never truncated */}
+      <PyqBadge q={q} className="mb-2" />
       <div className="text-sm mb-3" style={{ color: T.ink, lineHeight: 1.6 }}>{q.q}</div>
 
       {/* all four options */}

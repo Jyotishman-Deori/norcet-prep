@@ -1,33 +1,27 @@
 // =====================================================================
-// QUICK PRACTICE SETUP SCREEN  (extracted verbatim from App.jsx)
-// Chooses count + topic for a quick practice round; persisted prefs come
-// from data.preferences. [A7] theme via useTheme(); app data + question
-// pool via useData(). onStart/onBack stay props.
+// QUICK PRACTICE SETUP SCREEN
+// #20 — Quick Test is now a "black box": the user picks ONLY a question
+// count; the questions are a TOPIC-BALANCED random mix that mirrors the real
+// exam's weightage (selectBalancedQuestions in App.startQuickPractice). The
+// old topic-selection list was removed — Topic Wise Test is the place to drill
+// a single subject. [A7] theme via useTheme(); pool via useData().
 // =====================================================================
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { Shuffle } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
-import { TOPICS } from '../data/seed.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+
+const COUNT_OPTIONS = [3, 5, 10, 15, 20];
 
 function QuickPracticeSetup({ onStart, onBack }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
-  const prefs = data.preferences || { quickCount: 5, quickTopic: 'all' };
-  const [count, setCount] = useState(prefs.quickCount);
-  const [topic, setTopic] = useState(prefs.quickTopic);
+  const prefs = data.preferences || { quickCount: 5 };
+  const initial = COUNT_OPTIONS.includes(prefs.quickCount) ? prefs.quickCount : 5;
+  const [count, setCount] = useState(initial);
 
-  const topicsWithCounts = useMemo(() => {
-    const map = {};
-    allQuestions.forEach(q => { map[q.topic] = (map[q.topic] || 0) + 1; });
-    return TOPICS.map(t => ({ ...t, count: map[t.id] || 0 })).filter(t => t.count > 0);
-  }, [allQuestions]);
-
-  const availablePool = topic === 'all'
-    ? allQuestions.length
-    : (topicsWithCounts.find(t => t.id === topic)?.count || 0);
-
-  const canStart = availablePool >= count;
+  const poolSize = allQuestions.length;
+  const canStart = poolSize >= count;
 
   return (
     <div className="anim-fadeup">
@@ -40,15 +34,15 @@ function QuickPracticeSetup({ onStart, onBack }) {
               <Shuffle size={18} color="#FFF" />
             </div>
             <div style={{ color: '#FFF' }}>
-              <div className="font-display text-lg font-semibold">Fast practice with hints</div>
-              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Instant feedback after each answer</div>
+              <div className="font-display text-lg font-semibold">A balanced random mix</div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Weighted like the real exam · instant feedback</div>
             </div>
           </div>
         </Card>
 
-        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many?</div>
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          {[5, 10, 15, 20].map(c => (
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many questions?</div>
+        <div className="grid grid-cols-5 gap-2 mb-5">
+          {COUNT_OPTIONS.map(c => (
             <button key={c} onClick={() => setCount(c)}
                     className="no-tap-highlight py-3 rounded-xl text-base font-semibold transition-all"
                     style={{ background: count === c ? T.primary : T.surface,
@@ -59,50 +53,22 @@ function QuickPracticeSetup({ onStart, onBack }) {
           ))}
         </div>
 
-        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Topic</div>
-        <div className="space-y-2 mb-5">
-          <button onClick={() => setTopic('all')}
-                  className="no-tap-highlight w-full p-3 rounded-xl text-left transition-all"
-                  style={{ background: topic === 'all' ? T.primary + '18' : T.surface,
-                           color: T.ink,
-                           border: `1.5px solid ${topic === 'all' ? T.primary : T.border}` }}>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
-                   style={{ background: topic === 'all' ? T.primary + '25' : T.surfaceWarm }}>
-                🎲
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium" style={{ color: T.ink }}>All topics mixed</div>
-                <div className="text-xs" style={{ color: T.muted }}>{allQuestions.length} questions in pool</div>
-              </div>
-            </div>
-          </button>
-          {topicsWithCounts.map(t => {
-            const active = topic === t.id;
-            return (
-              <button key={t.id} onClick={() => setTopic(t.id)}
-                      className="no-tap-highlight w-full p-3 rounded-xl text-left transition-all"
-                      style={{ background: active ? t.color + '18' : T.surface,
-                               border: `1.5px solid ${active ? t.color : T.border}` }}>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 text-base"
-                       style={{ background: active ? t.color + '25' : T.surfaceWarm }}>
-                    {t.icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate" style={{ color: T.ink }}>{t.name}</div>
-                    <div className="text-xs" style={{ color: T.muted }}>{t.count} question{t.count === 1 ? '' : 's'}</div>
-                  </div>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        {/* The selection is deliberately a black box — no topic picker. We
+            sample across the whole syllabus in proportion to each topic's
+            exam weightage, preferring fresh (unseen) questions you haven't
+            been served before. */}
+        <Card className="p-3.5 mb-3" style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
+          <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
+            Questions are drawn at random across every subject, weighted the way
+            the real exam is — and you won't be served the same question twice
+            until you've worked through the whole bank.
+          </div>
+        </Card>
 
         {!canStart && (
           <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40` }}>
             <div className="text-xs" style={{ color: T.error }}>
-              Only {availablePool} question{availablePool === 1 ? '' : 's'} available in this topic — reduce the count or pick another topic.
+              Only {poolSize} question{poolSize === 1 ? '' : 's'} in your bank — reduce the count.
             </div>
           </Card>
         )}
@@ -111,7 +77,7 @@ function QuickPracticeSetup({ onStart, onBack }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md mx-auto">
-          <Button onClick={() => onStart({ count, topic })} disabled={!canStart} size="lg" className="w-full" icon={<Shuffle size={16} />}>
+          <Button onClick={() => onStart({ count })} disabled={!canStart} size="lg" className="w-full" icon={<Shuffle size={16} />}>
             Start {count} question{count === 1 ? '' : 's'}
           </Button>
         </div>

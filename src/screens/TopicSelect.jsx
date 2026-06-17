@@ -4,17 +4,20 @@
 // topic quiz. [A7] theme via useTheme(); question pool + history via
 // useData() (history === data.history, was a prop). onPick/onBack stay props.
 // =====================================================================
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { TOPICS } from '../data/seed.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 
+const COUNT_OPTIONS = [5, 10, 15, 20];
+
 function TopicSelect({ onPick, onBack }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const history = data.history;
+  const [count, setCount] = useState(10);
   const countsByTopic = useMemo(() => {
     const c = {};
     allQuestions.forEach(q => { c[q.topic] = (c[q.topic] || 0) + 1; });
@@ -40,12 +43,25 @@ function TopicSelect({ onPick, onBack }) {
     <div className="anim-fadeup">
       <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-4">
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many questions?</div>
+        <div className="grid grid-cols-4 gap-2 mb-5">
+          {COUNT_OPTIONS.map(c => (
+            <button key={c} onClick={() => setCount(c)}
+                    className="no-tap-highlight py-2.5 rounded-xl text-base font-semibold transition-all"
+                    style={{ background: count === c ? T.primary : T.surface,
+                             color: count === c ? '#FFF' : T.ink,
+                             border: `1.5px solid ${count === c ? T.primary : T.border}` }}>
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Choose a subject</div>
         <div className="space-y-2.5">
           {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {
             const acc = accuracyByTopic[topic.id];
             const accPct = acc && acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : null;
             return (
-              <Card key={topic.id} className="p-4" onClick={() => onPick(topic.id)}>
+              <Card key={topic.id} className="p-4" onClick={() => onPick(topic.id, count)}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
