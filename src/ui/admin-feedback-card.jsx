@@ -35,6 +35,15 @@ function AdminFeedbackCard({ item, onSaveReply, onDelete, onPeek }) {
     <Card className="p-4">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex flex-wrap items-center gap-1.5">
+          {(() => {
+            const src = item.source || (item.questionId ? 'question' : 'screen');
+            const meta = src === 'feedback'
+              ? { label: 'Feedback', c: T.success }
+              : src === 'question'
+                ? { label: 'Question', c: T.accent }
+                : { label: 'Screen', c: T.muted };
+            return <Pill bg={meta.c + '1A'} color={meta.c}>{meta.label}</Pill>;
+          })()}
           <Pill bg={T.primary + '18'} color={T.primary}>{item.screen}</Pill>
           {item.questionId && (
             <button onClick={() => onPeek && onPeek(item.questionId)}

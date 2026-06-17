@@ -15,9 +15,9 @@
 // A7: was a bare-T reader -> useTheme(). No IS_DARK / fgOnDark / fontStyles, no
 // data/setData context (profile + allQuestions are props). Renders the already-
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  AlertCircle, AlertTriangle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  Activity, AlertCircle, AlertTriangle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Trash2, Upload, User
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -31,12 +31,16 @@ import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { loadHelpfulnessReport } from '../lib/helpful-votes.js';
 import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
+import { loadEngagement } from '../lib/analytics.js';
 // FAV — Favourites insights: hearts + average priority rank per section.
 import { loadFavInsights } from '../lib/favorites.js';
 import { FavIcon } from '../ui/fav-icons.jsx';
 import { Heart } from 'lucide-react';
 import { fmtWhen } from '../lib/format.js';
 import { topicName } from '../lib/topics.js';
+// #24 — bank demand vs supply uses the exam-weightage distribution.
+import { examTopicWeightage } from '../lib/weightage.js';
+import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
 
 function AdminPanel({
   profile, banks, banksLoading,
@@ -98,6 +102,9 @@ function AdminPanel({
   const [annMsg, setAnnMsg] = useState(null);
 
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
+  // #27b — Users list search + sort.
+  const [userSearch, setUserSearch] = useState('');
+  const [userSort, setUserSort] = useState('active'); // 'active' | 'joined' | 'name'
   const [fbFilter, setFbFilter] = useState('open');   // 'all' | 'open' | 'resolved'
   const [peekId, setPeekId] = useState(null);          // reported question being viewed
 
@@ -122,6 +129,9 @@ function AdminPanel({
   const [errFilter, setErrFilter] = useState('open'); // 'open' | 'resolved' | 'all'
   const [errOpen, setErrOpen] = useState(null);        // expanded signature
   const [errDelConfirm, setErrDelConfirm] = useState(null);
+  // #28 — engagement analytics (aggregate)
+  const [eng, setEng] = useState(null);
+  const [engLoading, setEngLoading] = useState(true);
   const refreshFavIns = useCallback(async () => {
     setFavInsLoading(true);
     try { setFavIns(await loadFavInsights()); } catch (e) {}
@@ -143,6 +153,39 @@ function AdminPanel({
     setErrDelConfirm(null);
     await deleteErrorGroup(sig);
   }, []);
+
+  const refreshEng = useCallback(async () => {
+    setEngLoading(true);
+    try { setEng(await loadEngagement()); } catch (e) { setEng(null); }
+    setEngLoading(false);
+  }, []);
+
+  // #24 — bank demand vs supply (computed, no telemetry). Supply = questions in
+  // each topic's bank; demand = how heavily the exam tests that topic (weightage
+  // from the PYQ papers). A topic the exam emphasises but whose bank is thin gets
+  // exhausted fastest, so the admin knows where to add questions first.
+  const demand = useMemo(() => {
+    const weights = examTopicWeightage(PREVIOUS_YEAR_PAPERS, false);
+    const total = allQuestions.length || 0;
+    const bankByTopic = {};
+    allQuestions.forEach(q => { if (q && q.topic) bankByTopic[q.topic] = (bankByTopic[q.topic] || 0) + 1; });
+    const ids = new Set([...Object.keys(bankByTopic), ...Object.keys(weights)]);
+    const rows = [];
+    ids.forEach(id => {
+      const size = bankByTopic[id] || 0;
+      const w = weights[id] || 0;                       // exam weightage %
+      const supplyShare = total > 0 ? size / total : 0; // 0..1
+      const demandShare = w / 100;                      // 0..1
+      const ratio = demandShare > 0 ? supplyShare / demandShare : (size > 0 ? 2 : 0);
+      let risk = 'ok';
+      if (w > 0 && (ratio < 0.6 || size < 10)) risk = 'high';
+      else if (w > 0 && ratio < 0.9) risk = 'watch';
+      rows.push({ id, name: topicName(id) || id, size, w, supplyShare, demandShare, ratio, risk });
+    });
+    const rank = { high: 0, watch: 1, ok: 2 };
+    rows.sort((a, b) => (rank[a.risk] - rank[b.risk]) || (a.ratio - b.ratio) || (b.w - a.w));
+    return { rows, highCount: rows.filter(r => r.risk === 'high').length, total };
+  }, [allQuestions]);
 
   const refreshUsers = useCallback(async () => {
     setUsersLoading(true);
@@ -220,6 +263,8 @@ function AdminPanel({
   const totalUsers = users.length;
   const totalBanks = banks ? banks.length : 0;
   const totalFeedback = feedback.length;
+  // #19 — open (unhandled) reports for the dashboard summary band.
+  const openFeedback = feedback.filter(it => !(it.status === 'fixed' || it.status === 'wontfix' || it.status === 'thanks')).length;
 
   const backToDash = () => setView('dashboard');
 
@@ -486,9 +531,42 @@ function AdminPanel({
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : users.length === 0 ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>No profiles yet.</div></Card>
-          ) : (
-            <div className="space-y-2">
-              {users.map(u => {
+          ) : (() => {
+            const q = userSearch.trim().toLowerCase();
+            const shownUsers = users
+              .filter(u => !q || (u.displayName || '').toLowerCase().includes(q) || (u.id || '').toLowerCase().includes(q))
+              .slice()
+              .sort((a, b) => {
+                if (userSort === 'name') return (a.displayName || '').localeCompare(b.displayName || '');
+                if (userSort === 'joined') return (b.createdAt || 0) - (a.createdAt || 0);
+                return (b.lastActive || 0) - (a.lastActive || 0);
+              });
+            const sorts = [{ id: 'active', label: 'Recent' }, { id: 'joined', label: 'Newest' }, { id: 'name', label: 'A–Z' }];
+            return (
+            <>
+              {/* search */}
+              <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
+                     placeholder={`Search ${users.length} user${users.length === 1 ? '' : 's'}…`}
+                     className="w-full px-3.5 py-2.5 rounded-xl text-sm mb-2.5 outline-none"
+                     style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
+              {/* sort */}
+              <div className="flex gap-2 mb-3">
+                {sorts.map(s => {
+                  const active = userSort === s.id;
+                  return (
+                    <button key={s.id} onClick={() => setUserSort(s.id)}
+                            className="no-tap-highlight flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors active:scale-95"
+                            style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft, border: `1px solid ${active ? T.primary : T.border}` }}>
+                      {s.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {shownUsers.length === 0 ? (
+                <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No users match “{userSearch.trim()}”.</div></Card>
+              ) : (
+              <div className="space-y-2">
+              {shownUsers.map(u => {
                 const isSelf = profile && u.id === profile.id;
                 return (
                   <Card key={u.id} className="p-3.5">
@@ -528,8 +606,11 @@ function AdminPanel({
                   </Card>
                 );
               })}
-            </div>
-          )}
+              </div>
+              )}
+            </>
+            );
+          })()}
         </div>
       </div>
     );
@@ -816,6 +897,140 @@ function AdminPanel({
     );
   }
 
+  // =================== DETAIL VIEW: BANK HEALTH (#24) ===================
+  if (view === 'demand') {
+    const riskColor = (r) => (r === 'high' ? T.error : r === 'watch' ? T.accent : T.success);
+    const riskLabel = (r) => (r === 'high' ? 'Low supply' : r === 'watch' ? 'Watch' : 'Healthy');
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Bank health" onBack={backToDash} feedback={{ screen: 'Admin · Bank health' }} />
+        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
+            Supply (questions in each bank) vs demand (how heavily the exam tests that topic). Topics the exam emphasises but your bank is thin on get used up fastest — add questions there first. {demand.total} questions total.
+          </div>
+
+          {demand.highCount > 0 && (
+            <Card className="p-3.5 mb-4" style={{ background: T.error + '10', border: `1px solid ${T.error}40` }}>
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={18} style={{ color: T.error }} />
+                <div className="text-sm font-medium" style={{ color: T.error }}>
+                  {demand.highCount} topic{demand.highCount === 1 ? '' : 's'} under-supplied for their exam weight
+                </div>
+              </div>
+            </Card>
+          )}
+
+          <div className="space-y-2.5">
+            {demand.rows.map(r => {
+              const supplyPct = Math.round(r.supplyShare * 100);
+              const demandPct = Math.round(r.w);
+              return (
+                <Card key={r.id} className="p-3.5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-sm font-semibold flex-1 min-w-0 truncate" style={{ color: T.ink }}>{r.name}</div>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                          style={{ background: riskColor(r.risk) + '1A', color: riskColor(r.risk) }}>{riskLabel(r.risk)}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-[11px] mb-2" style={{ color: T.muted }}>
+                    <span><span className="font-semibold tabular-nums" style={{ color: T.inkSoft }}>{r.size}</span> questions</span>
+                    <span>·</span>
+                    <span>exam weight <span className="font-semibold tabular-nums" style={{ color: T.inkSoft }}>{demandPct}%</span></span>
+                  </div>
+                  {/* supply (have) vs demand (need) bars */}
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] w-12 flex-shrink-0" style={{ color: T.muted }}>supply</span>
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.min(supplyPct * 3, 100)}%`, background: T.primary }} />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] w-12 flex-shrink-0" style={{ color: T.muted }}>demand</span>
+                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.min(demandPct * 3, 100)}%`, background: riskColor(r.risk) }} />
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // =================== DETAIL VIEW: ENGAGEMENT (#28) ===================
+  if (view === 'engagement') {
+    const prettyScreen = (id) => String(id || '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    const Stat = ({ label, value, tone }) => (
+      <div className="rounded-2xl p-3.5" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
+        <div className="text-2xl font-display font-semibold tabular-nums" style={{ color: tone || T.ink }}>{value}</div>
+        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{label}</div>
+      </div>
+    );
+    const maxScreen = eng && eng.topScreens.length ? eng.topScreens[0].count : 1;
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Engagement" onBack={backToDash} feedback={{ screen: 'Admin · Engagement' }}
+                right={
+                  <button onClick={refreshEng} disabled={engLoading} aria-label="Refresh"
+                          className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">
+                    <RefreshCw size={18} style={{ color: T.muted }} className={engLoading ? 'animate-spin' : ''} />
+                  </button>
+                } />
+        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
+            Aggregated usage across everyone — members and guests. No individual's activity is shown.
+          </div>
+          {engLoading ? (
+            <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
+          ) : !eng || eng.totalUsers === 0 ? (
+            <Card className="p-8 text-center">
+              <Activity size={32} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
+              <div className="font-display text-lg mb-0.5" style={{ color: T.ink }}>No usage data yet</div>
+              <div className="text-sm" style={{ color: T.muted }}>Summaries appear as people use the app.</div>
+            </Card>
+          ) : (
+            <>
+              <div className="grid grid-cols-2 gap-2.5 mb-2.5">
+                <Stat label="Active today" value={eng.activeToday} tone={T.primary} />
+                <Stat label="Active this week" value={eng.activeWeek} tone={T.primary} />
+                <Stat label="Members" value={eng.members} />
+                <Stat label="Guests" value={eng.guests} />
+                <Stat label="Total sessions" value={eng.sessions} />
+                <Stat label="Avg sessions / user" value={eng.avgSessions.toFixed(1)} />
+              </div>
+              {eng.newWeek > 0 && (
+                <Card className="p-3 mb-4" style={{ background: T.success + '12', border: `1px solid ${T.success}33` }}>
+                  <div className="text-sm font-medium" style={{ color: T.success }}>+{eng.newWeek} new {eng.newWeek === 1 ? 'user' : 'users'} this week</div>
+                </Card>
+              )}
+
+              <div className="text-xs uppercase tracking-wider font-semibold mt-5 mb-2 px-1" style={{ color: T.muted }}>Most-visited screens</div>
+              <Card className="p-3.5">
+                <div className="space-y-2.5">
+                  {eng.topScreens.map(s => (
+                    <div key={s.id}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-xs font-medium truncate" style={{ color: T.ink }}>{prettyScreen(s.id)}</span>
+                        <span className="text-[11px] tabular-nums ml-2 flex-shrink-0" style={{ color: T.muted }}>{s.count}</span>
+                      </div>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
+                        <div className="h-full rounded-full" style={{ width: `${Math.max(4, Math.round((s.count / maxScreen) * 100))}%`, background: T.primary }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <div className="text-[11px] mt-3 px-1" style={{ color: T.muted }}>{eng.totalScreenViews.toLocaleString()} screen views from {eng.totalUsers} tracked {eng.totalUsers === 1 ? 'user' : 'users'}.</div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // =================== DETAIL VIEW: MANAGE ADMINS ===================
   if (view === 'manageAdmins') {
     return <AdminManager onBack={backToDash} />;
@@ -839,6 +1054,20 @@ function AdminPanel({
                 </button>
               } />
       <div className="max-w-md mx-auto px-4 pb-24 pt-3">
+        {/* #19 — at-a-glance summary band. The numbers that need attention,
+            before the section tiles. */}
+        <div className="grid grid-cols-3 gap-2.5 mb-4">
+          {[
+            { label: 'Users', value: usersLoading ? '—' : totalUsers, tone: T.ink },
+            { label: openFeedback === 1 ? 'Open report' : 'Open reports', value: feedbackLoading ? '—' : openFeedback, tone: openFeedback > 0 ? T.accent : T.success },
+            { label: demand.highCount === 1 ? 'Bank alert' : 'Bank alerts', value: demand.highCount, tone: demand.highCount > 0 ? T.error : T.success },
+          ].map((s, i) => (
+            <div key={i} className="rounded-2xl p-3 text-center" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
+              <div className="font-display text-2xl font-semibold tabular-nums leading-none" style={{ color: s.tone }}>{s.value}</div>
+              <div className="text-[10px] mt-1" style={{ color: T.muted }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
         <div className="grid grid-cols-2 gap-3">
 
           {/* Feedback — N new badge */}
@@ -903,6 +1132,26 @@ function AdminPanel({
             hint="Section popularity"
             onClick={() => { setView('favourites'); refreshFavIns(); }}
             signal={<Heart size={18} style={{ color: T.muted }} />} />
+
+          {/* #28 — Engagement: aggregate usage (members + guests) */}
+          <AdminTile
+            icon={<Activity size={22} style={{ color: T.sec.advanced }} />}
+            accent={T.sec.advanced}
+            label="Engagement"
+            hint="Usage & active users"
+            onClick={() => { setView('engagement'); refreshEng(); }}
+            signal={<Activity size={18} style={{ color: T.muted }} />} />
+
+          {/* #24 — Bank health: per-topic supply vs exam demand */}
+          <AdminTile
+            icon={<Layers size={22} style={{ color: T.sec.mock }} />}
+            accent={T.sec.mock}
+            label="Bank health"
+            hint="Supply vs exam demand"
+            onClick={() => setView('demand')}
+            signal={demand.highCount > 0
+              ? <span className="px-2 py-1 rounded-full text-xs font-bold" style={{ background: T.error, color: '#FFF' }}>{demand.highCount}</span>
+              : <Layers size={18} style={{ color: T.muted }} />} />
 
           {/* #29 — Crash reports: grouped client errors + render crashes */}
           <AdminTile

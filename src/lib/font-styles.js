@@ -340,6 +340,10 @@ export const fontStyles = `
    bled into the area above the home cards (issues #1/#2). Long-press still
    reaches our JS Tip handler; only the native gesture chrome is suppressed. */
 .press-safe { touch-action: manipulation; }
+/* #26 — hide the scrollbar on horizontal chip rows (exam filter) while keeping
+   the row scrollable. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* ── Dosage answer field — its placeholder must read as a HINT, never as a
    pre-filled value (the old placeholder="0" looked like an entered answer). */

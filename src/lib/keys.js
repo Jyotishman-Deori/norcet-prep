@@ -57,6 +57,12 @@ export const KEYS = {
   // #29 — client error/crash groups (shared, admin-readable). One row per
   // error SIGNATURE so repeated crashes aggregate instead of flooding.
   errlog:        (sig)       => `errlog:${sig}`,
+  // #28 — per-user engagement summary (shared, admin-readable, ONE key per
+  // user so concurrent writes never clobber). Admin UI aggregates only.
+  analyticsUser: (id)        => `analytics:user:${id}`,
+  // #28 — stable local id for an anonymous guest so their repeat visits
+  // aggregate (per device, local only).
+  ANALYTICS_LOCAL_ID: 'norcet:analytics-localid:v1',
 
   // -- Forward-compat for PROMPT 1 (cloud sync). Not yet used by any
   //    call site. P1 will switch from KEYS.USERDATA to KEYS.userdata(id)
@@ -118,4 +124,7 @@ export const KEY_PREFIXES = {
   // #29 — client error/crash groups (shared, admin-readable), grouped by
   // signature. Uses the same anon shared-write path as feedback:/favsec:.
   ERRLOG: 'errlog:',
+  // #28 — per-user engagement summaries (shared, admin-readable). Aggregated
+  // in the admin Engagement view.
+  ANALYTICS_USER: 'analytics:user:',
 };

@@ -55,6 +55,7 @@ import {
 import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/quick-practice.js';
 import { examTopicWeightage } from './lib/weightage.js';
 import { captureError, setErrorContext } from './lib/errorlog.js';
+import { initAnalytics, trackScreen } from './lib/analytics.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -2190,8 +2191,18 @@ export default function App() {
   const navRef = useRef(nav);
   navRef.current = nav;
   // #29 — keep the error logger's context pointed at the current screen so
-  // captured crashes record where they happened.
-  useEffect(() => { setErrorContext({ screen: nav.screen }); }, [nav.screen]);
+  // captured crashes record where they happened. #28 — count the screen view.
+  useEffect(() => {
+    setErrorContext({ screen: nav.screen });
+    trackScreen(nav.screen);
+  }, [nav.screen]);
+  // #28 — begin engagement tracking once the active identity is known. Handles
+  // both logged-in profiles and guests (a stable local guest id is used so
+  // their repeat visits aggregate). Fire-and-forget; never blocks the app.
+  useEffect(() => {
+    if (!profile) return;
+    initAnalytics(profile.id, isGuestProfile(profile));
+  }, [profile && profile.id]);
   const navigate = useCallback((n) => {
     const cur = navRef.current;
     if (cur && n && n.screen !== cur.screen && !NAV_NO_STACK.includes(cur.screen)) {
