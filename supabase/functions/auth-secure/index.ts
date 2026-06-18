@@ -115,6 +115,15 @@ function normalizeDob(dob: unknown): string | null {
   return s;
 }
 
+// Normalize a security-question answer. MUST stay byte-identical to
+// normalizeAnswer() in src/lib/security-questions.js: lowercase + trim +
+// collapse internal whitespace, so the answer compares case-insensitively
+// and "Rex ", "rex", "REX" all match. Returns '' for nullish input.
+function normalizeAnswer(answer: unknown): string {
+  if (answer == null) return "";
+  return String(answer).trim().replace(/\s+/g, " ").toLowerCase();
+}
+
 // Fetch one secret row by id (service-role). Returns the row object or null.
 async function getSecret(id: string): Promise<Record<string, unknown> | null> {
   const url = `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(id)}&select=*`;
@@ -145,16 +154,43 @@ Deno.serve(async (req: Request) => {
     if (action === "register") {
       const password = String(payload.password ?? "");
       if (password.length < 8) return json({ ok: false, reason: "weak-password" });
-      const normDob = normalizeDob(payload.dob);
-      if (!normDob) return json({ ok: false, reason: "bad-dob" });
+
+      // issues_new #3: a personal security question replaces DOB as the
+      // recovery factor for NEW accounts. DOB is now OPTIONAL (kept only for
+      // backward-compat / legacy clients). Require a question + a non-empty
+      // answer unless a legacy client is still sending a DOB instead.
+      const securityQuestion = payload.securityQuestion == null
+        ? null : String(payload.securityQuestion).trim() || null;
+      const normAnswer = normalizeAnswer(payload.securityAnswer);
+      const normDob = normalizeDob(payload.dob); // optional now
+
+      if (securityQuestion) {
+        if (!normAnswer) return json({ ok: false, reason: "bad-answer" });
+      } else if (!normDob) {
+        // Neither a security question nor a DOB was supplied → can't set up
+        // any recovery factor.
+        return json({ ok: false, reason: "no-recovery" });
+      }
 
       const existing = await getSecret(id);
       if (existing) return json({ ok: false, reason: "exists" });
 
       const salt = genSalt();
       const password_hash = await hashPassword(password, salt);
-      const dob_salt = genSalt();
-      const dob_hash = await hashPassword(normDob, dob_salt);
+      // DOB hash only when a DOB was actually provided (legacy path).
+      let dob_hash: string | null = null;
+      let dob_salt: string | null = null;
+      if (normDob) {
+        dob_salt = genSalt();
+        dob_hash = await hashPassword(normDob, dob_salt);
+      }
+      // Security-answer hash when a question was chosen (the new path).
+      let security_answer_hash: string | null = null;
+      let security_answer_salt: string | null = null;
+      if (securityQuestion) {
+        security_answer_salt = genSalt();
+        security_answer_hash = await hashPassword(normAnswer, security_answer_salt);
+      }
       const email = payload.email == null ? null : String(payload.email).trim() || null;
       const uid = payload.uid == null ? null : String(payload.uid);
       const display_name = payload.displayName == null ? null : String(payload.displayName);
@@ -162,7 +198,11 @@ Deno.serve(async (req: Request) => {
       const r = await fetch(`${SUPABASE_URL}/rest/v1/profile_secrets`, {
         method: "POST",
         headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
-        body: JSON.stringify({ id, uid, display_name, password_hash, salt, dob_hash, dob_salt, email }),
+        body: JSON.stringify({
+          id, uid, display_name, password_hash, salt, dob_hash, dob_salt, email,
+          security_question: securityQuestion,
+          security_answer_hash, security_answer_salt,
+        }),
       });
       if (!r.ok) {
         // 409 = unique violation (race): treat as "exists" rather than a 500.
@@ -192,15 +232,55 @@ Deno.serve(async (req: Request) => {
     // C-2 item to harden later; this only preserves today's behavior
     // while moving the secret server-side.)
     // -------------------------------------------------------------
+    // -------------------------------------------------------------
+    // RECOVERY-QUESTION — given an id, tell the client which recovery
+    // factor this account uses so the right prompt can be shown:
+    //   { ok:true, method:'question', question } — security question set
+    //   { ok:true, method:'dob' }               — legacy DOB-only account
+    //   { ok:false, reason:'no-recovery' }       — no factor / no account
+    // (A non-existent account returns the same 'no-recovery' as an account
+    //  with no factor, so this doesn't add an enumeration signal beyond
+    //  what reset already exposes.)
+    // -------------------------------------------------------------
+    if (action === "recovery-question") {
+      const row = await getSecret(id);
+      if (row && row.security_question) {
+        return json({ ok: true, method: "question", question: String(row.security_question) });
+      }
+      if (row && row.dob_hash) {
+        return json({ ok: true, method: "dob" });
+      }
+      return json({ ok: false, reason: "no-recovery" });
+    }
+
+    // -------------------------------------------------------------
+    // RESET — recovery-gated password reset. Accepts EITHER a security-
+    // question answer (the new factor) OR a DOB (legacy accounts). Verifies
+    // the matching hash, then sets a new password hash. Generic failures so
+    // we don't confirm what's on file.
+    // -------------------------------------------------------------
     if (action === "reset") {
       const newPassword = String(payload.newPassword ?? "");
       const row = await getSecret(id);
       if (!row) return json({ ok: false, reason: "no-account" });
-      if (!row.dob_hash || !row.dob_salt) return json({ ok: false, reason: "no-dob" });
-      const normDob = normalizeDob(payload.dob);
-      if (!normDob) return json({ ok: false, reason: "bad-dob" });
-      const tryHash = await hashPassword(normDob, String(row.dob_salt));
-      if (!safeEqual(tryHash, String(row.dob_hash))) return json({ ok: false, reason: "dob-mismatch" });
+
+      const hasAnswerInput = payload.securityAnswer != null && normalizeAnswer(payload.securityAnswer) !== "";
+      const hasDobInput = normalizeDob(payload.dob) != null;
+
+      // Prefer the security-question path when the account has one set.
+      if (row.security_answer_hash && row.security_answer_salt) {
+        if (!hasAnswerInput) return json({ ok: false, reason: "answer-required" });
+        const tryHash = await hashPassword(normalizeAnswer(payload.securityAnswer), String(row.security_answer_salt));
+        if (!safeEqual(tryHash, String(row.security_answer_hash))) return json({ ok: false, reason: "answer-mismatch" });
+      } else if (row.dob_hash && row.dob_salt) {
+        // Legacy DOB-only account.
+        if (!hasDobInput) return json({ ok: false, reason: "dob-required" });
+        const tryHash = await hashPassword(normalizeDob(payload.dob)!, String(row.dob_salt));
+        if (!safeEqual(tryHash, String(row.dob_hash))) return json({ ok: false, reason: "dob-mismatch" });
+      } else {
+        return json({ ok: false, reason: "no-recovery" });
+      }
+
       if (newPassword.length < 8) return json({ ok: false, reason: "weak-password" });
 
       const salt = genSalt();
@@ -243,6 +323,9 @@ Deno.serve(async (req: Request) => {
           dob_hash: src.dob_hash,
           dob_salt: src.dob_salt,
           email: src.email,
+          security_question: src.security_question ?? null,
+          security_answer_hash: src.security_answer_hash ?? null,
+          security_answer_salt: src.security_answer_salt ?? null,
           updated_at: new Date().toISOString(),
         }),
       });

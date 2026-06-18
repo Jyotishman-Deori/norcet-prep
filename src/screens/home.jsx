@@ -24,7 +24,6 @@ import { Card, Button } from '../ui/primitives.jsx';
 import FavStrip from '../ui/fav-strip.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
 import { Tip } from '../ui/tooltip.jsx';
-import { HomeSupportNudge } from '../ui/home-support-nudge.jsx';
 
 // Feature 3 — brief positive feedback when the spaced-review queue is empty
 // for an active user. Auto-hides after 3s so it rewards, then clears space.
@@ -976,10 +975,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}
 
-      {/* P9 / step 33 — quiet "support the app" nudge. Self-contained: only
-          renders after >=100 questions answered and is dismissible forever
-          (donatedismissed:v1, shared:false). Never blocks anything. */}
-      <HomeSupportNudge totalAttempted={data.stats.totalAttempted} />
+      {/* Support/donation lives only in Settings → Support now (kept subtle).
+          The Home nudge was removed to avoid surfacing it on the home screen. */}
 
       {/* Secondary destinations (Bookmarks, Stats, Library, Add Q, Reference,
           Revision, Coverage) and Settings now live in the slide-in

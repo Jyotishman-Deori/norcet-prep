@@ -13,7 +13,7 @@
 // re-prompted to accept.
 // =====================================================================
 
-export const LEGAL_VERSION = 1;       // bump on material wording changes
+export const LEGAL_VERSION = 2;       // bump on material wording changes (v2: DOB→security question; email is optional)
 export const LEGAL_UPDATED = 'June 2026';
 
 export const LEGAL = {
@@ -24,7 +24,7 @@ export const LEGAL = {
     sections: [
       {
         h: 'What we store',
-        body: 'Your study data — answers, scores, streaks, bookmarks, saved revision/crib sheets, favourites and app settings. If you create an account, we also store the display name, date of birth and password you choose. We never ask for your email or phone number.',
+        body: 'Your study data — answers, scores, streaks, bookmarks, saved revision/crib sheets, favourites and app settings. If you create an account, we also store the display name and password you choose, plus a security question and answer you pick so you can recover your password if you forget it. You can optionally add an email; we never require it and never ask for a phone number.',
       },
       {
         h: 'Guest mode',

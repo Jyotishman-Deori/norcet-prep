@@ -16,6 +16,7 @@ import { Bookmark, BookmarkCheck, BookOpen, Check, ChevronLeft, Eye } from 'luci
 import { useTheme } from '../lib/app-context.jsx';
 import { topicName, topicColor } from '../lib/topics.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
 
 const WINDOW = 20;
@@ -121,7 +122,7 @@ function PyqRead({ paper, bookmarks, onToggleBookmark, profileId, isAdmin = fals
                   <span className="text-[11px] font-mono font-semibold mt-1 flex-shrink-0" style={{ color: T.muted }}>Q{i + 1}</span>
                   <div className="text-sm flex-1" style={{ color: T.ink, lineHeight: 1.6 }}>{q.q}</div>
                   {onToggleBookmark && (
-                    <button onClick={() => onToggleBookmark(q.id)}
+                    <button onClick={() => confirmBookmarkToggle(isBm, () => onToggleBookmark(q.id))}
                             aria-pressed={isBm}
                             aria-label={isBm ? 'Remove bookmark' : 'Bookmark this question'}
                             className="no-tap-highlight p-1.5 -mr-1 -mt-1 rounded-full active:bg-black/5 flex-shrink-0">

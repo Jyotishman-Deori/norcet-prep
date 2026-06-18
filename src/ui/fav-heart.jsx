@@ -45,6 +45,11 @@ export default function FavHeart({ favId, inline = false, size = 18 }) {
   useEffect(() => () => { if (toastTimer.current) clearTimeout(toastTimer.current); }, []);
 
   if (!isFavoritable(favId)) return null;
+  // #5 — hearts are only visible/interactive when the Favourites feature is
+  // enabled in Settings. Off → no heart anywhere (cards, sidebar, TopBar).
+  // The 'norcet:favs' listener above keeps `enabled` live, so toggling it on
+  // in Settings makes every heart reappear immediately.
+  if (!enabled) return null;
 
   const onTap = async () => {
     // Premium micro-interaction (issues round): FILLING springs — subtle

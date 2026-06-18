@@ -20,6 +20,7 @@ import { Tip } from '../ui/tooltip.jsx';
 import { Card, Button, Pill, PyqBadge, TopBar } from '../ui/primitives.jsx';
 import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
+import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
 
 function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId }) {
@@ -255,13 +256,15 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     }
   };
 
-  const toggleBookmark = () => {
+  const applyBookmarkToggle = () => {
     const newSet = new Set(bookmarkedLocal);
     if (newSet.has(q.id)) { newSet.delete(q.id); setBmAnim('deflate'); }
     else { newSet.add(q.id); setBmAnim('pop'); }
     try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     setBookmarkedLocal(newSet);
   };
+  // #7 — removing a bookmark asks first; adding stays frictionless.
+  const toggleBookmark = () => confirmBookmarkToggle(bookmarkedLocal.has(q.id), applyBookmarkToggle);
 
   // Progress reflects how far along the schedule (which may include re-queued
   // skipped items), not the original questions array.
@@ -300,20 +303,6 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                 </Tip>
               );
             })()}
-            <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
-            <button onClick={toggleBookmark}
-                    aria-pressed={bookmarkedLocal.has(q.id)}
-                    aria-label={bookmarkedLocal.has(q.id) ? 'Remove bookmark' : 'Bookmark this question'}
-                    className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5">
-              <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
-                    key={bmAnim ? `${q.id}:${bookmarkedLocal.has(q.id)}` : q.id}
-                    style={{ lineHeight: 0 }}>
-                {bookmarkedLocal.has(q.id)
-                  ? <BookmarkCheck size={20} className="text-accent" />
-                  : <Bookmark size={20} className="text-muted" />}
-              </span>
-            </button>
-            </Tip>
           </div>
         }
       />
@@ -326,17 +315,35 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
           </div>
         </div>
 
-        {/* Topic + type pills */}
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          <Pill bg={topicColor(q.topic) + '15'} color={topicColor(q.topic)}>
-            {topicIcon(q.topic)} {topicName(q.topic)}
-          </Pill>
-          {q.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{q.sub}</Pill>}
-          <Pill bg={q.type === 'msq' ? T.errorSoft : T.successSoft} color={q.type === 'msq' ? T.error : T.success}>
-            {q.type === 'msq' ? 'Multi-select' : 'Single answer'}
-          </Pill>
-          {/* P16 — provenance badge (Quick / Topic / Mock all render via Quiz) */}
-          <PyqBadge q={q} />
+        {/* Topic + type pills — #4: the bookmark sits at the rightmost edge of
+            this tags row, inline with the question's metadata (same position
+            in every test type). */}
+        <div className="flex items-start gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            <Pill bg={topicColor(q.topic) + '15'} color={topicColor(q.topic)}>
+              {topicIcon(q.topic)} {topicName(q.topic)}
+            </Pill>
+            {q.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{q.sub}</Pill>}
+            <Pill bg={q.type === 'msq' ? T.errorSoft : T.successSoft} color={q.type === 'msq' ? T.error : T.success}>
+              {q.type === 'msq' ? 'Multi-select' : 'Single answer'}
+            </Pill>
+            {/* P16 — provenance badge (Quick / Topic / Mock all render via Quiz) */}
+            <PyqBadge q={q} />
+          </div>
+          <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+          <button onClick={toggleBookmark}
+                  aria-pressed={bookmarkedLocal.has(q.id)}
+                  aria-label={bookmarkedLocal.has(q.id) ? 'Remove bookmark' : 'Bookmark this question'}
+                  className="no-tap-highlight p-1 -mr-1 -mt-0.5 rounded-full active:bg-black/5 flex-shrink-0">
+            <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
+                  key={bmAnim ? `${q.id}:${bookmarkedLocal.has(q.id)}` : q.id}
+                  style={{ lineHeight: 0 }}>
+              {bookmarkedLocal.has(q.id)
+                ? <BookmarkCheck size={20} className="text-accent" />
+                : <Bookmark size={20} className="text-muted" />}
+            </span>
+          </button>
+          </Tip>
         </div>
 
         {/* Question */}

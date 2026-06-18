@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
@@ -33,7 +33,7 @@ import { Tip } from './tooltip.jsx';
 // navigated to, so the NEXT open can welcome them back with a brief glow.
 let _lastVisitedKey = null;
 
-function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, faqUnread = 0 }) {
+function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, faqUnread = 0, replyUnread = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const panelRef = useRef(null);
@@ -362,14 +362,55 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
                        title="FAQ" sub="Questions answered by our team"
                        badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11} fav="faq" tip="Common questions answered by the team — ask your own too."
                        onClick={() => go('faq', null, 'faq')} />
-            {/* #18 — general Feedback/Report entry. Opens the SAME report modal
-                used contextually elsewhere, tagged source:'feedback' so it lands
-                in the one admin inbox distinguishable from screen/question
-                reports. Not a favoritable destination, so no heart. */}
-            <LearnCard icon={Megaphone} iconColor={T.accent}
-                       title="Send feedback" sub="Report a bug or suggest a feature"
-                       index={12} tip="Tell us anything — a bug, an idea, or what would make the app better. Goes straight to the team."
-                       onClick={() => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); }} />
+            {/* #9 — Feedback hub: ONE structured card with two clear
+                sub-sections (Send feedback + My feedback). "Send feedback"
+                opens the same report modal used contextually elsewhere
+                (source:'feedback' → the one admin inbox); "My feedback" opens
+                the user's own reports + admin replies, with an unread badge. */}
+            <div className="px-0 drawer-item-in" style={{ animationDelay: `${Math.min(12, 12) * 45}ms` }}>
+              <div className="rounded-2xl overflow-hidden"
+                   style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
+                <div className="flex items-center gap-3.5 px-3.5 pt-3.5 pb-2.5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.accent }}>
+                    <Megaphone size={20} color="#FFF" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>Feedback</div>
+                    <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted }}>Tell us anything — and track replies</div>
+                  </div>
+                </div>
+                <div className="mx-3.5 border-t" style={{ borderColor: T.borderSoft }} />
+                <button onClick={() => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); }}
+                        className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+                    <Send size={15} style={{ color: T.accent }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-medium text-[13px]" style={{ color: T.ink }}>Send feedback</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Report a bug or suggest a feature</div>
+                  </div>
+                  <ChevronRight size={15} style={{ color: T.muted }} className="flex-shrink-0 drawer-chev" />
+                </button>
+                <div className="mx-3.5 border-t" style={{ borderColor: T.borderSoft }} />
+                <button onClick={() => go('my-reports', null, 'my-reports')}
+                        className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+                    <Inbox size={15} style={{ color: T.primary }} />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5">
+                      <div className="font-medium text-[13px]" style={{ color: T.ink }}>My feedback</div>
+                      {replyUnread > 0 && (
+                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
+                              style={{ background: T.error, color: '#FFF' }}>{replyUnread} new</span>
+                      )}
+                    </div>
+                    <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Your reports and admin replies</div>
+                  </div>
+                  <ChevronRight size={15} style={{ color: T.muted }} className="flex-shrink-0 drawer-chev" />
+                </button>
+              </div>
+            </div>
           </div>
 
           </div>

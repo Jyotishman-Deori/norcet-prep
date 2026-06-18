@@ -36,6 +36,13 @@ let _openSupport = null;
 export function requestSupport() { if (_openSupport) _openSupport(); }
 export function registerSupportOpener(fn) { _openSupport = fn; }
 
+// #7 — a single app-root confirmation dialog reachable imperatively from any
+// screen (e.g. the un-bookmark caution). opts: { title, body, confirmLabel,
+// cancelLabel, tone, icon, onConfirm, onCancel }.
+let _openConfirm = null;
+export function requestConfirm(opts) { if (_openConfirm) _openConfirm(opts || {}); }
+export function registerConfirmOpener(fn) { _openConfirm = fn; }
+
 function Pill({ children, color, bg, className = '' }) {
   const { theme: T } = useTheme();
   const fg = color ?? T.primary;

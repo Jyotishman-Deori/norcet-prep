@@ -9,12 +9,14 @@
 // from ui/question-widgets.
 // =====================================================================
 import React, { useState, useMemo } from 'react';
-import { Bookmark, BookmarkCheck, Brain, Check, ChevronLeft, Lightbulb } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Brain, Calculator, Check, ChevronLeft, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { TOPICS } from '../data/seed.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { TTSButton } from '../ui/question-widgets.jsx';
+import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
+import { useContent } from '../lib/content.js';
 import EmptyState from '../ui/empty-state.jsx';
 
 function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
@@ -53,11 +55,27 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
   // Rebuilds whenever data.bookmarks changes so live un-bookmark works.
   const itemIds = useMemo(() => new Set(data.bookmarks || []), [data.bookmarks]);
 
+  // #4 — dosage-calc questions live in a separate content pool (dosage.json),
+  // not allQuestions, and have no topic/options. Load that pool so bookmarked
+  // dosage questions resolve and render here too (instead of silently vanishing).
+  // They're grouped under a synthetic "Dosage calc" topic and rendered with a
+  // dosage-specific detail view below.
+  const { data: dosagePool } = useContent('dosage');
+  const DOSAGE_TOPIC = '__dosage__';
+  const topicMeta = (tid) => tid === DOSAGE_TOPIC
+    ? { name: 'Dosage calc', icon: '🧮', color: T.primary }
+    : (TOPICS.find(x => x.id === tid) || { name: tid, color: T.muted, icon: '' });
+
+  const dosageBookmarked = useMemo(
+    () => (dosagePool || []).filter(q => itemIds.has(q.id)).map(q => ({ ...q, topic: DOSAGE_TOPIC, _dosage: true })),
+    [dosagePool, itemIds]
+  );
+
   // All bookmarked questions, ordered as they appear in allQuestions for
-  // predictable index ordering.
+  // predictable index ordering; dosage bookmarks are appended as their own group.
   const allBookmarked = useMemo(
-    () => allQuestions.filter(q => itemIds.has(q.id)),
-    [allQuestions, itemIds]
+    () => [...allQuestions.filter(q => itemIds.has(q.id)), ...dosageBookmarked],
+    [allQuestions, itemIds, dosageBookmarked]
   );
 
   const items = useMemo(() => {
@@ -102,7 +120,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
 
   // ===== DETAIL PAGE: a single bookmark, opened from the index =====
   if (selectedId !== null) {
-    const q = allQuestions.find(x => x.id === selectedId);
+    const q = allBookmarked.find(x => x.id === selectedId) || allQuestions.find(x => x.id === selectedId);
     // If the bookmark was removed elsewhere or the question vanished, bounce
     // back to the index gracefully.
     if (!q) {
@@ -120,6 +138,57 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
     }
 
     const topic = TOPICS.find(x => x.id === q.topic);
+
+    // #4 — dosage bookmarks render their own detail (order + worked answer),
+    // since they have no options/explanation to show like an MCQ.
+    if (q._dosage) {
+      const dTts = `${q.q} Answer: ${q.answer} ${q.unit}.`;
+      return (
+        <div className="anim-fadeup">
+          <TopBar title="Bookmark" onBack={() => setSelectedId(null)}
+                  feedback={{ screen: "Bookmark detail", questionId: q.id }} />
+          <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+            <div className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-full text-[11px] font-medium"
+                 style={{ background: T.primary + '18', color: T.primary }}>
+              <Calculator size={12} /> Dosage calc{q.type ? ` · ${q.type}` : ''}
+            </div>
+            <div className="font-display text-lg leading-snug mb-4 whitespace-pre-wrap" style={{ color: T.ink }}>{q.q}</div>
+            <div className="flex items-center gap-2 mb-5">
+              <TTSButton text={dTts} label="Read aloud" tone="soft" />
+              <button onClick={() => confirmBookmarkToggle(true, () => { onToggleBookmark(q.id); setSelectedId(null); })}
+                      className="no-tap-highlight inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium active:scale-95"
+                      style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>
+                <BookmarkCheck size={12} /> Remove
+              </button>
+            </div>
+            <div className="rounded-2xl p-4 mb-4" style={{ background: T.successSoft, border: `1.5px solid ${T.success}40` }}>
+              <div className="text-[10px] uppercase tracking-wider mb-0.5 font-semibold" style={{ color: T.muted }}>Correct answer</div>
+              <div className="font-display text-2xl font-semibold tabular-nums" style={{ color: T.ink }}>{q.answer} {q.unit}</div>
+            </div>
+            {Array.isArray(q.steps) && q.steps.length > 0 && (
+              <div className="rounded-2xl p-4 mb-4" style={{ background: T.surfaceWarm }}>
+                <div className="text-[10px] uppercase tracking-wider mb-2 font-semibold" style={{ color: T.muted }}>Working</div>
+                <ol className="space-y-1.5">
+                  {q.steps.map((s, i) => (
+                    <li key={i} className="flex gap-2 text-sm" style={{ color: T.inkSoft }}>
+                      <span className="font-mono text-xs mt-0.5 flex-shrink-0" style={{ color: T.muted }}>{i + 1}.</span>
+                      <span className="flex-1">{s}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+            {q.intuition && (
+              <div className="rounded-2xl p-4" style={{ background: T.primary + '0E', border: `1px solid ${T.primary}26` }}>
+                <div className="text-[10px] uppercase tracking-wider mb-1 font-semibold" style={{ color: T.primary }}>Intuition</div>
+                <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>{q.intuition}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     const ttsText = `${q.q}. Options: ${q.options.map((o, i) => String.fromCharCode(65 + i) + ': ' + o).join('. ')}. Correct: ${q.correct.map(i => String.fromCharCode(65 + i)).join(', ')}. ${q.exp}`;
 
     return (
@@ -145,7 +214,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
           {/* Toolbar */}
           <div className="flex items-center gap-2 mb-5">
             <TTSButton text={ttsText} label="Read aloud" tone="soft" />
-            <button onClick={() => { onToggleBookmark(q.id); setSelectedId(null); }}
+            <button onClick={() => confirmBookmarkToggle(true, () => { onToggleBookmark(q.id); setSelectedId(null); })}
                     className="no-tap-highlight inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium active:scale-95"
                     style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>
               <BookmarkCheck size={12} />
@@ -284,7 +353,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
               All <span style={{ opacity: 0.7 }}>· {itemIds.size}</span>
             </button>
             {availableTopics.map(tid => {
-              const t = TOPICS.find(x => x.id === tid);
+              const t = topicMeta(tid);
               const count = allBookmarked.filter(q => q.topic === tid).length;
               const active = topicFilter === tid;
               return (
@@ -305,7 +374,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
         {/* The index itself: topic group → tappable rows */}
         <div className="space-y-4">
           {groupedByTopic.map((group, gi) => {
-            const t = TOPICS.find(x => x.id === group.topic);
+            const t = topicMeta(group.topic);
             return (
               <div key={group.topic} className="seq-item" style={{ animationDelay: `${Math.min(gi, 8) * 110}ms` }}>
                 <div className="flex items-center gap-1.5 mb-2 px-1 text-[11px] uppercase tracking-wider font-semibold"
@@ -332,7 +401,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
                       {/* #19 — filled bookmark = saved; one tap removes it
                           (fade-out, then the data updates). No confirm dialog —
                           unbookmarking is as frictionless as bookmarking. */}
-                      <button onClick={() => removeWithFade(q.id)}
+                      <button onClick={() => confirmBookmarkToggle(true, () => removeWithFade(q.id))}
                               aria-label="Remove bookmark"
                               className="no-tap-highlight p-2.5 mt-0.5 flex-shrink-0 rounded-full active:bg-black/5">
                         <BookmarkCheck size={16} className={removing.has(q.id) ? 'bm-deflate' : ''} style={{ color: T.accent }} />

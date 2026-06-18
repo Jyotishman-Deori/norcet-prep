@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, lazy, Suspense } from 'react';
 import {
   BarChart3,
   X,
@@ -11,10 +11,9 @@ import {
   Pill as PillIcon, ArrowRightLeft, HeartPulse, History,
   Network
 } from 'lucide-react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  RadialBarChart, RadialBar, PolarAngleAxis, LineChart, Line, Cell
-} from 'recharts';
+// #1 — recharts is NOT used in App.jsx (this import was dead). recharts now
+// lives only inside the lazily-loaded chart screens (StatsScreen, weightage),
+// so the recharts-vendor chunk is fetched on demand, not in the initial load.
 import { KEYS, KEY_PREFIXES } from './lib/keys.js';
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './lib/migrations.js';
 // P7 — 501 pre-extracted official AIIMS NORCET PYQs across 6 papers, in the
@@ -80,7 +79,7 @@ import MockSetup from './screens/MockSetup.jsx';
 import TopicSelect from './screens/TopicSelect.jsx';
 import QuickPracticeSetup from './screens/QuickPracticeSetup.jsx';
 import WeakAreasScreen from './screens/WeakAreasScreen.jsx';
-import StatsScreen from './screens/StatsScreen.jsx';
+const StatsScreen = lazy(() => import('./screens/StatsScreen.jsx'));
 
 // [A1 s4 / Pipeline step 38] batch 1b slice 1 — Results cluster extracted.
 // Results is dispatched here.
@@ -140,11 +139,15 @@ import DosagePractice from './screens/dosage-practice.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
-import RevisionSheet from './screens/revision-sheet.jsx';
+const RevisionSheet = lazy(() => import('./screens/revision-sheet.jsx'));
 // [A1 slice 33] MindmapNodePopup extracted (T+useFgOnDark; imports lib/kmap).
 import MindmapNodePopup from './screens/mindmap-node-popup.jsx';
 // [A1 slice 34] KnowledgeMap (+its mindmap subsystem) extracted (data/allQuestions->useData, profileId->useProfile, T/IS_DARK/fgOnDark via hooks; imports lib/kmap + the popup).
-import KnowledgeMap from './screens/knowledge-map.jsx';
+// #1 — code-split: heavy, non-initial route screens load on demand (React.lazy
+// + Suspense). KnowledgeMap is the single biggest screen; StatsScreen and
+// weightage carry the recharts dependency; admin-panel + coverage-map are
+// large admin/analysis routes. None are reachable from first paint.
+const KnowledgeMap = lazy(() => import('./screens/knowledge-map.jsx'));
 // [F-A] Study Methods section.
 import StudyMethods from './screens/study-methods.jsx';
 // [#11] Drill Tests — consolidated test-mode hub.
@@ -158,17 +161,19 @@ import { TipHost } from './ui/tooltip.jsx';
 // [F-E] Doubts review screen.
 import DoubtsScreen from './screens/doubts.jsx';
 // [F-F] FAQ section (user side).
-import FAQScreen from './screens/faq.jsx';
+const FAQScreen = lazy(() => import('./screens/faq.jsx'));
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
-import WeightageScreen from './screens/weightage.jsx';
+const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // [A1 slice 36] CoverageMap extracted (data/allQuestions->useData).
-import CoverageMap from './screens/coverage-map.jsx';
+const CoverageMap = lazy(() => import('./screens/coverage-map.jsx'));
 // [A1 slice 37] support modal extracted (its QR encoder lives in ./lib/qr.js, used internally there).
 import SupportHost from './screens/support-modal.jsx';
 // [A1 slice 38] feedback report dialog extracted (host pattern).
 import FeedbackHost from './screens/feedback-modal.jsx';
 // [A1 slice 39] help guide dialog extracted (host pattern).
 import HelpHost from './screens/help-modal.jsx';
+// #7 — app-root confirmation dialog host (un-bookmark caution, etc.).
+import ConfirmHost from './ui/confirm-host.jsx';
 // [A1 slice 40] rename-profile host extracted.
 import RenameProfileHost from './screens/rename-profile-host.jsx';
 // [A1 slice 45] ReportedQuestionModal no longer referenced by App — rendered only inside the extracted AdminPanel.
@@ -179,14 +184,27 @@ import { AdvancedTestSetup, AdvancedTest, AdvancedTestResults } from './screens/
 // [A1 slice 44] question-bank detail + editor pair extracted (+ the two single-consumer EXAMPLE_QUESTIONS_* payloads).
 import { BankDetail, BankEditor } from './screens/bank-screens.jsx';
 // [A1 slice 45] AdminPanel (admin hub) extracted; admin user helpers passed as props.
-import AdminPanel from './screens/admin-panel.jsx';
+const AdminPanel = lazy(() => import('./screens/admin-panel.jsx'));
+
+// #1 — shown briefly while a lazily-loaded screen's chunk is fetched. After
+// the first visit these chunks are precached by the service worker, so this
+// is essentially instant on subsequent opens.
+function LazyScreenFallback() {
+  const { theme: T } = useTheme();
+  return (
+    <div className="fixed inset-0 flex items-center justify-center" style={{ background: T.bg }}>
+      <div className="w-9 h-9 rounded-full animate-spin"
+           style={{ border: `3px solid ${T.borderSoft || T.border}`, borderTopColor: T.primary }} />
+    </div>
+  );
+}
 // [A1 slice 46] UpdateToast (PWA update prompt) extracted — the last inline component.
 import UpdateToast from './screens/update-toast.jsx';
 // [A1 slice 34] kmap.js is no longer imported by App — its only consumers are now
 // the extracted knowledge-map.jsx + mindmap-node-popup.jsx screens.
 // [A1 slice 16] leaderboard storage cluster + Leaderboard screen extracted.
 import { saveLeaderboardEntry } from './lib/leaderboard.js';
-import LeaderboardScreen from './screens/leaderboard.jsx';
+const LeaderboardScreen = lazy(() => import('./screens/leaderboard.jsx'));
 // [A1 slice 17] shared question parsing/validation extracted.
 import { processQuestionInput, validateQuestionFields } from './lib/question-import.js';
 import BulkImport from './screens/bulk-import.jsx';
@@ -3841,12 +3859,17 @@ export default function App() {
           reason as the others (P9 / step 33). Opened via requestSupport(). */}
       <SupportHost />
 
+      {/* #7 — app-root confirmation dialog. Opened via requestConfirm() — used
+          by the un-bookmark caution and reusable for any future confirm. */}
+      <ConfirmHost />
+
       {/* Nav drawer lives at the app root (no transformed ancestor), so its
           position:fixed is relative to the viewport and it scrolls correctly.
           #21 — onOpen lets the drawer's own edge-swipe gesture open itself. */}
       <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
                  onOpen={() => { if (nav.screen === 'home') setDrawerOpen(true); }}
                  gesturesAllowed={nav.screen === 'home'}
+                 replyUnread={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
                  onNavigate={handleHomeNavigate} />
 
       {/* #30 — "Press back again to exit" snackbar (Home + hardware back). */}
@@ -3904,22 +3927,27 @@ export default function App() {
       )}
 
       {nav.screen === 'coverage' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <CoverageMap onDrill={(action, topic, sub) => {
                        if (action === 'topic') startQuiz({ mode: 'topic', topic, count: 10 });
                        else if (action === 'sub') startQuiz({ mode: 'topic', topic, sub, count: 10 });
                        else if (action === 'quick-setup') navigate({ screen: 'quick-setup' });
                      }}
                      onBack={goHome} />
+        </Suspense>
       )}
 
       {nav.screen === 'weightage' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <WeightageScreen papers={allPapers}
                          onDrill={(action, topic) => { if (action === 'topic') startQuiz({ mode: 'topic', topic, count: 10 }); }}
                          onOpenPapers={() => navigate({ screen: 'previous-papers' })}
                          onBack={goHome} />
+        </Suspense>
       )}
 
       {nav.screen === 'leaderboard' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <LeaderboardScreen profileId={profile && profile.id}
                            isGuest={isGuestProfile(profile)}
                            onGuestSignIn={() => setNav({ screen: 'auth' })}
@@ -3927,6 +3955,7 @@ export default function App() {
                            myMastered={(() => { try { const inc = !!(data && data.preferences && data.preferences.includeGkInStats === true); return masteryTally(data && data.history, allQuestions, attemptStats, (t) => countsInNursingStats(t, inc)).mastered; } catch (e) { return 0; } })()}
                            onStartQuiz={() => handleHomeNavigate({ screen: 'quick-setup' })}
                            onBack={goHome} />
+        </Suspense>
       )}
 
       {nav.screen === 'feedback-inbox' && (
@@ -3934,6 +3963,7 @@ export default function App() {
       )}
 
       {nav.screen === 'admin-panel' && isAdmin && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <AdminPanel profile={profile} banks={banks} banksLoading={banksLoading}
                     allQuestions={allQuestions}
                     announcement={announcement}
@@ -3949,6 +3979,7 @@ export default function App() {
                     onListUsers={adminListUsers}
                     onDeleteProfile={adminDeleteProfile}
                     onBack={goHome} />
+        </Suspense>
       )}
 
       {nav.screen === 'topic-select' && (
@@ -4042,7 +4073,9 @@ export default function App() {
 
       {/* F-F — FAQ. Admin reply/delete + helpful counts show only when isAdmin. */}
       {nav.screen === 'faq' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} />
+        </Suspense>
       )}
 
       {nav.screen === 'learn-cards' && (
@@ -4050,18 +4083,22 @@ export default function App() {
       )}
 
       {nav.screen === 'stats' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <StatsScreen onBack={goHome}
                      onQuick={() => navigate({ screen: 'quick-setup' })}
                      onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })} />
+        </Suspense>
       )}
 
       {/* P10 Phase A — Interactive Knowledge Map. Reads progress only; the
           Practice buttons launch a topic-locked (and, for subtopics,
           sub-filtered) quiz exactly the way the Coverage map drills do. */}
       {nav.screen === 'knowledge-map' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <KnowledgeMap onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })}
                       onPracticeSub={(topicId, sub) => startQuiz({ mode: 'topic', topic: topicId, sub, count: 10 })}
                       onBack={goHome} />
+        </Suspense>
       )}
 
       {/* F-A — Study Methods. Reads progress only; "Go to feature" routes
@@ -4084,6 +4121,7 @@ export default function App() {
 
       {nav.screen === 'advanced-test' && (
         <AdvancedTest questions={nav.questions} timeMinutes={nav.timeMinutes}
+                      bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById}
                       onSubmit={submitAdvancedTest}
                       onAbort={goHome} />
       )}
@@ -4119,6 +4157,7 @@ export default function App() {
       {nav.screen === 'paper-test' && (
         <AdvancedTest questions={nav.questions} timeMinutes={nav.timeMinutes}
                       label={nav.paperName}
+                      bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById}
                       onSubmit={submitPaperTest}
                       onAbort={() => setNav({ screen: 'previous-papers' })} />
       )}
@@ -4206,7 +4245,8 @@ export default function App() {
       )}
 
       {nav.screen === 'dosage' && (
-        <DosagePractice onComplete={completeDosage} onBack={goHome} profile={profile} isAdmin={isAdmin} />
+        <DosagePractice onComplete={completeDosage} onBack={goHome} profile={profile} isAdmin={isAdmin}
+                        bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById} />
       )}
 
       {nav.screen === 'dosage-results' && (
@@ -4222,12 +4262,14 @@ export default function App() {
       )}
 
       {nav.screen === 'revision-sheet' && (
+        <Suspense fallback={<LazyScreenFallback />}>
         <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome}
                        onOpenCrib={(c) => navigate({
                          screen: 'crib-sheet', items: c.items,
                          cribTitle: c.title, cribSubtitle: c.subtitle,
                          savedMode: true, backNav: { screen: 'revision-sheet' },
                        })} />
+        </Suspense>
       )}
 
       {nav.screen === 'exam-date' && (

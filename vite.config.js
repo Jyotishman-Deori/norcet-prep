@@ -88,9 +88,15 @@ export default defineConfig({
         // app code changes. (React/ReactDOM are small enough that Vite
         // happily inlines them into the main bundle; carving them out
         // produced an empty chunk in practice, so they're omitted here.)
+        // #1 — recharts is intentionally NOT a manualChunk. Forcing it into a
+        // named vendor chunk made Vite emit a <link rel="modulepreload"> for it
+        // in index.html, pulling 152 KB gzip into the initial load even though
+        // only the lazy chart screens (StatsScreen, weightage) use it. Left to
+        // Rollup, recharts lands in an async chunk shared by those two screens
+        // and is fetched on demand. lucide-react stays carved out — it's used
+        // by nearly every screen, so it's legitimately part of the initial load.
         manualChunks: {
-          'recharts-vendor': ['recharts'],
-          'icons-vendor':   ['lucide-react'],
+          'icons-vendor': ['lucide-react'],
         }
       }
     }

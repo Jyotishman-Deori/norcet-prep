@@ -8,9 +8,11 @@
 // load lazily via useContent('dosage'); shuffle from lib/utils.
 // =====================================================================
 import React, { useState, useMemo } from 'react';
-import { Calculator, Check, X, Eye, FlaskConical, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
+import { Bookmark, BookmarkCheck, Calculator, Check, X, Eye, FlaskConical, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useContent } from '../lib/content.js';
+import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
+import { Tip } from '../ui/tooltip.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
 import { shuffle } from '../lib/utils.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -18,19 +20,32 @@ import HelpfulBulb from '../ui/helpful-bulb.jsx';
 // Issues round — the same quick Reference lookup the other quiz modes have.
 import { ReferenceLookupModal } from './reference.jsx';
 
-function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
+function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState([]);
+  const [bmAnim, setBmAnim] = useState(null); // #4 — 'pop' | 'deflate' | null
   // Issues round — Reference overlay (labs/drugs/values), same as Quick/Topic/Mock.
   const [showReference, setShowReference] = useState(false);
   // A2 — dosage questions loaded lazily from /public/data/dosage.json.
   const { data: dosageData, loading, error, reload } = useContent('dosage');
   const questions = useMemo(() => dosageData ? shuffle(dosageData).slice(0, 10) : [], [dosageData]);
   const q = questions[index];
+
+  // #4 — bookmarking a dosage question. Persists immediately via the app-level
+  // toggle (the Bookmarks screen resolves dosage questions from their own pool).
+  // #7 — removing one is gated by the shared caution.
+  const bookmarkSet = useMemo(() => new Set(bookmarks || []), [bookmarks]);
+  const isBookmarked = !!(q && bookmarkSet.has(q.id));
+  const applyBookmarkToggle = () => {
+    setBmAnim(isBookmarked ? 'deflate' : 'pop');
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    if (onToggleBookmark && q) onToggleBookmark(q.id);
+  };
+  const toggleBookmark = () => confirmBookmarkToggle(isBookmarked, applyBookmarkToggle);
 
   if (!q) {
     // A2 — show a load/retry state while the question bank is fetching, and a
@@ -120,7 +135,25 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false }) {
                   style={{ background: T.primary + '14', color: T.primary }}>
               <Calculator size={11} /> {q.type}
             </span>
-            <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>Order</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>Order</span>
+              {onToggleBookmark && (
+                <Tip text={isBookmarked ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+                <button onClick={toggleBookmark}
+                        aria-pressed={isBookmarked}
+                        aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this question'}
+                        className="no-tap-highlight p-1 -mr-1 rounded-full active:bg-black/5 flex-shrink-0">
+                  <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
+                        key={bmAnim ? `${q.id}:${isBookmarked}` : q.id}
+                        style={{ lineHeight: 0 }}>
+                    {isBookmarked
+                      ? <BookmarkCheck size={18} className="text-accent" />
+                      : <Bookmark size={18} className="text-muted" />}
+                  </span>
+                </button>
+                </Tip>
+              )}
+            </div>
           </div>
           <div className="font-display text-xl leading-snug whitespace-pre-wrap" style={{ color: T.ink }}>
             {q.q}

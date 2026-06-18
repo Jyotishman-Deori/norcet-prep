@@ -436,12 +436,21 @@ export function normalizeDob(dob) {
   return s;
 }
 
-export async function createProfile({ displayName, password, dob, email, importData }) {
+export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
+  // issues_new #3: a personal security question replaces DOB for new accounts.
+  const sq = (securityQuestion && String(securityQuestion).trim()) || null;
+  const sa = (securityAnswer != null) ? String(securityAnswer) : '';
+  // `dob` is still accepted for backward-compat but no longer required/collected.
   const normDob = normalizeDob(dob);
-  if (!normDob) throw new Error('Pick your date of birth — used to recover your password if you forget it');
+  if (!sq && !normDob) {
+    throw new Error('Pick a security question and answer — used to recover your password if you forget it');
+  }
+  if (sq && !sa.trim()) {
+    throw new Error('Type an answer to your security question');
+  }
   const existing = await loadProfile(id);
   if (existing) throw new Error('That display name is already taken — pick another, or log in instead');
   const uid = genUid();  // permanent, name-independent handle (survives renames)
@@ -452,7 +461,11 @@ export async function createProfile({ displayName, password, dob, email, importD
     id, uid,
     displayName: displayName.trim(),
     password,
-    dob: normDob,
+    // New recovery factor — question + answer (answer is hashed server-side).
+    securityQuestion: sq,
+    securityAnswer: sq ? sa : undefined,
+    // Legacy/optional — only sent if a caller still provides a DOB.
+    dob: normDob || undefined,
     // Optional, unverified email. Stored ONLY in profile_secrets (never in
     // the public blob below), so it isn't PII-exposed via the anon key.
     email: (email && String(email).trim()) || null,
@@ -460,6 +473,9 @@ export async function createProfile({ displayName, password, dob, email, importD
   if (!reg || reg.ok !== true) {
     if (reg && reg.reason === 'exists') {
       throw new Error('That display name is already taken — pick another, or log in instead');
+    }
+    if (reg && reg.reason === 'bad-answer') {
+      throw new Error('Type an answer to your security question');
     }
     throw new Error('Could not create your account. Check your connection and try again.');
   }
@@ -532,6 +548,43 @@ export async function recoverPasswordWithDob(displayName, dob, newPassword) {
   // user is effectively logged in (and any immediate shared write is authorized).
   await persistAuthToken(res.token);
   // Return the current profile blob so callers can proceed if they want.
+  const profile = await loadProfile(id);
+  return profile || { id };
+}
+
+// issues_new #3: which recovery factor does this account use? Returns
+// { method:'question', question } for the new security-question accounts,
+// { method:'dob' } for legacy accounts, or null when there's no factor /
+// no such account (caller shows a generic "can't recover" message).
+export async function getRecoveryQuestion(displayName) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('Enter your display name');
+  const res = await callAuthFn('recovery-question', { id });
+  if (res && res.ok === true) {
+    if (res.method === 'question') return { method: 'question', question: String(res.question || '') };
+    if (res.method === 'dob') return { method: 'dob' };
+  }
+  return null;
+}
+
+// issues_new #3: security-question password reset. Verifies the answer
+// (case-insensitively, server-side) before allowing the new password.
+export async function recoverPasswordWithAnswer(displayName, answer, newPassword) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('Enter your display name');
+  if (!answer || !String(answer).trim()) throw new Error('Type the answer to your security question');
+  if (!newPassword || newPassword.length < 8) throw new Error('New password must be at least 8 characters');
+  const res = await callAuthFn('reset', { id, securityAnswer: String(answer), newPassword });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'no-account') throw new Error('No profile with that name');
+    if (res && res.reason === 'weak-password') throw new Error('New password must be at least 8 characters');
+    if (res && res.reason === 'no-recovery') {
+      throw new Error("This profile doesn't have a security question on file, so recovery isn't available.");
+    }
+    // answer-mismatch / answer-required → generic, don't confirm what's on file.
+    throw new Error("That answer doesn't match what's on file for this profile");
+  }
+  await persistAuthToken(res.token);
   const profile = await loadProfile(id);
   return profile || { id };
 }

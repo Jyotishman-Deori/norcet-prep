@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle, AlertCircle } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -26,7 +26,7 @@ import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
-import { requestHelp } from '../ui/primitives.jsx';
+import { requestHelp, requestFeedback } from '../ui/primitives.jsx';
 import MindmapNodePopup from './mindmap-node-popup.jsx';
 import MindmapNoteEditor from './mindmap-note-editor.jsx';
 
@@ -1002,11 +1002,21 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
           <ArrowLeft size={18} style={{ color: T.ink }} />
         </button>
-        <button onClick={() => requestHelp({ screen: 'Knowledge Map' })} aria-label="What is this screen?"
-                className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
-                style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
-          <HelpCircle size={17} style={{ color: T.primary }} />
-        </button>
+        <div className="flex items-center gap-2 pointer-events-none">
+          {/* #6 — Report, consistent with every other section (top-right,
+              alongside Help). Opens the same report modal via requestFeedback;
+              styled to match this screen's floating Help button. */}
+          <button onClick={() => requestFeedback({ source: 'screen', screen: 'Knowledge Map' })} aria-label="Report a bug or suggest a feature"
+                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+            <AlertCircle size={17} style={{ color: T.accent }} />
+          </button>
+          <button onClick={() => requestHelp({ screen: 'Knowledge Map' })} aria-label="What is this screen?"
+                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+            <HelpCircle size={17} style={{ color: T.primary }} />
+          </button>
+        </div>
       </div>
 
       <div className="max-w-md mx-auto px-4 pb-24"

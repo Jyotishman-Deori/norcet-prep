@@ -35,6 +35,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // fresh Settings mount always reflects storage truth).
   const [gestures, setGestures] = useState(() => getSidebarGestures());
   const [cribOn, setCribOn] = useState(() => isCribSheetEnabled());
+  // #8 — which Settings sub-page is open (null = main list).
+  const [subPage, setSubPage] = useState(null);
   // FAV — Favourites strip (per profile; hydrated below with the ui prefs).
   const [favs, setFavs] = useState(null);
   useEffect(() => {
@@ -198,7 +200,310 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     reader.readAsText(file);
   };
 
+  // ===== #8 — Settings sub-pages =====================================
+  // Profile, Sidebar gestures, Backup, Topic notes and Legal each collapse
+  // to a single row card on the main list and open into a focused sub-page
+  // (same pattern as Themes). Opening tags <html> with .nav-fwd for ~420ms
+  // so the sub-page's anim-fadeup becomes the shared-axis forward slide
+  // (sharedAxisIn 0.28s ease-in-out — see font-styles), matching the drawer.
+  const openSub = (name) => {
+    try {
+      document.documentElement.classList.add('nav-fwd');
+      setTimeout(() => { try { document.documentElement.classList.remove('nav-fwd'); } catch (e) {} }, 420);
+    } catch (e) {}
+    setSubPage(name);
+  };
+  const closeSub = () => setSubPage(null);
+
+  const SubPageCard = ({ icon: Icon, iconBg, title, sub, onClick }) => (
+    <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onClick}>
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconBg || T.primary }}>
+          <Icon size={18} color="#FFF" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="font-medium" style={{ color: T.ink }}>{title}</div>
+          <div className="text-xs mt-0.5" style={{ color: T.muted }}>{sub}</div>
+        </div>
+        <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+      </div>
+    </Card>
+  );
+
+  // Reset + Share — shown to guests inline, and inside the Profile sub-page
+  // for logged-in users (so it's reachable from one place either way).
+  const renderResetAndShare = () => (
+    <>
+      <Card className="mb-3 p-0 overflow-hidden">
+        <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
+                className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
+            <Trash2 size={16} style={{ color: T.error }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-sm" style={{ color: T.error }}>Reset this profile's data</div>
+            <div className="text-[11px] mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
+              Permanently deletes progress, bookmarks, stats &amp; custom questions
+            </div>
+          </div>
+        </button>
+      </Card>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
+            <Share2 size={18} color="#FFF" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+              Send a friend the link + setup steps for their device
+            </div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+        </div>
+      </Card>
+    </>
+  );
+
+  const renderProfileSub = () => (
+    <>
+      {profile && (
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
+              style={{ background: T.primary, border: 'none' }}
+              onClick={() => { if (onRenameProfile) { requestRename({ profile, onRename: onRenameProfile }); } }}>
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.15)' }}>
+              <User size={20} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <div className="font-display text-lg font-semibold truncate" style={{ color: '#FFF' }}>{profile.displayName}</div>
+                {onRenameProfile && <Edit3 size={14} style={{ color: 'rgba(255,255,255,0.7)' }} className="flex-shrink-0" />}
+              </div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                {onRenameProfile ? 'Tap to rename · syncs across devices' : 'Logged in · syncs across devices'}
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setSwitchSheet(true)}>
+          <RefreshCw size={16} style={{ color: T.success }} />
+          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
+          <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
+        </Card>
+        <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setLogoutSheet(true)}>
+          <LogOut size={16} style={{ color: '#D4900A' }} />
+          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
+          <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
+        </Card>
+      </div>
+      {renderResetAndShare()}
+    </>
+  );
+
+  const renderGesturesSub = () => (
+    <>
+      <div className="text-xs mb-3" style={{ color: T.muted }}>
+        Choose how the sidebar opens and closes. Tapping the backdrop to close is always on.
+      </div>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('close')}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+              <Hand size={18} style={{ color: T.primary }} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                {gestures.close
+                  ? 'Swipe left on the open sidebar to close it'
+                  : 'Off — you can still close it by tapping the backdrop or the menu icon'}
+              </div>
+            </div>
+          </div>
+          <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+               style={{ background: gestures.close ? T.success : T.border }}>
+            <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                 style={{ transform: gestures.close ? 'translateX(20px)' : 'translateX(0)' }} />
+          </div>
+        </div>
+      </Card>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('open')}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+              <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.
+              </div>
+            </div>
+          </div>
+          <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+               style={{ background: gestures.open ? T.success : T.border }}>
+            <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                 style={{ transform: gestures.open ? 'translateX(20px)' : 'translateX(0)' }} />
+          </div>
+        </div>
+        {gestures.open && (
+          <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
+               style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
+            <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
+            <span>On some Android devices this gesture may conflict with the system back button. If the sidebar opens unexpectedly, turn this off.</span>
+          </div>
+        )}
+      </Card>
+      <Card className="p-4 mb-3" style={{ opacity: 0.75 }}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+              <Lock size={16} style={{ color: T.muted }} />
+            </div>
+            <div className="min-w-0">
+              <div className="font-medium" style={{ color: T.ink }}>Tap backdrop to close</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on — cannot be disabled</div>
+            </div>
+          </div>
+          <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0" style={{ background: T.success, opacity: 0.5 }}>
+            <div className="w-5 h-5 rounded-full bg-white shadow" style={{ transform: 'translateX(20px)' }} />
+          </div>
+        </div>
+      </Card>
+    </>
+  );
+
+  const renderBackupSub = () => (
+    <>
+      <div className="text-xs mb-3" style={{ color: T.muted }}>
+        Your profile already syncs across devices via your account. A local backup file is an extra safety net.
+      </div>
+      <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleExport}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+            <Download size={18} style={{ color: T.primary }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>Download backup</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>This profile's questions, history, stats, bookmarks</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </div>
+      </Card>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleImportClick}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+            <Upload size={18} style={{ color: T.accent }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>Restore from backup</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Replace this profile's data with a saved file</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </div>
+      </Card>
+      <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleFile} />
+      {importMsg && (
+        <Card className="p-3 mb-3 anim-fadeup"
+              style={{ background: importMsg.ok ? T.successSoft : T.errorSoft, border: `1px solid ${importMsg.ok ? T.success : T.error}40` }}>
+          <div className="text-sm" style={{ color: importMsg.ok ? T.success : T.error }}>{importMsg.text}</div>
+        </Card>
+      )}
+    </>
+  );
+
+  const renderTopicNotesSub = () => (
+    <>
+      <div className="text-xs mb-3" style={{ color: T.muted }}>
+        The notes you pin to topics on the Knowledge Map. Export to back them up or share your mnemonics; import merges into your existing notes.
+      </div>
+      <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleNotesExport}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+            <Download size={18} style={{ color: T.primary }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>Export notes</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Save all your topic notes as a JSON file</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </div>
+      </Card>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleNotesImportClick}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+            <Upload size={18} style={{ color: T.accent }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>Import notes</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Merge notes from a file (newest kept per topic)</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </div>
+      </Card>
+      <input ref={notesFileRef} type="file" accept="application/json,.json" className="hidden" onChange={handleNotesFile} />
+      {notesMsg && (
+        <Card className="p-3 mb-3 anim-fadeup"
+              style={{ background: notesMsg.ok ? T.successSoft : T.errorSoft, border: `1px solid ${notesMsg.ok ? T.success : T.error}40` }}>
+          <div className="text-sm" style={{ color: notesMsg.ok ? T.success : T.error }}>{notesMsg.text}</div>
+        </Card>
+      )}
+    </>
+  );
+
+  const renderLegalSub = () => (
+    <Card className="p-0 mb-3 overflow-hidden">
+      <button onClick={() => setLegalView('privacy')}
+              className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+          <Shield size={17} style={{ color: T.primary }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
+          <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
+        </div>
+        <ChevronRight size={18} style={{ color: T.muted }} />
+      </button>
+      <div className="mx-4 border-t" style={{ borderColor: T.borderSoft }} />
+      <button onClick={() => setLegalView('terms')}
+              className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
+        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+          <FileText size={17} style={{ color: T.primary }} />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
+          <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
+        </div>
+        <ChevronRight size={18} style={{ color: T.muted }} />
+      </button>
+    </Card>
+  );
+
+  const SUB_PAGES = {
+    profile:  { title: 'Profile',          render: renderProfileSub },
+    gestures: { title: 'Sidebar gestures', render: renderGesturesSub },
+    backup:   { title: 'Backup',           render: renderBackupSub },
+    notes:    { title: 'Topic notes',      render: renderTopicNotesSub },
+    legal:    { title: 'Legal',            render: renderLegalSub },
+  };
+
   if (legalView) return <LegalScreen doc={legalView} onBack={() => setLegalView(null)} />;
+
+  // #8 — a focused sub-page (slides in with the shared-axis forward transition).
+  if (subPage && SUB_PAGES[subPage]) {
+    const sp = SUB_PAGES[subPage];
+    return (
+      <div className="anim-fadeup">
+        <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${sp.title}` }} />
+        <div className="max-w-md mx-auto px-4 pt-4 pb-24">
+          {sp.render()}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="anim-fadeup">
@@ -226,109 +531,24 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
               </div>
             </Card>
+            {renderResetAndShare()}
           </>
         )}
         {!isGuest && profile && (
           <>
             <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
-            <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
-                  style={{ background: T.primary, border: 'none' }}
-                  onClick={() => {
-                    if (onRenameProfile) {
-                      requestRename({ profile, onRename: onRenameProfile });
-                    }
-                  }}>
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
-                     style={{ background: 'rgba(255,255,255,0.15)' }}>
-                  <User size={20} color="#FFF" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <div className="font-display text-lg font-semibold truncate" style={{ color: '#FFF' }}>
-                      {profile.displayName}
-                    </div>
-                    {onRenameProfile && (
-                      <Edit3 size={14} style={{ color: 'rgba(255,255,255,0.7)' }} className="flex-shrink-0" />
-                    )}
-                  </div>
-                  <div className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                    {onRenameProfile ? 'Tap to rename · syncs across devices' : 'Logged in · syncs across devices'}
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* #3 rework — Switch / Log out adjacent (the old 2-col layout,
-                kept because it looked right) directly below the rename card;
-                Log out still confirms via the bottom sheet. */}
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setSwitchSheet(true)}>
-                <RefreshCw size={16} style={{ color: T.success }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
-                <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
-              </Card>
-              <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setLogoutSheet(true)}>
-                <LogOut size={16} style={{ color: '#D4900A' }} />
-                <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
-                <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
-              </Card>
-            </div>
+            <SubPageCard icon={User} iconBg={T.primary} title="Profile"
+                         sub={`${profile.displayName} · rename, switch, backup, reset`}
+                         onClick={() => openSub('profile')} />
           </>
         )}
 
-        {/* #3 rework — Reset stays with the profile cluster (red row, typed
-            RESET confirmation in the bottom sheet). Available to guests too. */}
-        <Card className="mb-3 p-0 overflow-hidden">
-          <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
-                  className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
-            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
-              <Trash2 size={16} style={{ color: T.error }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm" style={{ color: T.error }}>Reset this profile's data</div>
-              <div className="text-[11px] mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
-                Permanently deletes progress, bookmarks, stats & custom questions
-              </div>
-            </div>
-          </button>
-        </Card>
+        {/* #8 — Reset + Share moved into the Profile sub-page for logged-in
+            users; guests still see them inline above. */}
 
-        {/* #4 / issues round — Share NORCET Prep is now a DEDICATED PAGE; this
-            row launches it (the full platform picker + preview moved there). */}
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
-              <Share2 size={18} color="#FFF" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Send a friend the link + setup steps for their device
-              </div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
-          </div>
-        </Card>
-
-        {/* My feedback */}
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenMyReports}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.accent + '15' }}>
-              <AlertCircle size={18} style={{ color: T.accent }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>My feedback</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Reports you've sent and admin replies</div>
-            </div>
-            {unseenReplyCount > 0 && (
-              <span className="px-2 py-1 rounded-full text-xs font-bold flex-shrink-0"
-                    style={{ background: T.primary, color: '#FFF' }}>{unseenReplyCount} new</span>
-            )}
-            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
-          </div>
-        </Card>
+        {/* #9 — "My feedback" has moved into the sidebar Feedback hub
+            (Send feedback + My feedback live together there now). It is no
+            longer duplicated here in Settings. */}
 
         {/* Custom-questions + Total-practice counters moved into the Library
             screen where they're contextually relevant (issues round). */}
@@ -506,76 +726,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
-        {/* #21 — Sidebar gestures. Swipe-to-close defaults ON (no system
-            conflict); swipe-to-open defaults OFF (clashes with the Android
-            10+ back gesture on many phones). Contextual notes appear only
-            when relevant; tap-backdrop is a locked, always-on fallback. */}
+        {/* #8 — Sidebar gestures now open in a focused sub-page. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('close')}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-                <Hand size={18} style={{ color: T.primary }} />
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  {gestures.close
-                    ? 'Swipe left on the open sidebar to close it'
-                    : 'Off — you can still close it by tapping the backdrop or the menu icon'}
-                </div>
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: gestures.close ? T.success : T.border }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: gestures.close ? 'translateX(20px)' : 'translateX(0)' }} />
-            </div>
-          </div>
-        </Card>
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('open')}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
-                <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.
-                </div>
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: gestures.open ? T.success : T.border }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: gestures.open ? 'translateX(20px)' : 'translateX(0)' }} />
-            </div>
-          </div>
-          {gestures.open && (
-            <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
-                 style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
-              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
-              <span>On some Android devices this gesture may conflict with the system back button. If the sidebar opens unexpectedly, turn this off.</span>
-            </div>
-          )}
-        </Card>
-        <Card className="p-4 mb-3" style={{ opacity: 0.75 }}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
-                <Lock size={16} style={{ color: T.muted }} />
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Tap backdrop to close</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on — cannot be disabled</div>
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0" style={{ background: T.success, opacity: 0.5 }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow" style={{ transform: 'translateX(20px)' }} />
-            </div>
-          </div>
-        </Card>
+        <SubPageCard icon={Hand} iconBg={T.primary} title="Sidebar gestures"
+                     sub="Swipe to open or close the sidebar"
+                     onClick={() => openSub('gestures')} />
 
         {/* Help */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Help</div>
@@ -593,98 +748,17 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
+        {/* #8 — Backup opens in a focused sub-page. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Backup</div>
-        <div className="text-xs mb-3" style={{ color: T.muted }}>
-          Your profile already syncs across devices via your account. A local backup file is an extra safety net.
-        </div>
+        <SubPageCard icon={Download} iconBg={T.primary} title="Backup"
+                     sub="Download a backup file, or restore from one"
+                     onClick={() => openSub('backup')} />
 
-        <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleExport}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.primary + '15' }}>
-              <Download size={18} style={{ color: T.primary }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Download backup</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                This profile's questions, history, stats, bookmarks
-              </div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </div>
-        </Card>
-
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleImportClick}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.accent + '15' }}>
-              <Upload size={18} style={{ color: T.accent }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Restore from backup</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Replace this profile's data with a saved file
-              </div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </div>
-        </Card>
-        <input ref={fileInputRef} type="file" accept="application/json,.json"
-               className="hidden" onChange={handleFile} />
-
-        {importMsg && (
-          <Card className="p-3 mb-3 anim-fadeup"
-                style={{ background: importMsg.ok ? T.successSoft : T.errorSoft,
-                         border: `1px solid ${importMsg.ok ? T.success : T.error}40` }}>
-            <div className="text-sm" style={{ color: importMsg.ok ? T.success : T.error }}>
-              {importMsg.text}
-            </div>
-          </Card>
-        )}
-
-        {/* P11 Feature C — topic notes export/import (separate file from the
-            data backup). Useful for backup + sharing "my best mnemonics". */}
+        {/* #8 — Topic notes export/import opens in a focused sub-page. */}
         <div className="mt-6 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Topic notes</div>
-        <div className="text-xs mb-3" style={{ color: T.muted }}>
-          The notes you pin to topics on the Knowledge Map. Export to back them up or share your mnemonics; import merges into your existing notes.
-        </div>
-        <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleNotesExport}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.primary + '15' }}>
-              <Download size={18} style={{ color: T.primary }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Export notes</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Save all your topic notes as a JSON file</div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </div>
-        </Card>
-        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleNotesImportClick}>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                 style={{ background: T.accent + '15' }}>
-              <Upload size={18} style={{ color: T.accent }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Import notes</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Merge notes from a file (newest kept per topic)</div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </div>
-        </Card>
-        <input ref={notesFileRef} type="file" accept="application/json,.json"
-               className="hidden" onChange={handleNotesFile} />
-        {notesMsg && (
-          <Card className="p-3 mb-3 anim-fadeup"
-                style={{ background: notesMsg.ok ? T.successSoft : T.errorSoft,
-                         border: `1px solid ${notesMsg.ok ? T.success : T.error}40` }}>
-            <div className="text-sm" style={{ color: notesMsg.ok ? T.success : T.error }}>
-              {notesMsg.text}
-            </div>
-          </Card>
-        )}
+        <SubPageCard icon={FileText} iconBg={T.primary} title="Topic notes"
+                     sub="Export or import your Knowledge Map notes"
+                     onClick={() => openSub('notes')} />
 
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Admin</div>
         {isAdmin ? (
@@ -822,11 +896,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <Heart size={18} fill={favs && favs.enabled ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
               </div>
               <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Favourites section on home</div>
+                <div className="font-medium" style={{ color: T.ink }}>Favourites</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {favs && favs.enabled
-                    ? `Showing ${favs.order.length === 0 ? 'on your home screen — heart some sections to fill it' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen`}`
-                    : 'Off — tap the heart on any section to collect favourites, then turn this on to pin them to your home screen'}
+                    ? `On — heart icons are visible across the app. ${favs.order.length === 0 ? 'Heart some sections to pin them to your home screen.' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen.`}`
+                    : 'Off — heart icons are hidden everywhere. Turn this on to show them and pin your favourite sections to home.'}
                 </div>
               </div>
             </div>
@@ -878,32 +952,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
 
         {/* #16 — Legal. Privacy Policy + Terms as sub-pages (rendered by the
             legalView sub-view above). Sits just above Support. */}
+        {/* #8 — Legal opens in a focused sub-page listing Privacy + Terms. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Legal</div>
-        <Card className="p-0 mb-3 overflow-hidden">
-          <button onClick={() => setLegalView('privacy')}
-                  className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-              <Shield size={17} style={{ color: T.primary }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </button>
-          <div className="mx-4 border-t" style={{ borderColor: T.borderSoft }} />
-          <button onClick={() => setLegalView('terms')}
-                  className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-              <FileText size={17} style={{ color: T.primary }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
-            </div>
-            <ChevronRight size={18} style={{ color: T.muted }} />
-          </button>
-        </Card>
+        <SubPageCard icon={Shield} iconBg={T.primary} title="Legal"
+                     sub="Privacy Policy and Terms of Use"
+                     onClick={() => openSub('legal')} />
 
         {/* P9 / step 33 — "Support the app" section. Quiet, always visible,
             below all functional settings. Opens the shared support modal

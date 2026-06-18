@@ -13,11 +13,13 @@
 // and previous-paper routes) are UNCHANGED — every prop signature identical.
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  AlertCircle, AlertTriangle, Check, X, ChevronLeft, ChevronRight,
+  AlertCircle, AlertTriangle, Bookmark, BookmarkCheck, Check, X, ChevronLeft, ChevronRight,
   ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, PyqBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
+import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
+import { Tip } from '../ui/tooltip.jsx';
 import { QuestionImage, HelpfulToggle } from '../ui/question-widgets.jsx';
 import {
   GuestSavePrompt, MotivationCard, ShareScoreButton, TimeQuadrant
@@ -241,7 +243,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 // =====================================================================
 // ADVANCED TEST — ENGINE
 // =====================================================================
-function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label }) {
+function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookmarks = [], onToggleBookmark }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -250,11 +252,23 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label }) {
   const [timeRemaining, setTimeRemaining] = useState(timeMinutes * 60);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirm, setConfirm] = useState(null); // 'abort' | 'submit' | null
+  const [bmAnim, setBmAnim] = useState(null);    // #4 — 'pop' | 'deflate' | null
   const timePerQ = useRef({});
   const lastTick = useRef(Date.now());
   const currentQId = useRef(null);
 
   const q = questions[index];
+
+  // #4 — bookmarking inside the timed Advanced Test. Persists immediately via
+  // the app-level toggle; #7 — removing one is gated by the shared caution.
+  const bookmarkSet = useMemo(() => new Set(bookmarks || []), [bookmarks]);
+  const isBookmarked = !!(q && bookmarkSet.has(q.id));
+  const applyBookmarkToggle = () => {
+    setBmAnim(isBookmarked ? 'deflate' : 'pop');
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    if (onToggleBookmark && q) onToggleBookmark(q.id);
+  };
+  const toggleBookmark = () => confirmBookmarkToggle(isBookmarked, applyBookmarkToggle);
 
   // Track visited on question change
   useEffect(() => {
@@ -356,22 +370,42 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label }) {
       </div>
 
       <div className="max-w-md mx-auto px-4 pt-4 pb-40">
-        <div className="flex flex-wrap items-center gap-2 mb-4">
-          {label && (
-            <Pill bg={T.primary + '15'} color={T.primary}>
-              <ClipboardList size={10} />{label}
+        {/* #4 — tags row with the bookmark at the rightmost edge (same
+            position as every other test type). */}
+        <div className="flex items-start gap-2 mb-4">
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            {label && (
+              <Pill bg={T.primary + '15'} color={T.primary}>
+                <ClipboardList size={10} />{label}
+              </Pill>
+            )}
+            <Pill bg={topicColor(q.topic) + '15'} color={topicColor(q.topic)}>
+              {topicIcon(q.topic)} {topicName(q.topic)}
             </Pill>
+            {q.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{q.sub}</Pill>}
+            <Pill bg={q.type === 'msq' ? T.errorSoft : T.successSoft} color={q.type === 'msq' ? T.error : T.success}>
+              {q.type === 'msq' ? 'Multi-select' : 'Single answer'}
+            </Pill>
+            {/* P16 — provenance badge (Advanced test + previous-paper mocks) */}
+            <PyqBadge q={q} />
+            {isMarked && <Pill bg={T.accent + '20'} color={T.accent}><Flag size={10} />Marked</Pill>}
+          </div>
+          {onToggleBookmark && (
+            <Tip text={isBookmarked ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+            <button onClick={toggleBookmark}
+                    aria-pressed={isBookmarked}
+                    aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this question'}
+                    className="no-tap-highlight p-1 -mr-1 -mt-0.5 rounded-full active:bg-black/5 flex-shrink-0">
+              <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
+                    key={bmAnim ? `${q.id}:${isBookmarked}` : q.id}
+                    style={{ lineHeight: 0 }}>
+                {isBookmarked
+                  ? <BookmarkCheck size={20} className="text-accent" />
+                  : <Bookmark size={20} className="text-muted" />}
+              </span>
+            </button>
+            </Tip>
           )}
-          <Pill bg={topicColor(q.topic) + '15'} color={topicColor(q.topic)}>
-            {topicIcon(q.topic)} {topicName(q.topic)}
-          </Pill>
-          {q.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{q.sub}</Pill>}
-          <Pill bg={q.type === 'msq' ? T.errorSoft : T.successSoft} color={q.type === 'msq' ? T.error : T.success}>
-            {q.type === 'msq' ? 'Multi-select' : 'Single answer'}
-          </Pill>
-          {/* P16 — provenance badge (Advanced test + previous-paper mocks) */}
-          <PyqBadge q={q} />
-          {isMarked && <Pill bg={T.accent + '20'} color={T.accent}><Flag size={10} />Marked</Pill>}
         </div>
 
         <div className="text-xs uppercase tracking-wider mb-2" style={{ color: T.muted }}>Question {index + 1}</div>
