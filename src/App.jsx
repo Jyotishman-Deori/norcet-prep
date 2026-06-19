@@ -15,6 +15,7 @@ import {
 // lives only inside the lazily-loaded chart screens (StatsScreen, weightage),
 // so the recharts-vendor chunk is fetched on demand, not in the initial load.
 import { KEYS, KEY_PREFIXES } from './lib/keys.js';
+import { loadRepeatPool, saveRepeatPool, nextPool, partitionByRepeat } from './lib/repeat-unattempted.js';
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './lib/migrations.js';
 // P7 — 501 pre-extracted official AIIMS NORCET PYQs across 6 papers, in the
 // real SEED_QUESTIONS schema. Imported (never inlined) to keep App.jsx lean.
@@ -899,6 +900,9 @@ function hydrateLoaded(rawData) {
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage', 'knowledge-map', 'results',
   'advanced-results', 'paper-results', 'dosage-results',
+  // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
+  // intercept the pull and interfere with scrolling it.
+  'share-app',
 ]);
 
 // =====================================================================
@@ -2221,6 +2225,16 @@ export default function App() {
     if (!profile) return;
     initAnalytics(profile.id, isGuestProfile(profile));
   }, [profile && profile.id]);
+  // B2 — keep the current profile's "repeat unattempted" pool in a ref so the
+  // synchronous selector in startQuiz can read it without awaiting storage.
+  const repeatPoolRef = useRef([]);
+  useEffect(() => {
+    let on = true;
+    loadRepeatPool(profile && profile.id)
+      .then((ids) => { if (on) repeatPoolRef.current = ids; })
+      .catch(() => {});
+    return () => { on = false; };
+  }, [profile && profile.id]);
   const navigate = useCallback((n) => {
     const cur = navRef.current;
     if (cur && n && n.screen !== cur.screen && !NAV_NO_STACK.includes(cur.screen)) {
@@ -2487,6 +2501,17 @@ export default function App() {
 
   const startQuiz = useCallback((spec) => {
     let qs = [];
+    // B2 — bias selection so questions the user was shown but never attempted
+    // (and didn't reveal/skip) come back FIRST, then fall through to the normal
+    // unseen-first / weakest-next selector to fill the remaining slots.
+    const selectWithRepeats = (pool, count, history) => {
+      const { toRepeat, rest } = partitionByRepeat(pool, repeatPoolRef.current);
+      if (toRepeat.length === 0) return selectQuickPracticeQuestions(pool, count, history);
+      const repeatPick = shuffle(toRepeat).slice(0, count);
+      if (repeatPick.length >= count) return repeatPick;
+      const restPick = selectQuickPracticeQuestions(rest, count - repeatPick.length, history);
+      return [...repeatPick, ...restPick];
+    };
     if (spec.mode === 'quick') {
       // Both Quick Practice entry points (this and `startQuickPractice`) go
       // through the same smart selector — no caller can accidentally end up
@@ -2496,7 +2521,7 @@ export default function App() {
       const pool = spec.topic && spec.topic !== 'all'
         ? allQuestions.filter(q => q.topic === spec.topic)
         : allQuestions;
-      qs = selectQuickPracticeQuestions(pool, spec.count || 5, data ? data.history : {});
+      qs = selectWithRepeats(pool, spec.count || 5, data ? data.history : {});
     } else if (spec.mode === 'topic') {
       // P16 — optional PYQ-only narrowing for Topic-wise practice.
       const base = spec.pyqOnly ? allQuestions.filter(isPYQ) : allQuestions;
@@ -2512,7 +2537,7 @@ export default function App() {
       // #21 — unseen-first so Topic Wise Test never repeats a question across
       // sessions until the topic's bank is exhausted (was a raw shuffle, which
       // could re-serve the same questions every time).
-      qs = selectQuickPracticeQuestions(pool, spec.count || 10, data ? data.history : {});
+      qs = selectWithRepeats(pool, spec.count || 10, data ? data.history : {});
     } else if (spec.mode === 'weak-topic') {
       // Practice mode launched from the Weak Areas screen. Bias the question
       // selection toward questions she's previously got WRONG in this topic
@@ -2562,7 +2587,7 @@ export default function App() {
     });
   }, [allQuestions, data]);
 
-  const completeQuiz = useCallback((results, bookmarkedLocal, elapsed) => {
+  const completeQuiz = useCallback((results, bookmarkedLocal, elapsed, skipCounts) => {
     if (!data) return;
     setData(prev => {
       const newHistory = { ...prev.history };
@@ -2656,6 +2681,21 @@ export default function App() {
       };
     });
     setNav({ screen: 'results', results, questions: nav.questions, elapsed, mode: nav.mode });
+    // B2 — fold this run into the repeat-unattempted pool: presented questions
+    // with no result (not answered, not revealed) and not skipped get queued to
+    // come back first next time; anything now resolved or skipped is dropped.
+    try {
+      const presentedIds = Array.isArray(nav.questions) ? nav.questions.map(q => q.id) : [];
+      if (presentedIds.length) {
+        const resultIds = (results || []).map(r => r.qId);
+        const skippedIds = skipCounts
+          ? Object.keys(skipCounts).filter(qid => (skipCounts[qid] || 0) > 0)
+          : [];
+        const updated = nextPool(repeatPoolRef.current, { presentedIds, resultIds, skippedIds });
+        repeatPoolRef.current = updated;
+        saveRepeatPool(profile && profile.id, updated);
+      }
+    } catch (e) { /* pool is best-effort; never block results */ }
     // #18 — auto-resolve question solution flags: any still-open flag whose
     // question was just answered CORRECTLY clears itself, with a small
     // Achievements notification ("you got it right"). Fire-and-forget; a
@@ -3869,6 +3909,7 @@ export default function App() {
       <NavDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)}
                  onOpen={() => { if (nav.screen === 'home') setDrawerOpen(true); }}
                  gesturesAllowed={nav.screen === 'home'}
+                 isGuest={isGuestProfile(profile)}
                  replyUnread={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
                  onNavigate={handleHomeNavigate} />
 
@@ -4086,6 +4127,7 @@ export default function App() {
         <Suspense fallback={<LazyScreenFallback />}>
         <StatsScreen onBack={goHome}
                      onQuick={() => navigate({ screen: 'quick-setup' })}
+                     onResetData={clearAll}
                      onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })} />
         </Suspense>
       )}
@@ -4177,7 +4219,7 @@ export default function App() {
                              profileId={profile && profile.id} />
       )}
 
-      {nav.screen === 'add-question' && (
+      {nav.screen === 'add-question' && !isGuestProfile(profile) && (
         <AddQuestion onSave={saveCustomQuestion} onSaveBulk={saveBulkQuestions}
                      onBack={goHome}
                      existingCustomCount={data.customQuestions.length} />

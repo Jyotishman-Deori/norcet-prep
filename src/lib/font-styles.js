@@ -43,8 +43,14 @@ export const fontStyles = `
 .loading-dot { display: inline-block; animation: loadingDot 1.4s ease-in-out infinite; }
 .loading-dot:nth-child(2) { animation-delay: 0.2s; }
 .loading-dot:nth-child(3) { animation-delay: 0.4s; }
-@keyframes slideInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: translateX(0); } }
-@keyframes slideInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: translateX(0); } }
+/* Fix 5 — these MUST settle at transform:none, not translateX(0). With
+   animation-fill-mode:both, a final translateX(0) (any non-none transform)
+   keeps the element a containing block for position:fixed descendants — which
+   re-anchors any modal/dialog rendered inside a slide-animated screen to that
+   screen instead of the viewport, throwing its centring off. none rests
+   identically but releases the containing block. */
+@keyframes slideInRight { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes slideInLeft { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
 .anim-slide-next { animation: slideInRight 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 .anim-slide-prev { animation: slideInLeft 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 

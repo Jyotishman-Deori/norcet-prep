@@ -6,15 +6,15 @@
 // onBack/onQuick/onPracticeTopic stay props.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, ChevronDown, ChevronRight, ChevronUp, Flame, Layers, Shuffle, Target } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronRight, ChevronUp, Flame, Layers, RotateCcw, Shuffle, Target, Trash2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
-import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 
-function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
+function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const [topicSort, setTopicSort] = useState('weak'); // 'weak' | 'strong'
@@ -541,6 +541,37 @@ function StatsScreen({ onBack, onQuick, onPracticeTopic }) {
             </Card>
           );
         })()}
+
+        {/* B1 — "Begin fresh": a clean-slate reset right where it's most
+            tempting (looking at your stats). It runs the SAME profile-data
+            reset as Settings → Profile → Reset, gated by a clear caution. */}
+        {onResetData && (
+          <div className="mt-8 pt-5" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+            <button
+              onClick={() => requestConfirm({
+                icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,
+                title: "Reset this profile's data?",
+                body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone — consider downloading a backup first (Settings → Backup).",
+                confirmLabel: 'Reset data',
+                cancelLabel: 'Cancel',
+                tone: 'danger',
+                confirmWord: 'RESET',
+                onConfirm: () => onResetData(),
+              })}
+              className="no-tap-highlight w-full flex items-center gap-3 p-3.5 rounded-2xl text-left active:scale-[0.99] transition"
+              style={{ background: T.errorSoft, border: `1px solid ${T.error}30` }}>
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.error + '22' }}>
+                <RotateCcw size={17} style={{ color: T.error }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-sm" style={{ color: T.error }}>Begin fresh</div>
+                <div className="text-[11px] mt-0.5" style={{ color: T.error, opacity: 0.7 }}>
+                  Reset everything and start over with a clean slate
+                </div>
+              </div>
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

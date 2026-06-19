@@ -15,7 +15,7 @@
 //                    cancel is the quiet secondary/ghost button.
 //   tone="primary" → confirm is the theme primary filled button.
 // =====================================================================
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 
@@ -27,14 +27,21 @@ export default function ConfirmDialog({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'danger',             // 'danger' | 'primary'
+  confirmWord = null,          // when set, user must type this word to enable confirm
   onConfirm,
   onCancel,
 }) {
   const { theme: T } = useTheme();
   const dialogRef = useFocusTrap(onCancel);
+  const [typed, setTyped] = useState('');
+  // Clear the type-to-confirm field every time the dialog (re)opens.
+  useEffect(() => { if (open) setTyped(''); }, [open]);
   if (!open) return null;
 
   const confirmBg = tone === 'danger' ? T.error : T.primary;
+  const needsWord = !!confirmWord;
+  const matched = !needsWord || typed.trim().toUpperCase() === String(confirmWord).trim().toUpperCase();
+  const doConfirm = () => { if (matched && onConfirm) onConfirm(); };
 
   return (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-5"
@@ -51,7 +58,21 @@ export default function ConfirmDialog({
             </div>
           )}
           <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>{title}</div>
-          <div className="text-sm leading-relaxed mb-5" style={{ color: T.inkSoft }}>{body}</div>
+          <div className={"text-sm leading-relaxed " + (needsWord ? 'mb-4' : 'mb-5')} style={{ color: T.inkSoft }}>{body}</div>
+          {needsWord && (
+            <>
+              <div className="text-xs font-medium mb-1.5" style={{ color: T.inkSoft }}>
+                Type <span className="font-mono font-bold" style={{ color: T.error }}>{confirmWord}</span> to confirm:
+              </div>
+              <input value={typed} onChange={(e) => setTyped(e.target.value)}
+                     autoFocus autoComplete="off" autoCapitalize="characters"
+                     placeholder={confirmWord}
+                     className="w-full rounded-xl px-3 py-2.5 text-sm font-mono mb-5"
+                     style={{ background: T.surfaceWarm, color: T.ink,
+                              border: `1.5px solid ${matched ? T.error : T.border}`,
+                              transition: 'border-color .25s' }} />
+            </>
+          )}
           <div className="flex gap-2">
             {/* Safe action = quiet secondary */}
             <button onClick={onCancel}
@@ -59,10 +80,15 @@ export default function ConfirmDialog({
                     style={{ background: 'transparent', color: T.ink, border: `1.5px solid ${T.border}` }}>
               {cancelLabel}
             </button>
-            {/* Destructive / committed action = filled, clearly signalled */}
-            <button onClick={onConfirm}
+            {/* Destructive / committed action = filled, clearly signalled. When a
+                confirmWord is required it stays disabled until the word matches. */}
+            <button onClick={doConfirm} disabled={!matched}
                     className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
-                    style={{ background: confirmBg, color: '#FFF', boxShadow: `0 4px 14px ${confirmBg}50` }}>
+                    style={{ background: matched ? confirmBg : T.surfaceWarm,
+                             color: matched ? '#FFF' : T.muted,
+                             boxShadow: matched ? `0 4px 14px ${confirmBg}50` : 'none',
+                             opacity: matched ? 1 : 0.7,
+                             transition: 'background .25s, color .25s, box-shadow .25s' }}>
               {confirmLabel}
             </button>
           </div>

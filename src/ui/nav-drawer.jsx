@@ -183,6 +183,17 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // briefly to welcome the user back to where they left from.
   const [openCount, setOpenCount] = useState(0);
   const [returnGlowKey, setReturnGlowKey] = useState(null);
+  // Fix 4 — collapsible sections. Primary nav (Study/Progress/Tools) starts
+  // expanded; the two "folder" sections (Help & Learn, Feedback) start
+  // collapsed and open like a folder when their heading is tapped.
+  const [openSections, setOpenSections] = useState({
+    study: true, progress: true, tools: true, learn: false, feedback: false,
+  });
+  const toggleSection = (key) => {
+    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(5); } catch (e) {}
+    try { playTapSound(); } catch (e) {}
+    setOpenSections((s) => ({ ...s, [key]: !s[key] }));
+  };
   useEffect(() => {
     if (!open) return;
     setOpenCount(c => c + 1);
@@ -299,6 +310,38 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     </Tip>
   );
 
+  // Fix 4 — a tappable section heading with an animated disclosure chevron.
+  const SectionHeader = ({ label, sectionKey }) => {
+    const isOpen = !!openSections[sectionKey];
+    return (
+      <button onClick={() => toggleSection(sectionKey)}
+              aria-expanded={isOpen}
+              className="no-tap-highlight w-full flex items-center justify-between gap-2 px-3 mt-4 mb-1 text-left active:opacity-70 transition-opacity">
+        <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{label}</span>
+        <ChevronRight size={14}
+                      style={{ color: T.muted,
+                               transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+                               transform: isOpen ? 'rotate(90deg)' : 'rotate(0deg)' }} />
+      </button>
+    );
+  };
+
+  // Fix 4 — smooth open/close via the grid-rows 0fr→1fr trick (animates real
+  // height with no JS measuring; the inner wrapper clips + fades the content).
+  const Collapsible = ({ open: isOpen, children }) => (
+    <div style={{ display: 'grid',
+                  gridTemplateRows: isOpen ? '1fr' : '0fr',
+                  transition: 'grid-template-rows 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
+      <div style={{ overflow: 'hidden', minHeight: 0,
+                    opacity: isOpen ? 1 : 0,
+                    transition: 'opacity 0.22s ease',
+                    transitionDelay: isOpen ? '0.06s' : '0s' }}
+           aria-hidden={!isOpen}>
+        {children}
+      </div>
+    </div>
+  );
+
   return (
     <div className="fixed inset-0 z-[70]" style={{ pointerEvents: open ? 'auto' : 'none' }} aria-hidden={!open}>
       {/* Scrim */}
@@ -343,46 +386,47 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
         {/* Nav list */}
         <div className="px-2 py-2 pb-10">
           <div key={openCount}>{/* remount per open → entrance replays */}
-          <GroupLabel>Study</GroupLabel>
-          {study.map((it, i) => <Item key={it.key} it={it} index={i} />)}
+          <SectionHeader label="Study" sectionKey="study" />
+          <Collapsible open={openSections.study}>
+            {study.map((it, i) => <Item key={it.key} it={it} index={i} />)}
+          </Collapsible>
 
-          <GroupLabel>Progress</GroupLabel>
-          {progress.map((it, i) => <Item key={it.key} it={it} index={study.length + i} />)}
+          <SectionHeader label="Progress" sectionKey="progress" />
+          <Collapsible open={openSections.progress}>
+            {progress.map((it, i) => <Item key={it.key} it={it} index={study.length + i} />)}
+          </Collapsible>
 
-          <GroupLabel>Tools</GroupLabel>
-          {tools.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + i} />)}
+          <SectionHeader label="Tools" sectionKey="tools" />
+          <Collapsible open={openSections.tools}>
+            {tools.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + i} />)}
+          </Collapsible>
 
-          <GroupLabel>Help &amp; Learn</GroupLabel>
-          <div className="px-1 mt-1 space-y-2.5">
-            <LearnCard icon={GraduationCap} iconColor={T.primary}
-                       title="Study Methods" sub="Learn how to study smarter"
-                       badge="Guide" badgeTone={T.primary} index={10} fav="study-methods" tip="Evidence-based techniques — active recall, spaced repetition and how to use this app well."
-                       onClick={() => go('study-methods', null, 'methods')} />
-            <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
-                       title="FAQ" sub="Questions answered by our team"
-                       badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={11} fav="faq" tip="Common questions answered by the team — ask your own too."
-                       onClick={() => go('faq', null, 'faq')} />
-            {/* #9 — Feedback hub: ONE structured card with two clear
-                sub-sections (Send feedback + My feedback). "Send feedback"
-                opens the same report modal used contextually elsewhere
-                (source:'feedback' → the one admin inbox); "My feedback" opens
-                the user's own reports + admin replies, with an unread badge. */}
-            <div className="px-0 drawer-item-in" style={{ animationDelay: `${Math.min(12, 12) * 45}ms` }}>
+          <SectionHeader label="Help & Learn" sectionKey="learn" />
+          <Collapsible open={openSections.learn}>
+            <div className="px-1 pt-1 space-y-2.5">
+              <LearnCard icon={GraduationCap} iconColor={T.primary}
+                         title="Study Methods" sub="Learn how to study smarter"
+                         badge="Guide" badgeTone={T.primary} index={0} fav="study-methods" tip="Evidence-based techniques — active recall, spaced repetition and how to use this app well."
+                         onClick={() => go('study-methods', null, 'methods')} />
+              <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
+                         title="FAQ" sub="Questions answered by our team"
+                         badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={1} fav="faq" tip="Common questions answered by the team — ask your own too."
+                         onClick={() => go('faq', null, 'faq')} />
+            </div>
+          </Collapsible>
+
+          {/* #9 / Fix 4 — Feedback is now a collapsible folder: tapping the
+              heading expands "Send feedback" + "My feedback" as children. Same
+              targets as before (source:'feedback' → the one admin inbox; and
+              the user's own reports + admin replies, with an unread badge). */}
+          <SectionHeader label="Feedback" sectionKey="feedback" />
+          <Collapsible open={openSections.feedback}>
+            <div className="px-1 pt-1">
               <div className="rounded-2xl overflow-hidden"
                    style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                <div className="flex items-center gap-3.5 px-3.5 pt-3.5 pb-2.5">
-                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.accent }}>
-                    <Megaphone size={20} color="#FFF" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>Feedback</div>
-                    <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted }}>Tell us anything — and track replies</div>
-                  </div>
-                </div>
-                <div className="mx-3.5 border-t" style={{ borderColor: T.borderSoft }} />
                 <button onClick={() => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); }}
                         className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '18' }}>
                     <Send size={15} style={{ color: T.accent }} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -394,7 +438,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
                 <div className="mx-3.5 border-t" style={{ borderColor: T.borderSoft }} />
                 <button onClick={() => go('my-reports', null, 'my-reports')}
                         className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
                     <Inbox size={15} style={{ color: T.primary }} />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -411,7 +455,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
                 </button>
               </div>
             </div>
-          </div>
+          </Collapsible>
 
           </div>
 

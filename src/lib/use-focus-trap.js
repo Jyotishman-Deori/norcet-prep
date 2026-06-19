@@ -14,6 +14,12 @@ import { useRef, useEffect } from 'react';
 // All wrapped defensively so a missing DOM API never throws.
 function useFocusTrap(onClose, active = true) {
   const ref = useRef(null);
+  // Keep the latest onClose in a ref so changing it (callers often pass a fresh
+  // closure every render) does NOT re-run the effect below. Re-running it would
+  // re-focus the first control on every keystroke — which is exactly the bug
+  // where typing in a dialog input kept yanking focus to the close button.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!active) return;
     const node = ref.current;
@@ -22,15 +28,18 @@ function useFocusTrap(onClose, active = true) {
     const SELECTOR = 'a[href], button:not([disabled]), textarea, input, select, [tabindex]:not([tabindex="-1"])';
     const focusables = () => Array.from(node.querySelectorAll(SELECTOR))
       .filter(el => el.offsetParent !== null || el === document.activeElement);
-    // Move focus inside on open (first focusable, else the container itself).
-    const first = focusables()[0];
+    // Move focus inside on open: prefer a control that opted in with
+    // `data-autofocus` (e.g. the main text field), else the first focusable,
+    // else the container itself. Runs ONCE per open — never on re-render.
+    const preferred = node.querySelector('[data-autofocus]');
+    const first = preferred || focusables()[0];
     if (first) { try { first.focus(); } catch (e) {} }
     else { try { node.setAttribute('tabindex', '-1'); node.focus(); } catch (e) {} }
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
-        if (onClose) onClose();
+        if (onCloseRef.current) onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -53,7 +62,7 @@ function useFocusTrap(onClose, active = true) {
         try { prevActive.focus(); } catch (e) {}
       }
     };
-  }, [onClose, active]);
+  }, [active]);
   return ref;
 }
 

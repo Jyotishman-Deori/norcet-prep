@@ -126,7 +126,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (!isCountdown) return;
     if (secondsRemaining > 0) return;
     // Avoid double-fire by checking against a ref-less guard: just run once.
-    const id = setTimeout(() => onComplete(results, bookmarkedLocal, elapsed), 0);
+    const id = setTimeout(() => onComplete(results, bookmarkedLocal, elapsed, skipCounts), 0);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCountdown, secondsRemaining]);
@@ -252,7 +252,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
       setSubmitted(false);
       setRevealed(false);
     } else {
-      onComplete(results, bookmarkedLocal, elapsed);
+      onComplete(results, bookmarkedLocal, elapsed, skipCounts);
     }
   };
 

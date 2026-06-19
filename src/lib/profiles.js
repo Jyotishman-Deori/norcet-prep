@@ -589,10 +589,40 @@ export async function recoverPasswordWithAnswer(displayName, answer, newPassword
   return profile || { id };
 }
 
-// STAGE 1: re-key the protected credential row when a profile's id (slug)
-// changes on rename. Without this, a renamed user would have NO secret under
-// their new id and could not log in. Throws on failure so renameProfile can
-// abort cleanly before it deletes the old keys.
+// Fix 6 — Account Security (logged-in users, from Settings → Profile).
+// Both require the current password; both go through the same service-role
+// auth-secure function so the anon key never touches the locked secrets.
+
+// Set the recovery question ONE TIME. The server refuses if one is already on
+// file. Returns { ok:true } or throws a friendly message.
+export async function setSecurityQuestion(displayName, password, securityQuestion, securityAnswer) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('No profile is signed in');
+  if (!password) throw new Error('Enter your current password');
+  if (!securityQuestion) throw new Error('Choose a security question');
+  if (!securityAnswer || !String(securityAnswer).trim()) throw new Error('Type an answer to your security question');
+  const res = await callAuthFn('set-security-question', { id, password, securityQuestion, securityAnswer });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
+    if (res && res.reason === 'already-set') throw new Error('A recovery question is already set and cannot be changed');
+    throw new Error('Could not set your recovery question — please try again');
+  }
+  return true;
+}
+
+// Add or update the optional recovery email. Pass an empty string to clear it.
+export async function updateRecoveryEmail(displayName, password, email) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('No profile is signed in');
+  if (!password) throw new Error('Enter your current password');
+  const res = await callAuthFn('update-email', { id, password, email: email == null ? '' : String(email) });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
+    if (res && res.reason === 'bad-email') throw new Error('Enter a valid email address');
+    throw new Error('Could not update your email — please try again');
+  }
+  return true;
+}
 export async function renameCredentials(oldId, newId, displayName) {
   const res = await callAuthFn('rename', { id: newId, oldId, displayName });
   if (!res || res.ok !== true) {

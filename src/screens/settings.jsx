@@ -8,12 +8,12 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
+  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
   FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
   Shield, Sigma, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
-import { Card, Button, TopBar, requestSupport } from '../ui/primitives.jsx';
+import { Card, Button, TopBar, requestSupport, requestConfirm } from '../ui/primitives.jsx';
 import { LegalScreen } from './legal.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { downloadAsFile } from '../lib/utils.js';
@@ -22,7 +22,7 @@ import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
-import ConfirmDialog from '../ui/confirm-dialog.jsx';
+import AccountSecurityCard from './account-security-card.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
@@ -63,12 +63,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     setCribOn(next);
     setCribSheetEnabled(next);
   };
-  // Issues round — Log out AND Switch now confirm via a true CENTRED modal
-  // (ConfirmDialog), never a bottom sheet anchored to scroll position.
-  const [logoutSheet, setLogoutSheet] = useState(false);
-  const [switchSheet, setSwitchSheet] = useState(false);
-  const [resetSheet, setResetSheet] = useState(false);
-  const [resetTyped, setResetTyped] = useState('');
   const [importMsg, setImportMsg] = useState(null);
   const fileInputRef = useRef(null);
   // P11 Feature C — topic-notes export/import (separate from the data backup;
@@ -232,10 +226,19 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
 
   // Reset + Share — shown to guests inline, and inside the Profile sub-page
   // for logged-in users (so it's reachable from one place either way).
-  const renderResetAndShare = () => (
+  const renderReset = () => (
     <>
       <Card className="mb-3 p-0 overflow-hidden">
-        <button onClick={() => { setResetTyped(''); setResetSheet(true); }}
+        <button onClick={() => requestConfirm({
+                  icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,
+                  title: `Reset ${profile ? `${profile.displayName}'s` : "this profile's"} data?`,
+                  body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone — consider downloading a backup first (Settings → Backup).",
+                  confirmLabel: 'Reset data',
+                  cancelLabel: 'Cancel',
+                  tone: 'danger',
+                  confirmWord: 'RESET',
+                  onConfirm: () => onClearAll(),
+                })}
                 className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
           <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.errorSoft }}>
             <Trash2 size={16} style={{ color: T.error }} />
@@ -247,20 +250,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </div>
           </div>
         </button>
-      </Card>
-      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
-            <Share2 size={18} color="#FFF" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-              Send a friend the link + setup steps for their device
-            </div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
-        </div>
       </Card>
     </>
   );
@@ -288,18 +277,35 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         </Card>
       )}
       <div className="grid grid-cols-2 gap-2 mb-2">
-        <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setSwitchSheet(true)}>
+        <Card className="p-3 cursor-pointer no-tap-highlight pressable"
+              onClick={() => requestConfirm({
+                icon: <RefreshCw size={18} style={{ color: T.primary }} />,
+                title: 'Switch profile?',
+                body: 'You will be moved to a different profile. Your current progress is saved.',
+                confirmLabel: 'Switch', cancelLabel: 'Cancel', tone: 'primary',
+                onConfirm: () => onSwitchProfile(),
+              })}>
           <RefreshCw size={16} style={{ color: T.success }} />
           <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
           <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
         </Card>
-        <Card className="p-3 cursor-pointer no-tap-highlight pressable" onClick={() => setLogoutSheet(true)}>
+        <Card className="p-3 cursor-pointer no-tap-highlight pressable"
+              onClick={() => requestConfirm({
+                icon: <LogOut size={18} style={{ color: T.error }} />,
+                title: 'Log out of this profile?',
+                body: 'Your progress is saved and you can log back in anytime. Nothing is deleted.',
+                confirmLabel: 'Log out', cancelLabel: 'Cancel', tone: 'danger',
+                onConfirm: () => onLogout(),
+              })}>
           <LogOut size={16} style={{ color: '#D4900A' }} />
           <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
           <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
         </Card>
       </div>
-      {renderResetAndShare()}
+      {/* Fix 6 — Account Security (logged-in only; the Profile sub-page is only
+          reachable when signed in). One-time recovery question + optional email. */}
+      {profile && <AccountSecurityCard profile={profile} />}
+      {renderReset()}
     </>
   );
 
@@ -531,7 +537,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
               </div>
             </Card>
-            {renderResetAndShare()}
+            {renderReset()}
           </>
         )}
         {!isGuest && profile && (
@@ -543,8 +549,25 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </>
         )}
 
-        {/* #8 — Reset + Share moved into the Profile sub-page for logged-in
-            users; guests still see them inline above. */}
+        {/* Fix 1 — "Share NORCET Prep" is now its own top-level row (moved out
+            of the Profile sub-page) so it's easy to reach for everyone. */}
+        <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
+              <Share2 size={18} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                Send a friend the link + setup steps for their device
+              </div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+          </div>
+        </Card>
+
+        {/* #8 — Reset stays in the Profile sub-page for logged-in users; guests
+            still see it inline above. Share is now a top-level row (above). */}
 
         {/* #9 — "My feedback" has moved into the sidebar Feedback hub
             (Send feedback + My feedback live together there now). It is no
@@ -911,16 +934,34 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </div>
           </div>
         </Card>
-        {favs && favs.order.length > 0 && onOpenFavorites && (
-          <Card className="p-3.5 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenFavorites}>
-            <div className="flex items-center justify-between gap-3">
-              <div className="text-[13px] font-medium" style={{ color: T.primary }}>
-                Manage favourites & priority order
+        {/* Fix 3 — Manage favourites + Priority order only appear when the
+            Favourites toggle is ON; when it's OFF they're hidden entirely. */}
+        {onOpenFavorites && favs && favs.enabled && (() => {
+          const FavRow = ({ icon: Icon, label, sub }) => (
+            <Card className="p-3.5 mb-2 cursor-pointer no-tap-highlight pressable"
+                  onClick={onOpenFavorites}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                       style={{ background: '#E0245E18' }}>
+                    <Icon size={16} style={{ color: '#E0245E' }} />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[13px] font-medium" style={{ color: T.ink }}>{label}</div>
+                    <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>
+                  </div>
+                </div>
+                <ChevronRight size={16} style={{ color: T.muted, opacity: 0.7 }} className="flex-shrink-0" />
               </div>
-              <ChevronRight size={16} style={{ color: T.primary, opacity: 0.7 }} />
-            </div>
-          </Card>
-        )}
+            </Card>
+          );
+          return (
+            <>
+              <FavRow icon={Heart} label="Manage favourites" sub="Add or remove hearted sections" />
+              <FavRow icon={ArrowUpDown} label="Priority order" sub="Reorder how they appear on home" />
+            </>
+          );
+        })()}
 
         {/* #29 — Tests: the single control for the post-test Crib Sheet. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Tests</div>
@@ -996,73 +1037,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           vertical+horizontal centre of the viewport, dimmed backdrop —
           visible no matter how far Settings is scrolled). Button hierarchy
           fixed: Log out = red danger primary, Cancel = quiet secondary. */}
-      <ConfirmDialog open={logoutSheet}
-                     icon={<LogOut size={18} style={{ color: T.error }} />}
-                     title="Log out of this profile?"
-                     body="Your progress is saved and you can log back in anytime. Nothing is deleted."
-                     confirmLabel="Log out" cancelLabel="Cancel" tone="danger"
-                     onConfirm={() => { setLogoutSheet(false); onLogout(); }}
-                     onCancel={() => setLogoutSheet(false)} />
-
-      {/* Issues round — Switch profile now confirms too (it was instant). */}
-      <ConfirmDialog open={switchSheet}
-                     icon={<RefreshCw size={18} style={{ color: T.primary }} />}
-                     title="Switch profile?"
-                     body="You will be moved to a different profile. Your current progress is saved."
-                     confirmLabel="Switch" cancelLabel="Cancel" tone="primary"
-                     onConfirm={() => { setSwitchSheet(false); onSwitchProfile(); }}
-                     onCancel={() => setSwitchSheet(false)} />
-
-      {/* #31 — Reset confirm: destructive bottom sheet with type-to-confirm
-          (RESET). The red button stays disabled until the word matches; copy
-          names the profile so there's no ambiguity about scope. */}
-      {resetSheet && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center"
-             style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setResetSheet(false)}>
-          <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
-               style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 rounded-full mx-auto mb-4" style={{ background: T.border }} />
-            <div className="font-display text-lg font-semibold mb-1" style={{ color: T.error }}>
-              Reset {profile ? `${profile.displayName}'s` : "this profile's"} data?
-            </div>
-            <div className="text-sm leading-relaxed mb-4" style={{ color: T.muted }}>
-              This permanently deletes progress, bookmarks, stats, and custom questions for this profile only.
-              Other profiles are untouched. <span style={{ color: T.inkSoft, fontWeight: 500 }}>This cannot be undone</span> —
-              consider downloading a backup first (Settings → Backup).
-            </div>
-            <div className="text-xs font-medium mb-1.5" style={{ color: T.inkSoft }}>
-              Type <span className="font-mono font-bold" style={{ color: T.error }}>RESET</span> to confirm:
-            </div>
-            <input value={resetTyped} onChange={e => setResetTyped(e.target.value)}
-                   autoFocus autoComplete="off" autoCapitalize="characters"
-                   placeholder="RESET"
-                   className="w-full rounded-xl px-3 py-2.5 text-sm font-mono mb-4"
-                   style={{
-                     background: T.surfaceWarm, color: T.ink,
-                     border: `1.5px solid ${resetTyped.trim().toUpperCase() === 'RESET' ? T.error : T.border}`,
-                     transition: 'border-color .25s',
-                   }} />
-            <div className="flex gap-2">
-              <button onClick={() => setResetSheet(false)}
-                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
-                      style={{ background: T.surfaceWarm, color: T.ink, border: `1.5px solid ${T.border}` }}>
-                Cancel
-              </button>
-              <button disabled={resetTyped.trim().toUpperCase() !== 'RESET'}
-                      onClick={() => { if (resetTyped.trim().toUpperCase() === 'RESET') { setResetSheet(false); onClearAll(); } }}
-                      className="no-tap-highlight flex-1 py-3 rounded-xl text-sm font-semibold active:scale-95 transition"
-                      style={{
-                        background: resetTyped.trim().toUpperCase() === 'RESET' ? T.error : T.surfaceWarm,
-                        color: resetTyped.trim().toUpperCase() === 'RESET' ? '#FFF' : T.muted,
-                        opacity: resetTyped.trim().toUpperCase() === 'RESET' ? 1 : 0.7,
-                        transition: 'background .25s, color .25s',
-                      }}>
-                Reset data
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Log out / Switch / Reset all open via the app-root requestConfirm
+          host, so the dialog always centres on the VISIBLE page (e.g. the
+          Profile sub-page) and is never anchored to a transformed ancestor. */}
     </div>
   );
 }

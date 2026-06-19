@@ -32,6 +32,7 @@ export default function ConfirmHost() {
       confirmLabel={opts.confirmLabel || 'Confirm'}
       cancelLabel={opts.cancelLabel || 'Cancel'}
       tone={opts.tone || 'danger'}
+      confirmWord={opts.confirmWord || null}
       onConfirm={() => { try { opts.onConfirm && opts.onConfirm(); } finally { close(); } }}
       onCancel={() => { try { opts.onCancel && opts.onCancel(); } finally { close(); } }}
     />

@@ -298,6 +298,66 @@ Deno.serve(async (req: Request) => {
     }
 
     // -------------------------------------------------------------
+    // SET-SECURITY-QUESTION — a logged-in user sets their recovery
+    // question ONE TIME. Verifies the current password, refuses if a
+    // question is already on file (one-time, can't be changed), then
+    // stores the question + a hashed answer. Mirrors register's hashing.
+    // -------------------------------------------------------------
+    if (action === "set-security-question") {
+      const password = String(payload.password ?? "");
+      const securityQuestion = payload.securityQuestion == null ? "" : String(payload.securityQuestion).trim();
+      const normAnswer = normalizeAnswer(payload.securityAnswer);
+      const row = await getSecret(id);
+      if (!row || !row.password_hash || !row.salt) return json({ ok: false, reason: "no-account" });
+      const tryHash = await hashPassword(password, String(row.salt));
+      if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false, reason: "bad-password" });
+      if (row.security_question) return json({ ok: false, reason: "already-set" });
+      if (!securityQuestion) return json({ ok: false, reason: "question-required" });
+      if (!normAnswer) return json({ ok: false, reason: "answer-required" });
+      const security_answer_salt = genSalt();
+      const security_answer_hash = await hashPassword(normAnswer, security_answer_salt);
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+          body: JSON.stringify({
+            security_question: securityQuestion,
+            security_answer_hash, security_answer_salt,
+            updated_at: new Date().toISOString(),
+          }),
+        },
+      );
+      if (!r.ok) return json({ error: `set-security-question failed: ${r.status}` }, 502);
+      return json({ ok: true });
+    }
+
+    // -------------------------------------------------------------
+    // UPDATE-EMAIL — a logged-in user adds/updates their optional
+    // recovery email. Verifies the current password first. An empty
+    // string clears it; a non-empty value must look like an email.
+    // -------------------------------------------------------------
+    if (action === "update-email") {
+      const password = String(payload.password ?? "");
+      const email = payload.email == null ? "" : String(payload.email).trim();
+      const row = await getSecret(id);
+      if (!row || !row.password_hash || !row.salt) return json({ ok: false, reason: "no-account" });
+      const tryHash = await hashPassword(password, String(row.salt));
+      if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false, reason: "bad-password" });
+      if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, reason: "bad-email" });
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+          body: JSON.stringify({ email: email || null, updated_at: new Date().toISOString() }),
+        },
+      );
+      if (!r.ok) return json({ error: `update-email failed: ${r.status}` }, 502);
+      return json({ ok: true });
+    }
+
+    // -------------------------------------------------------------
     // RENAME — re-key a credential row when a profile's id (slug)
     // changes on rename. Copies the SAME hashes to the new id and
     // removes the old row, so the renamed user can still log in.

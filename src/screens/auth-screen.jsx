@@ -357,6 +357,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
               Checking availability…
             </div>
           )}
+          {/* Caution (non-blocking): the name becomes your login id and is shown
+              verbatim on the leaderboard and in backups, so flag odd characters. */}
+          {mode === 'create' && !recovering && displayName.trim() && /[^\p{L}\p{N}\s\-_.'’]/u.test(displayName.trim()) && (
+            <div className="mt-2 text-xs flex items-start gap-1.5" style={{ color: T.accent }}>
+              <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
+              <span>Emojis and symbols may not display correctly on the leaderboard or in backups — letters, numbers and spaces are safest.</span>
+            </div>
+          )}
         </div>
 
         {/* Security question + answer — CREATE mode (replaces DOB). */}

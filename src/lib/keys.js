@@ -121,6 +121,10 @@ export const KEY_PREFIXES = {
   // #5 — saved Crib Sheets (per profile, local): array of slim sheet
   // snapshots {id,title,subtitle,createdAt,items[]} shown inside Revision.
   CRIBS: 'cribs:',
+  // B2 — per-profile, LOCAL (device-only) list of qIds the user was shown but
+  // never attempted (not answered, not revealed, not skipped). These are
+  // re-surfaced first in future Quick/Topic tests until they're resolved.
+  REPEAT_UNATTEMPTED: 'repeatUnattempted:',
   // #29 — client error/crash groups (shared, admin-readable), grouped by
   // signature. Uses the same anon shared-write path as feedback:/favsec:.
   ERRLOG: 'errlog:',
