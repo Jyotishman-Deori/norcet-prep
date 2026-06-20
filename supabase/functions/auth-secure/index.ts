@@ -306,6 +306,23 @@ Deno.serve(async (req: Request) => {
         if (r.status === 409) return json({ ok: false, reason: "exists" });
         return json({ error: `register failed: ${r.status} ${await r.text().catch(() => "")}`.trim() }, 502);
       }
+
+      // Phase-2 — best-effort signup event for fake-account anomaly detection
+      // (device/IP clustering + per-link velocity). NEVER blocks signup: any
+      // failure is swallowed. IP + fingerprint are stored ONLY as one-way
+      // HMACs, never raw. `ref` is the referral code the new user arrived with.
+      try {
+        const ipHash = toHex((await hmac(clientIp(req))).buffer);
+        const fpRaw = payload.fingerprint == null ? "" : String(payload.fingerprint).slice(0, 256);
+        const fpHash = fpRaw ? toHex((await hmac(fpRaw)).buffer) : null;
+        const ref = payload.ref == null ? null : (String(payload.ref).slice(0, 64) || null);
+        await fetch(`${SUPABASE_URL}/rest/v1/signup_events`, {
+          method: "POST",
+          headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+          body: JSON.stringify({ profile_id: id, ip_hash: ipHash, fp_hash: fpHash, ref }),
+        });
+      } catch (_) { /* anomaly logging is best-effort; never affects the account */ }
+
       return json({ ok: true, token: await mintToken(id, uid) });
     }
 

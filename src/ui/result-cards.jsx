@@ -9,11 +9,15 @@
 // via useTheme(); MotivationCard is theme-free (hardcoded gradients).
 // QUADRANT_META moved INSIDE TimeQuadrant (its tone() closures read T).
 // =====================================================================
-import React, { useState, useRef } from 'react';
-import { UserPlus, Flame, Sparkles, Target, Upload, ChevronDown, EyeOff } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { UserPlus, Flame, Sparkles, Target, Upload, ChevronDown, EyeOff, Share2 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Button, Card, Pill } from './primitives.jsx';
 import { topicName, topicIcon } from '../lib/topics.js';
+import { normalizeProfileId } from '../lib/profile-crypto.js';
+import { buildReferralUrl, displayAppUrl, VIA } from '../lib/referral.js';
+import { drawQrMatrix, measureQrPanel, paintMilestoneCard, shareOrSavePng } from '../lib/qr-canvas.js';
+import { sessionMilestone, shouldShowNudge, markNudgeShown } from '../lib/share-nudge.js';
 
 
 // =====================================================================
@@ -330,7 +334,7 @@ function quadrantOf(outcome, seconds, slowSec) {
 
 
 function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = null,
-                            displayName = null, streak = 0, className = '', size = 'lg' }) {
+                            displayName = null, streak = 0, referralCode, className = '', size = 'lg' }) {
   const { theme: T } = useTheme();
   // status: 'idle' | 'working' | 'downloaded' | 'error'
   const [status, setStatus] = useState('idle');
@@ -338,6 +342,15 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
   const safeTotal = Math.max(0, Number(total) || 0);
   const safeCorrect = Math.max(0, Math.min(safeTotal, Number(correct) || 0));
   const pct = safeTotal > 0 ? Math.round((safeCorrect / safeTotal) * 100) : 0;
+
+  // Phase-1 referrals — the card carries the sharer's PERSONAL link
+  // (?ref=<their id>&via=score). `referralCode` is the authoritative source
+  // (null for guests); when a caller doesn't pass it we fall back to deriving
+  // from the display name. The same URL feeds the corner QR (scan) + caption.
+  const scoreCode = (referralCode !== undefined)
+    ? (referralCode || null)
+    : ((displayName && String(displayName).trim()) ? normalizeProfileId(displayName) : null);
+  const scoreUrl = buildReferralUrl(scoreCode, VIA.SCORE);
 
   // Paint the 1080x1080 card; resolves with a PNG Blob.
   const paintCard = () => new Promise((resolve, reject) => {
@@ -496,6 +509,21 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       ctx.fillStyle = '#FFFFFF';
       ctx.fillText(urlText, cx, S - 75);
 
+      // --- corner QR — scannable per-user link (passive app discovery) ---
+      // Sits in the bottom-right corner, clear of the centred footer pill
+      // (pill is centred ~cx; the QR is far right). Falls back silently if the
+      // URL is somehow unencodable.
+      try {
+        const qrMod = 4;
+        const meas = measureQrPanel(scoreUrl, qrMod, { quiet: 4, panelPad: 12 });
+        if (meas) {
+          const pw = meas.panelW;
+          drawQrMatrix(ctx, scoreUrl, S - 52 - pw, S - 52 - pw, qrMod, {
+            panel: true, panelShadow: true, panelPad: 12, panelRadius: 14, quiet: 4, dark: '#0B1220',
+          });
+        }
+      } catch (e) { /* QR is a bonus, never block the card */ }
+
       canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
     } catch (e) { reject(e); }
   });
@@ -509,9 +537,10 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
     catch (e) { setStatus('error'); setTimeout(() => setStatus('idle'), 3000); return; }
 
     const file = new File([blob], 'norcet-result.png', { type: 'image/png' });
-    // #11 — inviting caption: a friendly challenge + the tappable app link
-    // (share targets auto-link the URL; ?ref=score marks these installs).
-    const appUrl = ((typeof window !== 'undefined' && window.location && window.location.origin) || 'https://norcet-prep.vercel.app') + '/?ref=score';
+    // #11 — inviting caption: a friendly challenge + the tappable app link.
+    // Phase-1: this is the sharer's PERSONAL link (?ref=<id>&via=score) so the
+    // install is credited to them; guests get a channel-only link.
+    const appUrl = scoreUrl;
     const inviteLine = pct >= 80
       ? `Just aced a ${quizType || 'practice'} session on NORCET Prep \u2014 ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
       : pct >= 50
@@ -706,4 +735,105 @@ const QUADRANT_META = {
 }
 
 
-export { GuestSavePrompt, MotivationCard, ShareScoreButton, TimeQuadrant };
+// =====================================================================
+// SHARE NUDGE  (Phase 1) — a gentle, NON-INTRUSIVE invitation to share the
+// app, shown at the bottom of the results screen only at natural high-points
+// (a good score, a freshly crossed question-count milestone, or a streak
+// milestone). Never a popup. Self-gates to at most once per session and not on
+// consecutive sessions (see share-nudge.js). Its CTA paints a shareable
+// milestone card (premium PNG, QR in the corner) credited to the user's link.
+//
+// Reads only props already on the results screen + local stats; writes nothing
+// except the local nudge-gating marker. Safe to drop onto any results surface.
+// =====================================================================
+const NUDGE_CTA = {
+  questions: 'Share this milestone',
+  streak: 'Share your streak',
+  score: 'Share your score',
+};
+
+function ShareNudge({ pct = 0, totalAttempted = 0, sessionAttempted = 0, streak = 0,
+                      displayName = null, referralCode, quizType = '', topicName: topicLabel = null,
+                      examDate = null }) {
+  const { theme: T } = useTheme();
+  const decidedRef = useRef(false);
+  const [milestone, setMilestone] = useState(null); // null until shown-decision resolves
+  const [status, setStatus] = useState('idle');      // idle|working|done|error
+
+  useEffect(() => {
+    if (decidedRef.current) return;   // run the decision once (guards StrictMode)
+    decidedRef.current = true;
+    const m = sessionMilestone({ totalAttempted, sessionAttempted, streak, pct });
+    // Elevate sharing in the run-up to a scheduled exam (≤14 days out).
+    let examSoon = false;
+    if (examDate) {
+      const ms = new Date(examDate).getTime() - Date.now();
+      examSoon = ms > 0 && ms <= 14 * 24 * 60 * 60 * 1000;
+    }
+    (async () => {
+      const show = await shouldShowNudge(m, { examSoon });
+      if (!show) return;
+      await markNudgeShown(m);
+      setMilestone(m);                // React 18 tolerates setState after unmount
+    })();
+  // intentionally run once on mount — the session's outcome doesn't change
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (!milestone) return null;
+
+  const code = (referralCode !== undefined)
+    ? (referralCode || null)
+    : ((displayName && String(displayName).trim()) ? normalizeProfileId(displayName) : null);
+  const url = buildReferralUrl(code, VIA.MILESTONE);
+
+  const onShare = async () => {
+    if (status === 'working') return;
+    setStatus('working');
+    try {
+      const blob = await paintMilestoneCard({
+        kind: milestone.kind, value: milestone.value,
+        url, displayUrl: displayAppUrl(), theme: T,
+      });
+      const res = await shareOrSavePng(blob, 'norcet-milestone.png', {
+        title: 'NORCET Prep',
+        text: `Free, no-ads AIIMS NORCET prep \u2014 try it: ${url}`,
+      });
+      setStatus(res === 'error' ? 'error' : 'done');
+    } catch (e) { setStatus('error'); }
+    setTimeout(() => setStatus('idle'), 3200);
+  };
+
+  return (
+    <div className="anim-fadeup mt-3 rounded-2xl p-4"
+         style={{ background: `linear-gradient(140deg, ${T.primary}12 0%, ${T.surface} 60%, ${T.primary}0C 100%)`, border: `1px solid ${T.primary}28` }}>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '1A', color: T.primary }}>
+          <Share2 size={16} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium" style={{ color: T.ink }}>Enjoying NORCET Prep?</div>
+          <div className="text-xs mt-0.5" style={{ color: T.muted }}>Share it with a friend who's also preparing.</div>
+        </div>
+      </div>
+      <button onClick={onShare} disabled={status === 'working'}
+              className="no-tap-highlight w-full mt-3 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+              style={{ background: T.primary, color: '#FFF' }}>
+        <Share2 size={13} /> {status === 'working' ? 'Creating\u2026' : NUDGE_CTA[milestone.kind]}
+      </button>
+      {status === 'done' && (
+        <div className="text-[11px] text-center mt-2" role="status" aria-live="polite" style={{ color: T.success }}>
+          Card ready — share it on WhatsApp or Instagram.
+        </div>
+      )}
+      {status === 'error' && (
+        <div className="text-[11px] text-center mt-2" role="status" aria-live="polite" style={{ color: T.error }}>
+          Couldn{'\u2019'}t create the card. Please try again.
+        </div>
+      )}
+    </div>
+  );
+}
+
+
+export { GuestSavePrompt, MotivationCard, ShareScoreButton, ShareNudge, TimeQuadrant };

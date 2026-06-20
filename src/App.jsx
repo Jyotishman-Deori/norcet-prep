@@ -34,6 +34,8 @@ import {
   recoverPasswordWithDob, loadSession, saveSession, peekLegacyData,
   renameCredentials, deleteCredentials
 } from './lib/profiles.js';
+import { referralCodeFor, getPendingBatch, clearPendingBatch } from './lib/referral.js';
+import { BatchJoinModal } from './ui/comparison-cards.jsx';
 // [A1 step 35 / Pipeline] session-2 infra extraction. APPLY IN FULL REPO:
 // src/lib/safe-storage.js + src/lib/profile-crypto.js ship alongside this file.
 // Build-verified here only via esbuild-bundle with stubs. The rest of session 2
@@ -1812,6 +1814,15 @@ export default function App() {
   const [pendingMerge, setPendingMerge] = useState(null);
   const mergeResolveBusyRef = useRef(false);
   const [nav, setNav] = useState({ screen: 'home' });
+  // Phase 3 — a pending batch invite (?batch=) captured at boot; the join
+  // confirmation modal shows once the user is logged in (guests sign up first).
+  const [pendingBatchId, setPendingBatchId] = useState(null);
+  useEffect(() => {
+    if (!profile || isGuestProfile(profile)) return;
+    let on = true;
+    getPendingBatch().then(bid => { if (on && bid) setPendingBatchId(bid); }).catch(() => {});
+    return () => { on = false; };
+  }, [profile]);
   // A10: keep the logger's context in sync so every error report carries
   // the current profile + screen without each call site passing them.
   useEffect(() => {
@@ -3751,6 +3762,10 @@ export default function App() {
       profile={profile} setProfile={setProfile} isAdmin={isAdmin}
       data={data} setData={setData} allQuestions={allQuestions}>
       {node}
+      {pendingBatchId && (
+        <BatchJoinModal batchId={pendingBatchId}
+                        onDone={() => { clearPendingBatch(); setPendingBatchId(null); }} />
+      )}
     </AppProviders>
   );
 
@@ -4044,6 +4059,9 @@ export default function App() {
         <Results results={nav.results} questions={nav.questions} elapsed={nav.elapsed || 0}
                  displayName={profile ? (profile.displayName || profile.id) : null}
                  streak={(data && data.stats && data.stats.streakCurrent) || 0}
+                 totalAttempted={(data && data.stats && data.stats.totalAttempted) || 0}
+                 referralCode={referralCodeFor(profile)}
+                 examDate={(data && data.stats && data.stats.examDate) || null}
                  quizType={quizTypeLabel(nav.mode)}
                  isGuest={isGuestProfile(profile)}
                  onGuestSignIn={() => setNav({ screen: 'auth' })}
@@ -4180,6 +4198,7 @@ export default function App() {
                              isGuest={isGuestProfile(profile)}
                              onGuestSignIn={() => setNav({ screen: 'auth' })}
                              onCribSheet={isCribSheetEnabled() ? () => openAnswersCrib('Advanced Test') : null}
+                             referralCode={referralCodeFor(profile)}
                              profileId={profile && profile.id} />
       )}
 
@@ -4214,6 +4233,7 @@ export default function App() {
                              onCribSheet={isCribSheetEnabled() ? () => openAnswersCrib(nav.paperName || 'Previous Year Paper') : null}
                              displayName={profile ? (profile.displayName || profile.id) : null}
                              streak={(data && data.stats && data.stats.streakCurrent) || 0}
+                             referralCode={referralCodeFor(profile)}
                              isGuest={isGuestProfile(profile)}
                              onGuestSignIn={() => setNav({ screen: 'auth' })}
                              profileId={profile && profile.id} />

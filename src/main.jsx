@@ -4,9 +4,15 @@ import App, { ErrorBoundary } from './App.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 import { installGlobalErrorCapture } from './lib/errorlog.js';
+import { captureReferralFromUrl } from './lib/referral.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
+// Phase-1 referrals — if this load arrived via a referral link (?ref=&via=),
+// capture the attribution LOCALLY now (before any render) and clean the params
+// out of the address bar. createProfile() reads this back at signup. Purely
+// local + best-effort; costs nothing for visitors who never sign up.
+captureReferralFromUrl();
 // Register the service worker. autoUpdate (configured in vite.config.js)
 // silently fetches a new SW in the background; this callback gets called
 // when a fresh build is fully installed and waiting. We auto-reload so the

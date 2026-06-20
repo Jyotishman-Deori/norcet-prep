@@ -32,6 +32,8 @@ import * as kvStorage from '../storage';
 import { DEFAULT_DATA } from '../data/seed.js';
 import { STORAGE_OP_TIMEOUT_MS, raceStorage, safeStorage } from './safe-storage.js';
 import { normalizeProfileId, genUid } from './profile-crypto.js';
+import { getPendingReferral, clearPendingReferral } from './referral.js';
+import { getFingerprint } from './fingerprint.js';
 
 // =====================================================================
 // STAGE 1 (C-1 + C-2): credentials moved OFF the public kv_shared table.
@@ -406,6 +408,21 @@ export async function listProfileMetas() {
   return metas;
 }
 
+// Phase-1 — approximate registered-user count, for the social-proof line on the
+// branded share card. Cached briefly (the share card may paint a few times in a
+// row). Returns 0 on any failure (caller then omits the numeric line).
+let _userCountCache = { n: 0, ts: 0 };
+export async function countUsers() {
+  const now = Date.now();
+  if (_userCountCache.ts && (now - _userCountCache.ts) < 60 * 1000) return _userCountCache.n;
+  try {
+    const r = await safeStorage.list(KEY_PREFIXES.PROFILE_META, true);
+    const n = (r && Array.isArray(r.keys)) ? r.keys.length : 0;
+    _userCountCache = { n, ts: now };
+    return n;
+  } catch (e) { return _userCountCache.n || 0; }
+}
+
 // Back-compat shim: anywhere old code called loadProfileIndex(), keep returning
 // the unified list. Internally it now reads the per-user keys.
 export async function loadProfileIndex() {
@@ -464,6 +481,16 @@ export async function createProfile({ displayName, password, securityQuestion, s
   if (existing) throw new Error('That display name is already taken — pick another, or log in instead');
   const uid = genUid();  // permanent, name-independent handle (survives renames)
 
+  // Phase-2 — read the pending referral + a device fingerprint up front so the
+  // register call can carry them: the server records a best-effort signup event
+  // for fake-account anomaly detection (device/IP clustering + per-link
+  // velocity). Attribution itself is still stamped onto the blob below. Both
+  // are best-effort — failure never blocks signup.
+  let pending = null;
+  try { pending = await getPendingReferral(); } catch (e) {}
+  let fingerprint = '';
+  try { fingerprint = await getFingerprint(); } catch (e) {}
+
   // STAGE 1: credentials are created server-side and stored ONLY in the
   // protected profile_secrets table. The browser never sees a hash or salt.
   const reg = await callAuthFn('register', {
@@ -478,6 +505,10 @@ export async function createProfile({ displayName, password, securityQuestion, s
     // Optional, unverified email. Stored ONLY in profile_secrets (never in
     // the public blob below), so it isn't PII-exposed via the anon key.
     email: (email && String(email).trim()) || null,
+    // Phase-2 anomaly signals (server hashes IP + fingerprint; never raw).
+    fingerprint: fingerprint || undefined,
+    ref: (pending && pending.ref) ? pending.ref : undefined,
+    via: (pending && pending.via) ? pending.via : undefined,
   });
   if (!reg || reg.ok !== true) {
     if (reg && reg.reason === 'exists') {
@@ -493,6 +524,24 @@ export async function createProfile({ displayName, password, securityQuestion, s
   // shared write, which now requires a valid token at the broker.
   await persistAuthToken(reg.token);
 
+  // Phase-1 referrals — if this device arrived via a referral link, stamp the
+  // attribution onto the new profile blob. `referredBy` is the REFERRER's
+  // profile id (a slug); `referralChannel` is which sharing surface they used.
+  // Stored in the owner-private profile blob (the referrer can't read it; the
+  // admin rollup in a later phase aggregates it). A self-referral (the slug
+  // equals this user's own id) is ignored.
+  let referral = null;
+  try {
+    if (pending && (pending.ref || pending.via)) {
+      const referredBy = (pending.ref && pending.ref !== id) ? pending.ref : null;
+      referral = {
+        ...(referredBy ? { referredBy } : {}),
+        referralChannel: pending.via || 'link',
+        referredAt: pending.ts || Date.now(),
+      };
+    }
+  } catch (e) { /* attribution is best-effort, never blocks signup */ }
+
   // The PUBLIC profile blob now carries NO credentials — just identity +
   // progress. (passwordHash/salt/dobHash/dobSalt deliberately absent.)
   const profile = {
@@ -500,6 +549,7 @@ export async function createProfile({ displayName, password, securityQuestion, s
     uid,
     displayName: displayName.trim(),
     createdAt: Date.now(),
+    ...(referral || {}),
     // Run migrations on legacy/imported data so an old shape gets walked
     // forward to current before it's stored. DEFAULT_DATA is already at
     // current version so doesn't need it.
@@ -507,6 +557,9 @@ export async function createProfile({ displayName, password, securityQuestion, s
   };
   await saveProfile(profile);
   await upsertProfileIndex({ ...profile, lastActive: Date.now() });
+  // Attribution consumed — clear it so a later signup on the same device
+  // (e.g. a second profile) isn't mis-attributed to the same referrer.
+  if (referral) { try { await clearPendingReferral(); } catch (e) {} }
   return profile;
 }
 

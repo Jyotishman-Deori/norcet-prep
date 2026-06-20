@@ -9,10 +9,12 @@ import { Calculator, Check, Eye, SkipForward, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { MotivationCard, ShareScoreButton } from '../ui/result-cards.jsx';
+import { referralCodeFor } from '../lib/referral.js';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
 
 function DosageResults({ results, questions, onHome, displayName = null, streak = 0, profile, isAdmin = false }) {
   const { theme: T } = useTheme();
+  const referralCode = referralCodeFor(profile);   // null for guests (Phase-1 referrals)
   // Accuracy is measured only over genuinely attempted questions — skipped and
   // revealed items are study actions, not failures, so they don't drag the score.
   const attempted = results.filter(r => !r.skipped && !r.revealed);
@@ -137,7 +139,7 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
       {/* P5 — share the dosage-drill score (over genuinely attempted items). */}
       <div className="space-y-2">
         <ShareScoreButton correct={correct} total={total} quizType="Dosage Drill"
-                          displayName={displayName} streak={streak} />
+                          displayName={displayName} streak={streak} referralCode={referralCode} />
         <Button onClick={onHome} size="lg" className="w-full">Back to home</Button>
       </div>
     </div>

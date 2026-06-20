@@ -40,6 +40,9 @@ export const KEYS = {
   NOTIFICATIONS: 'norcet:notifications:v1',  // JSON array of notification objects
   PUSH_SUB_ID:   'norcet:push-sub-id:v1',    // Vercel KV subscription id (Session 5)
   PUSH_SUB_TOKEN:'norcet:push-sub-token:v1', // C-5 capability token for /api/active
+  PENDING_REFERRAL: 'norcet:pending-referral:v1', // {ref,via,ts} captured on arrival, until signup
+  PENDING_BATCH: 'norcet:pending-batch:v1',  // batchId captured from ?batch= on arrival, until joined
+  SHARE_NUDGE:   'norcet:share-nudge:v1',    // {lastShownAt,lastStreak} results share-nudge gating
 
   // -- Shared / cross-device (private blobs, but visible across devices) --
   ANNOUNCEMENT:  'announcement:current',
@@ -48,6 +51,7 @@ export const KEYS = {
   // -- Per-id builders --
   profile:       (id)        => `profile:${id}`,
   profileMeta:   (id)        => `profilemeta:${id}`,
+  batch:         (id)        => `batch:${id}`,   // Phase-3 batch record (semi-public; no membership)
   feedback:      (id)        => `feedback:${id}`,
   myFeedback:    (profileId) => `myfeedback:${profileId}`,
   // F-F — FAQ entries + community Q&A (shared kv, mirrors feedback()).

@@ -554,7 +554,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 // ADVANCED TEST — RESULTS
 // =====================================================================
 function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, onHome, onReview, label, timeMinutes, profileId,
-                              displayName = null, streak = 0, isGuest = false, onGuestSignIn, onCribSheet = null }) {
+                              displayName = null, streak = 0, referralCode = null, isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const summary = useMemo(() => {
     let correct = 0, wrong = 0, blank = 0;
@@ -796,7 +796,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
               back to "Mock Test". Topic omitted (mocks/papers span topics). */}
           <ShareScoreButton correct={summary.correct} total={questions.length}
                             quizType={label ? String(label) : 'Mock Test'}
-                            displayName={displayName} streak={streak} />
+                            displayName={displayName} streak={streak} referralCode={referralCode} />
           <Button onClick={onHome} size="lg" className="w-full">
             Back to home
           </Button>

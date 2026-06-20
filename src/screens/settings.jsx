@@ -21,6 +21,7 @@ import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 // #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
 import { isIOS } from '../lib/platform.js';
+import { ComparisonToggle } from '../ui/comparison-cards.jsx';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
@@ -276,6 +277,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </div>
           </div>
         </Card>
+      )}
+      {profile && !profile.isGuest && (
+        <div className="mb-3"><ComparisonToggle /></div>
       )}
       <div className="grid grid-cols-2 gap-2 mb-2">
         <Card className="p-3 cursor-pointer no-tap-highlight pressable"
@@ -559,11 +563,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </>
         )}
 
-        {/* Task 7 — "Share NORCET Prep" is its OWN standalone card, placed
-            immediately after the Profile/Account card and BEFORE every other
-            section (Reminders, Notifications, …). For guests the Reset action
-            now renders below this card, so nothing sits between Profile and
-            Share. */}
+        {/* "Share NORCET Prep" is now its OWN labelled section, clearly
+            separated from the Profile/Account card above (own header + section
+            spacing). For guests the Reset action renders below this section. */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share</div>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
@@ -572,7 +575,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             <div className="min-w-0 flex-1">
               <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Send a friend the link + setup steps for their device
+                Your personal invite link, QR code &amp; WhatsApp share
               </div>
             </div>
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />

@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Activity, AlertCircle, AlertTriangle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, ShieldCheck, Trash2, Upload, User
+  RefreshCw, Send, ShieldCheck, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -34,6 +34,8 @@ import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/erro
 import { loadEngagement } from '../lib/analytics.js';
 // FAV — Favourites insights: hearts + average priority rank per section.
 import { loadFavInsights } from '../lib/favorites.js';
+import { loadReferralGraph, CHANNEL_LABEL } from '../lib/referral-admin.js';
+import { loadSignupAnomalies } from '../lib/referral-stats.js';
 import { FavIcon } from '../ui/fav-icons.jsx';
 import { Heart } from 'lucide-react';
 import { fmtWhen } from '../lib/format.js';
@@ -89,6 +91,14 @@ function AdminPanel({
 
   const [users, setUsers] = useState([]);
   const [usersLoading, setUsersLoading] = useState(true);
+  // Growth & Referrals (Phase 2) — referral rollups computed client-side from
+  // the admin-readable profile blobs. Loaded on demand when the section opens.
+  const [growth, setGrowth] = useState(null);
+  const [growthLoading, setGrowthLoading] = useState(false);
+  const [growthTab, setGrowthTab] = useState('overview'); // overview | referrers | channels
+  const [openReferrer, setOpenReferrer] = useState(null);  // expanded referrer id
+  const [referrerSort, setReferrerSort] = useState('volume'); // volume | quality
+  const [anomalies, setAnomalies] = useState(null); // [{kind,key,count,profiles,lastAt}] | null
   const [feedback, setFeedback] = useState([]);
   const [feedbackLoading, setFeedbackLoading] = useState(true);
 
@@ -193,6 +203,22 @@ function AdminPanel({
     setUsers(list);
     setUsersLoading(false);
   }, []);
+
+  // Reads each user's blob (admin-scoped) and aggregates the referral graph.
+  // Reuses the freshest user list; refreshes it first if it hasn't loaded.
+  const refreshGrowth = useCallback(async () => {
+    setGrowthLoading(true);
+    try {
+      let list = users;
+      if (!list || list.length === 0) { list = await onListUsers(); setUsers(list); }
+      const g = await loadReferralGraph(list);
+      setGrowth(g);
+      // Anomaly flags (server-side, admin-only). Null if referral-intel isn't
+      // deployed yet — the panel just omits the card in that case.
+      try { setAnomalies(await loadSignupAnomalies()); } catch (e) { setAnomalies(null); }
+    } catch (e) { setGrowth(null); }
+    setGrowthLoading(false);
+  }, [users]);
 
   const refreshFeedback = useCallback(async () => {
     setFeedbackLoading(true);
@@ -424,6 +450,220 @@ function AdminPanel({
                 </Card>
               ))}
             </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (view === 'growth') {
+    const g = growth;
+    const tabs = [['overview', 'Overview'], ['referrers', 'Top referrers'], ['channels', 'Channels']];
+    const maxChan = (g && g.channels.length) ? Math.max(...g.channels.map(c => c.total)) : 0;
+    const sortedReferrers = g ? (referrerSort === 'quality'
+      ? [...g.topReferrers].sort((a, b) => (b.retention - a.retention) || (b.confirmed - a.confirmed) || (b.total - a.total))
+      : g.topReferrers) : [];
+    const medal = ['#D4A017', '#9CA3AF', '#B45309']; // gold / silver / bronze for top 3
+    const StatCard = ({ label, value, sub, accent }) => (
+      <Card className="p-3.5">
+        <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>{label}</div>
+        <div className="font-display text-2xl font-semibold tabular-nums" style={{ color: accent || T.ink }}>{value}</div>
+        {sub && <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{sub}</div>}
+      </Card>
+    );
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Growth & Referrals" onBack={backToDash} feedback={{ screen: 'Settings' }} />
+        <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+          {/* tab switcher */}
+          <div className="grid grid-cols-3 gap-1.5 mb-3 p-1 rounded-xl" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+            {tabs.map(([id, label]) => {
+              const on = growthTab === id;
+              return (
+                <button key={id} onClick={() => setGrowthTab(id)}
+                        className="no-tap-highlight py-2 rounded-lg text-[12px] font-semibold transition-colors active:scale-95"
+                        style={{ background: on ? T.primary : 'transparent', color: on ? '#FFF' : T.inkSoft }}>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[11px]" style={{ color: T.muted }}>{g ? `Updated ${fmtWhen(g.generatedAt)}` : ''}</div>
+            <button onClick={refreshGrowth} disabled={growthLoading}
+                    className="no-tap-highlight inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg active:scale-95"
+                    style={{ color: T.primary, background: T.primary + '12' }}>
+              <RefreshCw size={12} className={growthLoading ? 'animate-spin' : ''} /> Refresh
+            </button>
+          </div>
+
+          {growthLoading && !g ? (
+            <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading referral data{'\u2026'}</div>
+          ) : !g ? (
+            <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Couldn{'\u2019'}t load referral data. Tap Refresh.</div></Card>
+          ) : g.totalUsers === 0 ? (
+            <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No users yet.</div></Card>
+          ) : (
+            <>
+              {/* ── OVERVIEW ── */}
+              {growthTab === 'overview' && (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatCard label="Joined via referral" value={g.viaReferral} sub={`${g.pct}% of all users`} accent={T.success} />
+                    <StatCard label="This week" value={g.thisWeek}
+                              sub={g.trend === 0 ? 'same as last week' : (g.trend > 0 ? `\u25B2 ${g.trend} vs last week` : `\u25BC ${Math.abs(g.trend)} vs last week`)} />
+                    <StatCard label="This month" value={g.thisMonth} />
+                    <StatCard label="Confirmed" value={g.confirmedTotal} sub={`${g.pendingTotal} pending`} />
+                  </div>
+                  <Card className="p-4">
+                    <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: T.muted }}>Top channel</div>
+                    {g.topChannel ? (
+                      <div className="flex items-center justify-between">
+                        <div className="text-sm font-medium" style={{ color: T.ink }}>{g.topChannel.label}</div>
+                        <div className="text-sm font-semibold tabular-nums" style={{ color: T.primary }}>{g.topChannel.total} signup{g.topChannel.total === 1 ? '' : 's'}</div>
+                      </div>
+                    ) : (
+                      <div className="text-sm" style={{ color: T.muted }}>No attributed referrals yet.</div>
+                    )}
+                  </Card>
+                  {anomalies !== null && (
+                    anomalies.length === 0 ? (
+                      <Card className="p-3.5 flex items-center gap-2.5">
+                        <ShieldCheck size={16} style={{ color: T.success }} />
+                        <div className="text-[13px]" style={{ color: T.muted }}>No signup anomalies detected.</div>
+                      </Card>
+                    ) : (
+                      <Card className="p-4">
+                        <div className="flex items-center gap-2 mb-2.5">
+                          <AlertTriangle size={15} style={{ color: T.accent }} />
+                          <div className="text-sm font-semibold" style={{ color: T.ink }}>{anomalies.length} anomal{anomalies.length === 1 ? 'y' : 'ies'} to review</div>
+                        </div>
+                        <div className="space-y-2">
+                          {anomalies.map((a, i) => {
+                            const desc = a.kind === 'device' ? `${a.count} accounts from one device`
+                              : a.kind === 'ip' ? `${a.count} accounts from one network`
+                                : `${a.count} signups in an hour from link \u201C${a.key}\u201D`;
+                            return (
+                              <div key={i} className="flex items-center justify-between text-xs gap-2">
+                                <span className="truncate" style={{ color: T.ink }}>{desc}</span>
+                                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide flex-shrink-0"
+                                      style={{ background: T.accent + '1A', color: T.accent }}>{a.kind}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="text-[10.5px] mt-2.5 leading-relaxed" style={{ color: T.muted }}>
+                          Shared networks (colleges, hostels) can share an IP {'\u2014'} review before acting. Nothing is auto-blocked.
+                        </div>
+                      </Card>
+                    )
+                  )}
+                  <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
+                    {'\u201C'}Confirmed{'\u201D'} is approximate {'\u2014'} the invited user attempted at least one question or returned to the app after signing up. Precise activation tracking comes later.
+                  </div>
+                </div>
+              )}
+
+              {/* ── TOP REFERRERS ── */}
+              {growthTab === 'referrers' && (
+                <div className="space-y-2.5">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <div className="text-[11px]" style={{ color: T.muted }}>{sortedReferrers.length} ambassador{sortedReferrers.length === 1 ? '' : 's'}</div>
+                    <div className="inline-flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                      {[['volume', 'By volume'], ['quality', 'By quality']].map(([id, label]) => {
+                        const on = referrerSort === id;
+                        return (
+                          <button key={id} onClick={() => setReferrerSort(id)}
+                                  className="no-tap-highlight px-2.5 py-1 text-[11px] font-semibold active:scale-95"
+                                  style={{ background: on ? T.primary : T.surface, color: on ? '#FFF' : T.muted }}>
+                            {label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  {sortedReferrers.length === 0 ? (
+                    <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No referrals attributed yet.</div></Card>
+                  ) : sortedReferrers.map((r, i) => {
+                    const isTop3 = referrerSort === 'volume' && i < 3;
+                    const open = openReferrer === r.id;
+                    return (
+                      <Card key={r.id} className="p-0 overflow-hidden"
+                            style={isTop3 ? { border: `1.5px solid ${medal[i]}55`, background: `${medal[i]}0D` } : undefined}>
+                        <button onClick={() => setOpenReferrer(open ? null : r.id)}
+                                className="no-tap-highlight w-full p-3.5 flex items-center gap-3 text-left active:scale-[0.99]">
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 font-display font-semibold text-sm"
+                               style={{ background: isTop3 ? medal[i] + '22' : T.surfaceWarm, color: isTop3 ? medal[i] : T.muted }}>
+                            {isTop3 ? <Award size={16} /> : i + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium truncate" style={{ color: T.ink }}>
+                              {r.displayName}{!r.exists && <span className="text-[10px] ml-1" style={{ color: T.muted }}>(unknown)</span>}
+                            </div>
+                            <div className="text-[11px]" style={{ color: T.muted }}>
+                              {r.total} invited {'\u00B7'} {r.confirmed} confirmed {'\u00B7'} {r.pending} pending
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end flex-shrink-0">
+                            <div className="text-sm font-semibold tabular-nums" style={{ color: r.retention >= 50 ? T.success : T.inkSoft }}>{r.retention}%</div>
+                            <div className="text-[9px] uppercase tracking-wide" style={{ color: T.muted }}>retention</div>
+                          </div>
+                          <ChevronDown size={16} style={{ color: T.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} className="flex-shrink-0" />
+                        </button>
+                        {open && (
+                          <div className="px-3.5 pb-3 pt-0 space-y-1.5" style={{ borderTop: `1px solid ${T.border}` }}>
+                            <div className="text-[10px] uppercase tracking-wider font-semibold pt-2.5" style={{ color: T.muted }}>Invited</div>
+                            {r.referees.map(ref => (
+                              <div key={ref.id} className="flex items-center justify-between text-xs">
+                                <span className="truncate" style={{ color: T.ink }}>{ref.displayName}</span>
+                                <span className="flex items-center gap-2 flex-shrink-0 ml-2">
+                                  <span style={{ color: T.muted }}>{CHANNEL_LABEL[ref.channel] || ref.channel}</span>
+                                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-semibold"
+                                        style={{ background: ref.confirmed ? T.success + '1A' : T.surfaceWarm, color: ref.confirmed ? T.success : T.muted }}>
+                                    {ref.confirmed ? 'confirmed' : 'pending'}
+                                  </span>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* ── CHANNELS ── */}
+              {growthTab === 'channels' && (
+                <div className="space-y-2">
+                  {g.channels.length === 0 ? (
+                    <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No signups yet.</div></Card>
+                  ) : g.channels.map(c => {
+                    const isDirect = c.channel === 'direct';
+                    const hue = isDirect ? T.muted : T.primary;
+                    return (
+                      <Card key={c.channel} className="p-3.5" style={{ opacity: isDirect ? 0.7 : 1 }}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-medium" style={{ color: T.ink }}>{c.label}</div>
+                          <div className="flex items-center gap-2.5">
+                            <span className="text-[11px]" style={{ color: T.muted }}>{c.retention}% kept</span>
+                            <span className="text-sm font-semibold tabular-nums" style={{ color: T.ink }}>{c.total}</span>
+                          </div>
+                        </div>
+                        <div className="h-1.5 rounded-full" style={{ background: T.borderSoft }}>
+                          <div className="h-1.5 rounded-full transition-all duration-500"
+                               style={{ background: hue, width: `${maxChan ? Math.round((c.total / maxChan) * 100) : 0}%` }} />
+                        </div>
+                      </Card>
+                    );
+                  })}
+                  <div className="text-[11px] leading-relaxed px-1 pt-1" style={{ color: T.muted }}>
+                    Which sharing surface each signup came through. {'\u201C'}Direct{'\u201D'} means no referral link {'\u2014'} they found the app another way.
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
@@ -1114,6 +1354,15 @@ function AdminPanel({
             hint="Overview"
             onClick={() => setView('users')}
             signal={bigCount(totalUsers, usersLoading)} />
+
+          {/* Growth & Referrals — word-of-mouth intelligence (Phase 2) */}
+          <AdminTile
+            icon={<TrendingUp size={22} style={{ color: T.success }} />}
+            accent={T.success}
+            label="Growth"
+            hint="Referrals & channels"
+            onClick={() => { setView('growth'); refreshGrowth(); }}
+            signal={<TrendingUp size={18} style={{ color: T.muted }} />} />
 
           {/* P8 — Helpfulness Insights: which explanations users rate */}
           <AdminTile

@@ -10,11 +10,13 @@ import { Check, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { Button, Card } from '../ui/primitives.jsx';
-import { GuestSavePrompt, MotivationCard, ShareScoreButton, TimeQuadrant } from '../ui/result-cards.jsx';
+import { GuestSavePrompt, MotivationCard, ShareScoreButton, ShareNudge, TimeQuadrant } from '../ui/result-cards.jsx';
+import { PeerComparisonCard, ComparisonReengage } from '../ui/comparison-cards.jsx';
 
 
 function Results({ results, questions, elapsed, onHome, onReview,
                    displayName = null, streak = 0, quizType = 'Quick Test',
+                   totalAttempted = 0, referralCode = null, examDate = null,
                    isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const total = results.length;
@@ -168,7 +170,7 @@ function Results({ results, questions, elapsed, onHome, onReview,
           )}
           <ShareScoreButton correct={correct} total={total} quizType={quizType}
                             topicName={shareTopic} displayName={displayName} streak={streak}
-                            size="md" />
+                            referralCode={referralCode} size="md" />
         </div>
         <button onClick={onHome}
                 className="no-tap-highlight w-full py-3 text-sm font-medium active:scale-95 transition rounded-xl"
@@ -176,6 +178,18 @@ function Results({ results, questions, elapsed, onHome, onReview,
           Back to home
         </button>
       </div>
+
+      {/* Phase 1 — gentle, well-timed share invitation (self-gates; guests too).
+          Sits below the post-test buttons; never interrupts the flow. */}
+      <ShareNudge pct={pct} totalAttempted={totalAttempted} sessionAttempted={total}
+                  streak={streak} displayName={displayName} referralCode={referralCode}
+                  quizType={quizType} topicName={shareTopic} examDate={examDate} />
+
+      {/* Phase 3 — consented weekly comparison (self-gated to opted-in users
+          with a connected friend) + a single re-engagement nudge for opted-out
+          users after a strong session. */}
+      <PeerComparisonCard />
+      <ComparisonReengage pct={pct} />
     </div>
   );
 }
