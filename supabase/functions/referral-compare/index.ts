@@ -139,7 +139,8 @@ function weeklyAccuracy(blob: Blob): { pct: number; count: number } {
 }
 function optedIn(blob: Blob): boolean {
   const prefs = ((blob as { data?: { preferences?: { compareOptIn?: unknown } } }).data || {}).preferences || {};
-  return prefs.compareOptIn === true;
+  // ON BY DEFAULT — opted in unless the user explicitly turned it off.
+  return prefs.compareOptIn !== false;
 }
 function batchesOf(blob: Blob): string[] {
   const b = ((blob as { data?: { batches?: unknown } }).data || {}).batches;

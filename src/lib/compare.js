@@ -71,8 +71,11 @@ export async function getBatchInfo(batchId) {
 }
 
 // --- pure data-shape helpers (blob lives in the user's own data) ---------
+// Comparison is ON BY DEFAULT: a user participates unless they have explicitly
+// turned it off (compareOptIn === false). Absent/true both count as opted in.
+// The referral-compare function mirrors this exact rule server-side.
 export function getCompareOptIn(data) {
-  return !!(data && data.preferences && data.preferences.compareOptIn);
+  return !(data && data.preferences && data.preferences.compareOptIn === false);
 }
 export function withCompareOptIn(data, on) {
   const base = data || {};

@@ -42,6 +42,20 @@ function lightenHex(hex, t) {
   return `#${to2(mix(r))}${to2(mix(g))}${to2(mix(b))}`;
 }
 
+// Darken a 6-digit hex toward black by fraction t (0..1). Pairs with lightenHex
+// so the Drill and Learn cards can be a TONAL PAIR drawn from the same theme
+// primary — Drill brighter, Learn deeper — instead of clashing fixed colours.
+function darkenHex(hex, t) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return hex;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const mix = (c) => Math.round(c * (1 - t));
+  const to2 = (n) => n.toString(16).padStart(2, '0');
+  return `#${to2(mix(r))}${to2(mix(g))}${to2(mix(b))}`;
+}
+
 // Feature 3 — brief positive feedback when the spaced-review queue is empty
 // for an active user. Auto-hides after 3s so it rewards, then clears space.
 // Not dismissable (it's reassurance, not an interruption).
@@ -357,8 +371,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       borderBottom: `1px solid ${T.borderSoft}`,
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
-                      transition: 'transform .28s cubic-bezier(.22,.61,.36,1)',
-                      willChange: 'transform' }}>
+                      transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
           <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto">
             <Tip text="Every section of the app — study, progress, tools and help">
               <button onClick={onOpenMenu}
@@ -954,7 +967,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       <Tip title="Drill Tests" text="All your test modes in one place — Quick, Topic Wise, Mock, Dosage and Advanced — plus previous-year papers.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
             onContextMenu={(e) => e.preventDefault()}
-            style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
+            style={{ background: `linear-gradient(140deg, ${lightenHex(T.primary, 0.12)} 0%, ${T.primary} 60%, ${darkenHex(T.primary, 0.12)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.45)}38` }}>
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
             <Dumbbell size={20} color="#FFF" />
@@ -976,14 +989,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       </Tip>
 
       {/* Learn Topic Wise — stays on Home as its own standalone card
-          (learning, not testing). Now mirrors the premium Drill Tests card UI
-          (gradient, white text, translucent icon chip, divider + mini icon
-          row) but in its OWN colour (T.sec.learn) so the two stay clearly
-          distinct — Drill = primary, Learn = learn-accent. */}
+          (learning, not testing). Mirrors the premium Drill Tests card UI, and
+          now shares the THEME PRIMARY as a tonal pair: Drill is the brighter
+          tone, Learn the deeper one — cohesive with the theme grading in every
+          palette, while staying clearly distinct from Drill. */}
       <Tip title="Learn topic wise" text="Concept cards that teach each topic — learn the material before you test yourself on it.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
-            style={{ background: `linear-gradient(135deg, ${T.sec.learn}, ${lightenHex(T.sec.learn, 0.22)})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
+            style={{ background: `linear-gradient(140deg, ${T.primary} 0%, ${darkenHex(T.primary, 0.26)} 55%, ${darkenHex(T.primary, 0.42)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.5)}40` }}>
         <div className="flex items-center gap-3">
           <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
             <Brain size={20} color="#FFF" />
@@ -1034,6 +1047,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             </div>
           </div>
           <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} className="flex-shrink-0" />
+        </div>
+        <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
+          {[Sparkles, Network, Target, Layers, Activity, GraduationCap].map((Ic, i) => (
+            <Ic key={i} size={15} color="rgba(255,210,122,0.72)" />
+          ))}
         </div>
       </Card>
       </Tip>

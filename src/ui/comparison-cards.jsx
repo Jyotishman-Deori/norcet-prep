@@ -12,6 +12,7 @@
 //   BatchJoinModal        confirmation before joining a batch you were invited to
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Users, Trophy, BarChart3, Copy, Check, MessageCircle, Plus, LogOut, X, Sparkles } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
@@ -41,7 +42,7 @@ export function ComparisonToggle() {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium" style={{ color: T.ink }}>Compare weekly progress</div>
           <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-            Friends you invited (and your batches) can see your weekly accuracy {'\u2014'} and you see theirs. Off by default.
+            Friends you invited (and your batches) can see your weekly accuracy {'\u2014'} and you see theirs. On by default; switch off anytime.
           </div>
         </div>
         <button onClick={toggle} role="switch" aria-checked={on}
@@ -363,29 +364,39 @@ export function BatchJoinModal({ batchId, onDone }) {
   const { theme: T } = useTheme();
   const { data, setData } = useData();
   const { profile } = useProfile();
-  const [info, setInfo] = useState(undefined);
+  const [info, setInfo] = useState(undefined); // undefined=loading, null=gone, obj=record
+
+  const guest = isGuest(profile);
+  const alreadyIn = getJoinedBatches(data).includes(batchId);
 
   useEffect(() => {
+    if (guest) return;
     let on = true;
     getBatchInfo(batchId).then(i => { if (on) setInfo(i); }).catch(() => { if (on) setInfo(null); });
     return () => { on = false; };
-  }, [batchId]);
+  }, [batchId, guest]);
+
+  // Auto-dismiss (and clear the pending invite) for EVERY terminal state — a
+  // guest, an already-joined batch, or an invalid/expired record — so a stale
+  // or undeliverable invite can never sit on the home screen. Only a genuine,
+  // joinable invite ever renders a dialog.
+  const terminal = guest || alreadyIn || (info !== undefined && (!info || info.expired));
+  useEffect(() => {
+    if (terminal) onDone && onDone();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [terminal]);
+
+  if (terminal || info === undefined) return null; // nothing to show, or still loading
 
   const close = () => onDone && onDone();
   const join = () => {
     setData(d => withBatchJoined(withCompareOptIn(d, true), batchId));
-    close();
+    onDone && onDone();
   };
 
-  // Guests can't join (no account to attribute) — dismiss quietly.
-  if (isGuest(profile)) { close(); return null; }
-  if (info === undefined) return null; // still loading; don't flash a modal
-
-  const alreadyIn = getJoinedBatches(data).includes(batchId);
-  const expired = info && info.expired;
-  const invalid = !info;
-
-  return (
+  // Portaled to <body> so its position:fixed can't be re-anchored by a
+  // transformed/animated ancestor (the app's screen roots animate in).
+  const node = (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.45)' }} onClick={close}>
       <div className="w-full max-w-sm rounded-3xl p-5 anim-fadeup" style={{ background: T.surface }} onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-2">
@@ -394,34 +405,19 @@ export function BatchJoinModal({ batchId, onDone }) {
           </div>
           <button onClick={close} className="no-tap-highlight p-1.5 -mr-1 -mt-1 rounded-lg active:scale-90" style={{ color: T.muted }} aria-label="Close"><X size={18} /></button>
         </div>
-        {invalid || expired ? (
-          <>
-            <div className="text-base font-semibold mb-1" style={{ color: T.ink }}>{expired ? 'This invite has expired' : 'Invite not found'}</div>
-            <div className="text-sm mb-4" style={{ color: T.muted }}>Ask whoever shared it for a fresh link.</div>
-            <button onClick={close} className="no-tap-highlight w-full py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.primary, color: '#FFF' }}>Got it</button>
-          </>
-        ) : alreadyIn ? (
-          <>
-            <div className="text-base font-semibold mb-1" style={{ color: T.ink }}>You{'\u2019'}re already in {'\u201C'}{info.name}{'\u201D'}</div>
-            <div className="text-sm mb-4" style={{ color: T.muted }}>Find it on the Share page to see how your batch is doing.</div>
-            <button onClick={close} className="no-tap-highlight w-full py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.primary, color: '#FFF' }}>Got it</button>
-          </>
-        ) : (
-          <>
-            <div className="text-base font-semibold mb-1" style={{ color: T.ink }}>Join {'\u201C'}{info.name}{'\u201D'}?</div>
-            <div className="text-sm" style={{ color: T.muted }}>
-              {info.creatorName ? `${info.creatorName} invited you. ` : ''}Members compare their weekly accuracy to stay motivated together.
-            </div>
-            <div className="text-[11px] mt-2 mb-4" style={{ color: T.muted }}>
-              Joining turns on weekly comparison {'\u2014'} only your weekly accuracy %, never your answers. You can switch it off anytime in Settings.
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <button onClick={close} className="no-tap-highlight py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>Not now</button>
-              <button onClick={join} className="no-tap-highlight py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.primary, color: '#FFF' }}>Join batch</button>
-            </div>
-          </>
-        )}
+        <div className="text-base font-semibold mb-1" style={{ color: T.ink }}>Join {'\u201C'}{info.name}{'\u201D'}?</div>
+        <div className="text-sm" style={{ color: T.muted }}>
+          {info.creatorName ? `${info.creatorName} invited you. ` : ''}Members compare their weekly accuracy to stay motivated together.
+        </div>
+        <div className="text-[11px] mt-2 mb-4" style={{ color: T.muted }}>
+          Comparison is on by default {'\u2014'} only your weekly accuracy %, never your answers. You can switch it off anytime in Settings.
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <button onClick={close} className="no-tap-highlight py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>Not now</button>
+          <button onClick={join} className="no-tap-highlight py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.primary, color: '#FFF' }}>Join batch</button>
+        </div>
       </div>
     </div>
   );
+  return (typeof document !== 'undefined') ? createPortal(node, document.body) : node;
 }
