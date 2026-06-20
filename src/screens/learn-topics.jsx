@@ -147,31 +147,40 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
                     const topicMins = readMinutes(subs.reduce((a, s) => a.concat(s.cards), []));
                     const isOpen = expanded === topic.id;
                     return (
-                      <Card key={topic.id} className="overflow-hidden transition-shadow"
+                      <Card key={topic.id} className="overflow-hidden transition-all duration-200"
                             style={{ borderLeft: `3px solid ${topic.color}`,
-                                     boxShadow: isOpen ? `0 6px 20px ${topic.color}1A` : '0 1px 2px rgba(26,43,35,0.04)' }}>
+                                     background: `linear-gradient(135deg, ${topic.color}0F 0%, ${T.surface} 52%)`,
+                                     boxShadow: isOpen ? `0 8px 24px ${topic.color}22` : `0 2px 10px ${topic.color}12` }}>
                         <div className="p-4">
                           <div className="flex items-center gap-3">
                             <button onClick={() => setExpanded(isOpen ? null : topic.id)}
                                     className="no-tap-highlight flex items-center gap-3.5 flex-1 min-w-0 text-left">
                               <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
-                                   style={{ background: topic.color + '14', boxShadow: `inset 0 0 0 1px ${topic.color}22` }}>
+                                   style={{ background: `linear-gradient(140deg, ${topic.color}26, ${topic.color}10)`,
+                                            boxShadow: `inset 0 0 0 1px ${topic.color}33, 0 4px 12px ${topic.color}1F` }}>
                                 {topic.icon}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <div className="font-display text-base font-semibold leading-tight" style={{ color: T.ink }}>{topic.name}</div>
-                                <div className="flex items-center gap-3 mt-1 text-[11px] font-medium" style={{ color: T.muted }}>
-                                  <span className="inline-flex items-center gap-1"><Layers size={11} /> {subs.length} module{subs.length === 1 ? '' : 's'}</span>
-                                  <span className="inline-flex items-center gap-1"><BookOpen size={11} /> {cardCount} card{cardCount === 1 ? '' : 's'}</span>
-                                  <span className="inline-flex items-center gap-1"><Clock size={11} /> {topicMins} min</span>
+                                <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                  {[
+                                    { ic: <Layers size={10} />, tx: `${subs.length} module${subs.length === 1 ? '' : 's'}` },
+                                    { ic: <BookOpen size={10} />, tx: `${cardCount} card${cardCount === 1 ? '' : 's'}` },
+                                    { ic: <Clock size={10} />, tx: `${topicMins} min` },
+                                  ].map((chip, ci) => (
+                                    <span key={ci} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                                          style={{ background: topic.color + '12', color: T.inkSoft }}>
+                                      {chip.ic}{chip.tx}
+                                    </span>
+                                  ))}
                                 </div>
                               </div>
                             </button>
 
                             <div className="flex items-center gap-1.5 flex-shrink-0">
                               <button onClick={() => onPick(topic.id, null)}
-                                      className="no-tap-highlight inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold active:scale-95 transition"
-                                      style={{ background: topic.color, color: '#FFF', boxShadow: `0 2px 8px ${topic.color}40` }}>
+                                      className="no-tap-highlight inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold active:scale-95 transition"
+                                      style={{ background: `linear-gradient(135deg, ${topic.color}, ${topic.color}D0)`, color: '#FFF', boxShadow: `0 4px 12px ${topic.color}50` }}>
                                 <BookOpen size={13} />
                                 Read
                               </button>

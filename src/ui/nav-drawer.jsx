@@ -22,6 +22,7 @@ import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Fl
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
+import { isIOS } from '../lib/platform.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
 import { playTapSound } from '../lib/sound.js';
 // FAV — inline heart beside favoritable section titles (#2 rework).
@@ -128,6 +129,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // -- swipe-to-open: a document-level edge listener while closed --
   useEffect(() => {
     if (open || !gesturesAllowed || typeof document === 'undefined') return;
+    // Issue 4 — on iOS the left-edge swipe is the system back gesture; our edge
+    // listener is passive and can't suppress it, so the two collide (page blanks
+    // + exit prompt). Don't attach it on iOS — the Menu button opens the drawer.
+    if (isIOS()) return;
     const onStart = (e) => {
       if (!getSidebarGestures().open) return;
       const t = e.touches && e.touches[0]; if (!t) return;
@@ -366,9 +371,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
              transform: open ? 'translateX(0)' : 'translateX(-102%)',
              boxShadow: open ? '0 0 40px rgba(0,0,0,0.25)' : 'none'
            }}>
-        {/* Header (sticky so it stays pinned while the list scrolls) */}
-        <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-4"
-             style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}` }}>
+        {/* Header (sticky so it stays pinned while the list scrolls). Pads
+            itself by the safe-area inset so the title clears the iOS status
+            bar / notch instead of colliding with the clock. */}
+        <div className="sticky top-0 z-10 flex items-center justify-between px-4 pb-4"
+             style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}`,
+                      paddingTop: 'calc(16px + env(safe-area-inset-top, 0px))' }}>
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
               <GraduationCap size={18} color="#FFF" />

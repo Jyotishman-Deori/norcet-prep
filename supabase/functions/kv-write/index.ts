@@ -138,6 +138,63 @@ async function deleteRow(key: string): Promise<Response> {
 // suffix after the first prefix, e.g. ownerSuffix("profile:abc","profile:") -> "abc"
 function suffix(key: string, prefix: string): string { return key.slice(prefix.length); }
 
+// ---- rate limiting (PROMPT 21) -------------------------------------
+// Same fixed-window limiter as auth-secure, backed by the shared auth_rate
+// table + rate_hit() RPC (supabase/auth-rate.sql). Used here ONLY to cap admin
+// panel data writes (announcement:/faq:) at 20/hour per admin id. Fails OPEN so
+// a limiter blip never blocks a legitimate admin.
+async function rateHit(
+  bucket: string,
+  identifier: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; retryAfter: number }> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rate_hit`, {
+      method: "POST",
+      headers: dbHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
+      body: JSON.stringify({
+        p_bucket: bucket,
+        p_identifier: identifier || "unknown",
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+    if (!r.ok) return { allowed: true, retryAfter: 0 };
+    const rows = await r.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return { allowed: true, retryAfter: 0 };
+    return { allowed: !!row.allowed, retryAfter: Number(row.retry_after) || 0 };
+  } catch {
+    return { allowed: true, retryAfter: 0 };
+  }
+}
+function formatWait(seconds: number): string {
+  if (seconds >= 3600) {
+    const h = Math.ceil(seconds / 3600);
+    return h === 1 ? "about an hour" : `about ${h} hours`;
+  }
+  if (seconds >= 60) {
+    const m = Math.ceil(seconds / 60);
+    return m === 1 ? "about a minute" : `about ${m} minutes`;
+  }
+  return `${Math.max(1, seconds)} second${seconds === 1 ? "" : "s"}`;
+}
+function tooMany(retryAfter: number): Response {
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      reason: "rate-limited",
+      retryAfter,
+      message: `Too many admin writes. Please wait ${formatWait(retryAfter)} and try again.`,
+    }),
+    {
+      status: 429,
+      headers: { ...cors, "Content-Type": "application/json", "Retry-After": String(Math.max(1, retryAfter)) },
+    },
+  );
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -171,6 +228,9 @@ Deno.serve(async (req: Request) => {
     // 3) Admin-only keys.
     if (key.startsWith("announcement:") || key.startsWith("faq:")) {
       if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+      // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).
+      const rl = await rateHit("admin-write", session.id, 20, 60 * 60);
+      if (!rl.allowed) return tooMany(rl.retryAfter);
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
     }
 

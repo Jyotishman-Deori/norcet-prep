@@ -24,15 +24,15 @@ import { Tip } from '../ui/tooltip.jsx';
 
 const buzz = (ms) => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(ms); } catch (e) {} };
 
-function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
+function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd = false }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const profileId = (profile && profile.id) || 'guest';
   const [favs, setFavs] = useState(null);
-  const [editing, setEditing] = useState(!!startInEdit);
+  const [editing, setEditing] = useState(!!startInEdit && !startInAdd);
   const [picked, setPicked] = useState(null);     // tile id "lifted" for reorder
   const [removing, setRemoving] = useState(() => new Set());
-  const [adding, setAdding] = useState(false);     // #3 — "add any section" picker
+  const [adding, setAdding] = useState(!!startInAdd); // #3 — "add any section" picker (Issue 11: openable straight from Settings → Manage favourites)
 
   // #3 — sections in the registry the user hasn't collected yet. This is the
   // whole point of the rework: the grid is no longer limited to Drill modes —
@@ -87,33 +87,11 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }}
-              right={(
-                <div className="flex items-center gap-1.5">
-                  {addable.length > 0 && (
-                    <Tip text="Add any section to your favourites">
-                    <button onClick={() => { setAdding(true); setEditing(false); buzz(8); }}
-                            aria-label="Add sections"
-                            className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
-                            style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-                      <Plus size={14} /><span className="text-xs font-medium">Add</span>
-                    </button>
-                    </Tip>
-                  )}
-                  {sections.length > 0 && (
-                    <Tip text={editing ? 'Done editing' : 'Reorder tiles (tap to move) or remove them'}>
-                    <button onClick={() => { setEditing(e => !e); setPicked(null); buzz(8); }}
-                            className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
-                            style={{ background: editing ? '#E0245E' : T.surfaceWarm,
-                                     border: `1px solid ${editing ? '#E0245E' : T.border}`,
-                                     color: editing ? '#FFF' : T.inkSoft }}>
-                      {editing ? <Check size={14} /> : <Pencil size={13} />}
-                      <span className="text-xs font-medium">{editing ? 'Done' : 'Edit'}</span>
-                    </button>
-                    </Tip>
-                  )}
-                </div>
-              )} />
+      {/* Issue 13 — the top bar now carries only Help + Report (via feedback),
+          so "Favourites" is never truncated. Add + Edit moved into the page
+          body below. (Side effect: this also fixes Issue 2 — Edit is no longer
+          in an always-on-top bar that could sit over the open Add picker.) */}
+      <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
@@ -124,6 +102,29 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false }) {
               ? 'Tap a tile to pick it up, then tap where it should go. Use \u00d7 to remove. Priority #1 is top-left.'
               : <>Tap <span style={{ color: T.primary, fontWeight: 600 }}>Add</span> to collect any section here, or the <Heart size={12} fill="#E0245E" style={{ color: '#E0245E', display: 'inline', verticalAlign: '-1px' }} /> beside a section's title.</>}
           </div>
+          {/* Issue 13 — Add + Edit live here (moved out of the top bar). */}
+          {(addable.length > 0 || sections.length > 0) && (
+            <div className="flex items-center gap-2 mt-3">
+              {addable.length > 0 && (
+                <button onClick={() => { setAdding(true); setEditing(false); buzz(8); }}
+                        aria-label="Add sections"
+                        className="no-tap-highlight flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full active:scale-95 transition-transform"
+                        style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+                  <Plus size={15} /><span className="text-xs font-semibold">Add</span>
+                </button>
+              )}
+              {sections.length > 0 && (
+                <button onClick={() => { setEditing(e => !e); setPicked(null); setAdding(false); buzz(8); }}
+                        className="no-tap-highlight flex items-center gap-1.5 pl-2.5 pr-3 py-1.5 rounded-full active:scale-95 transition-transform"
+                        style={{ background: editing ? '#E0245E' : T.surfaceWarm,
+                                 border: `1px solid ${editing ? '#E0245E' : T.border}`,
+                                 color: editing ? '#FFF' : T.inkSoft }}>
+                  {editing ? <Check size={15} /> : <Pencil size={13} />}
+                  <span className="text-xs font-semibold">{editing ? 'Done' : 'Edit'}</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {sections.length === 0 ? (

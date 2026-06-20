@@ -9,7 +9,7 @@ import {
   Pause, Square,
   FlaskConical, Menu,
   Pill as PillIcon, ArrowRightLeft, HeartPulse, History,
-  Network
+  Network, Plus
 } from 'lucide-react';
 // #1 — recharts is NOT used in App.jsx (this import was dead). recharts now
 // lives only inside the lazily-loaded chart screens (StatsScreen, weightage),
@@ -4084,7 +4084,7 @@ export default function App() {
 
       {/* FAV — Your Favourites: manage list, priority order, strip toggle. */}
       {nav.screen === 'favorites' && (
-        <FavoritesScreen onBack={goHome} startInEdit={!!nav.edit}
+        <FavoritesScreen onBack={goHome} startInEdit={!!nav.edit} startInAdd={!!nav.add}
                          onNavigate={handleHomeNavigate}
                          onOpenSettings={() => setNav({ screen: 'settings' })} />
       )}
@@ -4120,7 +4120,7 @@ export default function App() {
       )}
 
       {nav.screen === 'learn-cards' && (
-        <LearnCards topicId={nav.topicId} subFilter={nav.sub || null} onBack={() => navigate({ screen: 'learn-topics' })} />
+        <LearnCards topicId={nav.topicId} subFilter={nav.sub || null} onBack={goHome} />
       )}
 
       {nav.screen === 'stats' && (
@@ -4223,6 +4223,15 @@ export default function App() {
         <AddQuestion onSave={saveCustomQuestion} onSaveBulk={saveBulkQuestions}
                      onBack={goHome}
                      existingCustomCount={data.customQuestions.length} />
+      )}
+
+      {nav.screen === 'add-question' && isGuestProfile(profile) && (
+        <SignInGate
+          icon={<Plus size={26} style={{ color: T.primary }} />}
+          title="Sign in to add questions"
+          body="Adding your own questions saves them to your account so you can practise and share them. Sign in to start building your own question set."
+          onSignIn={() => setNav({ screen: 'auth' })}
+          onBack={goHome} />
       )}
 
       {nav.screen === 'library' && isGuestProfile(profile) && (
@@ -4350,6 +4359,7 @@ export default function App() {
                   onOpenShare={() => navigate({ screen: 'share-app' })}
                   onOpenThemes={() => navigate({ screen: 'themes' })}
                   onOpenFavorites={() => navigate({ screen: 'favorites', edit: true })}
+                  onManageFavorites={() => navigate({ screen: 'favorites', add: true })}
                   onRenameProfile={handleRenameProfile}
                   onToggleReviewReminders={toggleReviewReminders}
                   onToggleIncludeGkInStats={toggleIncludeGkInStats}

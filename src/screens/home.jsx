@@ -8,7 +8,8 @@
 // and presentation flags stay props.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, HelpCircle, Hourglass, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
@@ -24,6 +25,22 @@ import { Card, Button } from '../ui/primitives.jsx';
 import FavStrip from '../ui/fav-strip.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
 import { Tip } from '../ui/tooltip.jsx';
+
+// Lighten a 6-digit hex colour toward white by fraction t (0..1). Used to
+// build the Learn card's gradient from its single accent (T.sec.learn) so the
+// card reads as "premium" like Drill Tests while staying a DIFFERENT colour —
+// the two cards must remain visually distinct. Returns the input unchanged if
+// it isn't a 6-digit hex.
+function lightenHex(hex, t) {
+  const h = String(hex || '').replace('#', '');
+  if (h.length !== 6) return hex;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  const mix = (c) => Math.round(c + (255 - c) * t);
+  const to2 = (n) => n.toString(16).padStart(2, '0');
+  return `#${to2(mix(r))}${to2(mix(g))}${to2(mix(b))}`;
+}
 
 // Feature 3 — brief positive feedback when the spaced-review queue is empty
 // for an active user. Auto-hides after 3s so it rewards, then clears space.
@@ -51,8 +68,36 @@ function AllCaughtUpCard() {
 }
 
 function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead }) {
-  const { theme: T } = useTheme();
+  const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
+
+  // Issue 6 — the top bar (Menu / notifications / settings) is a FIXED bar that
+  // hides as you scroll down and slides back in the moment you scroll up, so it's
+  // never permanently out of reach. (Mirrors the TopBar pattern used elsewhere:
+  // portaled to <body> so the home root's anim-fadeup transform can't break
+  // position:fixed, with a spacer reserving its height.)
+  const [barHidden, setBarHidden] = useState(false);
+  useEffect(() => {
+    let lastY = (typeof window !== 'undefined' && window.scrollY) || 0;
+    let ticking = false;
+    const THRESH = 6; // ignore sub-pixel jitter
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY || 0;
+        const dy = y - lastY;
+        if (y < 48) setBarHidden(false);            // always visible near the top
+        else if (dy > THRESH) setBarHidden(true);   // scrolling down → hide
+        else if (dy < -THRESH) setBarHidden(false); // scrolling up → reveal
+        lastY = y;
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   const due = getDueQuestions(data.history, allQuestions);
   const weak = getWeakTopics(data.history, allQuestions, data.preferences && data.preferences.includeGkInStats === true);
   const accuracy = data.stats.totalAttempted > 0
@@ -302,47 +347,58 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         : `An admin responded to ${replies.length} of your reports.`);
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-24 anim-fadeup"
-         style={{ paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))' }}>
-      {/* Top bar: menu + notifications + quick settings */}
-      <div className="flex items-center justify-between mb-3">
-        <Tip text="Every section of the app — study, progress, tools and help">
-          <button onClick={onOpenMenu}
-                  className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
-                  aria-label="Open menu">
-            <Menu size={22} style={{ color: T.ink }} />
-            <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
-          </button>
-        </Tip>
-
-        <div className="flex items-center gap-1">
-          {/* Notification bell — Feature 6 */}
-          {onOpenNotifications && (
-            <Tip text="Your daily briefing, reminders, achievements and insights">
-            <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
-                    className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
-                    aria-label="Notifications">
-              {unreadNotifCount > 0
-                ? <BellRing size={20} style={{ color: T.primary }} />
-                : <Bell size={20} style={{ color: T.muted }} />}
-              {unreadNotifCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
-                      style={{ background: T.error, lineHeight: 1 }}>
-                  {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
-                </span>
-              )}
-            </button>
+    <div className="max-w-md mx-auto px-4 pb-24 anim-fadeup">
+      {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
+          scroll-up. Portaled to <body> because this root carries anim-fadeup (a
+          transform), and a transformed ancestor would break position:fixed. */}
+      {typeof document !== 'undefined' && createPortal(
+        <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
+             style={{ background: IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0',
+                      borderBottom: `1px solid ${T.borderSoft}`,
+                      paddingTop: 'env(safe-area-inset-top, 0px)',
+                      transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
+                      transition: 'transform .28s cubic-bezier(.22,.61,.36,1)',
+                      willChange: 'transform' }}>
+          <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto">
+            <Tip text="Every section of the app — study, progress, tools and help">
+              <button onClick={onOpenMenu}
+                      className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
+                      aria-label="Open menu">
+                <Menu size={22} style={{ color: T.ink }} />
+                <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
+              </button>
             </Tip>
-          )}
-
-          <Tip text="Themes, reminders, gestures, backup and more">
-            <button onClick={() => onNavigate({ screen: 'settings' })}
-                    className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
-              <SettingsIcon size={20} style={{ color: T.muted }} />
-            </button>
-          </Tip>
-        </div>
-      </div>
+            <div className="flex items-center gap-1">
+              {onOpenNotifications && (
+                <Tip text="Your daily briefing, reminders, achievements and insights">
+                <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
+                        className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
+                        aria-label="Notifications">
+                  {unreadNotifCount > 0
+                    ? <BellRing size={20} style={{ color: T.primary }} />
+                    : <Bell size={20} style={{ color: T.muted }} />}
+                  {unreadNotifCount > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+                          style={{ background: T.error, lineHeight: 1 }}>
+                      {unreadNotifCount > 9 ? '9+' : unreadNotifCount}
+                    </span>
+                  )}
+                </button>
+                </Tip>
+              )}
+              <Tip text="Themes, reminders, gestures, backup and more">
+                <button onClick={() => onNavigate({ screen: 'settings' })}
+                        className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
+                  <SettingsIcon size={20} style={{ color: T.muted }} />
+                </button>
+              </Tip>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      {/* spacer reserving the fixed bar's height (row ≈ 52px + the safe area) */}
+      <div aria-hidden="true" style={{ height: 'calc(52px + env(safe-area-inset-top, 0px))' }} />
 
       {/* GUEST MODE (Phase A): subtle, dismissible sign-in nudge — shown only
           to guests who haven't dismissed it this session. Benefit-framed, never
@@ -508,7 +564,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* Streak · Accuracy · Today — center-aligned summary strip */}
       <div className="grid grid-cols-3 gap-2.5 mb-5">
         {/* Streak */}
-        <Card className="px-2 py-4 text-center relative">
+        <Card className="px-2 py-4 text-center relative cursor-pointer no-tap-highlight pressable"
+              onClick={() => onNavigate({ screen: 'stats' })}>
           {data.stats.streakCurrent > 0 && data.stats.streakGraceAvailable !== false && (
             <span className="absolute top-2 right-2 text-[10px]" title="One missed day allowed">🛡️</span>
           )}
@@ -528,7 +585,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
 
         {/* Accuracy */}
-        <Card className="px-2 py-4 text-center">
+        <Card className="px-2 py-4 text-center cursor-pointer no-tap-highlight pressable"
+              onClick={() => onNavigate({ screen: 'stats' })}>
           <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-2"
                style={{ background: T.primary + '15' }}>
             <Target size={16} style={{ color: T.primary }} />
@@ -545,7 +603,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
 
         {/* Today */}
-        <Card className="px-2 py-4 text-center">
+        <Card className="px-2 py-4 text-center cursor-pointer no-tap-highlight pressable"
+              onClick={() => onNavigate({ screen: 'stats' })}>
           <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-2"
                style={{ background: T.success + '20' }}>
             <Sparkles size={16} style={{ color: T.success }} />
@@ -917,21 +976,28 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       </Tip>
 
       {/* Learn Topic Wise — stays on Home as its own standalone card
-          (learning, not testing); clearly separated from the Drill Tests
-          entry above. Same icon/accent/labels as before. */}
+          (learning, not testing). Now mirrors the premium Drill Tests card UI
+          (gradient, white text, translucent icon chip, divider + mini icon
+          row) but in its OWN colour (T.sec.learn) so the two stay clearly
+          distinct — Drill = primary, Learn = learn-accent. */}
       <Tip title="Learn topic wise" text="Concept cards that teach each topic — learn the material before you test yourself on it.">
       <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
-            style={{ borderTop: `3px solid ${T.sec.learn}`, boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
+            style={{ background: `linear-gradient(135deg, ${T.sec.learn}, ${lightenHex(T.sec.learn, 0.22)})`, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.sec.learn }}>
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
             <Brain size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>Learn topic wise</div>
-            <div className="text-xs leading-snug" style={{ color: T.muted }}>Concept cards {'\u00b7'} learn before you test</div>
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Learn topic wise</div>
+            <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>Concept cards {'\u00b7'} learn before you test</div>
           </div>
-          <ChevronRight size={20} style={{ color: T.muted }} className="flex-shrink-0" />
+          <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
+        </div>
+        <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+          {[BookOpen, Layers, Lightbulb, GraduationCap, Sparkles, Network].map((Ic, i) => (
+            <Ic key={i} size={15} color="rgba(255,255,255,0.8)" />
+          ))}
         </div>
       </Card>
       </Tip>

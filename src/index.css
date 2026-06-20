@@ -34,3 +34,15 @@ body {
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* Issue 14 — iOS Safari auto-zooms into any focused <input>/<textarea>/<select>
+   whose computed font-size is < 16px, which shoves the whole layout off-screen
+   (most visible on the PYQ search bar). Forcing 16px on form controls stops that
+   focus-zoom. It does NOT touch the viewport's user-scalable setting, so the
+   Knowledge Map can still be pinch-zoomed (the one place zoom is wanted).
+   !important is needed to beat Tailwind's text-sm utility on these elements. */
+input,
+textarea,
+select {
+  font-size: 16px !important;
+}

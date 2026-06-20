@@ -95,7 +95,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   // How many questions remain AFTER this one in the current schedule.
   const remainingAfter = schedule.length - scheduleIndex - 1;
-  const canSkip = skipAllowed && !submitted && !revealed && remainingAfter > 0;
+  // Issue 3 — a question may be skipped at most twice; after that Skip is
+  // disabled (so the queue can't cycle forever) but the question is NEVER
+  // dropped — it stays in the schedule and must be attempted before the test
+  // ends. (Previously the 2nd skip advanced the cursor PAST it, so a skipped
+  // question could vanish and never be shown again.)
+  const skipsForCurrent = q ? (skipCounts[q.id] || 0) : 0;
+  const canSkip = skipAllowed && !submitted && !revealed && remainingAfter > 0 && skipsForCurrent < 2;
 
   // Time tracking. For mock we count DOWN from totalSeconds; for any other
   // timed mode we count UP (legacy behaviour, unused today but kept for
@@ -209,23 +215,15 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setRevealed(true);
   };
 
-  // "Skip" — defer this question to the end of the round so the user can
-  // attempt easier ones first. Each question can only be skipped twice
-  // before it sticks in place; this caps the worst-case "infinite skip" loop.
+  // "Skip" — defer this question to the END of the round so the user can
+  // attempt easier ones first, and so it ALWAYS comes back around. Each
+  // question can be skipped at most twice (enforced via canSkip / skipsForCurrent
+  // above); on the 2nd skip it's still re-queued, just no longer skippable, so
+  // it must be answered before the test can finish. It is never dropped.
   const skipQuestion = () => {
     if (!canSkip) return;
     const qId = q.id;
-    const skips = skipCounts[qId] || 0;
-
-    setSkipCounts(s => ({ ...s, [qId]: skips + 1 }));
-
-    if (skips >= 1) {
-      // Already skipped once — leave in place and just advance the cursor.
-      // (We'd otherwise risk shuffling the queue forever.)
-      setSelected([]);
-      setIndex(i => i + 1);
-      return;
-    }
+    setSkipCounts(s => ({ ...s, [qId]: (s[qId] || 0) + 1 }));
 
     // Move the realIndex from `scheduleIndex` to the end of the schedule.
     setSchedule(prev => {
@@ -236,8 +234,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     });
     setSelected([]);
     // Stay at the same scheduleIndex — the next question now occupies it.
-    // Force a question-change effect by bumping a non-existent state? No —
-    // schedule itself changed, so q updates automatically. Reset per-question
+    // schedule itself changed, so `q` updates automatically; reset per-question
     // state explicitly here since the index didn't change.
     questionStart.current = Date.now();
     setHintShown(false);
@@ -589,7 +586,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                           className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition disabled:opacity-40"
                           style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
                     <ChevronRight size={12} />
-                    Skip{remainingAfter > 0 ? ` (try later)` : ''}
+                    Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (try later)`) : ''}
                   </button>
                   <button onClick={revealAnswer}
                           className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition"
@@ -604,7 +601,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                         className="no-tap-highlight w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition disabled:opacity-40 mb-2"
                         style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
                   <ChevronRight size={12} />
-                  Skip{remainingAfter > 0 ? ` (come back to this)` : ''}
+                  Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (come back to this)`) : ''}
                 </button>
               )}
               <Button onClick={submit} disabled={selected.length === 0} size="lg" className="w-full">

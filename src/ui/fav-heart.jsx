@@ -85,12 +85,14 @@ export default function FavHeart({ favId, inline = false, size = 18 }) {
         <span className={"inline-block " + (anim === 'fill' ? 'heart-spring' : '')}
               style={{ lineHeight: 0 }}>
           <Heart size={inline ? 14 : size}
-                 fill={isFav ? '#E0245E' : '#FFFFFF'}
+                 fill={isFav ? '#E0245E' : 'transparent'}
                  strokeWidth={2.2}
                  style={{
+                   // Empty = TRANSPARENT interior with just the outline, so in dark
+                   // mode it no longer looks pre-filled. Filled = pink. 'transparent'
+                   // (not 'none') is a real colour, so the fill still animates
+                   // smoothly when favouriting/unfavouriting.
                    color: isFav ? '#E0245E' : T.muted,
-                   // fluid, flicker-free: colour + fill transition together;
-                   // unfavourite is a graceful fade with zero bounce.
                    transition: 'color .28s ease, fill .3s ease',
                  }} />
         </span>

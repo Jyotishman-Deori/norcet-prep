@@ -8,11 +8,12 @@
 // auth-secure function (the anon key never touches the locked secrets).
 // =====================================================================
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Check, Lock, Mail, ChevronDown, ChevronRight } from 'lucide-react';
+import { ShieldCheck, Check, Lock, Mail, ChevronDown, ChevronRight, KeyRound } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
-import { getRecoveryQuestion, setSecurityQuestion, updateRecoveryEmail } from '../lib/profiles.js';
+import { getRecoveryQuestion, setSecurityQuestion, updateRecoveryEmail, changePassword } from '../lib/profiles.js';
+import { PASSWORD_MAX } from '../lib/auth-limits.js';
 
 // A tappable card header + grid-rows collapse body (matches the sidebar section
 // folders). Defined at MODULE level (not inside the component) so its identity
@@ -21,6 +22,30 @@ import { getRecoveryQuestion, setSecurityQuestion, updateRecoveryEmail } from '.
 function Msg({ T, m }) {
   if (!m) return null;
   return <div className="text-[11px] mt-2 anim-fadeup" style={{ color: m.ok ? T.success : T.error }}>{m.text}</div>;
+}
+
+// Password strength scorer for the Change Password card. Special characters
+// COUNT TOWARD strength (they're encouraged, never penalised). Length is also
+// rewarded so a long passphrase rates well even with a single character class.
+// Returns { level: 'none'|'weak'|'medium'|'strong', label, ok } where ok=true
+// means it clears the minimum (medium or better) the Save button requires.
+function scorePassword(pw) {
+  const len = pw ? pw.length : 0;
+  if (len === 0) return { level: 'none', label: '', ok: false };
+  if (len < 8) return { level: 'weak', label: 'Too short — use at least 8 characters', ok: false };
+  let s = 0;
+  if (/[a-z]/.test(pw)) s++;
+  if (/[A-Z]/.test(pw)) s++;
+  if (/\d/.test(pw)) s++;
+  if (/[^A-Za-z0-9]/.test(pw)) s++;   // special chars boost strength
+  if (len >= 12) s++;
+  if (len >= 16) s++;
+  let level;
+  if (s <= 2) level = 'weak';
+  else if (s <= 3) level = 'medium';
+  else level = 'strong';
+  const label = level === 'weak' ? 'Weak' : level === 'medium' ? 'Medium' : 'Strong';
+  return { level, label, ok: level !== 'weak' }; // medium or strong passes
 }
 
 function CollapseCard({ T, icon: Icon, iconBg, iconColor, title, titleExtra, sub, badge, open, onToggle, children }) {
@@ -71,9 +96,17 @@ export default function AccountSecurityCard({ profile }) {
   const [emBusy, setEmBusy] = useState(false);
   const [emMsg, setEmMsg] = useState(null);
 
+  // Change-password form
+  const [pwCur, setPwCur] = useState('');     // current password (no length cap)
+  const [pwNew, setPwNew] = useState('');     // new password (capped at PASSWORD_MAX)
+  const [pwConf, setPwConf] = useState('');   // confirm new password
+  const [pwBusy, setPwBusy] = useState(false);
+  const [pwMsg, setPwMsg] = useState(null);
+
   // Collapsible cards (collapsed by default — keeps the profile page tidy).
   const [qOpen, setQOpen] = useState(false);
   const [eOpen, setEOpen] = useState(false);
+  const [pOpen, setPOpen] = useState(false);
 
   // Soft email-format check (server enforces it too; this warns earlier).
   const emailLooksOff = !!email.trim() && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim());
@@ -121,6 +154,27 @@ export default function AccountSecurityCard({ profile }) {
     } catch (e) {
       setEmMsg({ ok: false, text: (e && e.message) || 'Could not save. Try again.' });
     } finally { setEmBusy(false); }
+  };
+
+  // Change-password derived state.
+  const pwStrength = scorePassword(pwNew);
+  const pwMatches = pwNew.length > 0 && pwNew === pwConf;
+  const pwConfMismatch = pwConf.length > 0 && pwNew !== pwConf;
+  const canChangePw = !!pwCur && pwStrength.ok && pwMatches && !pwBusy;
+
+  const submitPw = async () => {
+    setPwMsg(null);
+    if (!pwCur) { setPwMsg({ ok: false, text: 'Enter your current password.' }); return; }
+    if (!pwStrength.ok) { setPwMsg({ ok: false, text: 'Choose a stronger new password.' }); return; }
+    if (!pwMatches) { setPwMsg({ ok: false, text: 'New passwords do not match.' }); return; }
+    setPwBusy(true);
+    try {
+      await changePassword(displayName, pwCur, pwNew);
+      setPwCur(''); setPwNew(''); setPwConf('');
+      setPwMsg({ ok: true, text: 'Password changed ✓' });
+    } catch (e) {
+      setPwMsg({ ok: false, text: (e && e.message) || 'Could not change password. Try again.' });
+    } finally { setPwBusy(false); }
   };
 
   return (
@@ -212,6 +266,88 @@ export default function AccountSecurityCard({ profile }) {
           {emBusy ? 'Saving…' : 'Save email'}
         </button>
         <Msg T={T} m={emMsg} />
+      </CollapseCard>
+
+      {/* Change password (collapsible) */}
+      <CollapseCard
+        T={T}
+        icon={KeyRound} iconBg={T.primary + '15'} iconColor={T.primary}
+        title="Change password" sub="Update the password you use to sign in"
+        open={pOpen} onToggle={() => setPOpen(o => !o)}>
+        {/* Current password (no length cap — existing passwords may be longer) */}
+        <div className="relative mb-2">
+          <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+          <input value={pwCur} onChange={e => setPwCur(e.target.value)} type="password"
+                 placeholder="Current password" autoComplete="current-password"
+                 className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm" style={inputStyle} />
+        </div>
+
+        {/* New password (capped + counter + strength meter) */}
+        <div className="relative">
+          <KeyRound size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+          <input value={pwNew} onChange={e => setPwNew(e.target.value.slice(0, PASSWORD_MAX))}
+                 type="password" maxLength={PASSWORD_MAX}
+                 placeholder="New password" autoComplete="new-password"
+                 className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm" style={inputStyle} />
+        </div>
+        <div className="flex items-center justify-between mt-1 mb-2">
+          {/* Strength meter (3 segments: weak / medium / strong) */}
+          {pwNew ? (
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1">
+                {[0, 1, 2].map(i => {
+                  const filled =
+                    (pwStrength.level === 'weak' && i === 0) ||
+                    (pwStrength.level === 'medium' && i <= 1) ||
+                    (pwStrength.level === 'strong');
+                  const color = pwStrength.level === 'weak' ? T.error
+                    : pwStrength.level === 'medium' ? T.accent : T.success;
+                  return (
+                    <span key={i} className="rounded-full"
+                          style={{ width: 22, height: 4, background: filled ? color : T.border,
+                                   transition: 'background 0.2s' }} />
+                  );
+                })}
+              </div>
+              <span className="text-[10px] font-semibold"
+                    style={{ color: pwStrength.level === 'weak' ? T.error
+                      : pwStrength.level === 'medium' ? T.accent : T.success }}>
+                {pwStrength.label}
+              </span>
+            </div>
+          ) : <span />}
+          <span className="text-[10px]" style={{ color: pwNew.length >= PASSWORD_MAX ? T.error : T.muted }}>
+            {pwNew.length}/{PASSWORD_MAX}
+          </span>
+        </div>
+
+        {/* Confirm new password */}
+        <div className="relative mb-1">
+          <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+          <input value={pwConf} onChange={e => setPwConf(e.target.value.slice(0, PASSWORD_MAX))}
+                 type="password" maxLength={PASSWORD_MAX}
+                 placeholder="Confirm new password" autoComplete="new-password"
+                 className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm" style={inputStyle} />
+        </div>
+        {pwConfMismatch ? (
+          <div className="text-[11px] mb-2" style={{ color: T.error }}>Passwords don't match yet.</div>
+        ) : pwMatches ? (
+          <div className="text-[11px] mb-2 flex items-center gap-1" style={{ color: T.success }}>
+            <Check size={12} /> Passwords match
+          </div>
+        ) : <div className="mb-2" />}
+
+        {/* Positive hint: special characters are ENCOURAGED */}
+        <div className="text-[10px] mb-2" style={{ color: T.muted }}>
+          Tip: special characters like !@#$ make your password stronger.
+        </div>
+
+        <button onClick={submitPw} disabled={!canChangePw}
+                className="no-tap-highlight w-full py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
+                style={{ background: T.primary, color: '#FFF', opacity: canChangePw ? 1 : 0.5 }}>
+          {pwBusy ? 'Saving…' : 'Change password'}
+        </button>
+        <Msg T={T} m={pwMsg} />
       </CollapseCard>
     </>
   );

@@ -12,7 +12,7 @@
 // celebration/_kmapNodeStyle) moved with it; shared model imported from lib/kmap.
 // =====================================================================
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle, AlertCircle, Compass } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -1441,7 +1441,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           <div className="absolute left-3 flex flex-col gap-1.5"
                style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : 12 }}>
             {[
-              { lbl: 'How this works', sign: <HelpCircle size={16} />, fn: () => setGuideOpen(true) },
+              { lbl: 'How this works', sign: <Compass size={16} />, fn: () => setGuideOpen(true) },
               { lbl: fullscreen ? 'Exit fullscreen' : 'Fullscreen', sign: fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />, fn: toggleFullscreen },
               { lbl: 'Zoom in', sign: <Plus size={16} />, fn: () => zoomAt(view.k * 1.25) },
               { lbl: 'Zoom out', sign: <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 700 }}>{'\u2212'}</span>, fn: () => zoomAt(view.k / 1.25) },
@@ -1552,7 +1552,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                onClick={() => setGuideOpen(false)}>
             <div className="w-full max-w-md rounded-t-3xl kmap-sheet-up"
                  style={{ background: CMAP.surfaceSolid || CMAP.panelSolid, borderTop: `1px solid ${CMAP.border}`,
-                          maxHeight: '86vh', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+                          maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - 24px)', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
                  onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="How the Knowledge Map works">
               <div className="flex justify-center pt-2.5 pb-1"><div style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.18)' }} /></div>
               <div className="px-5 pb-5">
@@ -1595,7 +1595,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                     <div className="flex items-center gap-3"><Line stroke={CMAP.edgeRoot} glow />
                       <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Gold threads tie each <span style={{ color: CMAP.text }}>subject</span> to the NORCET core (the sun).</div></div>
                     <div className="flex items-center gap-3"><Line stroke={CMAP.edge} />
-                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Faint lines link a subject to its <span style={{ color: CMAP.text }}>sub-topics</span> \u2014 they appear as you zoom in.</div></div>
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Faint lines link a subject to its <span style={{ color: CMAP.text }}>sub-topics</span> {'\u2014'} they appear as you zoom in.</div></div>
                     <div className="flex items-center gap-3"><Line stroke={T.accent} glow />
                       <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>A <span style={{ color: CMAP.text }}>pulsing</span> line marks a prerequisite worth doing first.</div></div>
                     <div className="flex items-center gap-3"><Line stroke={KMAP_BONUS_COLOR} dash="1 5" />
@@ -1605,16 +1605,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
                 <Section title="Fog of war">
                   <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
-                    A faint shimmer around a locked star means it\u2019s right next to where you\u2019re
-                    working \u2014 a good one to unlock next.
+                    A faint shimmer around a locked star means it{'\u2019'}s right next to where you{'\u2019'}re
+                    working {'\u2014'} a good one to unlock next.
                   </div>
                 </Section>
 
                 <Section title="Finding your way">
                   <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
                     Zoomed out you see the <span style={{ color: CMAP.text }}>subjects</span> (the galaxy). Zoom in to reveal
-                    sub-topics and their labels. Pinch/scroll or use <span style={{ color: CMAP.text }}>+ / \u2212</span>; tap
-                    <span style={{ color: CMAP.text }}> Fit</span> to reframe, and the <span style={{ color: CMAP.text }}>\u2922</span> for fullscreen.
+                    sub-topics and their labels. Pinch/scroll or use <span style={{ color: CMAP.text }}>+ / {'\u2212'}</span>; tap
+                    <span style={{ color: CMAP.text }}> Fit</span> to reframe, and the <span style={{ color: CMAP.text }}>{'\u2922'}</span> for fullscreen.
                     Double-tap a star to focus, long-press to add a note, and search topics or notes.
                   </div>
                 </Section>

@@ -29,6 +29,7 @@ import {
   getRecoveryQuestion, recoverPasswordWithAnswer, saveSession
 } from '../lib/profiles.js';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
+import { USERNAME_MAX, PASSWORD_MAX } from '../lib/auth-limits.js';
 import { LegalContent } from './legal.jsx';
 import { legalDoc } from '../lib/legal.js';
 
@@ -318,18 +319,28 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
         )}
 
         {/* Display name */}
-        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-          Display name
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
+            Display name
+          </div>
+          {/* Task 9 — live counter, CREATE mode only (login must not cap/clip an
+              existing longer name). */}
+          {mode === 'create' && !recovering && (
+            <span className="text-[10px]" style={{ color: displayName.length >= USERNAME_MAX ? T.error : T.muted }}>
+              {displayName.length}/{USERNAME_MAX}
+            </span>
+          )}
         </div>
         <div className="relative mb-4">
           <User size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
           <input
             type="text"
             value={displayName}
-            onChange={e => setDisplayName(e.target.value)}
+            onChange={e => setDisplayName(mode === 'create' ? e.target.value.slice(0, USERNAME_MAX) : e.target.value)}
             placeholder={mode === 'create' ? 'Your name' : 'Enter your name'}
             autoCapitalize="words"
             autoComplete="off"
+            maxLength={mode === 'create' ? USERNAME_MAX : undefined}
             readOnly={inRecoveryVerify}
             onKeyDown={e => { if (e.key === 'Enter' && inRecoveryIdentify) handleSubmit(); }}
             className="w-full rounded-xl pl-10 pr-4 py-3 text-sm"
@@ -434,17 +445,27 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
         {/* Password (create + login) */}
         {!recovering && (
           <>
-            <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-              Password
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
+                Password
+              </div>
+              {/* Task 9 — counter on CREATE only; login must accept an existing
+                  longer password unchanged. */}
+              {mode === 'create' && (
+                <span className="text-[10px]" style={{ color: password.length >= PASSWORD_MAX ? T.error : T.muted }}>
+                  {password.length}/{PASSWORD_MAX}
+                </span>
+              )}
             </div>
             <div className="relative mb-2">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
-                onChange={e => setPassword(e.target.value)}
+                onChange={e => setPassword(mode === 'create' ? e.target.value.slice(0, PASSWORD_MAX) : e.target.value)}
                 placeholder={mode === 'create' ? 'Choose a password (min 8 chars)' : 'Your password'}
                 autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
+                maxLength={mode === 'create' ? PASSWORD_MAX : undefined}
                 onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
                 style={inputStyle}

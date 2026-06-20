@@ -133,6 +133,78 @@ async function getSecret(id: string): Promise<Record<string, unknown> | null> {
   return Array.isArray(rows) && rows.length ? rows[0] : null;
 }
 
+// ---- rate limiting (PROMPT 21) -------------------------------------
+// Fixed-window limiter backed by the locked auth_rate table + rate_hit() RPC
+// (see supabase/auth-rate.sql). Mirrors the policy of api/_ratelimit.js:
+// cheap abuse damper, NOT cryptographic, and it FAILS OPEN — a limiter/DB
+// blip must never take down login. Unauthenticated actions are keyed by client
+// IP (no trusted id yet); authenticated actions by profile id (fairer + per
+// account). Limits are generous so a normal user never trips them.
+
+// Best-effort client IP from the proxy headers Supabase forwards.
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || "unknown";
+}
+
+// Records one hit; returns whether it is allowed and seconds to wait if not.
+async function rateHit(
+  bucket: string,
+  identifier: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; retryAfter: number }> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rate_hit`, {
+      method: "POST",
+      headers: dbHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
+      body: JSON.stringify({
+        p_bucket: bucket,
+        p_identifier: identifier || "unknown",
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+    if (!r.ok) return { allowed: true, retryAfter: 0 }; // fail OPEN
+    const rows = await r.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return { allowed: true, retryAfter: 0 };
+    return { allowed: !!row.allowed, retryAfter: Number(row.retry_after) || 0 };
+  } catch {
+    return { allowed: true, retryAfter: 0 }; // fail OPEN on any limiter error
+  }
+}
+
+// Human-friendly "wait X" string for the 429 message.
+function formatWait(seconds: number): string {
+  if (seconds >= 3600) {
+    const h = Math.ceil(seconds / 3600);
+    return h === 1 ? "about an hour" : `about ${h} hours`;
+  }
+  if (seconds >= 60) {
+    const m = Math.ceil(seconds / 60);
+    return m === 1 ? "about a minute" : `about ${m} minutes`;
+  }
+  return `${Math.max(1, seconds)} second${seconds === 1 ? "" : "s"}`;
+}
+
+// 429 response carrying a clear, user-facing wait message + Retry-After header.
+function tooMany(retryAfter: number): Response {
+  return new Response(
+    JSON.stringify({
+      ok: false,
+      reason: "rate-limited",
+      retryAfter,
+      message: `Too many attempts. Please wait ${formatWait(retryAfter)} and try again.`,
+    }),
+    {
+      status: 429,
+      headers: { ...cors, "Content-Type": "application/json", "Retry-After": String(Math.max(1, retryAfter)) },
+    },
+  );
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -144,6 +216,31 @@ Deno.serve(async (req: Request) => {
   const action = String(payload.action ?? "");
   const id = String(payload.id ?? "").trim();
   if (!id) return json({ error: "Missing id" }, 400);
+
+  // -------------------------------------------------------------
+  // RATE LIMIT — applied before any work. Unauth actions keyed by IP,
+  // auth actions by profile id. register/rename/delete are intentionally
+  // NOT limited here. Fails open (see rateHit) so a limiter blip can't
+  // lock anyone out.
+  // -------------------------------------------------------------
+  {
+    const ip = clientIp(req);
+    let rl: { allowed: boolean; retryAfter: number } | null = null;
+    if (action === "verify") {
+      rl = await rateHit("login", ip, 5, 15 * 60);            // 5 / 15 min per IP
+    } else if (action === "reset") {
+      rl = await rateHit("reset", ip, 3, 60 * 60);            // 3 / hour per IP
+    } else if (action === "recovery-question") {
+      rl = await rateHit("recovery-question", ip, 3, 60 * 60); // 3 / hour per IP
+    } else if (action === "change-password") {
+      rl = await rateHit("change-password", id, 5, 60 * 60);  // 5 / hour per id
+    } else if (action === "set-security-question") {
+      rl = await rateHit("set-security-question", id, 3, 60 * 60); // 3 / hour per id
+    } else if (action === "update-email") {
+      rl = await rateHit("update-email", id, 5, 60 * 60);     // 5 / hour per id
+    }
+    if (rl && !rl.allowed) return tooMany(rl.retryAfter);
+  }
 
   try {
     // -------------------------------------------------------------
@@ -358,7 +455,38 @@ Deno.serve(async (req: Request) => {
     }
 
     // -------------------------------------------------------------
-    // RENAME — re-key a credential row when a profile's id (slug)
+    // CHANGE-PASSWORD — a logged-in user changes their password. Verifies
+    // the CURRENT password first (same pattern as update-email / set-
+    // security-question), enforces the same 8-char minimum as reset, then
+    // writes a fresh salt + hash. Does NOT mint a new token: the caller's
+    // existing session stays valid, so nobody gets logged out. Refuses a
+    // no-op change so the user gets clear feedback rather than a silent OK.
+    // -------------------------------------------------------------
+    if (action === "change-password") {
+      const password = String(payload.password ?? "");        // current
+      const newPassword = String(payload.newPassword ?? "");  // new
+      const row = await getSecret(id);
+      if (!row || !row.password_hash || !row.salt) return json({ ok: false, reason: "no-account" });
+      const tryHash = await hashPassword(password, String(row.salt));
+      if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false, reason: "bad-password" });
+      if (newPassword.length < 8) return json({ ok: false, reason: "weak-password" });
+      // Reject new === current (compared against the stored hash with its salt).
+      if (safeEqual(await hashPassword(newPassword, String(row.salt)), String(row.password_hash))) {
+        return json({ ok: false, reason: "same-password" });
+      }
+      const salt = genSalt();
+      const password_hash = await hashPassword(newPassword, salt);
+      const r = await fetch(
+        `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(id)}`,
+        {
+          method: "PATCH",
+          headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+          body: JSON.stringify({ salt, password_hash, updated_at: new Date().toISOString() }),
+        },
+      );
+      if (!r.ok) return json({ error: `change-password failed: ${r.status}` }, 502);
+      return json({ ok: true });
+    }
     // changes on rename. Copies the SAME hashes to the new id and
     // removes the old row, so the renamed user can still log in.
     // -------------------------------------------------------------

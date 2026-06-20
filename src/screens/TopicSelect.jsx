@@ -5,7 +5,7 @@
 // useData() (history === data.history, was a prop). onPick/onBack stay props.
 // =====================================================================
 import React, { useMemo, useState } from 'react';
-import { ChevronRight } from 'lucide-react';
+import { Play } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { TOPICS } from '../data/seed.js';
@@ -78,7 +78,17 @@ function TopicSelect({ onPick, onBack }) {
                       </div>
                     </div>
                   </div>
-                  <ChevronRight size={20} style={{ color: T.muted }} />
+                  {/* Premium per-row Start button — removes any doubt about how
+                      to begin a test. Colour matches the subject; the whole card
+                      stays tappable too (stopPropagation avoids a double-fire). */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onPick(topic.id, count); }}
+                    aria-label={`Start ${topic.name} test`}
+                    className="no-tap-highlight flex items-center gap-1.5 pl-3 pr-3.5 py-2 rounded-xl text-sm font-semibold flex-shrink-0 active:scale-95 transition"
+                    style={{ background: topic.color, color: '#FFF', boxShadow: `0 4px 12px ${topic.color}55` }}>
+                    <Play size={14} fill="#FFF" strokeWidth={0} />
+                    Start
+                  </button>
                 </div>
               </Card>
             );

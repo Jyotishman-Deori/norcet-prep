@@ -20,6 +20,7 @@ import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 // #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
+import { isIOS } from '../lib/platform.js';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
@@ -27,7 +28,7 @@ import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile, isAdmin } = useProfile();
@@ -336,33 +337,43 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </div>
       </Card>
-      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('open')}>
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
-              <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
-            </div>
-            <div className="min-w-0">
-              <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.
+      {(() => {
+        const onIOS = isIOS();
+        return (
+        <Card className={"p-4 mb-3 " + (onIOS ? '' : 'cursor-pointer no-tap-highlight pressable')}
+              style={onIOS ? { opacity: 0.75 } : undefined}
+              onClick={onIOS ? undefined : () => flipGesture('open')}>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+                <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
+              </div>
+              <div className="min-w-0">
+                <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                  {onIOS
+                    ? <>Not available on iPhone or iPad {'\u2014'} iOS uses the left-edge swipe to go back. Tap the <b>Menu</b> button at the top of the home screen to open the sidebar.</>
+                    : <>Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.</>}
+                </div>
               </div>
             </div>
+            {/* On iOS render a locked-looking switch (off + dimmed); elsewhere it's live. */}
+            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+                 style={{ background: (!onIOS && gestures.open) ? T.success : T.border, opacity: onIOS ? 0.6 : 1 }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                   style={{ transform: (!onIOS && gestures.open) ? 'translateX(20px)' : 'translateX(0)' }} />
+            </div>
           </div>
-          <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-               style={{ background: gestures.open ? T.success : T.border }}>
-            <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                 style={{ transform: gestures.open ? 'translateX(20px)' : 'translateX(0)' }} />
-          </div>
-        </div>
-        {gestures.open && (
-          <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
-               style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
-            <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
-            <span>On some Android devices this gesture may conflict with the system back button. If the sidebar opens unexpectedly, turn this off.</span>
-          </div>
-        )}
-      </Card>
+          {!onIOS && gestures.open && (
+            <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
+                 style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
+              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
+              <span>On some Android devices this gesture may conflict with the system back gesture. If the sidebar opens unexpectedly or the app navigates back, turn this off and use the Menu button.</span>
+            </div>
+          )}
+        </Card>
+        );
+      })()}
       <Card className="p-4 mb-3" style={{ opacity: 0.75 }}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -537,7 +548,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
               </div>
             </Card>
-            {renderReset()}
           </>
         )}
         {!isGuest && profile && (
@@ -549,8 +559,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </>
         )}
 
-        {/* Fix 1 — "Share NORCET Prep" is now its own top-level row (moved out
-            of the Profile sub-page) so it's easy to reach for everyone. */}
+        {/* Task 7 — "Share NORCET Prep" is its OWN standalone card, placed
+            immediately after the Profile/Account card and BEFORE every other
+            section (Reminders, Notifications, …). For guests the Reset action
+            now renders below this card, so nothing sits between Profile and
+            Share. */}
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
@@ -566,8 +579,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
-        {/* #8 — Reset stays in the Profile sub-page for logged-in users; guests
-            still see it inline above. Share is now a top-level row (above). */}
+        {/* Guests: Reset renders here, AFTER Share (logged-in users reach Reset
+            from inside the Profile sub-page instead). */}
+        {isGuest && renderReset()}
 
         {/* #9 — "My feedback" has moved into the sidebar Feedback hub
             (Send feedback + My feedback live together there now). It is no
@@ -777,12 +791,17 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                      sub="Download a backup file, or restore from one"
                      onClick={() => openSub('backup')} />
 
-        {/* #8 — Topic notes export/import opens in a focused sub-page. */}
+        {/* #8 — Topic notes export/import opens in a focused sub-page.
+            Shown to everyone, incl. guests (they accumulate local notes via the
+            Knowledge Map and this is how they back them up / move them). */}
         <div className="mt-6 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Topic notes</div>
         <SubPageCard icon={FileText} iconBg={T.primary} title="Topic notes"
                      sub="Export or import your Knowledge Map notes"
                      onClick={() => openSub('notes')} />
 
+        {/* Task 8 — Admin section is hidden entirely from guests. */}
+        {!isGuest && (
+        <>
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Admin</div>
         {isAdmin ? (
           <>
@@ -907,6 +926,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </div>
           </Card>
         )}
+        </>
+        )}
 
         {/* FAV — Favourites: opt-in home-screen strip of hearted sections.
             OFF by default; hearts always save regardless, so flipping this on
@@ -935,11 +956,13 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
         {/* Fix 3 — Manage favourites + Priority order only appear when the
-            Favourites toggle is ON; when it's OFF they're hidden entirely. */}
+            Favourites toggle is ON; when it's OFF they're hidden entirely.
+            Issue 11 — these two now do DIFFERENT things: Manage favourites opens
+            the Add picker (add sections); Priority order opens reorder/remove. */}
         {onOpenFavorites && favs && favs.enabled && (() => {
-          const FavRow = ({ icon: Icon, label, sub }) => (
+          const FavRow = ({ icon: Icon, label, sub, onClick }) => (
             <Card className="p-3.5 mb-2 cursor-pointer no-tap-highlight pressable"
-                  onClick={onOpenFavorites}>
+                  onClick={onClick}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -957,8 +980,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           );
           return (
             <>
-              <FavRow icon={Heart} label="Manage favourites" sub="Add or remove hearted sections" />
-              <FavRow icon={ArrowUpDown} label="Priority order" sub="Reorder how they appear on home" />
+              <FavRow icon={Heart} label="Manage favourites" sub="Add sections to your one-stop list"
+                      onClick={onManageFavorites || onOpenFavorites} />
+              <FavRow icon={ArrowUpDown} label="Priority order" sub="Reorder how they appear on home"
+                      onClick={onOpenFavorites} />
             </>
           );
         })()}

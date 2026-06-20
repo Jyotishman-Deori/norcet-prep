@@ -10,6 +10,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { normalizeProfileId } from '../lib/profile-crypto.js';
+import { USERNAME_MAX } from '../lib/auth-limits.js';
 import { log } from '../lib/log.js';
 
 function RenameProfileModal({ profile, onRename, onClose }) {
@@ -71,13 +72,21 @@ function RenameProfileModal({ profile, onRename, onClose }) {
             </button>
           </div>
 
-          <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-            New name
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
+              New name
+            </div>
+            {/* Task 9 — live counter. maxLength caps NEW input but does not clip a
+                pre-filled longer name (counter just turns red to flag it). */}
+            <span className="text-[10px]" style={{ color: value.length >= USERNAME_MAX ? T.error : T.muted }}>
+              {value.length}/{USERNAME_MAX}
+            </span>
           </div>
           <input value={value}
                  onChange={e => setValue(e.target.value)}
                  autoCapitalize="words"
                  autoComplete="off"
+                 maxLength={USERNAME_MAX}
                  placeholder="Your name"
                  className="w-full rounded-xl px-3 py-3 mb-3 text-sm"
                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />

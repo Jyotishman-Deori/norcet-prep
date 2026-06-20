@@ -65,6 +65,15 @@ async function callAuthFn(action, body) {
     body: JSON.stringify({ action, ...body }),
   });
   if (!r.ok) {
+    // Surface the friendly rate-limit message (HTTP 429 from the limiter)
+    // instead of a raw status string, so the UI can show "wait X" verbatim.
+    if (r.status === 429) {
+      let msg = 'Too many attempts. Please wait a bit and try again.';
+      try { const b = await r.json(); if (b && b.message) msg = String(b.message); } catch (_) {}
+      const err = new Error(msg);
+      err.rateLimited = true;
+      throw err;
+    }
     const text = await r.text().catch(() => '');
     throw new Error(`auth-secure ${action} failed: ${r.status} ${text}`.trim());
   }
@@ -620,6 +629,28 @@ export async function updateRecoveryEmail(displayName, password, email) {
     if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
     if (res && res.reason === 'bad-email') throw new Error('Enter a valid email address');
     throw new Error('Could not update your email — please try again');
+  }
+  return true;
+}
+
+// Change the signed-in user's password. Verifies the CURRENT password server-
+// side, then writes a fresh salt + hash via the change-password action. Does
+// NOT touch the session token — the user stays logged in. Throws a friendly
+// Error on any failure (including the limiter's "wait X" message via callAuthFn).
+export async function changePassword(displayName, currentPassword, newPassword) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('No profile is signed in');
+  if (!currentPassword) throw new Error('Enter your current password');
+  if (!newPassword || String(newPassword).length < 8) {
+    throw new Error('New password must be at least 8 characters');
+  }
+  const res = await callAuthFn('change-password', { id, password: currentPassword, newPassword: String(newPassword) });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
+    if (res && res.reason === 'weak-password') throw new Error('New password must be at least 8 characters');
+    if (res && res.reason === 'same-password') throw new Error('Your new password must be different from your current one');
+    if (res && res.reason === 'no-account') throw new Error('No profile is signed in');
+    throw new Error('Could not change your password — please try again');
   }
   return true;
 }

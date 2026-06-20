@@ -262,5 +262,26 @@
     "what": "One home for every way to test yourself — Quick Test, Topic Wise, Mock Test, Dosage Calc, Previous Year Papers, and the full exam-mode Advanced Test, arranged from casual warm-up to exam-hall intensity.",
     "how": "Pick a card that matches how serious you want this session to be. Start light at the top when you’re warming up; work down to Previous Year Papers and Advanced Test when you’re ready for real exam conditions with negative marking and a countdown.",
     "why": "Different stages of prep need different kinds of testing. Putting all six modes on one ladder makes it obvious which drill fits today — and nudges you to climb toward exam-realistic practice as the exam gets closer."
+  },
+  "Favourites": {
+    "title": "Favourites",
+    "what": "Your one-stop shortcuts page. Any section of the app — Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart — can be pinned here as a tile, and the top two also appear on your home screen for instant access.",
+    "how": "Tap Add (or the + tile) to pin any section, or tap the heart beside a section’s title anywhere in the app. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them — the top-left tile is priority #1. You can also manage this list from Settings → Favourites.",
+    "why": "Everyone uses the app differently. Favourites puts the handful of sections you actually open every day one tap away, instead of hunting through the menu each time.",
+    "example": "In the last week before the exam you pin Bookmarks, Weak areas and Previous papers. They now sit at the top of your home screen, and you open each one with a single tap."
+  },
+  "Crib sheet": {
+    "title": "Crib Sheet",
+    "what": "A post-test review sheet listing every question from the test you just finished — with the correct answer and explanation for each — and flags for which you got right, wrong, or skipped. Like a mini PYQ booklet built from your own attempt.",
+    "how": "It appears automatically after a test (you can turn this off in Settings → Tests). Scroll through to review each question; correct, wrong and missed ones are colour-coded. You can share the sheet to study with a friend.",
+    "why": "The fastest way to learn is to review immediately, while the questions are fresh. Seeing the right answer and the reasoning next to what you chose turns every test into a study session.",
+    "example": "You finish a 25-question mock and score 16. The Crib Sheet shows the 9 you missed with full explanations, so you fix those gaps right away instead of repeating the same mistakes."
+  },
+  "PYQ read mode": {
+    "title": "Read mode",
+    "what": "A calm, no-pressure way to go through a previous year’s paper — every question shown with its correct answer and explanation, with nothing timed and nothing scored.",
+    "how": "Scroll through the paper top to bottom, reading each question and its explanation at your own pace. Switch to Attempt mode instead if you want to sit the paper under exam conditions and have it scored.",
+    "why": "Sometimes you want to learn from a paper, not be tested by it. Read mode lets you absorb how questions are framed and why each answer is right — ideal for a first pass or a relaxed revision session.",
+    "example": "The night before your exam you don’t want the stress of a timed test, so you open last year’s paper in Read mode and read through all the questions and explanations to refresh the key facts."
   }
 }
