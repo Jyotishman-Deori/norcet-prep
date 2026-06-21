@@ -122,10 +122,13 @@ function Button({ children, onClick, variant = 'primary', size = 'md', disabled 
   );
 }
 
-function TopBar({ title, onBack, right, feedback, favId }) {
+function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
-  // Theme-aware translucent background
-  const tbBg = IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0';
+  // Theme-aware background. `solid` opts OUT of the frosted blur: a fully opaque
+  // bar with no backdrop-filter, so there is no compositing layer to re-sample
+  // (and ghost) when animated content — e.g. the Favourites jiggle/enter tiles
+  // or a closing picker — moves behind it. Same family of fix as the Home bar.
+  const tbBg = solid ? T.bg : (IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0');
   // FIXED top bar (issues round, hardened): the bar is pinned to the viewport
   // on every screen so navigation/Help/Report never scroll out of reach, and it
   // pads itself by env(safe-area-inset-top) so the title/counter never collide
@@ -140,7 +143,7 @@ function TopBar({ title, onBack, right, feedback, favId }) {
   // useTheme still works through the portal (React context follows the tree,
   // not the DOM). The spacer stays in flow to reserve the bar's height.
   const bar = (
-    <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
+    <div className={"fixed top-0 left-0 right-0 z-40" + (solid ? '' : ' backdrop-blur-md')}
          style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
                   paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">

@@ -2511,6 +2511,19 @@ export default function App() {
   }, []);
 
   const startQuiz = useCallback((spec) => {
+    // Record where the quiz was launched from so exiting it returns to that
+    // screen (e.g. Weak Areas / Syllabus-coverage), not Home. startQuiz uses
+    // setNav below, which bypasses the nav stack, so we push here exactly the
+    // way navigate() does (respecting NAV_NO_STACK, so launches from Home or
+    // another quiz don't add a spurious entry).
+    {
+      const cur = navRef.current;
+      if (cur && cur.screen !== 'quiz' && !NAV_NO_STACK.includes(cur.screen)) {
+        const st = navStackRef.current;
+        st.push({ ...cur });
+        if (st.length > 12) st.shift();
+      }
+    }
     let qs = [];
     // B2 — bias selection so questions the user was shown but never attempted
     // (and didn't reveal/skip) come back FIRST, then fall through to the normal
