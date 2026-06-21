@@ -665,15 +665,18 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
                style={{ background: T.bg, boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
                         maxHeight: 'min(660px, calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 32px))' }}
                onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
-                 style={{ borderBottom: `1px solid ${T.border}` }}>
-              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>
-                {legalDoc(legalView)?.title || 'Legal'}
+            <div className="flex items-start justify-between gap-3 px-5 py-4 flex-shrink-0"
+                 style={{ borderBottom: `1px solid ${T.border}`, background: T.primary + '0A' }}>
+              <div className="min-w-0">
+                <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NORCET Prep</div>
+                <div className="font-display text-lg font-semibold leading-tight" style={{ color: T.ink }}>
+                  {legalDoc(legalView)?.title || 'Legal'}
+                </div>
               </div>
               <button type="button" onClick={() => setLegalView(null)} aria-label="Close"
-                      className="no-tap-highlight w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                      className="no-tap-highlight w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
                       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
-                <X size={16} style={{ color: T.muted }} />
+                <X size={17} style={{ color: T.muted }} />
               </button>
             </div>
             <div className="px-5 pb-6 pt-4 overflow-y-auto">

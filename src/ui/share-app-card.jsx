@@ -8,11 +8,13 @@
 // referral link `?ref=<their id>&via=<surface>` (guests fall back to a
 // channel-only link). Added, above the platform selector:
 //   • a branded QR card (premium PNG, matching the score card) the user can
-//     SAVE or SHARE as an image — for in-person sharing (study groups, library)
-//   • a one-tap "Share on WhatsApp" button with a warm, personal message
+//     TAP to enlarge full-screen, or SAVE / SHARE as an image — for in-person
+//     sharing (study groups, library). The WhatsApp button was removed; the
+//     adaptive Share / Copy message below covers every channel.
 // =====================================================================
 import React, { useEffect, useState } from 'react';
-import { Check, Copy, Share2, Smartphone, QrCode, Download, MessageCircle, Users } from 'lucide-react';
+import { Check, Copy, Share2, Smartphone, QrCode, Download, Users, Maximize2, X } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
 import { Tip } from './tooltip.jsx';
@@ -87,7 +89,8 @@ function QrSvg({ value, px = 132, quiet = 3, fg = '#0B1220' }) {
     }
   }
   return (
-    <svg width={px} height={px} viewBox={`0 0 ${dim} ${dim}`} shapeRendering="crispEdges" role="img" aria-label="App QR code">
+    <svg width={px} height={px} viewBox={`0 0 ${dim} ${dim}`} shapeRendering="crispEdges" role="img" aria-label="App QR code"
+         style={{ maxWidth: '100%', height: 'auto', display: 'block' }}>
       <rect x={0} y={0} width={dim} height={dim} fill="#FFFFFF" />
       {rects}
     </svg>
@@ -106,6 +109,7 @@ export default function ShareAppCard() {
   const [imgStatus, setImgStatus] = useState('idle'); // idle|saving|sharing|done|error
   const [userCount, setUserCount] = useState(0);
   const [refStats, setRefStats] = useState(null);      // {total,confirmed,pending} | null
+  const [qrZoomed, setQrZoomed] = useState(false);     // tap QR -> premium enlarge
 
   useEffect(() => { setCanShare(typeof navigator !== 'undefined' && !!navigator.share); }, []);
   useEffect(() => { let on = true; countUsers().then(n => { if (on) setUserCount(n || 0); }); return () => { on = false; }; }, []);
@@ -121,7 +125,6 @@ export default function ShareAppCard() {
   const displayUrl = displayAppUrl();
   const messageUrl = buildReferralUrl(code, VIA.SHARE);
   const qrUrl = buildReferralUrl(code, VIA.QR);
-  const waUrl = buildReferralUrl(code, VIA.WHATSAPP);
   const message = buildMessage(audience, messageUrl);
 
   // Social proof: non-numeric until the user base is meaningful (100+), then
@@ -175,12 +178,6 @@ export default function ShareAppCard() {
     setTimeout(() => setImgStatus('idle'), 3200);
   };
 
-  const openWhatsApp = () => {
-    const text = `I've been using this for NORCET prep \u2014 it's completely free and has no ads: ${waUrl}`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    try { window.open(url, '_blank', 'noopener,noreferrer'); } catch (e) { window.location.href = url; }
-  };
-
   return (
     <Card className="mb-3 overflow-hidden p-0">
       <div className="p-4" style={{ background: T.primary + '12', borderBottom: `1px solid ${T.primary}25` }}>
@@ -218,17 +215,27 @@ export default function ShareAppCard() {
           </div>
         )}
 
-        {/* ── QR card: in-person sharing (study groups, library, classroom) ── */}
+        {/* ── QR "ad" card: tap the code to enlarge; save/share as an image ── */}
         <div className="rounded-2xl p-4 mb-4 flex flex-col items-center text-center"
              style={{ background: `linear-gradient(140deg, ${T.primary}14 0%, ${T.surface} 55%, ${T.primary}0E 100%)`, border: `1.5px solid ${T.primary}33` }}>
-          <div className="text-[10px] uppercase tracking-wider font-semibold mb-2 inline-flex items-center gap-1" style={{ color: T.muted }}>
+          <div className="text-[10px] uppercase tracking-widest font-semibold mb-3 inline-flex items-center gap-1.5" style={{ color: T.primary }}>
             <QrCode size={11} /> Scan to install
           </div>
-          <div className="rounded-xl p-2.5 mb-2" style={{ background: '#FFFFFF', boxShadow: `0 4px 14px ${T.primary}1A` }}>
+          <button onClick={() => setQrZoomed(true)} aria-label="Enlarge the QR code"
+                  className="no-tap-highlight relative rounded-xl p-2.5 mb-2 active:scale-95 transition-transform"
+                  style={{ background: '#FFFFFF', boxShadow: `0 4px 14px ${T.primary}1A` }}>
             <QrSvg value={qrUrl} px={138} />
+            <span className="absolute -bottom-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center"
+                  style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}55` }}>
+              <Maximize2 size={13} />
+            </span>
+          </button>
+          <div className="text-[10px] mb-3" style={{ color: T.muted }}>Tap the code to enlarge</div>
+          <div className="font-display text-[15px] font-semibold mb-1 leading-snug" style={{ color: T.ink }}>
+            Free &amp; ad-free AIIMS NORCET prep
           </div>
-          <div className="text-xs mb-3" style={{ color: T.inkSoft }}>
-            Anyone can scan this to start — perfect for study groups &amp; the library table.
+          <div className="text-xs leading-relaxed mb-3.5 px-1" style={{ color: T.inkSoft }}>
+            Mock tests, PYQs, revision notes and dosage drills — all in one app. Point any camera at the code to install.
           </div>
           <div className="grid grid-cols-2 gap-2 w-full">
             <Tip text="Saves the QR card as an image to your device">
@@ -257,13 +264,6 @@ export default function ShareAppCard() {
             </div>
           )}
         </div>
-
-        {/* ── one-tap WhatsApp (the most common real-world channel) ── */}
-        <button onClick={openWhatsApp}
-                className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold active:scale-95 transition mb-4"
-                style={{ background: '#25D366', color: '#FFFFFF', boxShadow: '0 4px 14px rgba(37,211,102,0.30)' }}>
-          <MessageCircle size={16} /> Share on WhatsApp
-        </button>
 
         {/* premium link pill — display serif over a textured gradient */}
         <div className="relative flex items-center justify-center mb-4 px-4 py-3.5 rounded-2xl overflow-hidden"
@@ -339,6 +339,39 @@ export default function ShareAppCard() {
           </div>
         )}
       </div>
+
+      {/* Premium enlarge: tap the QR -> a screen-filling, scannable "ad" card
+          (scale-in over a blurred scrim). "Done"/backdrop/X returns. */}
+      {qrZoomed && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[95] flex items-center justify-center p-5"
+             style={{ background: 'rgba(8,10,18,0.72)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+             onClick={() => setQrZoomed(false)}>
+          <div className="anim-scalein w-full max-w-sm rounded-3xl flex flex-col items-center text-center px-6 pt-7 pb-6 relative"
+               style={{ background: T.bg, boxShadow: '0 30px 80px rgba(0,0,0,0.5)' }}
+               onClick={e => e.stopPropagation()}>
+            <button onClick={() => setQrZoomed(false)} aria-label="Close"
+                    className="no-tap-highlight absolute top-3.5 right-3.5 w-9 h-9 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                    style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+              <X size={18} style={{ color: T.muted }} />
+            </button>
+            <div className="text-[11px] uppercase tracking-[0.2em] font-semibold mb-1" style={{ color: T.primary }}>NORCET Prep</div>
+            <div className="font-display text-xl font-semibold mb-1.5 leading-snug" style={{ color: T.ink }}>Free &amp; ad-free exam prep</div>
+            <div className="text-[11px] font-medium mb-4" style={{ color: T.muted }}>Mock tests {'\u00B7'} PYQs {'\u00B7'} Revision notes {'\u00B7'} Dosage drills</div>
+            <div className="rounded-2xl p-4 mb-4 w-full flex items-center justify-center"
+                 style={{ background: '#FFFFFF', boxShadow: `0 10px 30px ${T.primary}2E` }}>
+              <QrSvg value={qrUrl} px={260} />
+            </div>
+            <div className="text-sm font-medium mb-0.5" style={{ color: T.ink }}>Point any camera at the code</div>
+            <div className="font-display text-sm font-semibold tracking-wide mb-5" style={{ color: T.primary }}>{displayUrl}</div>
+            <button onClick={() => setQrZoomed(false)}
+                    className="no-tap-highlight w-full py-3 rounded-2xl text-sm font-semibold active:scale-95 transition"
+                    style={{ background: T.primary, color: '#FFF', boxShadow: `0 8px 22px ${T.primary}45` }}>
+              Done
+            </button>
+          </div>
+        </div>,
+        document.body
+      )}
     </Card>
   );
 }
