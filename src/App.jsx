@@ -1116,7 +1116,16 @@ async function clearAnnouncementHistory(adminProfileId) {
 }
 
 async function clearAnnouncement(adminProfileId) {
-  await adminDeleteShared(KEYS.ANNOUNCEMENT, adminProfileId);
+  // The shared-DELETE broker is rejected server-side even for admins (only the
+  // upsert/write path is authorized), so a real delete always failed ("server
+  // rejected the write"). Instead OVERWRITE the key with an inactive tombstone
+  // via the SAME write path posting uses: empty text makes loadAnnouncement()
+  // return null, so the notice stops showing for everyone immediately — and the
+  // record is preserved, not destroyed (the full text also stays in history).
+  await adminWriteShared(KEYS.ANNOUNCEMENT, JSON.stringify({
+    id: `ann-cleared-${Date.now()}`, text: '', level: 'info',
+    ts: Date.now(), expiresAt: null, cleared: true,
+  }), adminProfileId);
 }
 
 // =====================================================================

@@ -234,8 +234,12 @@ function AdminPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep the editor in sync if the announcement changes elsewhere
+  // Keep the editor in sync if the announcement changes elsewhere. After a
+  // "Stop showing" we deliberately KEEP the editor text (so the admin can tweak
+  // and re-post), so skip this sync exactly once when the live notice goes away.
+  const preserveTextRef = useRef(false);
   useEffect(() => {
+    if (preserveTextRef.current) { preserveTextRef.current = false; return; }
     setAnnText(announcement?.text || '');
     setAnnLevel(announcement?.level === 'important' ? 'important' : 'info');
   }, [announcement?.id]);
@@ -259,12 +263,13 @@ function AdminPanel({
 
   const removeAnnouncement = async () => {
     setAnnBusy(true);
+    preserveTextRef.current = true;   // keep the editor text through announcement → null
     try {
       await onClearAnnouncement();
-      setAnnText('');
-      setAnnMsg({ ok: true, text: 'Announcement cleared.' });
+      setAnnMsg({ ok: true, text: 'Stopped — users no longer see it. The text is kept here so you can edit and re-post.' });
     } catch (e) {
-      setAnnMsg({ ok: false, text: 'Could not clear — server rejected the write (are you online and using the admin profile?).' });
+      preserveTextRef.current = false;
+      setAnnMsg({ ok: false, text: 'Could not stop it — are you online and using the admin profile?' });
     } finally {
       setAnnBusy(false);
     }
@@ -884,7 +889,7 @@ function AdminPanel({
                   Posted {fmtWhen(announcement.ts)}
                   {announcement.expiresAt
                     ? ` · auto-expires in ${Math.max(0, Math.ceil((announcement.expiresAt - Date.now()) / 86400000))} day(s)`
-                    : ' · stays until cleared'}
+                    : ' · stays until you stop it'}
                 </div>
               </div>
             )}
@@ -936,7 +941,7 @@ function AdminPanel({
             <div className="flex gap-2">
               {announcement && (
                 <Button variant="ghost" onClick={removeAnnouncement} disabled={annBusy} className="flex-1"
-                        icon={<Trash2 size={14} />}>Clear</Button>
+                        icon={<EyeOff size={14} />}>Stop showing</Button>
               )}
               <Button onClick={postAnnouncement} disabled={annBusy || !annText.trim()} className="flex-1"
                       icon={annBusy ? <RefreshCw size={14} className="animate-spin" /> : <Send size={14} />}>
