@@ -276,17 +276,27 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
           </div>
           {!done ? (
             <div className="space-y-2.5">
-              <Button onClick={submit} disabled={!isValidInput} size="lg" className="w-full" icon={<Check size={18} />}>
-                Check answer
+              {/* Morphing primary: empty field -> neutral "Submit" (reveals the
+                  worked solution, no accuracy hit); a value typed -> "Check
+                  answer". Clearing the field morphs it straight back. */}
+              {(() => {
+                const hasInput = isValidInput;
+                return (
+                  <button onClick={hasInput ? submit : reveal}
+                          aria-label={hasInput ? 'Check answer' : 'Submit without answering'}
+                          className={'no-tap-highlight w-full rounded-2xl py-3.5 font-semibold text-base active:brightness-95 transition-[background-color,color,box-shadow,border-color] duration-300 ease-out' + (hasInput ? ' qbtn-ready' : '')}
+                          style={hasInput
+                            ? { background: T.primary, color: '#FFF', border: '1.5px solid transparent', boxShadow: `0 10px 26px ${T.primary}45` }
+                            : { background: T.primary + '12', color: T.primary, border: `1.5px solid ${T.primary}33`, boxShadow: 'none' }}>
+                    <span key={hasInput ? 'check' : 'submit'} className="qbtn-label inline-flex items-center justify-center gap-2">
+                      {hasInput ? <><Check size={18} /> Check answer</> : <>Submit</>}
+                    </span>
+                  </button>
+                );
+              })()}
+              <Button variant="ghost" onClick={skip} size="md" className="w-full" icon={<SkipForward size={16} />}>
+                Skip
               </Button>
-              <div className="flex gap-2.5">
-                <Button variant="ghost" onClick={skip} size="md" className="flex-1" icon={<SkipForward size={16} />}>
-                  Skip
-                </Button>
-                <Button variant="soft" onClick={reveal} size="md" className="flex-1" icon={<Eye size={16} />}>
-                  Show answer
-                </Button>
-              </div>
             </div>
           ) : (
             <Button onClick={next} size="lg" className="w-full" icon={<ChevronRight size={18} />}>

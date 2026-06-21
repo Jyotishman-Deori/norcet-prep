@@ -1,4 +1,25 @@
 {
+  "Share app": {
+    "title": "Share NORCET Prep",
+    "what": "Your personal invite to bring friends onto NORCET Prep — a referral link, a scannable QR code, and a one-tap WhatsApp message, all tied to your profile.",
+    "how": "Tap to copy your link or QR, or share straight to WhatsApp. When a friend joins through it you’re both credited, and you can compare progress with them on the leaderboard.",
+    "why": "Studying alongside friends keeps everyone consistent. Sharing is free and ad-free, and word of mouth is what keeps the app free for everyone.",
+    "example": "You send your WhatsApp invite to your study group; three friends join through your link, appear on your leaderboard, and you push each other through the final month of prep."
+  },
+  "Settings · Backup": {
+    "title": "Backup",
+    "what": "A complete export of everything on this profile — answers, scores, streaks, bookmarks, saved sheets, favourites, custom questions and settings — saved as a single file you can keep or move to another device.",
+    "how": "Tap “Download a backup” to save the file somewhere safe (phone, email or cloud). To restore, tap “Restore from a backup” and choose a file — it merges into your current profile without wiping what’s already there.",
+    "why": "Your progress is precious, especially close to the exam. A backup means a lost phone, a cleared browser, or a new device never costs you your streak, bookmarks or notes.",
+    "example": "Before switching phones you download a backup, install the app on the new one, sign in and restore — every streak, bookmark and stat lands exactly where you left it."
+  },
+  "Settings · Topic notes": {
+    "title": "Topic notes",
+    "what": "Export or import just the notes you’ve pinned to topics on the Knowledge Map — your mnemonics, shortcuts and reminders — separately from a full backup.",
+    "how": "Tap Export to save your notes as a file, or Import to merge notes from a file into your existing ones (nothing is overwritten). This works for guests too, so you can carry notes between devices without an account.",
+    "why": "Notes are the most personal thing you build here. Keeping them portable means you can back them up, move them between devices, or share a polished set of mnemonics with a friend.",
+    "example": "You’ve written 40 drug-dosage mnemonics across the map. You export them before reformatting your phone, then import them back afterwards — all 40 return intact."
+  },
   "Settings · Legal": {
     "title": "Legal",
     "what": "The app’s two legal documents in one place: the Privacy Policy (what data is stored, where, and how it’s used) and the Terms of Use (the rules and expectations for using the app).",
@@ -218,8 +239,8 @@
   },
   "Settings": {
     "title": "Settings",
-    "what": "Where everything app-wide lives: your profile (rename, log out, switch user), data (backup, restore, reset progress), appearance (light / dark mode), reminders (spaced revision on / off), and admin tools if you’re the admin.",
-    "how": "Scroll to the section you want and tap the relevant control. Toggles like dark mode flip immediately. Destructive actions (reset progress, log out) ask for confirmation before doing anything. Your profile card at the top is tappable to rename yourself.",
+    "what": "Where everything app-wide lives: your account or guest profile, sharing the app, reminders (spaced revision + a daily nudge), notifications, what counts in your stats, sound, light / dark themes, sidebar swipe gestures, backups, your Knowledge-Map notes, the legal docs, and — if you’re the admin — admin tools.",
+    "how": "Scroll to the section you want and tap its control. Toggles like dark mode flip instantly. Focused areas — Profile, Backup, Topic notes, Sidebar gestures and Legal — open as their own page with a back arrow. Destructive actions (reset, log out) always confirm first. As a guest, an Account card at the top lets you create a profile to sync and back up.",
     "why": "One predictable place for all the meta-app stuff, so the main study screens stay focused on practice. If you can’t find a setting, it’s here.",
     "example": "You’re studying late, so you switch to Dark mode (it flips instantly), then turn on spaced-revision reminders. Later you tap ‘Reset progress’ by mistake — the confirmation prompt stops you before anything is deleted."
   },
@@ -272,7 +293,7 @@
   },
   "Favourites": {
     "title": "Favourites",
-    "what": "Your one-stop shortcuts page. Any section of the app — Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart — can be pinned here as a tile, and the top two also appear on your home screen for instant access.",
+    "what": "Your one-stop shortcuts page. Any section of the app — Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart — can be pinned here as a tile, and your top favourites also surface on the home screen for instant access.",
     "how": "Tap Add (top-right) to open a centred picker of every section you can pin, or tap the heart beside any section’s title anywhere in the app — both drop it in here as a tile. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them; the top-left tile is priority #1, and your top tiles also surface on the home screen. You can reopen this any time from Settings → Manage favourites.",
     "why": "Everyone uses the app differently. Favourites puts the handful of sections you actually open every day one tap away, instead of hunting through the menu each time.",
     "example": "In the last week before the exam you pin Bookmarks, Weak areas and Previous papers. They now sit at the top of your home screen, and you open each one with a single tap."
@@ -280,7 +301,7 @@
   "Crib sheet": {
     "title": "Crib Sheet",
     "what": "A post-test review sheet listing every question from the test you just finished — with the correct answer and explanation for each — and flags for which you got right, wrong, or skipped. Like a mini PYQ booklet built from your own attempt.",
-    "how": "It appears automatically after a test (you can turn this off in Settings → Tests). Scroll through to review each question; correct, wrong and missed ones are colour-coded. You can share the sheet to study with a friend.",
+    "how": "It appears automatically after a test (you can turn that off in Settings → Tests). Scroll through to review each question — right, wrong and skipped are colour-coded. Tap “Add to Revision” to keep it on your Crib Sheets shelf (inside Revision), where it stays dated and ready to reopen or print, or share it to study with a friend.",
     "why": "The fastest way to learn is to review immediately, while the questions are fresh. Seeing the right answer and the reasoning next to what you chose turns every test into a study session.",
     "example": "You finish a 25-question mock and score 16. The Crib Sheet shows the 9 you missed with full explanations, so you fix those gaps right away instead of repeating the same mistakes."
   },

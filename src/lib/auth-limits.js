@@ -12,10 +12,10 @@
 // — truncating or blocking those would lock people out.
 // =====================================================================
 
-// Display name / username: generous but bounded. Most names are < 20 chars;
-// 24 leaves room without allowing absurdly long values.
-export const USERNAME_MAX = 24;
+// Display name / username: short and tidy. Capped at 15 characters.
+export const USERNAME_MAX = 15;
 
-// Password: 64 is comfortably above any reasonable passphrase while still
-// being a sane upper bound (and well within the hashing input limits).
-export const PASSWORD_MAX = 64;
+// Password: capped at 15 characters (minimum 8, enforced separately at the
+// signup/reset call sites). Existing longer passwords still work at login —
+// see the note above; the cap only applies when CHOOSING a new value.
+export const PASSWORD_MAX = 15;

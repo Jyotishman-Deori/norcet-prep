@@ -207,7 +207,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 {cribs.map((c, ci) => {
                   const right = Math.round((c.items.filter(i => i.status === 'correct').length / Math.max(1, c.items.length)) * 100);
                   return (

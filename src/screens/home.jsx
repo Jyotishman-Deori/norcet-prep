@@ -380,7 +380,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
           <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto">
-            <Tip text="Every section of the app — study, progress, tools and help">
+            <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
                       aria-label="Open menu">
@@ -390,7 +390,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             </Tip>
             <div className="flex items-center gap-1">
               {onOpenNotifications && (
-                <Tip text="Your daily briefing, reminders, achievements and insights">
+                <Tip title="Today" text="Your daily briefing — what's due for revision, reminders, fresh achievements and study insights.">
                 <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
                         className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
                         aria-label="Notifications">
@@ -406,7 +406,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 </button>
                 </Tip>
               )}
-              <Tip text="Themes, reminders, gestures, backup and more">
+              <Tip title="Settings" text="Account, themes, reminders, notifications, sound, sidebar gestures, backups and more.">
                 <button onClick={() => onNavigate({ screen: 'settings' })}
                         className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
                   <SettingsIcon size={20} style={{ color: T.muted }} />

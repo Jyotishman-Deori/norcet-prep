@@ -17,7 +17,7 @@
 import { safeStorage } from './safe-storage.js';
 import { KEY_PREFIXES } from './keys.js';
 
-const GESTURE_DEFAULTS = { close: true, open: false };
+const GESTURE_DEFAULTS = { close: true, open: true };
 
 let _gestures = { ...GESTURE_DEFAULTS };
 let _cribEnabled = true;
@@ -30,7 +30,7 @@ export async function loadUiPrefs() {
       if (v && typeof v === 'object') {
         _gestures = {
           close: v.close !== false,             // default true
-          open: v.open === true,                // default false
+          open: v.open !== false,               // default true
         };
       }
     }

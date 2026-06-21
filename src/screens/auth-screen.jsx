@@ -12,6 +12,7 @@
 //
 // A7: theme via useTheme(); no IS_DARK/fgOnDark.
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Check, AlertCircle, AlertTriangle, ArrowLeft,
   GraduationCap, User, UserPlus, LogIn, Lock, Eye, EyeOff, RefreshCw,
@@ -64,6 +65,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
   const [recoverySuccess, setRecoverySuccess] = useState(false);
   // #2 — inline legal viewer (null | 'privacy' | 'terms').
   const [legalView, setLegalView] = useState(null);
+  // Centred security-question picker (replaces the native <select> dropdown).
+  const [securityPickerOpen, setSecurityPickerOpen] = useState(false);
   // Live name-taken check (create mode only). null = unknown; true = taken;
   // false = free. We use raceStorage directly so the check reflects the
   // canonical store; on offline/timeout we stay null and never falsely block.
@@ -252,10 +255,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
             let the user back out and keep exploring without an account. */}
         {onBack && (
           <button onClick={onBack}
-                  aria-label="Back to the app"
-                  className="no-tap-highlight mb-4 inline-flex items-center gap-1.5 text-sm"
-                  style={{ color: T.muted }}>
-            <ArrowLeft size={16} /> Keep exploring as guest
+                  aria-label="Keep exploring as guest"
+                  className="no-tap-highlight group mb-5 inline-flex items-center gap-2 pl-2 pr-4 py-2 rounded-full active:scale-95 transition-transform"
+                  style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.ink }}>
+            <span className="flex items-center justify-center w-7 h-7 rounded-full" style={{ background: T.primary + '1A' }}>
+              <ArrowLeft size={15} style={{ color: T.primary }} className="transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:-translate-x-0.5" />
+            </span>
+            <span className="text-sm font-medium">Keep exploring as guest</span>
           </button>
         )}
         {/* Brand */}
@@ -386,16 +392,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
               <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>For password recovery</span>
             </div>
             <div className="relative mb-2">
-              <ShieldQuestion size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
-              <select
-                value={securityQuestion}
-                onChange={e => setSecurityQuestion(e.target.value)}
-                className="w-full rounded-xl pl-10 pr-9 py-3 text-sm appearance-none"
-                style={inputStyle}
-              >
-                {SECURITY_QUESTIONS.map(q => <option key={q} value={q}>{q}</option>)}
-              </select>
-              <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+              <button type="button" onClick={() => setSecurityPickerOpen(true)}
+                      className="no-tap-highlight w-full rounded-xl pl-10 pr-9 py-3 text-sm text-left flex items-center" style={inputStyle}>
+                <ShieldQuestion size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+                <span className="truncate" style={{ color: T.ink }}>{securityQuestion}</span>
+                <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+              </button>
             </div>
             <div className="relative mb-1">
               <input
@@ -651,29 +653,75 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
         </div>
       </div>
 
-      {/* #2 — inline legal viewer (Privacy Policy / Terms of Use) */}
-      {legalView && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center anim-fadeup"
-             style={{ background: 'rgba(0,0,0,0.45)' }}
+      {/* #2 — legal viewer (Privacy / Terms): centred, premium, portaled to
+          <body>. NOTE: LegalContent takes the KEY and resolves it itself, so we
+          pass `legalView` directly (passing legalDoc(legalView) double-resolved
+          to undefined before, which rendered an EMPTY, collapsed sheet). */}
+      {legalView && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+             style={{ background: 'rgba(0,0,0,0.55)' }}
              onClick={() => setLegalView(null)}>
-          <div className="w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl"
-               style={{ background: T.bg }}
+          <div className="w-full max-w-md rounded-3xl anim-scalein flex flex-col overflow-hidden"
+               style={{ background: T.bg, boxShadow: '0 24px 60px rgba(0,0,0,0.35)',
+                        maxHeight: 'min(660px, calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 32px))' }}
                onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 z-10 flex items-center justify-between px-4 py-3"
-                 style={{ background: T.bg, borderBottom: `1px solid ${T.border}` }}>
+            <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
+                 style={{ borderBottom: `1px solid ${T.border}` }}>
               <div className="font-display text-base font-semibold" style={{ color: T.ink }}>
                 {legalDoc(legalView)?.title || 'Legal'}
               </div>
               <button type="button" onClick={() => setLegalView(null)} aria-label="Close"
-                      className="no-tap-highlight p-2 rounded-lg active:bg-black/5">
-                <X size={18} style={{ color: T.muted }} />
+                      className="no-tap-highlight w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                      style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+                <X size={16} style={{ color: T.muted }} />
               </button>
             </div>
-            <div className="px-4 pb-6 pt-3">
-              <LegalContent doc={legalDoc(legalView)} />
+            <div className="px-5 pb-6 pt-4 overflow-y-auto">
+              <LegalContent doc={legalView} />
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Item 4 — centred security-question picker */}
+      {securityPickerOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+             style={{ background: 'rgba(0,0,0,0.5)' }}
+             onClick={() => setSecurityPickerOpen(false)}>
+          <div className="w-full max-w-sm rounded-3xl anim-scalein flex flex-col overflow-hidden"
+               style={{ background: T.bg, boxShadow: '0 24px 60px rgba(0,0,0,0.3)',
+                        maxHeight: 'min(560px, calc(100dvh - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px) - 32px))' }}
+               onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
+                 style={{ borderBottom: `1px solid ${T.border}` }}>
+              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Security question</div>
+              <button type="button" onClick={() => setSecurityPickerOpen(false)} aria-label="Close"
+                      className="no-tap-highlight w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
+                      style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+                <X size={16} style={{ color: T.muted }} />
+              </button>
+            </div>
+            <div className="overflow-y-auto py-1">
+              {SECURITY_QUESTIONS.map(q => {
+                const active = q === securityQuestion;
+                return (
+                  <button key={q} type="button"
+                          onClick={() => { setSecurityQuestion(q); setSecurityPickerOpen(false); }}
+                          className="no-tap-highlight w-full flex items-center gap-3 px-5 py-3 text-left active:bg-black/5 transition-colors"
+                          style={{ background: active ? T.primary + '0E' : 'transparent' }}>
+                    <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                         style={{ border: `1.5px solid ${active ? T.primary : T.border}`, background: active ? T.primary : 'transparent' }}>
+                      {active && <Check size={12} color="#FFF" />}
+                    </div>
+                    <span className="text-sm" style={{ color: T.ink, fontWeight: active ? 600 : 400 }}>{q}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   );

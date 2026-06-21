@@ -190,7 +190,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   const toggleSelect = (i) => {
     if (submitted || revealed) return;
-    if (q.type === 'mcq') setSelected([i]);
+    // Single-answer: tapping the chosen option again CLEARS it (back to none),
+    // which morphs the primary button back to "Submit". Multi-select toggles
+    // each option independently.
+    if (q.type === 'mcq') setSelected(prev => (prev[0] === i ? [] : [i]));
     else setSelected(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i]);
   };
 

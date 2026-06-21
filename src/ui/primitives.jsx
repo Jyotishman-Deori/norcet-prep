@@ -166,7 +166,7 @@ function TopBar({ title, onBack, right, feedback, favId }) {
               nothing for ids outside lib/favorites.js). */}
           {favId && <FavHeart favId={favId} />}
           {right}
-          {feedback && <HelpButton screen={feedback.screen} />}
+          {feedback && !feedback.noHelp && <HelpButton screen={feedback.screen} />}
           {feedback && (
             <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
                             profileId={feedback.profileId} profileName={feedback.profileName} />

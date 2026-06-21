@@ -22,7 +22,6 @@ import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Fl
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
-import { isIOS } from '../lib/platform.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
 import { playTapSound } from '../lib/sound.js';
 // FAV — inline heart beside favoritable section titles (#2 rework).
@@ -129,15 +128,14 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // -- swipe-to-open: a document-level edge listener while closed --
   useEffect(() => {
     if (open || !gesturesAllowed || typeof document === 'undefined') return;
-    // Issue 4 — on iOS the left-edge swipe is the system back gesture; our edge
-    // listener is passive and can't suppress it, so the two collide (page blanks
-    // + exit prompt). Don't attach it on iOS — the Menu button opens the drawer.
-    if (isIOS()) return;
+    // Home-only (gesturesAllowed) rightward-swipe to open, anywhere on the
+    // screen, on every platform. We no longer restrict to the left edge — a
+    // mid-screen start is what AVOIDS the iOS system back-edge, so this is safe
+    // on iOS too. Horizontal intent is required below before we claim the drag,
+    // so vertical scrolling is unaffected.
     const onStart = (e) => {
       if (!getSidebarGestures().open) return;
       const t = e.touches && e.touches[0]; if (!t) return;
-      const edge = (typeof window !== 'undefined' ? window.innerWidth : 360) * 0.2;
-      if (t.clientX > edge) return;
       dragRef.current = { mode: 'open', startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastT: Date.now(), vx: 0, active: false };
     };
     const onMove = (e) => {
@@ -188,6 +186,11 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // briefly to welcome the user back to where they left from.
   const [openCount, setOpenCount] = useState(0);
   const [returnGlowKey, setReturnGlowKey] = useState(null);
+  // `entering` is true only during the open animation window. The row-entrance
+  // class is applied solely while it's true, so a later re-render (e.g.
+  // expanding a collapsible) does NOT replay the whole-sidebar stagger — only
+  // the tapped section's grid expand animates.
+  const [entering, setEntering] = useState(false);
   // Fix 4 — collapsible sections. Primary nav (Study/Progress/Tools) starts
   // expanded; the two "folder" sections (Help & Learn, Feedback) start
   // collapsed and open like a folder when their heading is tapped.
@@ -200,10 +203,13 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     setOpenSections((s) => ({ ...s, [key]: !s[key] }));
   };
   useEffect(() => {
-    if (!open) return;
+    if (!open) { setEntering(false); return; }
     setOpenCount(c => c + 1);
     setReturnGlowKey(_lastVisitedKey);
     _lastVisitedKey = null;
+    setEntering(true);
+    const t = setTimeout(() => { setEntering(false); setReturnGlowKey(null); }, 900);
+    return () => clearTimeout(t);
   }, [open]);
 
   const go = (screen, extra, key) => {
@@ -260,12 +266,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     return (
       <Tip title={it.label} text={it.tip || it.sub}>
       <button onClick={it.action}
-              className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left drawer-item-in mb-1.5" + (glowing ? ' drawer-glow' : '')}
+              className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left mb-1.5" + (entering ? ' drawer-item-in' : '') + (glowing ? ' drawer-glow' : '')}
               style={{
                 background: T.surface,
                 border: `1px solid ${glowing ? it.color + '70' : T.borderSoft}`,
                 boxShadow: '0 1px 4px rgba(0,0,0,0.05)',
-                animationDelay: `${Math.min(index, 9) * 45}ms`,
+                animationDelay: entering ? `${Math.min(index, 9) * 45}ms` : undefined,
                 '--row-glow': it.color,
               }}>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -335,7 +341,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   );
 
   return (
-    <div className="fixed inset-0 z-[70]" style={{ pointerEvents: open ? 'auto' : 'none' }} aria-hidden={!open}>
+    <div className="fixed inset-0 z-[70]"
+         onTouchStart={onPanelTouchStart}
+         onTouchMove={onPanelTouchMove}
+         onTouchEnd={onPanelTouchEnd}
+         onTouchCancel={onPanelTouchEnd}
+         style={{ pointerEvents: open ? 'auto' : 'none' }} aria-hidden={!open}>
       {/* Scrim */}
       <div onClick={onClose}
            className="absolute inset-0 transition-opacity duration-300"
@@ -346,10 +357,6 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           so scrolling works on every device without relying on flexbox. */}
       <div ref={panelRef}
            data-no-ptr
-           onTouchStart={onPanelTouchStart}
-           onTouchMove={onPanelTouchMove}
-           onTouchEnd={onPanelTouchEnd}
-           onTouchCancel={onPanelTouchEnd}
            className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
            style={{
              background: T.bg,

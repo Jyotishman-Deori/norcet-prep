@@ -15,12 +15,12 @@ import {
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport, requestConfirm } from '../ui/primitives.jsx';
 import { LegalScreen } from './legal.jsx';
+import { Tip } from '../ui/tooltip.jsx';
 import { requestRename } from '../ui/rename-channel.js';
 import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 // #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
-import { isIOS } from '../lib/platform.js';
 import { ComparisonToggle } from '../ui/comparison-cards.jsx';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
@@ -211,20 +211,23 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   };
   const closeSub = () => setSubPage(null);
 
-  const SubPageCard = ({ icon: Icon, iconBg, title, sub, onClick }) => (
-    <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onClick}>
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconBg || T.primary }}>
-          <Icon size={18} color="#FFF" />
+  const SubPageCard = ({ icon: Icon, iconBg, title, sub, onClick, tip }) => {
+    const card = (
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onClick}>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconBg || T.primary }}>
+            <Icon size={18} color="#FFF" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium" style={{ color: T.ink }}>{title}</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>{sub}</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="font-medium" style={{ color: T.ink }}>{title}</div>
-          <div className="text-xs mt-0.5" style={{ color: T.muted }}>{sub}</div>
-        </div>
-        <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
-      </div>
-    </Card>
-  );
+      </Card>
+    );
+    return tip ? <Tip title={title} text={tip}>{card}</Tip> : card;
+  };
 
   // Reset + Share — shown to guests inline, and inside the Profile sub-page
   // for logged-in users (so it's reachable from one place either way).
@@ -329,7 +332,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 {gestures.close
-                  ? 'Swipe left on the open sidebar to close it'
+                  ? 'Swipe left anywhere while the sidebar is open to close it'
                   : 'Off — you can still close it by tapping the backdrop or the menu icon'}
               </div>
             </div>
@@ -341,43 +344,26 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </div>
       </Card>
-      {(() => {
-        const onIOS = isIOS();
-        return (
-        <Card className={"p-4 mb-3 " + (onIOS ? '' : 'cursor-pointer no-tap-highlight pressable')}
-              style={onIOS ? { opacity: 0.75 } : undefined}
-              onClick={onIOS ? undefined : () => flipGesture('open')}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
-                <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  {onIOS
-                    ? <>Not available on iPhone or iPad {'\u2014'} iOS uses the left-edge swipe to go back. Tap the <b>Menu</b> button at the top of the home screen to open the sidebar.</>
-                    : <>Swipe right from the <b>left edge of the home screen</b> to open the sidebar. This gesture only works on the home screen.</>}
-                </div>
-              </div>
+      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('open')}>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
+              <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
             </div>
-            {/* On iOS render a locked-looking switch (off + dimmed); elsewhere it's live. */}
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: (!onIOS && gestures.open) ? T.success : T.border, opacity: onIOS ? 0.6 : 1 }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: (!onIOS && gestures.open) ? 'translateX(20px)' : 'translateX(0)' }} />
+            <div className="min-w-0">
+              <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                Swipe right <b>anywhere on the home screen</b> to open the sidebar — phone, tablet and iOS.
+              </div>
             </div>
           </div>
-          {!onIOS && gestures.open && (
-            <div className="anim-fadeup flex items-start gap-2 text-[11px] leading-relaxed mt-3 pt-3"
-                 style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
-              <AlertTriangle size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
-              <span>On some Android devices this gesture may conflict with the system back gesture. If the sidebar opens unexpectedly or the app navigates back, turn this off and use the Menu button.</span>
-            </div>
-          )}
-        </Card>
-        );
-      })()}
+          <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
+               style={{ background: gestures.open ? T.success : T.border }}>
+            <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
+                 style={{ transform: gestures.open ? 'translateX(20px)' : 'translateX(0)' }} />
+          </div>
+        </div>
+      </Card>
       <Card className="p-4 mb-3" style={{ opacity: 0.75 }}>
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
@@ -521,7 +507,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     const sp = SUB_PAGES[subPage];
     return (
       <div className="anim-fadeup">
-        <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${sp.title}` }} />
+        <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${sp.title}`, noHelp: subPage === 'legal' }} />
         <div className="max-w-md mx-auto px-4 pt-4 pb-24">
           {sp.render()}
         </div>
@@ -555,6 +541,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
               </div>
             </Card>
+            {/* Reset lives in the Account section for guests (a profile-level
+                action), not under Share. */}
+            {renderReset()}
           </>
         )}
         {!isGuest && profile && (
@@ -562,6 +551,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
             <SubPageCard icon={User} iconBg={T.primary} title="Profile"
                          sub={`${profile.displayName} · rename, switch, backup, reset`}
+                         tip="Rename yourself, switch to another profile on this device, back up your data, or reset this profile — all in one focused page."
                          onClick={() => openSub('profile')} />
           </>
         )}
@@ -584,10 +574,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
           </div>
         </Card>
-
-        {/* Guests: Reset renders here, AFTER Share (logged-in users reach Reset
-            from inside the Profile sub-page instead). */}
-        {isGuest && renderReset()}
 
         {/* #9 — "My feedback" has moved into the sidebar Feedback hub
             (Send feedback + My feedback live together there now). It is no
@@ -773,6 +759,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
         <SubPageCard icon={Hand} iconBg={T.primary} title="Sidebar gestures"
                      sub="Swipe to open or close the sidebar"
+                     tip="Choose how the sidebar opens and closes — swipe right anywhere on Home to open it, swipe left to close. Tapping the backdrop always closes."
                      onClick={() => openSub('gestures')} />
 
         {/* Help */}
@@ -795,6 +782,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Backup</div>
         <SubPageCard icon={Download} iconBg={T.primary} title="Backup"
                      sub="Download a backup file, or restore from one"
+                     tip="Download a full backup of everything on this profile, or restore from one. Your safety net before switching phones or clearing the browser."
                      onClick={() => openSub('backup')} />
 
         {/* #8 — Topic notes export/import opens in a focused sub-page.
@@ -803,6 +791,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         <div className="mt-6 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Topic notes</div>
         <SubPageCard icon={FileText} iconBg={T.primary} title="Topic notes"
                      sub="Export or import your Knowledge Map notes"
+                     tip="Export or import just your Knowledge-Map notes — your mnemonics and reminders — separately from a full backup. Works for guests too."
                      onClick={() => openSub('notes')} />
 
         {/* Task 8 — Admin section is hidden entirely from guests. */}
@@ -1027,6 +1016,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         {/* #8 — Legal opens in a focused sub-page listing Privacy + Terms. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Legal</div>
         <SubPageCard icon={Shield} iconBg={T.primary} title="Legal"
+                     tip="Read the Privacy Policy and Terms of Use — what's stored, how it's used, and the simple rules of the app."
                      sub="Privacy Policy and Terms of Use"
                      onClick={() => openSub('legal')} />
 

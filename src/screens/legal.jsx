@@ -36,7 +36,7 @@ export function LegalScreen({ doc, onBack }) {
   const d = legalDoc(doc);
   return (
     <div className="anim-fadeup">
-      <TopBar title={d ? d.title : 'Legal'} onBack={onBack} feedback={{ screen: d ? d.title : 'Legal' }} />
+      <TopBar title={d ? d.title : 'Legal'} onBack={onBack} feedback={{ screen: d ? d.title : 'Legal', noHelp: true }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="font-display text-2xl font-semibold mb-4" style={{ color: T.ink }}>{d ? d.title : 'Legal'}</div>
         <LegalContent doc={doc} />

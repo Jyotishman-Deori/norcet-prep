@@ -15,7 +15,7 @@ function ShareAppScreen({ onBack }) {
   const { theme: T } = useTheme();
   return (
     <div className="anim-fadeup">
-      <TopBar title="Share NORCET Prep" onBack={onBack} feedback={{ screen: 'Settings' }} />
+      <TopBar title="Share NORCET Prep" onBack={onBack} feedback={{ screen: 'Share app' }} />
       <div className="max-w-md mx-auto px-4 pt-3 pb-24">
         <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
           Pick who you're sending it to — the message carries the link <b>and</b> the

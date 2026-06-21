@@ -19,7 +19,7 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X } from 'lucide-react';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X, Hand, MousePointerClick } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
@@ -50,6 +50,7 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
   ];
 
   const [selected, setSelected] = useState(null); // item whose popup is open
+  const [step, setStep] = useState('tour');        // 'tour' | 'tips' (2nd onboarding page)
   const [visited, setVisited] = useState(() => new Set());
   // Issues round — the DEVICE back button mirrors the tour's own back:
   // App re-arms its history sentinel and dispatches 'norcet:welcome-back';
@@ -58,9 +59,12 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
   const [leaveConfirm, setLeaveConfirm] = useState(false);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
+  const stepRef = useRef(step);
+  stepRef.current = step;
   useEffect(() => {
     const onBack = () => {
       if (selectedRef.current) setSelected(null);
+      else if (stepRef.current === 'tips') setStep('tour');
       else setLeaveConfirm(true);
     };
     window.addEventListener('norcet:welcome-back', onBack);
@@ -102,6 +106,67 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
     { label: 'How to use it', icon: <ListChecks size={13} />, text: c.how },
     { label: 'Why it\u2019s here', icon: <Sparkles size={13} />, text: c.why },
   ].filter(s => s.text) : [];
+
+  // ---- Second onboarding page: the gestures + tap-and-hold first-timers miss ----
+  if (step === 'tips') {
+    const tips = [
+      { icon: <MousePointerClick size={20} />, title: 'Press & hold any card',
+        body: 'On the home screen, the menu or in settings, press and hold a card for a moment to peek a quick description of what it does — without opening it.',
+        color: T.primary },
+      { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: 'Swipe to open the menu',
+        body: 'On the home screen, swipe right from anywhere to slide the menu open, and swipe left to close it. Works the same on phone, tablet and iPhone.',
+        color: T.accent },
+      { icon: <Sparkles size={20} />, title: 'Submit without guessing',
+        body: 'In any test, if you don’t know an answer just tap Submit to see the worked solution. It stays neutral — it never counts for or against your accuracy.',
+        color: T.sec.revision },
+    ];
+    return (
+      <div className="anim-fadeup max-w-md mx-auto px-4 pb-12"
+           style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+        <div className="flex justify-start mb-1">
+          <button onClick={() => setStep('tour')}
+                  className="no-tap-highlight inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
+                  style={{ color: T.muted }}>
+            <ArrowLeft size={14} /> Back
+          </button>
+        </div>
+        <div className="text-center mb-6 relative">
+          <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 -top-6 w-48 h-48 rounded-full pointer-events-none"
+               style={{ background: `radial-gradient(circle, ${T.primary}1F, transparent 65%)` }} />
+          <div className="welcome-float relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+               style={{ background: `linear-gradient(140deg, ${T.primary}, ${T.primarySoft || T.primary})`, boxShadow: `0 10px 26px ${T.primary}50` }}>
+            <Sparkles size={28} color="#FFF" />
+          </div>
+          <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>Before you start</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>Three quick tips</h1>
+          <div className="text-sm relative" style={{ color: T.muted }}>Little gestures that make the app faster to use.</div>
+        </div>
+        <div className="space-y-2.5 mb-6">
+          {tips.map((t, i) => (
+            <div key={t.title} className="welcome-row" style={{ animationDelay: `${i * 70}ms` }}>
+              <Card className="p-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{ background: `linear-gradient(135deg, ${t.color}, ${t.color}B3)`, boxShadow: `0 6px 16px ${t.color}45`, color: '#FFF' }}>
+                    {t.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>{t.title}</div>
+                    <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{t.body}</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+        <div className="welcome-row" style={{ animationDelay: `${tips.length * 70 + 60}ms` }}>
+          <Button onClick={onDismiss} size="lg" className="w-full" icon={<Check size={18} />}>
+            Start studying
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="anim-fadeup max-w-md mx-auto px-4 pb-12"
@@ -184,7 +249,7 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
       </div>
 
       <div className="welcome-row" style={{ animationDelay: `${items.length * 55 + 60}ms` }}>
-        <Button onClick={onDismiss} size="lg" className="w-full" icon={<Check size={18} />}>
+        <Button onClick={() => setStep('tips')} size="lg" className="w-full" icon={<ChevronRight size={18} />}>
           Got it
         </Button>
       </div>

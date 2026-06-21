@@ -13,8 +13,8 @@
 // re-prompted to accept.
 // =====================================================================
 
-export const LEGAL_VERSION = 2;       // bump on material wording changes (v2: DOB→security question; email is optional)
-export const LEGAL_UPDATED = 'June 2026';
+export const LEGAL_VERSION = 3;       // v3: corrected account-recovery wording (security question, not DOB); clearer data retention + contact
+export const LEGAL_UPDATED = 'June 2026';   // last reviewed
 
 export const LEGAL = {
   privacy: {
@@ -55,6 +55,14 @@ export const LEGAL = {
         body: 'The app is intended for exam aspirants. If you are below the age of majority in your country, please use it with a parent or guardian\u2019s awareness.',
       },
       {
+        h: 'How long we keep it',
+        body: 'Synced study data is kept while your account is active. If you delete your account, your profile and the data tied to it are removed; local guest data lives only on your device until you clear it.',
+      },
+      {
+        h: 'Contact',
+        body: 'Questions about your data or a deletion request? Use Settings → Send feedback to reach the developer directly.',
+      },
+      {
         h: 'Changes',
         body: 'If this policy changes in a meaningful way, we\u2019ll update the date above and ask you to review it again the next time you open the app.',
       },
@@ -79,7 +87,7 @@ export const LEGAL = {
       },
       {
         h: 'Your account',
-        body: 'Keep your login details safe — you\u2019re responsible for activity under your profile. Because there\u2019s no email recovery, your date of birth is used to help recover a forgotten password, so remember it.',
+        body: 'Keep your login details safe — you\u2019re responsible for activity under your profile. Password recovery uses the security question and answer you choose at sign-up (there is no email-based reset), so pick an answer only you would know and remember it.',
       },
       {
         h: 'Content and contributions',
