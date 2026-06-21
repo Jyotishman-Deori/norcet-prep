@@ -19,7 +19,7 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X, Hand, MousePointerClick } from 'lucide-react';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X, Hand, MousePointerClick, Heart } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
@@ -116,9 +116,9 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
       { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: 'Swipe to open the menu',
         body: 'On the home screen, swipe right from anywhere to slide the menu open, and swipe left to close it. Works the same on phone, tablet and iPhone.',
         color: T.accent },
-      { icon: <Sparkles size={20} />, title: 'Submit without guessing',
-        body: 'In any test, if you don’t know an answer just tap Submit to see the worked solution. It stays neutral — it never counts for or against your accuracy.',
-        color: T.sec.revision },
+      { icon: <Heart size={20} fill="#FFF" />, title: 'Heart your favourites',
+        body: 'Tap the heart on any section — Stats, a drill mode, the leaderboard — to pin it. Your favourites then sit one tap away on the home screen.',
+        color: '#E0245E' },
     ];
     return (
       <div className="anim-fadeup max-w-md mx-auto px-4 pb-12"
@@ -139,7 +139,7 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
           </div>
           <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>Before you start</div>
           <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>Three quick tips</h1>
-          <div className="text-sm relative" style={{ color: T.muted }}>Little gestures that make the app faster to use.</div>
+          <div className="text-sm relative" style={{ color: T.muted }}>Little things that make the app yours.</div>
         </div>
         <div className="space-y-2.5 mb-6">
           {tips.map((t, i) => (

@@ -800,7 +800,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
         if (worstWeak) {
           tiles.push(
-            <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics \u2014 the questions you\u2019ve got wrong come back first.">
+            <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics — the questions you’ve got wrong come back first.">
             <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'weak-areas' })}
                   onContextMenu={(e) => e.preventDefault()}
@@ -833,7 +833,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           const showWarning = untouchedCount > 0;
           const sc = showWarning ? T.accent : T.primary;
           tiles.push(
-            <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you\u2019ve touched. Tap for the topic-by-topic breakdown \u2014 what you\u2019ve started, what\u2019s mastered, and what\u2019s still untouched.">
+            <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown — what you’ve started, what’s mastered, and what’s still untouched.">
             <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'coverage' })}
                   onContextMenu={(e) => e.preventDefault()}

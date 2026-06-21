@@ -32,7 +32,7 @@ export default function FavStrip({ onNavigate }) {
   const top = favs.order.slice(0, 4).map(favSection).filter(Boolean);
 
   return (
-    <Tip title="Favourites" text="Your one-stop shortcuts \u2014 pin any section here with its heart. Tap to open and reorder them; your top picks also appear right here on Home.">
+    <Tip title="Favourites" text="Your one-stop shortcuts — pin any section here with its heart. Tap to open and reorder them; your top picks also appear right here on Home.">
     <div role="button" tabIndex={0}
          onClick={() => onNavigate({ screen: 'favorites' })}
          onContextMenu={(e) => e.preventDefault()}
