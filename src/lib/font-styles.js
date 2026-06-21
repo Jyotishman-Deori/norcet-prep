@@ -228,6 +228,14 @@ export const fontStyles = `
 @keyframes qPulse { 0% { transform: scale(1); } 45% { transform: scale(1.035); } 100% { transform: scale(1); } }
 .q-pulse { animation: qPulse 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* Quiz primary button morph: neutral "Submit" -> graded "Check answer".
+   The label crossfades up on each state change; the button gives a single
+   spring "pop" the moment it fills into the ready state. Premium, low-key. */
+@keyframes qbtnLabelIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.qbtn-label { animation: qbtnLabelIn 0.26s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes qbtnReadyPop { 0% { transform: scale(1); } 42% { transform: scale(1.035); } 100% { transform: scale(1); } }
+.qbtn-ready { animation: qbtnReadyPop 0.34s cubic-bezier(0.34,1.56,0.64,1); }
+
 /* ── #23/3 Bookmark / flag micro-interaction — spring pop on set,
    deflate on unset. Applied to the icon button per toggle direction. */
 @keyframes bmPop { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
@@ -367,6 +375,7 @@ export const fontStyles = `
   .card-shimmer, .sheet-up, .fav-beat, .tip-in, .heart-spring,
   .drawer-item-in, .drawer-glow,
   .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap,
+  .qbtn-label, .qbtn-ready,
   .drill-card-in, .test-enter { animation: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
 }

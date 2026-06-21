@@ -476,31 +476,34 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   );
 
   const renderLegalSub = () => (
-    <Card className="p-0 mb-3 overflow-hidden">
-      <button onClick={() => setLegalView('privacy')}
-              className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-          <Shield size={17} style={{ color: T.primary }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
-          <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
-        </div>
-        <ChevronRight size={18} style={{ color: T.muted }} />
-      </button>
-      <div className="mx-4 border-t" style={{ borderColor: T.borderSoft }} />
-      <button onClick={() => setLegalView('terms')}
-              className="no-tap-highlight w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-black/5 transition">
-        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-          <FileText size={17} style={{ color: T.primary }} />
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
-          <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
-        </div>
-        <ChevronRight size={18} style={{ color: T.muted }} />
-      </button>
-    </Card>
+    <div className="space-y-2.5">
+      <Card className="p-0 overflow-hidden">
+        <button onClick={() => setLegalView('privacy')}
+                className="no-tap-highlight w-full flex items-center gap-3 px-4 py-4 text-left active:bg-black/5 transition">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+            <Shield size={17} style={{ color: T.primary }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </button>
+      </Card>
+      <Card className="p-0 overflow-hidden">
+        <button onClick={() => setLegalView('terms')}
+                className="no-tap-highlight w-full flex items-center gap-3 px-4 py-4 text-left active:bg-black/5 transition">
+          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+            <FileText size={17} style={{ color: T.primary }} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
+          </div>
+          <ChevronRight size={18} style={{ color: T.muted }} />
+        </button>
+      </Card>
+    </div>
   );
 
   const SUB_PAGES = {

@@ -10,7 +10,7 @@
 // was dead in the body and has been dropped.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Eye, Flag, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
+import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Flag, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
@@ -85,7 +85,6 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   //     bypass stays gated so mocks remain content-honest.
   const isPractice = mode === 'quick';
   const hintsAllowed = isPractice;
-  const showAnswerAllowed = isPractice;
   const skipAllowed = isPractice || mode === 'mock';
 
   // Position in the schedule, not in the original `questions` array.
@@ -203,11 +202,12 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setSubmitted(true);
   };
 
-  // "Show answer" — reveals the explanation without an attempt. Recorded as
-  // INCORRECT (so the question feeds into spaced repetition and Weak Areas),
-  // with `revealed: true` so future stats can distinguish a true miss from
-  // a "didn't try". The submitted/revealed flags both gate option taps so
-  // the user can't sneakily turn a reveal into a free correct answer.
+  // Neutral "Submit" — the user chose not to answer; reveal the solution
+  // WITHOUT it counting for or against them. Recorded with `revealed: true`,
+  // which attemptStats / completeQuiz / Stats all treat as neutral (excluded
+  // from accuracy + mastery). It is still scheduled for review (lastResult
+  // below) so a question they didn't know resurfaces. The submitted/revealed
+  // flags gate option taps so a reveal can never become a free correct answer.
   const revealAnswer = () => {
     if (submitted || revealed) return;
     const timeMs = Date.now() - questionStart.current;
@@ -450,7 +450,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             <div className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-soft">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-accent" />
               <div>
-                Answer revealed. This question will show up in Weak Areas so you can revisit it.
+                Solution shown — this one stays neutral, so it won’t count for or
+                against your accuracy. We’ll bring it back in your review queue so you can lock it in.
               </div>
             </div>
           </Card>
@@ -575,27 +576,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             </Button>
           ) : (
             <>
-              {/* Quick Practice gets both shortcuts: Skip (defer to later) and
-                  Show answer (peek the explanation, counted as wrong). Mock
-                  gets Skip only — exam-realistic strategy aid without letting
-                  the user peek at answers. Other modes get no shortcuts. */}
-              {showAnswerAllowed ? (
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <button onClick={skipQuestion}
-                          disabled={!canSkip}
-                          className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition disabled:opacity-40"
-                          style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
-                    <ChevronRight size={12} />
-                    Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (try later)`) : ''}
-                  </button>
-                  <button onClick={revealAnswer}
-                          className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition"
-                          style={{ background: T.surface, color: T.accent, border: `1px solid ${T.accent}50` }}>
-                    <Eye size={12} />
-                    Show answer
-                  </button>
-                </div>
-              ) : skipAllowed && (
+              {/* Skip = defer this question to the end of the round (Quick &
+                  Mock only). The old "Show answer" shortcut is gone: the
+                  primary button below now doubles as a neutral Submit. */}
+              {skipAllowed && (
                 <button onClick={skipQuestion}
                         disabled={!canSkip}
                         className="no-tap-highlight w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition disabled:opacity-40 mb-2"
@@ -604,9 +588,26 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                   Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (come back to this)`) : ''}
                 </button>
               )}
-              <Button onClick={submit} disabled={selected.length === 0} size="lg" className="w-full">
-                Check answer
-              </Button>
+              {/* Morphing primary. Nothing picked → "Submit": reveals the
+                  solution NEUTRALLY (no right/wrong, no accuracy hit) so the
+                  user is never forced to guess to finish. The instant an option
+                  is picked it fills into a confident "Check answer" CTA — a
+                  premium micro-interaction shown on every single question. */}
+              {(() => {
+                const hasSel = selected.length > 0;
+                return (
+                  <button onClick={hasSel ? submit : revealAnswer}
+                          aria-label={hasSel ? 'Check answer' : 'Submit without answering'}
+                          className={'no-tap-highlight w-full rounded-2xl py-3.5 font-semibold text-base active:brightness-95 transition-[background-color,color,box-shadow,border-color] duration-300 ease-out' + (hasSel ? ' qbtn-ready' : '')}
+                          style={hasSel
+                            ? { background: T.primary, color: '#FFF', border: '1.5px solid transparent', boxShadow: `0 10px 26px ${T.primary}45` }
+                            : { background: T.primary + '12', color: T.primary, border: `1.5px solid ${T.primary}33`, boxShadow: 'none' }}>
+                    <span key={hasSel ? 'check' : 'submit'} className="qbtn-label inline-flex items-center justify-center gap-2">
+                      {hasSel ? <><Check size={18} /> Check answer</> : <>Submit</>}
+                    </span>
+                  </button>
+                );
+              })()}
             </>
           )}
         </div>

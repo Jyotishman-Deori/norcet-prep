@@ -88,15 +88,22 @@ export function attemptStats(h) {
   }
   const arr = Array.isArray(h.attempts) ? h.attempts : [];
   if (arr.length === 0) return { total: 0, correct: 0, lastTs: 0, anyWrong: false };
+  // A `revealed` attempt = the user tapped Submit to SEE the solution without
+  // answering. It is NEUTRAL: excluded from total / correct / anyWrong so it
+  // never nudges accuracy or mastery up or down. lastTs still counts it (the
+  // question was seen, which matters for "last practised" / due scheduling).
+  let total = 0;
   let correct = 0;
   let anyWrong = false;
   for (const a of arr) {
+    if (a && a.revealed) continue;
+    total++;
     if (a && a.correct) correct++;
     else anyWrong = true;
   }
   const last = arr[arr.length - 1];
   return {
-    total: arr.length,
+    total,
     correct,
     lastTs: (last && last.ts) || 0,
     anyWrong,
@@ -130,8 +137,13 @@ function compactHistoryRecord(h, cutoffTs) {
   // Roll up.
   let total = 0, correct = 0, timeSum = 0, timeN = 0, lastTs = 0;
   for (const a of arr) {
-    total++;
-    if (a && a.correct) correct++;
+    // Revealed attempts are neutral — excluded from the rolled-up totals so a
+    // compacted record reports the same accuracy attemptStats gives a live one.
+    // They still update lastTs (the topic was seen).
+    if (!(a && a.revealed)) {
+      total++;
+      if (a && a.correct) correct++;
+    }
     if (a && typeof a.timeMs === 'number' && a.timeMs >= 0) {
       timeSum += a.timeMs;
       timeN++;
@@ -141,6 +153,7 @@ function compactHistoryRecord(h, cutoffTs) {
   const tail = arr.slice(-TAIL_KEEP).map(a => ({
     ts: (a && a.ts) || 0,
     correct: !!(a && a.correct),
+    revealed: !!(a && a.revealed),
     timeMs: (a && typeof a.timeMs === 'number') ? a.timeMs : 0,
     // `selected` is intentionally dropped from the tail — it was useful
     // for debugging recent attempts but isn't worth bytes long-term.

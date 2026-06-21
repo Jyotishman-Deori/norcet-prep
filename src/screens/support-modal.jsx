@@ -108,7 +108,7 @@ function SupportModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4"
+    <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
          style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
       <Card className="w-full max-w-sm anim-scalein max-h-[88vh] overflow-y-auto"
             onClick={e => e.stopPropagation()}>

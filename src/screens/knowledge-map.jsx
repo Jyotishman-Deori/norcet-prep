@@ -1547,15 +1547,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           </div>
         );
         return (
-          <div className="fixed inset-0 z-[95] flex items-end justify-center kmap-scrim-in"
+          <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 kmap-scrim-in"
                style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.45), rgba(7,10,20,0.85))' }}
                onClick={() => setGuideOpen(false)}>
-            <div className="w-full max-w-md rounded-t-3xl kmap-sheet-up"
-                 style={{ background: CMAP.surfaceSolid || CMAP.panelSolid, borderTop: `1px solid ${CMAP.border}`,
-                          maxHeight: 'calc(100dvh - env(safe-area-inset-top, 0px) - 24px)', overflowY: 'auto', paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+            {/* Centred, height-capped dialog (was a bottom sheet that cropped
+                under the status bar on tall tablets like the Realme Pad). */}
+            <div className="w-full max-w-md rounded-3xl anim-scalein"
+                 style={{ background: CMAP.surfaceSolid || CMAP.panelSolid, border: `1px solid ${CMAP.border}`,
+                          maxHeight: 'min(580px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px))', overflowY: 'auto' }}
                  onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="How the Knowledge Map works">
-              <div className="flex justify-center pt-2.5 pb-1"><div style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.18)' }} /></div>
-              <div className="px-5 pb-5">
+              <div className="px-5 pt-5 pb-5">
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <div className="font-display text-xl font-semibold" style={{ color: CMAP.text }}>How the map works</div>
                   <button onClick={() => setGuideOpen(false)} aria-label="Close guide"

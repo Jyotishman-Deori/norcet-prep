@@ -241,6 +241,18 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', tip: 'Set your NORCET date for a countdown and a daily target.', sub: 'Countdown & daily goal', action: () => go('exam-date', null, 'examdate') },
     { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
   ];
+  // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as
+  // every other section so spacing + sizing stay perfectly symmetric.)
+  const learn = [
+    { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques \u2014 active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
+    { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team \u2014 ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
+  ];
+  // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly
+  // spaced rows replacing the old combined panel.)
+  const feedback = [
+    { key: 'send-feedback', icon: Send, color: T.accent, label: 'Send feedback', tip: 'Found a bug or have an idea? Send a report straight to the developer.', sub: 'Report a bug or suggest a feature', action: () => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); } },
+    { key: 'my-reports', icon: Inbox, color: T.primary, label: 'My feedback', badge: replyUnread > 0 ? String(replyUnread) : null, badgeUrgent: true, tip: 'Your past reports and the admin\u2019s replies.', sub: 'Your reports and admin replies', action: () => go('my-reports', null, 'my-reports') },
+  ];
 
   const Item = ({ it, index = 0 }) => {
     const Icon = it.icon;
@@ -267,9 +279,11 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
         <div className="min-w-0 flex-1">
           <div className="font-medium text-sm flex items-center gap-1" style={{ color: T.ink }}>
             {it.label}
-            {it.badge != null && it.badge !== 0 && (
+            {it.badge != null && it.badge !== 0 && it.badge !== '' && (
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
-                    style={{ background: it.color + '18', color: it.color }}>{it.badge}</span>
+                    style={it.badgeUrgent
+                      ? { background: T.error, color: '#FFF' }
+                      : { background: it.color + '18', color: it.color }}>{it.badge}</span>
             )}
           </div>
           <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{it.sub}</div>
@@ -286,33 +300,6 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   const GroupLabel = ({ children }) => (
     <div className="text-[10px] uppercase tracking-wider font-semibold px-3 mt-4 mb-1" style={{ color: T.muted }}>{children}</div>
-  );
-
-  // Help & Learn — elevated cards. More visual weight than a plain row to
-  // signal these are richer destinations (a guide / a Q&A experience).
-  const LearnCard = ({ icon: Icon, iconColor, title, sub, badge, badgeTone, onClick, index = 0, fav = null, tip = null }) => (
-    <Tip title={title} text={tip || sub}>
-    <button onClick={onClick}
-            className="no-tap-highlight drawer-row drawer-item-in w-full flex items-center gap-3.5 px-3.5 py-3.5 rounded-2xl text-left"
-            style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)',
-                     animationDelay: `${Math.min(index, 12) * 45}ms` }}>
-      <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: iconColor }}>
-        <Icon size={20} color="#FFF" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-1.5">
-          <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>{title}</div>
-          {badge && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
-                  style={{ background: badgeTone || T.primary, color: '#FFF' }}>{badge}</span>
-          )}
-        </div>
-        <div className="text-[11px] mt-1 leading-snug" style={{ color: T.muted }}>{sub}</div>
-      </div>
-      {fav && <span className="flex-shrink-0 -mr-1"><FavHeart favId={fav} inline /></span>}
-      <ChevronRight size={16} style={{ color: iconColor, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
-    </button>
-    </Tip>
   );
 
   // Fix 4 — a tappable section heading with an animated disclosure chevron.
@@ -411,16 +398,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
           <SectionHeader label="Help & Learn" sectionKey="learn" />
           <Collapsible open={openSections.learn}>
-            <div className="px-1 pt-1 space-y-2.5">
-              <LearnCard icon={GraduationCap} iconColor={T.primary}
-                         title="Study Methods" sub="Learn how to study smarter"
-                         badge="Guide" badgeTone={T.primary} index={0} fav="study-methods" tip="Evidence-based techniques — active recall, spaced repetition and how to use this app well."
-                         onClick={() => go('study-methods', null, 'methods')} />
-              <LearnCard icon={MessagesSquare} iconColor={T.sec.revision}
-                         title="FAQ" sub="Questions answered by our team"
-                         badge={faqUnread > 0 ? String(faqUnread) : null} badgeTone={T.error} index={1} fav="faq" tip="Common questions answered by the team — ask your own too."
-                         onClick={() => go('faq', null, 'faq')} />
-            </div>
+            {learn.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + tools.length + i} />)}
           </Collapsible>
 
           {/* #9 / Fix 4 — Feedback is now a collapsible folder: tapping the
@@ -429,40 +407,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
               the user's own reports + admin replies, with an unread badge). */}
           <SectionHeader label="Feedback" sectionKey="feedback" />
           <Collapsible open={openSections.feedback}>
-            <div className="px-1 pt-1">
-              <div className="rounded-2xl overflow-hidden"
-                   style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(0,0,0,0.07)' }}>
-                <button onClick={() => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); }}
-                        className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '18' }}>
-                    <Send size={15} style={{ color: T.accent }} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium text-[13px]" style={{ color: T.ink }}>Send feedback</div>
-                    <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Report a bug or suggest a feature</div>
-                  </div>
-                  <ChevronRight size={15} style={{ color: T.muted }} className="flex-shrink-0 drawer-chev" />
-                </button>
-                <div className="mx-3.5 border-t" style={{ borderColor: T.borderSoft }} />
-                <button onClick={() => go('my-reports', null, 'my-reports')}
-                        className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3.5 py-3 text-left">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-                    <Inbox size={15} style={{ color: T.primary }} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-1.5">
-                      <div className="font-medium text-[13px]" style={{ color: T.ink }}>My feedback</div>
-                      {replyUnread > 0 && (
-                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider leading-none"
-                              style={{ background: T.error, color: '#FFF' }}>{replyUnread} new</span>
-                      )}
-                    </div>
-                    <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Your reports and admin replies</div>
-                  </div>
-                  <ChevronRight size={15} style={{ color: T.muted }} className="flex-shrink-0 drawer-chev" />
-                </button>
-              </div>
-            </div>
+            {feedback.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + tools.length + learn.length + i} />)}
           </Collapsible>
 
           </div>

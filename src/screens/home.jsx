@@ -361,14 +361,21 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         : `An admin responded to ${replies.length} of your reports.`);
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-24 anim-fadeup">
+    <div className="max-w-md mx-auto px-4 pb-24">
       {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
-          scroll-up. Portaled to <body> because this root carries anim-fadeup (a
-          transform), and a transformed ancestor would break position:fixed. */}
+          scroll-up. Portaled to <body> so no transformed ancestor can ever
+          break its position:fixed. GPU-GLITCH FIX: this bar is now OPAQUE (no
+          backdrop-filter). On some Android GPUs (e.g. Mali on the Realme Pad)
+          a backdrop-filter layer that ALSO carries a transform — this bar has
+          the hide-on-scroll translateY — composites against the page as
+          uninitialised, noisy memory, painting a corrupted box over the cards.
+          A solid background + soft shadow removes the artifact while keeping
+          the same look. */}
       {typeof document !== 'undefined' && createPortal(
-        <div className="fixed top-0 left-0 right-0 z-40 backdrop-blur-md"
-             style={{ background: IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F0',
+        <div className="fixed top-0 left-0 right-0 z-40"
+             style={{ background: T.bg,
                       borderBottom: `1px solid ${T.borderSoft}`,
+                      boxShadow: IS_DARK ? '0 2px 14px rgba(0,0,0,0.5)' : '0 2px 14px rgba(0,0,0,0.06)',
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
@@ -793,19 +800,23 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
         if (worstWeak) {
           tiles.push(
-            <Card key="weak" className="p-3 cursor-pointer no-tap-highlight pressable"
+            <Card key="weak" className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'weak-areas' })}
-                  style={{ background: T.errorSoft, border: `1px solid ${T.error}30` }}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <AlertCircle size={14} style={{ color: T.error }} />
-                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.error }}>
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{ background: `linear-gradient(140deg, ${lightenHex(T.error, 0.10)} 0%, ${T.error} 62%, ${darkenHex(T.error, 0.16)} 100%)`,
+                           border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.error, 0.45)}38` }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
+                  <AlertCircle size={16} color="#FFF" />
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                   Weak area
                 </div>
               </div>
-              <div className="font-display text-sm font-semibold leading-tight" style={{ color: T.ink, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              <div className="font-display text-sm font-semibold leading-tight" style={{ color: '#FFF', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                 {topicName(worstWeak.topic)}
               </div>
-              <div className="text-[11px]" style={{ color: T.muted }}>
+              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
                 {Math.round(worstWeak.accuracy * 100)}% accuracy
               </div>
             </Card>
@@ -818,35 +829,36 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         // started every topic it becomes a calmer "open the breakdown".
         if (hasAnyAttempts) {
           const showWarning = untouchedCount > 0;
+          const sc = showWarning ? T.accent : T.primary;
           tiles.push(
-            <Card key="untouched" className="p-3 cursor-pointer no-tap-highlight pressable"
+            <Card key="untouched" className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'coverage' })}
-                  style={{
-                    background: showWarning ? T.accent + '12' : T.surfaceWarm,
-                    border: `1px solid ${showWarning ? T.accent + '30' : T.border}`
-                  }}>
-              <div className="flex items-center gap-2 mb-1.5">
-                <Activity size={14} style={{ color: showWarning ? T.accent : T.primary }} />
-                <div className="text-[10px] uppercase tracking-wider font-semibold"
-                     style={{ color: showWarning ? T.accent : T.primary }}>
+                  onContextMenu={(e) => e.preventDefault()}
+                  style={{ background: `linear-gradient(140deg, ${lightenHex(sc, 0.12)} 0%, ${sc} 60%, ${darkenHex(sc, 0.14)} 100%)`,
+                           border: 'none', boxShadow: `0 8px 22px ${darkenHex(sc, 0.45)}38` }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
+                  <Activity size={16} color="#FFF" />
+                </div>
+                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                   Syllabus
                 </div>
               </div>
               {showWarning ? (
                 <>
-                  <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>
+                  <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
                     {untouchedCount} topic{untouchedCount === 1 ? '' : 's'}
                   </div>
-                  <div className="text-[11px]" style={{ color: T.muted }}>
+                  <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
                     not started yet
                   </div>
                 </>
               ) : (
                 <>
-                  <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>
+                  <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
                     All topics
                   </div>
-                  <div className="text-[11px]" style={{ color: T.muted }}>
+                  <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
                     view the breakdown
                   </div>
                 </>

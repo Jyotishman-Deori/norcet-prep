@@ -74,6 +74,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
     Object.values(data.history).forEach(h => {
       (h.attempts || []).forEach(at => {
         if (typeof at.ts !== 'number') return;
+        if (at.revealed) return; // neutral reveal — excluded from accuracy
         if (at.ts >= cutA) { a.t++; if (at.correct) a.c++; }
         else if (at.ts >= cutB) { b.t++; if (at.correct) b.c++; }
       });
@@ -124,6 +125,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
       if (!q || !h) return;
       (h.attempts || []).forEach(at => {
         if (typeof at.ts !== 'number' || at.ts < windowStart) return;
+        if (at.revealed) return; // neutral reveal — excluded from accuracy
         const d = new Date(at.ts);
         const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         acc[q.topic] = acc[q.topic] || {};
@@ -486,6 +488,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
             if (!q || !h.attempts) return;
             h.attempts.forEach(a => {
               if (typeof a.timeMs !== 'number' || a.timeMs <= 0) return;
+              if (a.revealed) return; // neutral reveal — not a timed attempt
               const tt = speedByTopic[q.topic] || { times: [], correctTimes: [], name: topicName(q.topic) };
               tt.times.push(a.timeMs);
               if (a.correct) tt.correctTimes.push(a.timeMs);

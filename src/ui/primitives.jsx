@@ -147,8 +147,15 @@ function TopBar({ title, onBack, right, feedback, favId }) {
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
             <Tip text="Go back to the previous screen">
-              <button onClick={onBack} aria-label="Go back" className="no-tap-highlight p-2 -ml-2 rounded-full active:bg-black/5">
-                <ArrowLeft size={20} color={T.ink} />
+              {/* Premium back affordance: a circular chip that matches the
+                  Help/Report pills, scales down on press and nudges its arrow
+                  left with a soft spring, plus a light haptic tap. */}
+              <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} onBack(); }}
+                      aria-label="Go back"
+                      className="no-tap-highlight group flex items-center justify-center w-9 h-9 -ml-1 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
+                      style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+                <ArrowLeft size={18} color={T.ink}
+                           className="transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:-translate-x-[3px]" />
               </button>
             </Tip>
           )}

@@ -1,4 +1,11 @@
 {
+  "Settings · Legal": {
+    "title": "Legal",
+    "what": "The app’s two legal documents in one place: the Privacy Policy (what data is stored, where, and how it’s used) and the Terms of Use (the rules and expectations for using the app).",
+    "how": "Tap Privacy Policy or Terms of Use to read the full document — each opens as its own page with a back button. There’s nothing to accept or sign here; these are reference documents you can revisit any time.",
+    "why": "Even a free study app stores some data (your profile, your progress, and anything you sync). Being able to read exactly what’s kept and what the ground rules are means no surprises — you stay informed and in control.",
+    "example": "Before syncing your progress to a new phone you open Privacy Policy to confirm what actually leaves your device, then skim Terms of Use to see how shared features like the leaderboard work."
+  },
   "Spaced revision": {
     "title": "Spaced revision",
     "what": "A reminder for questions the app thinks you’re about to forget. Each time you answer a question, its next review date gets calculated — sooner if you got it wrong, much later as you keep getting it right.",
@@ -266,7 +273,7 @@
   "Favourites": {
     "title": "Favourites",
     "what": "Your one-stop shortcuts page. Any section of the app — Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart — can be pinned here as a tile, and the top two also appear on your home screen for instant access.",
-    "how": "Tap Add (or the + tile) to pin any section, or tap the heart beside a section’s title anywhere in the app. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them — the top-left tile is priority #1. You can also manage this list from Settings → Favourites.",
+    "how": "Tap Add (top-right) to open a centred picker of every section you can pin, or tap the heart beside any section’s title anywhere in the app — both drop it in here as a tile. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them; the top-left tile is priority #1, and your top tiles also surface on the home screen. You can reopen this any time from Settings → Manage favourites.",
     "why": "Everyone uses the app differently. Favourites puts the handful of sections you actually open every day one tap away, instead of hunting through the menu each time.",
     "example": "In the last week before the exam you pin Bookmarks, Weak areas and Previous papers. They now sit at the top of your home screen, and you open each one with a single tap."
   },

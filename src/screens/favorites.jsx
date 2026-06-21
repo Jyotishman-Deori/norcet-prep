@@ -14,6 +14,7 @@
 // shared admin mirror) and the Home card follows live.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Check, Heart, Pencil, Plus, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { TopBar } from '../ui/primitives.jsx';
@@ -104,7 +105,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
           </div>
           {/* Issue 13 — Add + Edit live here (moved out of the top bar). */}
           {(addable.length > 0 || sections.length > 0) && (
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex items-center justify-end gap-2 mt-3">
               {addable.length > 0 && (
                 <button onClick={() => { setAdding(true); setEditing(false); buzz(8); }}
                         aria-label="Add sections"
@@ -217,7 +218,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
           already collected, so the grid can be built from ANYWHERE (not just
           Drill modes). Tap a row to add it instantly; it appears in the grid
           and drops off this list. */}
-      {adding && (
+      {adding && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
              style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setAdding(false)}>
           <div className="anim-scalein w-full max-w-sm rounded-3xl flex flex-col max-h-[82vh]"
@@ -259,7 +260,8 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

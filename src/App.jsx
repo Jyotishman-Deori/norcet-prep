@@ -2625,7 +2625,11 @@ export default function App() {
         next.setDate(next.getDate() + daysAhead);
         h.nextDue = next.toISOString();
         newHistory[r.qId] = h;
-        attemptedToday++;
+        // A revealed (Submit-without-answering) result is NEUTRAL: it is not an
+        // attempt, so it stays out of both the daily denominator and the
+        // accuracy %. It is still recorded above (revealed:true) and scheduled
+        // for review so the user revisits what they didn't know.
+        if (!r.revealed) attemptedToday++;
         if (r.correct) correctToday++;
       });
 
