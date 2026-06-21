@@ -800,7 +800,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
         if (worstWeak) {
           tiles.push(
-            <Card key="weak" className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
+            <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics \u2014 the questions you\u2019ve got wrong come back first.">
+            <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'weak-areas' })}
                   onContextMenu={(e) => e.preventDefault()}
                   style={{ background: `linear-gradient(140deg, ${lightenHex(T.error, 0.10)} 0%, ${T.error} 62%, ${darkenHex(T.error, 0.16)} 100%)`,
@@ -820,6 +821,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 {Math.round(worstWeak.accuracy * 100)}% accuracy
               </div>
             </Card>
+            </Tip>
           );
         }
 
@@ -831,7 +833,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           const showWarning = untouchedCount > 0;
           const sc = showWarning ? T.accent : T.primary;
           tiles.push(
-            <Card key="untouched" className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
+            <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you\u2019ve touched. Tap for the topic-by-topic breakdown \u2014 what you\u2019ve started, what\u2019s mastered, and what\u2019s still untouched.">
+            <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
                   onClick={() => onNavigate({ screen: 'coverage' })}
                   onContextMenu={(e) => e.preventDefault()}
                   style={{ background: `linear-gradient(140deg, ${lightenHex(sc, 0.12)} 0%, ${sc} 60%, ${darkenHex(sc, 0.14)} 100%)`,
@@ -864,6 +867,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 </>
               )}
             </Card>
+            </Tip>
           );
         }
 

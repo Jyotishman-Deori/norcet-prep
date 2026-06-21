@@ -524,6 +524,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         {isGuest && (
           <>
             <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Account</div>
+            <Tip title="Create a profile" text="Right now you’re a guest — your progress lives only on this device. Create a free profile to back it up and sync across phones.">
             <Card className="p-4 mb-6 cursor-pointer no-tap-highlight pressable"
                   style={{ background: T.primary, border: 'none' }}
                   onClick={onGuestSignIn}>
@@ -541,6 +542,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
               </div>
             </Card>
+            </Tip>
             {/* Reset lives in the Account section for guests (a profile-level
                 action), not under Share. */}
             {renderReset()}
@@ -560,6 +562,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             separated from the Profile/Account card above (own header + section
             spacing). For guests the Reset action renders below this section. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share</div>
+        <Tip title="Share NORCET Prep" text="Your personal invite — link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
@@ -574,6 +577,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
           </div>
         </Card>
+        </Tip>
 
         {/* #9 — "My feedback" has moved into the sidebar Feedback hub
             (Send feedback + My feedback live together there now). It is no
@@ -589,6 +593,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         {onToggleReviewReminders && (
           <>
             <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Reminders</div>
+            <Tip title="Spaced revision" text="Spaced repetition is the biggest lever for long-term memory. This surfaces a ‘Review due’ card on Home exactly when each topic needs another pass.">
             <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
                   onClick={() => onToggleReviewReminders(!(data.preferences && data.preferences.reviewRemindersEnabled !== false))}>
               <div className="flex items-center justify-between gap-3">
@@ -613,6 +618,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 </div>
               </div>
             </Card>
+            </Tip>
           </>
         )}
 
@@ -623,6 +629,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         {onSetDailyReminder && (
           <>
             <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Notifications</div>
+            <Tip title="Daily reminders" text="A gentle once-a-day nudge if you haven’t studied by your chosen time — the simplest way to keep a streak alive.">
             <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onToggleReminder}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
@@ -641,6 +648,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 </div>
               </div>
             </Card>
+            </Tip>
 
             {/* Time picker — only when reminders are on */}
             {reminderOn && (
@@ -680,6 +688,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         {onToggleIncludeGkInStats && (
           <>
             <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Analytics</div>
+            <Tip title="What counts in stats" text="GK and Aptitude aren’t part of the NORCET nursing core, so they’re left out of your accuracy and weak areas by default. Turn on only if you drill them on purpose.">
             <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
                   onClick={() => onToggleIncludeGkInStats(!(data.preferences && data.preferences.includeGkInStats === true))}>
               <div className="flex items-center justify-between gap-3">
@@ -704,12 +713,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                 </div>
               </div>
             </Card>
+            </Tip>
           </>
         )}
 
         {/* F-B — pull-to-refresh sound toggle. Local pref; respects the device
             media volume (a web app can't read the hardware mute switch). */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sound</div>
+        <Tip title="Pull-to-refresh sound" text="A soft confirmation sound when you pull down to refresh. Purely cosmetic — turn it off for silent refreshes.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}>
           <div className="flex items-center justify-between gap-3">
@@ -734,11 +745,13 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             </div>
           </div>
         </Card>
+        </Tip>
 
         {/* Appearance → renamed "Themes", now a DEDICATED SUB-PAGE (issues
             round). The full mode selector + colour picker moved to
             screens/themes.jsx; Settings keeps this single row. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Themes</div>
+        <Tip title="Themes" text="Switch between light and dark, and pick an accent colour palette for the whole app.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenThemes}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -754,6 +767,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
           </div>
         </Card>
+        </Tip>
 
         {/* #8 — Sidebar gestures now open in a focused sub-page. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>

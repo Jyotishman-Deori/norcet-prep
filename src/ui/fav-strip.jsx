@@ -12,6 +12,7 @@ import { ChevronRight, Heart } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { favSection, loadFavs } from '../lib/favorites.js';
 import { FavIcon } from './fav-icons.jsx';
+import { Tip } from './tooltip.jsx';
 
 export default function FavStrip({ onNavigate }) {
   const { theme: T } = useTheme();
@@ -31,6 +32,7 @@ export default function FavStrip({ onNavigate }) {
   const top = favs.order.slice(0, 4).map(favSection).filter(Boolean);
 
   return (
+    <Tip title="Favourites" text="Your one-stop shortcuts \u2014 pin any section here with its heart. Tap to open and reorder them; your top picks also appear right here on Home.">
     <div role="button" tabIndex={0}
          onClick={() => onNavigate({ screen: 'favorites' })}
          onContextMenu={(e) => e.preventDefault()}
@@ -72,5 +74,6 @@ export default function FavStrip({ onNavigate }) {
         </div>
       )}
     </div>
+    </Tip>
   );
 }
