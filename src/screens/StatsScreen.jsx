@@ -12,9 +12,13 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
+import WhereYouStandCard from '../ui/where-you-stand-card.jsx';
+import CalibrationCard from '../ui/calibration-card.jsx';
+import { calibrationFromItems } from '../lib/calibration.js';
+import PacingCard from '../ui/pacing-card.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 
-function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
+function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const [topicSort, setTopicSort] = useState('weak'); // 'weak' | 'strong'
@@ -58,11 +62,36 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
   }, [data.stats.dailyHistory]);
 
   // How much of the pool has been touched at least once.
-  const coverage = useMemo(() => {
-    // P15 — hasBeenSeen counts both Tier 2 (attempts present) and Tier 3.
+  const coverage = useMemo(() => {    // P15 — hasBeenSeen counts both Tier 2 (attempts present) and Tier 3.
     const seen = Object.values(data.history).filter(h => hasBeenSeen(h)).length;
     const total = allQuestions.length || 1;
     return { seen, total, pct: Math.round((seen / total) * 100) };
+  }, [data.history, allQuestions]);
+
+  // #4 — lifetime calibration across every confidence-tagged attempt.
+  const calibration = useMemo(() => {
+    const items = [];
+    Object.values(data.history).forEach(h => {
+      (h && Array.isArray(h.attempts) ? h.attempts : []).forEach(a => {
+        if (a && a.conf) items.push(a);
+      });
+    });
+    return calibrationFromItems(items);
+  }, [data.history]);
+
+  // #5 — lifetime pacing entries: every timed attempt joined with its topic.
+  const pacingEntries = useMemo(() => {
+    const topicById = {};
+    allQuestions.forEach(q => { if (q && q.id != null) topicById[q.id] = q.topic; });
+    const out = [];
+    Object.entries(data.history).forEach(([qId, h]) => {
+      const topic = topicById[qId];
+      if (!topic) return;
+      (h && Array.isArray(h.attempts) ? h.attempts : []).forEach(a => {
+        if (a) out.push({ topic, timeMs: a.timeMs, correct: a.correct, revealed: a.revealed });
+      });
+    });
+    return out;
   }, [data.history, allQuestions]);
 
   // Accuracy over the last 7 days vs the 7 days before — needs a little data
@@ -197,6 +226,9 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
       <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
 
+        {/* #1 — Where you stand: recent full-length marks on the official ladder */}
+        <WhereYouStandCard history={data.advancedTestHistory} onStartAdvanced={onStartAdvanced} />
+
         {/* Headline */}
         <div className="grid grid-cols-2 gap-3 mb-3">
           <Card className="p-4">
@@ -243,6 +275,12 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic }) {
             <div className="text-[10px] mt-0.5" style={{ color: T.muted }}>{coverage.seen} of {coverage.total} seen</div>
           </Card>
         </div>
+
+        {/* #4 — lifetime confidence calibration */}
+        <CalibrationCard cal={calibration} title="Calibration" subtitle="How often you're right at each confidence level" />
+
+        {/* #5 — lifetime pacing by topic */}
+        <PacingCard entries={pacingEntries} title="Pacing" subtitle="Average time per question, by topic" />
 
         {/* Focus next — the actionable recommendation */}
         <Card className="p-4 mb-5" style={{ background: recColor + '0E', border: `1px solid ${recColor}33` }}>

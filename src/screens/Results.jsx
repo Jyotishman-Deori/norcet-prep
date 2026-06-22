@@ -10,6 +10,9 @@ import { Check, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { Button, Card } from '../ui/primitives.jsx';
+import CalibrationCard from '../ui/calibration-card.jsx';
+import { calibrationFromItems } from '../lib/calibration.js';
+import PacingCard from '../ui/pacing-card.jsx';
 import { GuestSavePrompt, MotivationCard, ShareScoreButton, ShareNudge, TimeQuadrant } from '../ui/result-cards.jsx';
 import { PeerComparisonCard, ComparisonReengage } from '../ui/comparison-cards.jsx';
 
@@ -23,6 +26,13 @@ function Results({ results, questions, elapsed, onHome, onReview,
   const correct = results.filter(r => r.correct).length;
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
   const wrong = results.filter(r => !r.correct);
+  const roundCalibration = calibrationFromItems(results); // #4
+  // #5 — pacing entries: join each result with its question's topic.
+  const pacingEntries = (() => {
+    const byId = {};
+    (Array.isArray(questions) ? questions : []).forEach(q => { if (q && q.id != null) byId[q.id] = q; });
+    return results.map(r => ({ topic: byId[r.qId] && byId[r.qId].topic, timeMs: r.timeMs, correct: r.correct, revealed: r.revealed }));
+  })();
 
   // P5 — derive the topic for the share card only when this round is clearly
   // single-topic (all questions share one topic). Mixed rounds → no topic line.
@@ -107,6 +117,12 @@ function Results({ results, questions, elapsed, onHome, onReview,
           </Card>
         </div>
       )}
+
+      {/* #4 — how well your confidence matched reality, this round */}
+      <CalibrationCard cal={roundCalibration} title="Calibration this round" className="mb-5" />
+
+      {/* #5 — where you spent time, this round */}
+      <PacingCard entries={pacingEntries} title="Pacing this round" className="mb-8" />
 
       {/* P12 — per-question time quadrant. Quick rounds are untimed:
           baseline 60s/Q, "slow" = >90s. The Quiz already records a

@@ -15,7 +15,8 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { isPYQ, pyqLabel } from '../lib/pyq.js';
-import { ArrowLeft, HelpCircle, AlertCircle, History } from 'lucide-react';
+import { ArrowLeft, HelpCircle, AlertCircle, History, Flame } from 'lucide-react';
+import { conceptCount, highYieldTier } from '../lib/high-yield.js';
 // FAV — TopBar heart (lazy circular-safe: fav-heart imports app-context only).
 import FavHeart from './fav-heart.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles on the chrome icons.
@@ -67,6 +68,24 @@ function PyqBadge({ q, className = '' }) {
   return (
     <Pill bg={c + '1A'} color={c} className={className}>
       <History size={10} />{pyqLabel(q)}
+    </Pill>
+  );
+}
+
+// #3 — HIGH-YIELD badge. Flags a PYQ whose CONCEPT (topic + sub) recurs across
+// the official papers, so a learner sees "this gets asked a lot" at a glance.
+// Amber is a deliberate, distinct "high-value" accent — not the plum PYQ badge
+// and not the orange "Marked" pill — and it renders nothing for one-off
+// concepts, so it is safe to drop next to PyqBadge unconditionally.
+const HIGH_YIELD_AMBER = '#B8791A';
+function HighYieldBadge({ q, className = '' }) {
+  if (!isPYQ(q) || !q || !q.topic) return null;
+  const n = conceptCount(q.topic, q.sub);
+  const tier = highYieldTier(n);
+  if (tier === 'none') return null;
+  return (
+    <Pill bg={HIGH_YIELD_AMBER + (tier === 'high' ? '24' : '16')} color={HIGH_YIELD_AMBER} className={className}>
+      <Flame size={10} />Asked {n}×
     </Pill>
   );
 }
@@ -221,4 +240,4 @@ function HelpButton({ screen }) {
   );
 }
 
-export { Pill, PyqBadge, Card, Button, TopBar };
+export { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar };

@@ -2633,6 +2633,9 @@ export default function App() {
           ts: Date.now(),
           correct: r.correct,
           timeMs: r.timeMs || null,
+          // #4 — the user's declared confidence for this answer (sure/unsure/
+          // guess), or null for legacy/reveal. Powers the calibration report.
+          conf: r.confidence || null,
           // True when the user tapped "Show answer" instead of attempting.
           // Counted as wrong (so the question feeds spaced repetition + Weak
           // Areas) but flagged so future granularity is possible without a
@@ -4172,6 +4175,7 @@ export default function App() {
         <StatsScreen onBack={goHome}
                      onQuick={() => navigate({ screen: 'quick-setup' })}
                      onResetData={clearAll}
+                     onStartAdvanced={() => navigate({ screen: 'advanced-setup' })}
                      onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })} />
         </Suspense>
       )}

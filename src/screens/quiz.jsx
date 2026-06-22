@@ -23,6 +23,37 @@ import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
 
+// #4 — per-question self-rating. Defaults to "Unsure" so it's a zero-friction
+// optional tap; the choice feeds the calibration report on Results + Stats.
+const CONF_OPTS = [
+  { key: 'sure',   label: 'Sure',   color: (T) => T.success },
+  { key: 'unsure', label: 'Unsure', color: (T) => (T.sec && T.sec.stats) || T.primary },
+  { key: 'guess',  label: 'Guess',  color: () => '#B8791A' },
+];
+function ConfidenceChips({ value, onChange, T }) {
+  return (
+    <div className="flex items-center gap-2 mb-2.5">
+      <span className="text-[11px] font-medium shrink-0" style={{ color: T.muted }}>How sure?</span>
+      <div className="flex gap-1.5 flex-1">
+        {CONF_OPTS.map((o) => {
+          const active = value === o.key;
+          const c = o.color(T);
+          return (
+            <button key={o.key} type="button" onClick={() => onChange(o.key)}
+              aria-pressed={active}
+              className="no-tap-highlight flex-1 py-1.5 rounded-lg text-[12px] font-semibold transition active:scale-95"
+              style={active
+                ? { background: c + '1F', color: c, border: `1.5px solid ${c}` }
+                : { background: T.surface, color: T.muted, border: `1.5px solid ${T.border}` }}>
+              {o.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
@@ -30,6 +61,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [selected, setSelected] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [revealed, setRevealed] = useState(false);   // user tapped "Show answer" without selecting
+  const [confidence, setConfidence] = useState('unsure'); // #4 — per-question self-rating
   const [results, setResults] = useState([]);        // per question { qId, correct, selected, timeMs, revealed? }
   const [bookmarkedLocal, setBookmarkedLocal] = useState(new Set(data.bookmarks));
   // For count-down (mock): seconds remaining. For count-up (legacy): seconds elapsed.
@@ -164,6 +196,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setHintShown(false);
     setAltShown(false);
     setRevealed(false);
+    setConfidence('unsure');   // #4 — start each question neutral
   }, [index]);
 
   if (!q) {
@@ -201,7 +234,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (selected.length === 0) return;
     const correct = arraysEqualUnordered(selected, q.correct);
     const timeMs = Date.now() - questionStart.current;
-    setResults(r => [...r, { qId: q.id, correct, selected, timeMs }]);
+    setResults(r => [...r, { qId: q.id, correct, selected, timeMs, confidence }]);
     setSubmitted(true);
   };
 
@@ -590,6 +623,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                   <ChevronRight size={12} />
                   Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (come back to this)`) : ''}
                 </button>
+              )}
+              {/* #4 — rate confidence once an answer is picked (before checking) */}
+              {selected.length > 0 && (
+                <ConfidenceChips value={confidence} onChange={setConfidence} T={T} />
               )}
               {/* Morphing primary. Nothing picked → "Submit": reveals the
                   solution NEUTRALLY (no right/wrong, no accuracy hit) so the

@@ -9,10 +9,14 @@
 // (props unchanged: papers, previousPapers, onStart, onRead, onBack).
 // =====================================================================
 import React, { useMemo, useState } from 'react';
-import { BookOpen, ClipboardList, ListChecks, Hourglass, Check, GraduationCap, Play, Search } from 'lucide-react';
+import { BookOpen, ClipboardList, ListChecks, Hourglass, Check, GraduationCap, Play, Search, Flame, FileText } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
+import { buildHighYieldIndex, HIGH_YIELD_MIN, HIGH_YIELD_HIGH } from '../lib/high-yield.js';
+import { topicName, topicColor } from '../lib/topics.js';
+
+const HY_AMBER = '#B8791A';
 
 // Split a paper into { exam, label } — exam = section header, label = the
 // year/session shown on the card (e.g. "2023 Mains").
@@ -31,11 +35,96 @@ function splitPaper(p) {
   return { exam: name || 'Previous Papers', label: String(p.year || '') };
 }
 
+// #3 — segmented view tab (Papers / High-Yield).
+function ViewTab({ active, onClick, icon: Icon, label, count, T, accent }) {
+  const c = accent || T.sec.mock;
+  return (
+    <button onClick={onClick}
+      className="no-tap-highlight flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[13px] font-semibold transition active:scale-[0.98]"
+      style={{ background: active ? c : T.surface, color: active ? '#FFF' : T.inkSoft, border: `1.5px solid ${active ? c : T.border}` }}>
+      <Icon size={14} />{label}
+      {typeof count === 'number' && count > 0 && (
+        <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full"
+              style={{ background: active ? 'rgba(255,255,255,0.25)' : c + '18', color: active ? '#FFF' : c }}>{count}</span>
+      )}
+    </button>
+  );
+}
+
+function yearSpanLabel(years) {
+  if (!years || years.length === 0) return '';
+  return years.length === 1 ? String(years[0]) : `${years[0]}–${years[years.length - 1]}`;
+}
+
+// #3 — the ranked "what the exam repeats" priority list.
+function HighYieldView({ concepts, years, T }) {
+  if (!concepts || concepts.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <div className="text-sm" style={{ color: T.muted }}>Not enough paper data yet to spot repeated concepts.</div>
+      </Card>
+    );
+  }
+  return (
+    <div>
+      <Card className="p-4 mb-4" style={{ background: HY_AMBER + '0E', border: `1px solid ${HY_AMBER}33` }}>
+        <div className="flex items-center gap-1.5 mb-1">
+          <Flame size={14} style={{ color: HY_AMBER }} />
+          <span className="text-[11px] uppercase tracking-[0.14em] font-semibold" style={{ color: HY_AMBER }}>What gets repeated</span>
+        </div>
+        <p className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
+          <b style={{ color: T.ink }}>{concepts.length} concepts</b> the exam has asked {HIGH_YIELD_MIN}+ times
+          {years.length ? ` across ${yearSpanLabel(years)}` : ''}. Study these first — most marks per hour.
+        </p>
+      </Card>
+
+      <div className="space-y-2">
+        {concepts.map((c, i) => {
+          const hot = c.count >= HIGH_YIELD_HIGH;
+          const tc = topicColor(c.topic);
+          return (
+            <div key={c.topic + '|' + c.sub}
+                 className="flex items-center gap-3 px-3 py-2.5 rounded-xl seq-item"
+                 style={{ background: T.surface, border: `1px solid ${hot ? HY_AMBER + '40' : T.border}`,
+                          borderLeft: `3px solid ${hot ? HY_AMBER : tc}`, animationDelay: `${Math.min(i, 10) * 45}ms` }}>
+              <div className="flex flex-col items-center justify-center w-9 shrink-0">
+                <span className="font-display text-lg font-bold leading-none" style={{ color: hot ? HY_AMBER : T.ink }}>{c.count}</span>
+                <span className="text-[8px] uppercase tracking-wide" style={{ color: T.muted }}>times</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold truncate flex items-center gap-1.5" style={{ color: T.ink }}>
+                  {hot && <Flame size={12} style={{ color: HY_AMBER }} className="shrink-0" />}
+                  {c.sub}
+                </div>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium truncate"
+                        style={{ background: tc + '18', color: tc }}>{topicName(c.topic)}</span>
+                  {c.years.length > 0 && <span className="text-[10px]" style={{ color: T.muted }}>{yearSpanLabel(c.years)}</span>}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
   const { theme: T } = useTheme();
   const records = previousPapers || {};
   const [examFilter, setExamFilter] = useState('all');
   const [query, setQuery] = useState('');
+  const [view, setView] = useState('papers'); // 'papers' | 'highyield'
+
+  // #3 — concepts the exam repeats most, mined from the papers in hand.
+  const hy = useMemo(() => buildHighYieldIndex(papers), [papers]);
+  const hyConcepts = useMemo(() => hy.concepts.filter(c => c.count >= HIGH_YIELD_MIN), [hy]);
+  const hyYears = useMemo(() => {
+    const ys = new Set();
+    (papers || []).forEach(p => { if (typeof p.year === 'number') ys.add(p.year); });
+    return [...ys].sort();
+  }, [papers]);
 
   // Group by exam → papers (each sorted newest-year-first). Exams ordered by
   // paper count (the primary exam, NORCET, surfaces first), then name.
@@ -142,6 +231,16 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
             text="Official previous year papers will appear here once uploaded." />
         ) : (
           <>
+            {/* #3 — Papers vs High-Yield view toggle */}
+            <div className="flex gap-2 mb-4">
+              <ViewTab active={view === 'papers'} onClick={() => setView('papers')} icon={FileText} label="Papers" T={T} />
+              <ViewTab active={view === 'highyield'} onClick={() => setView('highyield')} icon={Flame} label="High-Yield" count={hyConcepts.length} T={T} accent={HY_AMBER} />
+            </div>
+
+            {view === 'highyield' ? (
+              <HighYieldView concepts={hyConcepts} years={hyYears} T={T} />
+            ) : (
+            <>
             {/* Exam filter — only when more than one exam is present */}
             {multiExam && (
               <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-3">
@@ -193,6 +292,8 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
                   </div>
                 </div>
               ))
+            )}
+            </>
             )}
           </>
         )}

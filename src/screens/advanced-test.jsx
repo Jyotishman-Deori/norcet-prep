@@ -17,7 +17,7 @@ import {
   ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
-import { Pill, PyqBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { QuestionImage, HelpfulToggle } from '../ui/question-widgets.jsx';
@@ -388,6 +388,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </Pill>
             {/* P16 — provenance badge (Advanced test + previous-paper mocks) */}
             <PyqBadge q={q} />
+            <HighYieldBadge q={q} />
             {isMarked && <Pill bg={T.accent + '20'} color={T.accent}><Flag size={10} />Marked</Pill>}
           </div>
           {onToggleBookmark && (
@@ -729,6 +730,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
                       </span>
                       {/* P16 — provenance badge in review */}
                       <PyqBadge q={q} />
+                      <HighYieldBadge q={q} />
                     </div>
                     <div className="text-sm font-medium mb-3 leading-snug" style={{ color: T.ink }}>{q.q}</div>
                     {/* P17 — optional image in review */}
