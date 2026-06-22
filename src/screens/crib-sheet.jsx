@@ -17,7 +17,7 @@
 // an IntersectionObserver sentinel — never all at once on load.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X } from 'lucide-react';
+import { ArrowUp, BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X, Headphones } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 // #5 — save this sheet into the Revision section (dated, printable).
 import { addCrib, cribSignature, findCribBySig } from '../lib/cribs.js';
@@ -34,6 +34,18 @@ const CRIB_PRINT_STYLES = `
 `;
 import { topicName, topicColor } from '../lib/topics.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import { useListenMode } from '../lib/use-listen-mode.js';
+import ListenBar from '../ui/listen-bar.jsx';
+
+// #8 — compose what gets read aloud for one card: stem, answer, explanation.
+function composeListenText(q, i) {
+  if (!q) return '';
+  const ans = (q.correct || []).map(c => q.options && q.options[c]).filter(Boolean).join(', ');
+  const parts = [`Question ${i + 1}.`, q.q];
+  if (ans) parts.push(`The answer is: ${ans}.`);
+  if (q.exp) parts.push(String(q.exp));
+  return parts.filter(Boolean).join(' ');
+}
 import { HelpfulToggle } from '../ui/question-widgets.jsx';
 
 const WINDOW = 25;
@@ -163,6 +175,10 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
   const wrong = useMemo(() => items.filter(i => i.status === 'wrong'), [items]);
   const na = useMemo(() => items.filter(i => i.status === 'na'), [items]);
 
+  // #8 — Listen mode: read every card aloud, in order, hands-free.
+  const listenTexts = useMemo(() => (items || []).map((it, i) => composeListenText(it.q, i)), [items]);
+  const listen = useListenMode(listenTexts);
+
   // Incremental rendering window for very long papers.
   const [limit, setLimit] = useState(WINDOW);
   const sentinelRef = useRef(null);
@@ -270,12 +286,25 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       <div className="crib-no-print">
         <TopBar title="Crib Sheet" onBack={onBack} feedback={{ screen: 'Crib sheet' }}
                 right={
+                  <div className="flex items-center gap-1">
+                  {listen.supported && items.length > 0 && (
+                    <Tip text={listen.active ? 'Stop listening' : 'Listen — read this sheet aloud, hands-free'}>
+                    <button onClick={() => (listen.active ? listen.stop() : listen.start(0))}
+                            aria-label={listen.active ? 'Stop listening' : 'Listen to this sheet'}
+                            aria-pressed={listen.active}
+                            className="no-tap-highlight p-2 rounded-full active:bg-black/5"
+                            style={listen.active ? { color: (T.sec && T.sec.revision) || T.primary } : undefined}>
+                      <Headphones size={18} style={listen.active ? undefined : { color: T.muted }} />
+                    </button>
+                    </Tip>
+                  )}
                   <Tip text="Print this sheet, or save it as a PDF from the print dialog">
                   <button onClick={printSheet} aria-label="Print crib sheet"
                           className="no-tap-highlight p-2 rounded-full active:bg-black/5">
                     <Printer size={18} style={{ color: T.muted }} />
                   </button>
                   </Tip>
+                  </div>
                 } />
       </div>
       <div className="max-w-md mx-auto px-4 pt-2 pb-28">
@@ -399,6 +428,9 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
           </button>
         </div>
       </div>
+
+      {/* #8 — Listen player, floated above the action bar */}
+      <ListenBar ctl={listen} label="Revision" bottomOffset={76} />
 
       {/* floating scroll-to-top */}
       {showTop && (
