@@ -65,9 +65,9 @@
   "Revision sheet": {
     "title": "Revision",
     "what": "A digest page that pulls together your bookmarked questions — and, if you choose, questions you’ve previously got wrong — into one clean, scrollable list with stems, correct answers and explanations all visible at once.",
-    "how": "Toggle “Include wrong answers” at the top to add your past mistakes. Filter by topic to focus a single subject. The date list shows past revision sessions so you can re-open exactly what you revised on, say, last Tuesday. Tap Print / PDF to export it for offline study.",
+    "how": "Turn on “Revise your mistakes” at the top to fold in questions you’ve previously got wrong. Filter by topic to focus a single subject. The date list shows past revision sessions so you can re-open exactly what you revised on, say, last Tuesday. Tap Print / PDF to export it for offline study.",
     "why": "The last few days before an exam are not the time to read new material — they’re for re-reading what you already flagged as important. This is that cram sheet, built automatically from your own study history.",
-    "example": "Three days before the exam you flip on “Include wrong answers,” filter to Pharmacology, and get one scrollable page of every drug question you bookmarked or missed — stems, answers and explanations together. Tap Print/PDF and revise it on the bus offline."
+    "example": "Three days before the exam you turn on “Revise your mistakes,” filter to Pharmacology, and get one scrollable page of every drug question you bookmarked or missed — stems, answers and explanations together. Tap Print/PDF and revise it on the bus offline."
   },
   "Bookmarks": {
     "title": "Bookmarks",

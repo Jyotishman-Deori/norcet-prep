@@ -9,7 +9,7 @@
 // topicName/Color/Icon from lib/topics; TTSButton from ui/question-widgets.
 // =====================================================================
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Printer, CalendarDays, Clock, X, ChevronDown, ChevronUp, Bookmark, Check, Lightbulb } from 'lucide-react';
+import { Printer, CalendarDays, Clock, RotateCcw, ChevronDown, ChevronUp, Bookmark, Check, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
@@ -78,6 +78,18 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
     }
     return ids;
   }, [data.bookmarks, data.history, includeWrong]);
+
+  // How many previously-wrong questions the toggle would FOLD IN (i.e. wrong
+  // ones not already bookmarked) — shown on the card so the action is concrete.
+  const wrongCount = useMemo(() => {
+    const bm = new Set(data.bookmarks || []);
+    let n = 0;
+    Object.entries(data.history || {}).forEach(([qId, h]) => {
+      if (bm.has(qId)) return;
+      if (h && (h.lastResult === 'wrong' || attemptStats(h).anyWrong)) n++;
+    });
+    return n;
+  }, [data.bookmarks, data.history]);
 
   // Log today's visit once on open (with the current bookmark snapshot).
   const loggedRef = useRef(false);
@@ -152,7 +164,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
       <style>{PRINT_STYLES}</style>
       <div className="no-print">
         <TopBar title="Revision" onBack={onBack}
-                feedback={{ screen: "Revision sheet" }} />
+                feedback={{ screen: tab === 'cribs' ? 'Crib sheet' : 'Revision sheet' }} />
       </div>
 
       <div className="max-w-md mx-auto px-4 pb-24 pt-2 revision-print-page">
@@ -207,7 +219,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
                 </div>
               </div>
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-3">
                 {cribs.map((c, ci) => {
                   const right = Math.round((c.items.filter(i => i.status === 'correct').length / Math.max(1, c.items.length)) * 100);
                   return (
@@ -215,11 +227,11 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
                     <div role="button" tabIndex={0}
                          onClick={() => onOpenCrib && onOpenCrib(c)}
                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenCrib && onOpenCrib(c); } }}
-                         className="no-tap-highlight pressable cursor-pointer rounded-2xl p-3.5 seq-item relative overflow-hidden"
+                         className="no-tap-highlight pressable cursor-pointer rounded-2xl p-4 seq-item relative overflow-hidden"
                          style={{
-                           background: `linear-gradient(140deg, ${T.primary}14 0%, ${T.surface} 55%)`,
-                           border: `1.5px solid ${T.primary}35`,
-                           boxShadow: `0 3px 12px ${T.primary}14`,
+                           background: `linear-gradient(140deg, ${T.primary}12 0%, ${T.surface} 58%)`,
+                           border: `1px solid ${T.primary}2B`,
+                           boxShadow: `0 6px 18px ${T.primary}12`,
                            animationDelay: `${Math.min(ci, 8) * 80}ms`,
                          }}>
                       <div className="flex items-center gap-3">
@@ -312,16 +324,21 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
 
           {/* Toggle wrong — only relevant in the live "Today" view */}
           {!isSnapshot && (
-            <Card className="p-3 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => setIncludeWrong(v => !v)}>
+            <Card className="p-3.5 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => setIncludeWrong(v => !v)}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                       style={{ background: includeWrong ? T.accent + '20' : T.surfaceWarm }}>
-                    <X size={16} style={{ color: includeWrong ? T.accent : T.muted }} />
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
+                       style={{ background: includeWrong ? T.accent + '1F' : T.surfaceWarm,
+                                border: `1px solid ${includeWrong ? T.accent + '4D' : T.border}` }}>
+                    <RotateCcw size={18} style={{ color: includeWrong ? T.accent : T.muted }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium" style={{ color: T.ink }}>Include previously-wrong</div>
-                    <div className="text-xs" style={{ color: T.muted }}>Adds questions you've gotten wrong before</div>
+                    <div className="text-sm font-semibold" style={{ color: T.ink }}>Revise your mistakes</div>
+                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                      {wrongCount > 0
+                        ? `Folds in the ${wrongCount} question${wrongCount === 1 ? '' : 's'} you’ve answered wrong before`
+                        : 'Folds in the questions you’ve answered wrong before'}
+                    </div>
                   </div>
                 </div>
                 <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
@@ -384,7 +401,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
           <div className="text-sm" style={{ color: T.muted }}>
             {items.length} questions
             {topicFilter !== 'all' && ` · ${topicName(topicFilter)}`}
-            {!isSnapshot && includeWrong && ' · includes previously-wrong'}
+            {!isSnapshot && includeWrong && ' · with your past mistakes'}
             {isSnapshot && ` · saved ${fmtDay(viewDate)}`}
             {' · '}{new Date().toLocaleDateString()}
           </div>
@@ -399,7 +416,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib }) {
             <div className="text-sm" style={{ color: T.muted }}>
               {isSnapshot
                 ? 'The questions saved on this date are no longer in your banks.'
-                : 'Bookmark questions during practice to build your revision sheet, or toggle "Include previously-wrong" above.'}
+                : 'Bookmark questions during practice to build your revision sheet, or turn on “Revise your mistakes” above.'}
             </div>
           </div>
         ) : (

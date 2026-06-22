@@ -18,7 +18,7 @@ import { safeStorage } from './safe-storage.js';
 // v4: updated the "Learn — topics" help for Quick Revision (Feature F-D).
 // v5: added the "Doubts" help section (Feature F-E).
 // v6: added the "FAQ" help section (Feature F-F).
-const CONTENT_VERSION = 10;
+const CONTENT_VERSION = 11;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',
