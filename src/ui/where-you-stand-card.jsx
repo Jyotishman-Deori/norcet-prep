@@ -3,22 +3,27 @@
 // =====================================================================
 // Places the user's recent full-length marks-% on the OFFICIAL AIIMS Mains
 // qualifying ladder. The signature element is a self-locating scale: every
-// category line is drawn at once and the user reads their own line — we never
-// ask, store, or infer category. Honest by construction: the number is a
-// practice marks-% (negative marking applied), explicitly not a predicted rank.
+// category line is drawn at once and the user reads their own — we never ask,
+// store, or infer category. Honest by construction: the number is a practice
+// marks-% (negative marking applied), explicitly not a predicted rank.
 //
-// Data in: data.advancedTestHistory (via useData upstream → passed as `history`).
-// Pure math lives in lib/projection.js; official lines in data/norcet-benchmarks.js.
+// The ladder collapses the qualifying lines to their DISTINCT thresholds
+// (50/45/40/35) so shared floors don't overlap; categories sharing a floor are
+// grouped in the legend. A collapsible section surfaces the prelims percentile
+// cut-offs as reference (a different unit — never compared to the user's %).
+//
+// Data in: data.advancedTestHistory (via useData upstream → `history`).
+// Math lives in lib/projection.js; official numbers in data/norcet-benchmarks.js.
 // =====================================================================
-import React, { useMemo, useState, useEffect, useRef } from 'react';
-import { Target, ArrowUpRight, Trophy } from 'lucide-react';
+import React, { useMemo, useState, useEffect } from 'react';
+import { Target, ArrowUpRight, Trophy, ChevronDown } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from './primitives.jsx';
-import { recentFullLength, qualifyingStatus } from '../lib/projection.js';
-import { MAINS_QUALIFYING, PWBD_NOTE, TOP_QUALIFYING_PCT } from '../data/norcet-benchmarks.js';
+import { recentFullLength, qualifyingThresholds, thresholdStatus } from '../lib/projection.js';
+import { MAINS_QUALIFYING, PRELIMS_PERCENTILE_TREND, HAS_PRELIMS_DATA } from '../data/norcet-benchmarks.js';
 
 // Display window for the scale: zoom into the band where the action is so the
-// 40 / 45 / 50 lines are legible instead of crushed against the left.
+// 35 / 40 / 45 / 50 lines are legible instead of crushed against the left.
 const LO = 30;
 const HI = 70;
 
@@ -30,10 +35,10 @@ function prefersReducedMotion() {
 export default function WhereYouStandCard({ history, onStartAdvanced }) {
   const { theme: T } = useTheme();
   const proj = useMemo(() => recentFullLength(history), [history]);
+  const groups = useMemo(() => qualifyingThresholds(MAINS_QUALIFYING), []);
   const accent = (T.sec && T.sec.stats) || T.primary; // dusty blue — the Stats voice
 
-  // Subtle fill grow-in on mount (respects reduced motion), mirroring the
-  // existing chart-ready pattern elsewhere in Stats.
+  // Subtle fill grow-in on mount (respects reduced motion).
   const [grown, setGrown] = useState(prefersReducedMotion());
   useEffect(() => {
     if (grown) return;
@@ -45,7 +50,7 @@ export default function WhereYouStandCard({ history, onStartAdvanced }) {
   if (!proj || proj.n === 0) {
     return (
       <Card className="p-4 mb-5" style={{ background: accent + '0E', border: `1px solid ${accent}33` }}>
-        <Eyebrow T={T} accent={accent} />
+        <Eyebrow accent={accent} />
         <div className="mt-2 text-[15px] font-semibold" style={{ color: T.ink }}>
           See where you stand against the real cut-offs
         </div>
@@ -66,12 +71,12 @@ export default function WhereYouStandCard({ history, onStartAdvanced }) {
     );
   }
 
-  const status = qualifyingStatus(proj.pct, MAINS_QUALIFYING);
+  const status = thresholdStatus(proj.pct, groups);
   const hasBand = proj.usedN > 1 && proj.high > proj.low;
 
   return (
     <Card className="p-4 mb-5" style={{ background: accent + '0E', border: `1px solid ${accent}33` }}>
-      <Eyebrow T={T} accent={accent} />
+      <Eyebrow accent={accent} />
 
       {/* Headline number — the user's recent marks % */}
       <div className="mt-2 flex items-end justify-between gap-3">
@@ -94,25 +99,20 @@ export default function WhereYouStandCard({ history, onStartAdvanced }) {
         )}
       </div>
 
-      {/* The self-locating ladder */}
-      <Ladder T={T} accent={accent} pct={proj.pct} low={proj.low} high={proj.high} hasBand={hasBand} grown={grown} />
+      {/* The self-locating ladder (distinct thresholds) */}
+      <Ladder T={T} accent={accent} pct={proj.pct} low={proj.low} high={proj.high} hasBand={hasBand} grown={grown} groups={groups} />
 
-      {/* Legend: which line is which category (the key to self-locating) */}
-      <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        {[...MAINS_QUALIFYING].sort((a, b) => b.pct - a.pct).map((l) => {
-          const cleared = proj.pct >= l.pct;
+      {/* Legend: each distinct threshold + the categories that share it */}
+      <div className="mt-2.5 space-y-1">
+        {groups.map((g) => {
+          const cleared = proj.pct >= g.pct;
           return (
-            <span key={l.cat} className="inline-flex items-center gap-1.5 text-[11px]" style={{ color: cleared ? T.ink : T.muted }}>
-              <span
-                className="inline-block rounded-full"
-                style={{
-                  width: 7, height: 7,
-                  background: cleared ? T.success : 'transparent',
-                  border: cleared ? 'none' : `1.5px solid ${T.muted}`,
-                }}
-              />
-              <span style={{ fontWeight: 600 }}>{l.pct}%</span> {l.cat}
-            </span>
+            <div key={g.pct} className="flex items-center gap-2 text-[11px]">
+              <span className="inline-block rounded-full shrink-0"
+                    style={{ width: 7, height: 7, background: cleared ? T.success : 'transparent', border: cleared ? 'none' : `1.5px solid ${T.muted}` }} />
+              <span style={{ fontWeight: 600, color: cleared ? T.ink : T.muted, width: 30 }}>{g.pct}%</span>
+              <span style={{ color: cleared ? T.inkSoft : T.muted }}>{g.cats.join(' · ')}</span>
+            </div>
           );
         })}
       </div>
@@ -125,13 +125,17 @@ export default function WhereYouStandCard({ history, onStartAdvanced }) {
       {/* Footnote — keep the claim honest */}
       <p className="mt-2 text-[10.5px] leading-snug" style={{ color: T.muted }}>
         From your timed Advanced Tests, negative marking applied. Lines are official AIIMS Mains
-        qualifying minimums — your category is yours to read off; this isn’t a predicted rank. {PWBD_NOTE}
+        qualifying minimums (PwBD lines included) — your category is yours to read off; this isn’t a
+        predicted rank.
       </p>
+
+      {/* Prelims percentile cut-offs — reference only, progressive disclosure */}
+      {HAS_PRELIMS_DATA && <PrelimsSection T={T} />}
     </Card>
   );
 }
 
-function Eyebrow({ T, accent }) {
+function Eyebrow({ accent }) {
   return (
     <div className="flex items-center gap-1.5">
       <Target size={13} style={{ color: accent }} />
@@ -143,36 +147,35 @@ function Eyebrow({ T, accent }) {
 }
 
 function Readout({ T, status }) {
-  const accentName = (cats) => cats.map((c) => c.cat).join(' and ');
   if (status.clearsAll) {
-    return <>You’re clearing <b style={{ color: T.success }}>every qualifying line</b>, UR/EWS included. Now it’s about widening the margin.</>;
+    return <>You’re above <b style={{ color: T.success }}>every qualifying line</b>, UR/EWS included. Now it’s about widening the margin.</>;
   }
   if (status.clearsNone) {
-    const nearest = status.nextUp; // lowest line, since none cleared
-    return <>You’re just under the bar. Closest is <b style={{ color: T.ink }}>{nearest?.cat}</b> at {nearest?.pct}% — <b>{status.gapToNext}%</b> to go.</>;
+    const n = status.nextUp;
+    return <>You’re just under the bar. Nearest is <b style={{ color: T.ink }}>{n?.pct}%</b> — <b>{status.gapToNext}%</b> to go.</>;
   }
+  const hc = status.highestCleared;
+  const nu = status.nextUp;
+  const std = nu ? (nu.cats.find((c) => !/pwbd/i.test(c)) || nu.cats[0]) : null;
   return (
     <>
-      You’re clearing <b style={{ color: T.success }}>{accentName(status.cleared)}</b> qualifying.
-      {status.nextUp && <> <b>{status.gapToNext}%</b> short of <b style={{ color: T.ink }}>{status.nextUp.cat}</b>.</>}
+      You’re clearing the <b style={{ color: T.success }}>{hc.pct}% line</b>. <b>{status.gapToNext}%</b> short of <b style={{ color: T.ink }}>{nu.pct}%</b>{std ? <> ({std})</> : null}.
     </>
   );
 }
 
 // --- The scale ------------------------------------------------------------
-function Ladder({ T, accent, pct, low, high, hasBand, grown }) {
-  // geometry
+function Ladder({ T, accent, pct, low, high, hasBand, grown, groups }) {
   const W = 320, x0 = 14, x1 = 306, inner = x1 - x0;
   const trackY = 64, trackH = 18, r = trackH / 2;
   const xOf = (p) => x0 + Math.max(0, Math.min(1, (p - LO) / (HI - LO))) * inner;
 
   const xPct = xOf(pct);
   const fillW = grown ? xPct - x0 : 0;
-  const lines = [...MAINS_QUALIFYING].sort((a, b) => a.pct - b.pct);
 
   return (
     <svg viewBox={`0 0 ${W} 112`} width="100%" role="img"
-         aria-label={`Your marks are about ${Math.round(pct)} percent, shown against the qualifying lines at 40, 45 and 50 percent.`}
+         aria-label={`Your marks are about ${Math.round(pct)} percent, shown against the qualifying lines.`}
          style={{ display: 'block', marginTop: 10, overflow: 'visible' }}>
       {/* track */}
       <rect x={x0} y={trackY} width={inner} height={trackH} rx={r} fill={T.surfaceWarm} stroke={T.border} strokeWidth="1" />
@@ -187,14 +190,14 @@ function Ladder({ T, accent, pct, low, high, hasBand, grown }) {
       <rect x={x0} y={trackY} width={fillW} height={trackH} rx={r} fill={accent}
             style={{ transition: 'width 0.75s cubic-bezier(0.22,1,0.36,1)' }} />
 
-      {/* qualifying lines + tick labels */}
-      {lines.map((l) => {
-        const x = xOf(l.pct);
+      {/* one dashed line per DISTINCT threshold (no overlaps) */}
+      {groups.map((g) => {
+        const x = xOf(g.pct);
         return (
-          <g key={l.cat}>
+          <g key={g.pct}>
             <line x1={x} y1={trackY - 9} x2={x} y2={trackY + trackH + 9}
                   stroke={T.ink} strokeWidth="1" strokeDasharray="3 2.5" opacity="0.45" />
-            <text x={x} y={trackY - 13} textAnchor="middle" fontSize="10" fontWeight="600" fill={T.muted}>{l.pct}</text>
+            <text x={x} y={trackY - 13} textAnchor="middle" fontSize="10" fontWeight="600" fill={T.muted}>{g.pct}</text>
           </g>
         );
       })}
@@ -210,5 +213,51 @@ function Ladder({ T, accent, pct, low, high, hasBand, grown }) {
       <text x={x0} y={trackY + trackH + 22} textAnchor="start" fontSize="9.5" fill={T.muted}>{LO}%</text>
       <text x={x1} y={trackY + trackH + 22} textAnchor="end" fontSize="9.5" fill={T.muted}>{HI}%</text>
     </svg>
+  );
+}
+
+// --- Prelims percentile reference (collapsible) ---------------------------
+const PRELIMS_CATS = [['UR', 'UR'], ['EWS', 'EWS'], ['OBC', 'OBC'], ['SC', 'SC'], ['ST', 'ST']];
+
+function PrelimsRow({ cycle, T }) {
+  return (
+    <div className="mt-2">
+      <div className="text-[11px] font-medium mb-1" style={{ color: T.inkSoft }}>{cycle.cycle}</div>
+      <div className="flex flex-wrap gap-x-3 gap-y-1">
+        {PRELIMS_CATS.map(([key, label]) => (cycle[key] != null) && (
+          <span key={key} className="text-[11px]" style={{ color: T.muted }}>
+            {label} <b style={{ color: T.ink }}>{cycle[key].toFixed(2)}</b>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PrelimsSection({ T }) {
+  const [open, setOpen] = useState(false);
+  const accent = (T.sec && T.sec.stats) || T.primary;
+  const latest = PRELIMS_PERCENTILE_TREND[0];
+  const earlier = PRELIMS_PERCENTILE_TREND.slice(1);
+
+  return (
+    <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${T.border}` }}>
+      <button onClick={() => setOpen((o) => !o)} className="no-tap-highlight w-full flex items-center justify-between active:opacity-70">
+        <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: accent }}>Prelims cut-offs · percentile</span>
+        <ChevronDown size={14} style={{ color: T.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+
+      <PrelimsRow cycle={latest} T={T} />
+      {open && earlier.map((c) => <PrelimsRow key={c.cycle} cycle={c} T={T} />)}
+      {!open && earlier.length > 0 && (
+        <button onClick={() => setOpen(true)} className="no-tap-highlight mt-1.5 text-[11px] font-medium" style={{ color: accent }}>
+          + {earlier.length} earlier {earlier.length === 1 ? 'cycle' : 'cycles'}
+        </button>
+      )}
+
+      <p className="text-[10.5px] leading-snug mt-2" style={{ color: T.muted }}>
+        Percentile (relative, cycle-specific) — not your marks %, shown for context only.
+      </p>
+    </div>
   );
 }

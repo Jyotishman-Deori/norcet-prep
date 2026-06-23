@@ -83,3 +83,33 @@ export function percentileRank(value, peers) {
   const equal = arr.filter((v) => v === value).length;
   return Math.round(((below + 0.5 * equal) / arr.length) * 100);
 }
+
+// Group qualifying lines by distinct mark threshold (categories that share a
+// floor are grouped), highest first — so the ladder draws ONE line per real
+// threshold instead of overlapping lines for shared values (e.g. OBC and
+// UR/EWS-PwBD both at 45).
+export function qualifyingThresholds(ladder) {
+  const byPct = new Map();
+  (Array.isArray(ladder) ? ladder : []).forEach((l) => {
+    if (!l || typeof l.pct !== 'number') return;
+    if (!byPct.has(l.pct)) byPct.set(l.pct, { pct: l.pct, cats: [] });
+    byPct.get(l.pct).cats.push(l.cat);
+  });
+  return [...byPct.values()].sort((a, b) => b.pct - a.pct);
+}
+
+// Status of a marks-% against distinct thresholds: highest cleared + nearest
+// one still above. Keeps the readout concise even with many categories.
+export function thresholdStatus(pct, groups) {
+  const sorted = [...(groups || [])].sort((a, b) => b.pct - a.pct);
+  const cleared = sorted.filter((g) => pct >= g.pct);
+  const nextUp = [...sorted].reverse().find((g) => g.pct > pct) || null;
+  return {
+    cleared,
+    highestCleared: cleared.length ? cleared[0] : null,
+    nextUp,
+    gapToNext: nextUp ? round1(nextUp.pct - pct) : 0,
+    clearsAll: sorted.length > 0 && cleared.length === sorted.length,
+    clearsNone: cleared.length === 0,
+  };
+}
