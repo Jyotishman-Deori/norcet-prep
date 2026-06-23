@@ -14,7 +14,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   AlertCircle, AlertTriangle, Bookmark, BookmarkCheck, Check, X, ChevronLeft, ChevronRight,
-  ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send
+  ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send, Lock, Repeat
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -35,6 +35,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   const [pyqOnly, setPyqOnly] = useState(false);
   const [customTime, setCustomTime] = useState(null);
   const [customOpen, setCustomOpen] = useState(false);
+  const [strict, setStrict] = useState(false); // #2 — no-exit exam-day mode
 
   const filtered = useMemo(() => {
     return allQuestions.filter(q => {
@@ -48,7 +49,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   }, [allQuestions, difficulty, pyqOnly]);
 
   const canStart = filtered.length >= count;
-  const defaultMinutes = count === 50 ? 45 : 90;
+  const defaultMinutes = count === 50 ? 45 : count === 200 ? 180 : 90;
   const timeMinutes = customTime ?? defaultMinutes;
 
   // Time preset chips. The full 6-chip ladder felt over-busy; cut to two
@@ -108,10 +109,12 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
             Test setup
           </div>
 
-          <Row label="Questions">
+          <Row label="Questions"
+               hint={count === 200 ? 'Full-length — closest to the real paper' : undefined}>
             <Segmented value={count}
                        onChange={setCount}
-                       options={[{ id: 50, label: '50' }, { id: 100, label: '100' }]} />
+                       options={[{ id: 50, label: '50' }, { id: 100, label: '100' },
+                                 ...(allQuestions.length >= 200 ? [{ id: 200, label: '200' }] : [])]} />
           </Row>
 
           <Row label="Difficulty">
@@ -129,11 +132,18 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
           </Row>
 
           <Row label="Source"
-               hint={pyqOnly ? 'Previous-year questions only' : 'All questions in your pool'}
-               last>
+               hint={pyqOnly ? 'Previous-year questions only' : 'All questions in your pool'}>
             <Segmented value={pyqOnly ? 'pyq' : 'all'}
                        onChange={(v) => setPyqOnly(v === 'pyq')}
                        options={[{ id: 'all', label: 'All' }, { id: 'pyq', label: 'PYQ' }]} />
+          </Row>
+
+          <Row label="Strict mode"
+               hint={strict ? 'No exit until you submit — real exam conditions' : 'You can quit mid-test'}
+               last>
+            <Segmented value={strict ? 'on' : 'off'}
+                       onChange={(v) => setStrict(v === 'on')}
+                       options={[{ id: 'off', label: 'Off' }, { id: 'on', label: 'On' }]} />
           </Row>
         </Card>
 
@@ -230,7 +240,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
               </div>
             </div>
           )}
-          <Button onClick={() => onStart({ count, difficulty: Array.from(difficulty), pyqOnly, timeMinutes, pool: filtered })}
+          <Button onClick={() => onStart({ count, difficulty: Array.from(difficulty), pyqOnly, timeMinutes, pool: filtered, strict })}
                   disabled={!canStart} size="lg" className="w-full" icon={<Hourglass size={18} />}>
             Start advanced test
           </Button>
@@ -243,7 +253,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 // =====================================================================
 // ADVANCED TEST — ENGINE
 // =====================================================================
-function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookmarks = [], onToggleBookmark }) {
+function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookmarks = [], onToggleBookmark, strict = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
@@ -256,6 +266,9 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const timePerQ = useRef({});
   const lastTick = useRef(Date.now());
   const currentQId = useRef(null);
+  // #2 — flip tracker: qIds the user has had correct at any point, so the
+  // post-mortem can flag answers they changed from right to wrong.
+  const everCorrectRef = useRef(new Set());
 
   const q = questions[index];
 
@@ -298,6 +311,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               timePerQ: { ...timePerQ.current },
               elapsedSec: timeMinutes * 60,
               timeMinutes,
+              everCorrectIds: [...everCorrectRef.current],
               auto: true
             });
           }, 50);
@@ -315,10 +329,19 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const toggleOption = (i) => {
     setAnswers(prev => {
       const cur = prev[q.id] || [];
+      let nextSel;
       if (q.type === 'mcq') {
-        return { ...prev, [q.id]: cur[0] === i ? [] : [i] };
+        nextSel = cur[0] === i ? [] : [i];
+      } else {
+        nextSel = cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i];
       }
-      return { ...prev, [q.id]: cur.includes(i) ? cur.filter(x => x !== i) : [...cur, i] };
+      // #2 — observe only: remember any question the user has had correct, so a
+      // later change away from it can be surfaced as a right→wrong flip. Does not
+      // alter answering or scoring; a Set keeps it idempotent under re-renders.
+      if (nextSel.length > 0 && arraysEqualUnordered(nextSel, q.correct)) {
+        everCorrectRef.current.add(q.id);
+      }
+      return { ...prev, [q.id]: nextSel };
     });
   };
 
@@ -334,6 +357,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       timePerQ: { ...timePerQ.current },
       elapsedSec: timeMinutes * 60 - timeRemaining,
       timeMinutes,
+      everCorrectIds: [...everCorrectRef.current],
       auto: false
     });
   };
@@ -352,9 +376,15 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       {/* issues round — pad for the device status bar (same fix as TopBar) */}
       <div className="sticky top-0 z-20" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
-          <button onClick={() => setConfirm('abort')} className="no-tap-highlight p-1.5 rounded-lg active:bg-black/5">
-            <X size={20} style={{ color: T.muted }} />
-          </button>
+          {strict ? (
+            <div className="p-1.5" title="Strict mode — finish the test to exit">
+              <Lock size={18} style={{ color: T.muted }} />
+            </div>
+          ) : (
+            <button onClick={() => setConfirm('abort')} className="no-tap-highlight p-1.5 rounded-lg active:bg-black/5">
+              <X size={20} style={{ color: T.muted }} />
+            </button>
+          )}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold tabular-nums"
                style={{ background: timeRemaining < 60 ? T.errorSoft : T.surfaceWarm, color: timeColor }}>
             <Hourglass size={14} />
@@ -555,11 +585,14 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 // ADVANCED TEST — RESULTS
 // =====================================================================
 function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, onHome, onReview, label, timeMinutes, profileId,
+                              everCorrectIds = [],
                               displayName = null, streak = 0, referralCode = null, isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const summary = useMemo(() => {
     let correct = 0, wrong = 0, blank = 0;
     const detail = [];
+    const everCorrect = new Set(everCorrectIds || []);
+    let changedRightToWrong = 0;
     questions.forEach(q => {
       const ans = answers[q.id] || [];
       if (ans.length === 0) {
@@ -568,6 +601,8 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
         correct++; detail.push({ q, status: 'correct', selected: ans });
       } else {
         wrong++; detail.push({ q, status: 'wrong', selected: ans });
+        // #2 — flagged a question they once had right and changed away from.
+        if (everCorrect.has(q.id)) changedRightToWrong++;
       }
     });
     const netScore = correct - (wrong / 3);
@@ -587,8 +622,8 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
       accuracy: (s.correct + s.wrong) > 0 ? Math.round((s.correct / (s.correct + s.wrong)) * 100) : 0
     })).sort((a, b) => b.accuracy - a.accuracy);
 
-    return { correct, wrong, blank, netScore, accuracy, avgTime, detail, topicArr };
-  }, [questions, answers, elapsedSec]);
+    return { correct, wrong, blank, netScore, accuracy, avgTime, detail, topicArr, changedRightToWrong };
+  }, [questions, answers, elapsedSec, everCorrectIds]);
 
   const wrongAndBlank = summary.detail.filter(d => d.status !== 'correct');
   const maxScore = questions.length;
@@ -643,6 +678,18 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
             <div className="text-[10px] uppercase tracking-wider" style={{ color: T.muted }}>Blank 0</div>
           </Card>
         </div>
+
+        {/* #2 — second-guessing insight */}
+        {summary.changedRightToWrong > 0 && (
+          <Card className="p-3 mb-4" style={{ background: '#B8791A15', border: '1px solid #B8791A40' }}>
+            <div className="flex items-start gap-2">
+              <Repeat size={16} style={{ color: '#B8791A', marginTop: 1 }} className="shrink-0" />
+              <div className="text-[13px] leading-snug" style={{ color: T.ink }}>
+                You changed <b>{summary.changedRightToWrong}</b> {summary.changedRightToWrong === 1 ? 'answer' : 'answers'} from right to wrong. Trust your first instinct unless you’re certain.
+              </div>
+            </div>
+          </Card>
+        )}
 
         <div className="grid grid-cols-2 gap-2 mb-6">
           <Card className="p-3">

@@ -143,6 +143,7 @@ import DosagePractice from './screens/dosage-practice.jsx';
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
 const RevisionSheet = lazy(() => import('./screens/revision-sheet.jsx'));
+const StudyPlan = lazy(() => import('./screens/study-plan.jsx'));
 // [A1 slice 33] MindmapNodePopup extracted (T+useFgOnDark; imports lib/kmap).
 import MindmapNodePopup from './screens/mindmap-node-popup.jsx';
 // [A1 slice 34] KnowledgeMap (+its mindmap subsystem) extracted (data/allQuestions->useData, profileId->useProfile, T/IS_DARK/fgOnDark via hooks; imports lib/kmap + the popup).
@@ -2805,11 +2806,12 @@ export default function App() {
       screen: 'advanced-test',
       questions: qs,
       timeMinutes: spec.timeMinutes,
+      strict: !!spec.strict,
       filters: { count: spec.count, difficulty: spec.difficulty, pyqOnly: spec.pyqOnly }
     });
   }, [allQuestions]);
 
-  const submitAdvancedTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes }) => {
+  const submitAdvancedTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes, everCorrectIds }) => {
     const qs = nav.questions || [];
     let correct = 0, wrong = 0, blank = 0;
     qs.forEach(q => {
@@ -2846,7 +2848,8 @@ export default function App() {
       timePerQ,
       elapsedSec,
       timeMinutes,
-      auto
+      auto,
+      everCorrectIds: everCorrectIds || []
     });
   }, [nav.questions, nav.filters]);
 
@@ -4213,6 +4216,7 @@ export default function App() {
         <AdvancedTest questions={nav.questions} timeMinutes={nav.timeMinutes}
                       bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById}
                       onSubmit={submitAdvancedTest}
+                      strict={nav.strict}
                       onAbort={goHome} />
       )}
 
@@ -4221,6 +4225,7 @@ export default function App() {
                              timePerQ={nav.timePerQ} elapsedSec={nav.elapsedSec}
                              timeMinutes={nav.timeMinutes}
                              auto={nav.auto}
+                             everCorrectIds={nav.everCorrectIds}
                              onHome={goHomeDirect}
                              onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                              displayName={profile ? (profile.displayName || profile.id) : null}
@@ -4365,11 +4370,23 @@ export default function App() {
       {nav.screen === 'revision-sheet' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome}
+                       onStartReview={() => startQuiz({ mode: 'review-due' })}
+                       onOpenPlan={() => navigate({ screen: 'study-plan' })}
                        onOpenCrib={(c) => navigate({
                          screen: 'crib-sheet', items: c.items,
                          cribTitle: c.title, cribSubtitle: c.subtitle,
                          savedMode: true, backNav: { screen: 'revision-sheet' },
                        })} />
+        </Suspense>
+      )}
+
+      {nav.screen === 'study-plan' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <StudyPlan profileId={profile.id} onBack={goHome}
+                   onStartTopic={(topic) => startQuiz({ mode: 'topic', topic, count: 10 })}
+                   onStartMock={() => navigate({ screen: 'mock-setup' })}
+                   onStartReview={() => startQuiz({ mode: 'review-due' })}
+                   onSetExamDate={() => navigate({ screen: 'exam-date' })} />
         </Suspense>
       )}
 

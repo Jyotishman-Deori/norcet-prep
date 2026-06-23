@@ -958,6 +958,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               </div>
               <ChevronRight size={20} style={{ color: examPassed ? T.muted : 'rgba(255,255,255,0.7)' }} className="flex-shrink-0 mt-1" />
             </div>
+            {!examPassed && (
+              <button onClick={(e) => { e.stopPropagation(); onNavigate({ screen: 'study-plan' }); }}
+                      className="no-tap-highlight mt-3 w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold rounded-xl py-2 active:scale-[0.98] transition"
+                      style={{ background: 'rgba(255,255,255,0.20)', color: '#FFF' }}>
+                <Target size={13} /> Open study plan
+              </button>
+            )}
           </Card>
         );
       })()}

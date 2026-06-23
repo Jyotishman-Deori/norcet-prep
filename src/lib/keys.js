@@ -72,6 +72,8 @@ export const KEYS = {
   //    call site. P1 will switch from KEYS.USERDATA to KEYS.userdata(id)
   //    with a migration path. Defined here so the rename is one place. --
   userdata:      (profileId) => `userdata:${profileId}`,
+  // #6 — local-only N-day revision plan (shared:false). Per profile.
+  studyPlan:     (profileId) => `studyplan:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet
