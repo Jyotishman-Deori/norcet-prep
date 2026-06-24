@@ -181,7 +181,7 @@ function Results({ results, questions, elapsed, onHome, onReview,
         <div className={`grid gap-2.5 ${wrong.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>
           {wrong.length > 0 && (
             <Button onClick={() => onReview(wrong.map(r => r.qId))} variant="ghost" size="md" className="w-full">
-              Re-do wrong ones
+              Open the Autopsy
             </Button>
           )}
           <ShareScoreButton correct={correct} total={total} quizType={quizType}

@@ -9,12 +9,12 @@
 // Saves go to the synced profile blob via onSave({ field: value }).
 // =====================================================================
 import React, { useState } from 'react';
-import { UserCircle2, ChevronRight, Check } from 'lucide-react';
+import { UserCircle2, ChevronRight, Check, Heart, Lightbulb } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
 import {
   GENDER_OPTIONS, QUALIFICATION_OPTIONS, EMPLOYMENT_OPTIONS,
-  normalizeDemographics, demographicsFilled,
+  normalizeDemographics, demographicsFilled, sanitizeIkigai, IKIGAI_MAX,
 } from '../lib/demographics.js';
 
 // One labelled segmented pill group.
@@ -48,6 +48,12 @@ export default function StudyProfileCard({ demographics, onSave }) {
   const d = normalizeDemographics(demographics);
   const [open, setOpen] = useState(false);
   const filled = demographicsFilled(demographics);
+  // PHIL-08 — editable-later Ikigai. Local while typing; saved (sanitised) on blur.
+  const [ikigai, setIkigai] = useState(d.ikigai || '');
+  const saveIkigai = () => {
+    const clean = sanitizeIkigai(ikigai);
+    if (onSave && clean !== (d.ikigai || '')) onSave({ ikigai: clean });
+  };
 
   const pick = (field, value) => { if (onSave) onSave({ [field]: value }); };
 
@@ -84,6 +90,25 @@ export default function StudyProfileCard({ demographics, onSave }) {
             <PillGroup T={T} label="Schedule" options={EMPLOYMENT_OPTIONS} value={d.employment}
                        hint="Shapes mock length and audio / micro-drill emphasis."
                        onPick={(v) => pick('employment', v)} />
+
+            {/* PHIL-08 — your private "why", editable any time. */}
+            <div className="mb-3.5">
+              <div className="text-[11px] uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5" style={{ color: T.muted }}>
+                <Heart size={11} style={{ color: '#E0245E' }} /> Your Ikigai
+              </div>
+              <textarea value={ikigai} onChange={e => setIkigai(e.target.value.slice(0, IKIGAI_MAX))} onBlur={saveIkigai}
+                        rows={3} maxLength={IKIGAI_MAX}
+                        placeholder="Why do you want to be a Nursing Officer? (private)"
+                        className="w-full rounded-xl px-3 py-2.5 text-sm resize-none outline-none"
+                        style={{ background: T.surface, border: `1.5px solid ${T.border}`, color: T.ink }} />
+              <div className="flex items-center justify-between mt-1">
+                <div className="text-[10px] flex items-center gap-1" style={{ color: T.muted }}>
+                  <Lightbulb size={11} /> Private — only you ever see this.
+                </div>
+                <div className="text-[10px]" style={{ color: ikigai.length >= IKIGAI_MAX ? T.error : T.muted }}>{ikigai.length}/{IKIGAI_MAX}</div>
+              </div>
+            </div>
+
             {filled === 3 && (
               <div className="rounded-xl px-3 py-2.5 flex items-center gap-2 mt-1" style={{ background: T.successSoft, border: `1px solid ${T.success}33` }}>
                 <Check size={14} style={{ color: T.success }} />

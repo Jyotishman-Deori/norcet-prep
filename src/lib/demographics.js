@@ -59,13 +59,22 @@ const ID_SETS = {
   employment: new Set(EMPLOYMENT_OPTIONS.map(o => o.id)),
 };
 
+// PHIL-08 — the Ikigai statement is private free text. Strip all HTML tags
+// (never render user markup) and cap at 280 chars before it ever touches state
+// or storage. Never log this field anywhere.
+export const IKIGAI_MAX = 280;
+export function sanitizeIkigai(s) {
+  return String(s == null ? '' : s).replace(/<[^>]*>/g, '').slice(0, IKIGAI_MAX);
+}
+
 // Shape/validate a stored demographics blob (tolerates missing/old data).
 export function normalizeDemographics(d) {
-  const out = { gender: null, qualification: null, employment: null, customTargetPercentile: DEFAULT_TARGET_PERCENTILE };
+  const out = { gender: null, qualification: null, employment: null, ikigai: '', customTargetPercentile: DEFAULT_TARGET_PERCENTILE };
   if (d && typeof d === 'object') {
     if (ID_SETS.gender.has(d.gender)) out.gender = d.gender;
     if (ID_SETS.qualification.has(d.qualification)) out.qualification = d.qualification;
     if (ID_SETS.employment.has(d.employment)) out.employment = d.employment;
+    if (typeof d.ikigai === 'string') out.ikigai = sanitizeIkigai(d.ikigai);
     if (typeof d.customTargetPercentile === 'number' && d.customTargetPercentile > 0 && d.customTargetPercentile <= 100) {
       out.customTargetPercentile = d.customTargetPercentile;
     }

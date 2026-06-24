@@ -46,91 +46,103 @@ export default function WhereYouStandCard({ history, onStartAdvanced }) {
     return () => clearTimeout(t);
   }, [grown]);
 
-  // ---- Empty state: an invitation, not an error. ----
-  if (!proj || proj.n === 0) {
-    return (
-      <Card className="p-4 mb-5" style={{ background: accent + '0E', border: `1px solid ${accent}33` }}>
-        <Eyebrow accent={accent} />
-        <div className="mt-2 text-[15px] font-semibold" style={{ color: T.ink }}>
-          See where you stand against the real cut-offs
-        </div>
-        <p className="mt-1 text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-          Finish one timed Advanced Test and we’ll place your score on the official AIIMS Mains
-          qualifying ladder — so you know exactly how far you are from clearing the bar.
-        </p>
-        {onStartAdvanced && (
-          <button
-            onClick={onStartAdvanced}
-            className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold rounded-full px-3.5 py-2"
-            style={{ background: accent, color: '#fff' }}
-          >
-            Start an Advanced Test <ArrowUpRight size={15} />
-          </button>
-        )}
-      </Card>
-    );
-  }
-
-  const status = thresholdStatus(proj.pct, groups);
-  const hasBand = proj.usedN > 1 && proj.high > proj.low;
+  // The benchmark reference (ladder + legend + prelims percentiles) is shown to
+  // EVERYONE — even with zero Advanced Tests — so the qualifying system is never
+  // hidden. The personal "You" marker + readout appear only once there's data;
+  // otherwise a premium nudge invites a timed Advanced Test to locate their spot.
+  const hasData = !!(proj && proj.n > 0);
+  const status = hasData ? thresholdStatus(proj.pct, groups) : null;
+  const hasBand = hasData && proj.usedN > 1 && proj.high > proj.low;
 
   return (
     <Card className="p-4 mb-5" style={{ background: accent + '0E', border: `1px solid ${accent}33` }}>
       <Eyebrow accent={accent} />
 
-      {/* Headline number — the user's recent marks % */}
-      <div className="mt-2 flex items-end justify-between gap-3">
-        <div>
-          <div className="flex items-baseline gap-2">
-            <span className="font-display font-semibold leading-none" style={{ fontSize: '2.6rem', color: T.ink }}>
-              {Math.round(proj.pct)}<span style={{ fontSize: '1.3rem', color: T.muted }}>%</span>
-            </span>
-          </div>
-          <div className="mt-1 text-[12px]" style={{ color: T.muted }}>
-            recent full-length marks{hasBand ? ` · ${Math.round(proj.low)}–${Math.round(proj.high)}% over last ${proj.usedN}` : ''}
-          </div>
-        </div>
-        {proj.n >= 2 && (
-          <div className="text-right shrink-0">
-            <div className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: T.success }}>
-              <Trophy size={12} /> best {Math.round(proj.best)}%
+      {hasData ? (
+        /* Headline number — the user's recent marks % */
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <div>
+            <div className="flex items-baseline gap-2">
+              <span className="font-display font-semibold leading-none" style={{ fontSize: '2.6rem', color: T.ink }}>
+                {Math.round(proj.pct)}<span style={{ fontSize: '1.3rem', color: T.muted }}>%</span>
+              </span>
+            </div>
+            <div className="mt-1 text-[12px]" style={{ color: T.muted }}>
+              recent full-length marks{hasBand ? ` · ${Math.round(proj.low)}–${Math.round(proj.high)}% over last ${proj.usedN}` : ''}
             </div>
           </div>
-        )}
-      </div>
+          {proj.n >= 2 && (
+            <div className="text-right shrink-0">
+              <div className="inline-flex items-center gap-1 text-[11px] font-semibold" style={{ color: T.success }}>
+                <Trophy size={12} /> best {Math.round(proj.best)}%
+              </div>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Reference headline — the bar everyone is aiming at */
+        <div className="mt-2">
+          <div className="text-[15px] font-semibold" style={{ color: T.ink }}>The official AIIMS qualifying bar</div>
+          <p className="mt-1 text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
+            The real NORCET Mains cut-offs and recent Prelims percentiles — the exact targets you’re studying toward. See where <b style={{ color: T.ink }}>your</b> score lands by taking one timed Advanced Test.
+          </p>
+        </div>
+      )}
 
-      {/* The self-locating ladder (distinct thresholds) */}
-      <Ladder T={T} accent={accent} pct={proj.pct} low={proj.low} high={proj.high} hasBand={hasBand} grown={grown} groups={groups} />
+      {/* The self-locating ladder — reference scale always; "You" only with data */}
+      <Ladder T={T} accent={accent} pct={hasData ? proj.pct : null}
+              low={hasData ? proj.low : null} high={hasData ? proj.high : null}
+              hasBand={hasBand} grown={grown} groups={groups} showYou={hasData} />
 
       {/* Legend: each distinct threshold + the categories that share it */}
       <div className="mt-2.5 space-y-1">
         {groups.map((g) => {
-          const cleared = proj.pct >= g.pct;
+          const cleared = hasData && proj.pct >= g.pct;
           return (
             <div key={g.pct} className="flex items-center gap-2 text-[11px]">
               <span className="inline-block rounded-full shrink-0"
                     style={{ width: 7, height: 7, background: cleared ? T.success : 'transparent', border: cleared ? 'none' : `1.5px solid ${T.muted}` }} />
-              <span style={{ fontWeight: 600, color: cleared ? T.ink : T.muted, width: 30 }}>{g.pct}%</span>
+              <span style={{ fontWeight: 600, color: cleared ? T.ink : (hasData ? T.muted : T.inkSoft), width: 30 }}>{g.pct}%</span>
               <span style={{ color: cleared ? T.inkSoft : T.muted }}>{g.cats.join(' · ')}</span>
             </div>
           );
         })}
       </div>
 
-      {/* Honest, motivating readout */}
-      <p className="mt-3 text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-        <Readout T={T} status={status} />
-      </p>
+      {/* Honest, motivating readout (only meaningful once there's a score) */}
+      {hasData && (
+        <p className="mt-3 text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
+          <Readout T={T} status={status} />
+        </p>
+      )}
 
       {/* Footnote — keep the claim honest */}
       <p className="mt-2 text-[10.5px] leading-snug" style={{ color: T.muted }}>
-        From your timed Advanced Tests, negative marking applied. Lines are official AIIMS Mains
-        qualifying minimums (PwBD lines included) — your category is yours to read off; this isn’t a
-        predicted rank.
+        {hasData
+          ? 'From your timed Advanced Tests, negative marking applied. Lines are official AIIMS Mains qualifying minimums (PwBD lines included) — your category is yours to read off; this isn’t a predicted rank.'
+          : 'Lines are official AIIMS Mains qualifying minimums (PwBD lines included) — your category is yours to read off. These are real cut-offs, not a predicted rank.'}
       </p>
 
       {/* Prelims percentile cut-offs — reference only, progressive disclosure */}
       {HAS_PRELIMS_DATA && <PrelimsSection T={T} />}
+
+      {/* Subtle, premium nudge to locate themselves on the ladder. Prominent when
+          there's no score yet; quiet "log another" once they've started. */}
+      {onStartAdvanced && (
+        hasData ? (
+          <button onClick={onStartAdvanced}
+                  className="no-tap-highlight mt-3 inline-flex items-center gap-1 text-[12px] font-semibold active:opacity-70"
+                  style={{ color: accent }}>
+            Take another Advanced Test to refresh your standing <ArrowUpRight size={13} />
+          </button>
+        ) : (
+          <button onClick={onStartAdvanced}
+                  className="no-tap-highlight mt-4 w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold rounded-xl px-3.5 py-3 active:scale-[0.99] transition"
+                  style={{ background: accent, color: '#fff', boxShadow: `0 6px 16px ${accent}45` }}>
+            See where you stand — take an Advanced Test <ArrowUpRight size={15} />
+          </button>
+        )
+      )}
     </Card>
   );
 }
@@ -165,30 +177,36 @@ function Readout({ T, status }) {
 }
 
 // --- The scale ------------------------------------------------------------
-function Ladder({ T, accent, pct, low, high, hasBand, grown, groups }) {
+// showYou=false renders the qualifying lines as a pure REFERENCE (no personal
+// marker), so every user can read the bar before ever taking an Advanced Test.
+function Ladder({ T, accent, pct, low, high, hasBand, grown, groups, showYou = true }) {
   const W = 320, x0 = 14, x1 = 306, inner = x1 - x0;
   const trackY = 64, trackH = 18, r = trackH / 2;
   const xOf = (p) => x0 + Math.max(0, Math.min(1, (p - LO) / (HI - LO))) * inner;
 
-  const xPct = xOf(pct);
-  const fillW = grown ? xPct - x0 : 0;
+  const xPct = showYou ? xOf(pct) : 0;
+  const fillW = (showYou && grown) ? xPct - x0 : 0;
 
   return (
     <svg viewBox={`0 0 ${W} 112`} width="100%" role="img"
-         aria-label={`Your marks are about ${Math.round(pct)} percent, shown against the qualifying lines.`}
+         aria-label={showYou
+           ? `Your marks are about ${Math.round(pct)} percent, shown against the qualifying lines.`
+           : 'The AIIMS Mains qualifying lines.'}
          style={{ display: 'block', marginTop: 10, overflow: 'visible' }}>
       {/* track */}
       <rect x={x0} y={trackY} width={inner} height={trackH} rx={r} fill={T.surfaceWarm} stroke={T.border} strokeWidth="1" />
 
       {/* spread band (low–high) behind the fill */}
-      {hasBand && (
+      {showYou && hasBand && (
         <rect x={xOf(low)} y={trackY - 4} width={Math.max(2, xOf(high) - xOf(low))} height={trackH + 8} rx="6"
               fill={accent} opacity="0.16" />
       )}
 
       {/* fill up to the score */}
-      <rect x={x0} y={trackY} width={fillW} height={trackH} rx={r} fill={accent}
-            style={{ transition: 'width 0.75s cubic-bezier(0.22,1,0.36,1)' }} />
+      {showYou && (
+        <rect x={x0} y={trackY} width={fillW} height={trackH} rx={r} fill={accent}
+              style={{ transition: 'width 0.75s cubic-bezier(0.22,1,0.36,1)' }} />
+      )}
 
       {/* one dashed line per DISTINCT threshold (no overlaps) */}
       {groups.map((g) => {
@@ -202,12 +220,22 @@ function Ladder({ T, accent, pct, low, high, hasBand, grown, groups }) {
         );
       })}
 
-      {/* "You" pill + stem */}
-      <line x1={xPct} y1={36} x2={xPct} y2={trackY - 1} stroke={accent} strokeWidth="1.5" opacity="0.5" />
-      <g transform={`translate(${xPct}, 24)`}>
-        <rect x="-26" y="-13" width="52" height="22" rx="11" fill={accent} />
-        <text x="0" y="2" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">You {Math.round(pct)}%</text>
-      </g>
+      {showYou ? (
+        <>
+          {/* "You" pill + stem */}
+          <line x1={xPct} y1={36} x2={xPct} y2={trackY - 1} stroke={accent} strokeWidth="1.5" opacity="0.5" />
+          <g transform={`translate(${xPct}, 24)`}>
+            <rect x="-26" y="-13" width="52" height="22" rx="11" fill={accent} />
+            <text x="0" y="2" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">You {Math.round(pct)}%</text>
+          </g>
+        </>
+      ) : (
+        /* reference mode — a faint "your score appears here" placeholder pill */
+        <g transform={`translate(${(x0 + x1) / 2}, 24)`} opacity="0.6">
+          <rect x="-52" y="-13" width="104" height="22" rx="11" fill="none" stroke={accent} strokeWidth="1.2" strokeDasharray="3 2.5" />
+          <text x="0" y="2" textAnchor="middle" fontSize="10" fontWeight="600" fill={accent}>You appear here</text>
+        </g>
+      )}
 
       {/* axis ends */}
       <text x={x0} y={trackY + trackH + 22} textAnchor="start" fontSize="9.5" fill={T.muted}>{LO}%</text>

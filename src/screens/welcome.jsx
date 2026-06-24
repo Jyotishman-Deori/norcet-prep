@@ -19,7 +19,7 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle } from 'lucide-react';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle, Lock } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
@@ -30,6 +30,7 @@ import { KEYS } from '../lib/keys.js';
 import {
   GENDER_OPTIONS, QUALIFICATION_OPTIONS, EMPLOYMENT_OPTIONS,
   QUALIFICATION_UNLOCK, EMPLOYMENT_UNLOCK, normalizeDemographics,
+  sanitizeIkigai, IKIGAI_MAX,
 } from '../lib/demographics.js';
 
 // NEW-01 — premium, quiet "Skip tour" pill with a micro-interaction (the arrow
@@ -57,7 +58,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // demographic screens before the "what's inside" tour. Replays from Settings
   // skip straight to the tour (no re-collecting data).
   const STEP_ORDER = firstRun
-    ? ['pitch', 'library', 'gender', 'qualification', 'employment', 'tour', 'tips']
+    ? ['pitch', 'library', 'gender', 'qualification', 'employment', 'ikigai', 'tour', 'tips']
     : ['tour', 'tips'];
 
   // Each row is a launchable section. `helpKey` maps to its help.json entry so
@@ -83,6 +84,8 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // has one (GNM / employment). Cleared whenever the step changes.
   const [pendingUnlock, setPendingUnlock] = useState(null);
   useEffect(() => { setPendingUnlock(null); }, [step]);
+  // PHIL-08 — the private Ikigai statement (seeded from any saved value).
+  const [ikigaiText, setIkigaiText] = useState(demo.ikigai || '');
   // Issues round — the DEVICE back button mirrors the tour's own back:
   // App re-arms its history sentinel and dispatches 'norcet:welcome-back';
   // here it closes the open help popup first (one step back), and at the
@@ -326,6 +329,69 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <div className="text-[10.5px] text-center mt-2" style={{ color: T.muted }}>
           Optional &amp; private · change it anytime in Settings → Profile.
         </div>
+      </div>
+    );
+  }
+
+  // ---- PHIL-08: The Ikigai Anchor (private "why"). Captured here, returned to
+  // the user at their lowest moments (Code Blue). Sanitised + capped; private. ----
+  if (step === 'ikigai') {
+    const saveIkigai = () => {
+      if (onSaveDemographics) onSaveDemographics({ ikigai: sanitizeIkigai(ikigaiText) });
+      nextStep();
+    };
+    const has = !!ikigaiText.trim();
+    // An intentional, theme-independent "moment": a private dark journal panel
+    // (navy→plum) that visually separates this from the rest of onboarding.
+    const VOW_PANEL = 'radial-gradient(130% 130% at 80% 0%, #2A1B47 0%, #14213D 55%, #0A0E1C 100%)';
+    return (
+      <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+        {pageHead}
+        <div className="text-center mb-4 relative">
+          <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 -top-6 w-56 h-56 rounded-full pointer-events-none"
+               style={{ background: 'radial-gradient(circle, rgba(224,36,94,0.26), transparent 65%)' }} />
+          <div className="welcome-float relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+               style={{ background: 'linear-gradient(140deg, #E0245E, #9C1A57)', boxShadow: '0 12px 30px rgba(224,36,94,0.5)' }}>
+            <Heart size={28} color="#FFF" fill="#FFF" />
+          </div>
+          <div className="text-[11px] uppercase tracking-[0.22em] mb-1.5 relative" style={{ color: T.muted }}>One last thing</div>
+          <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>What is your Ikigai?</h1>
+          <div className="text-[13px] relative" style={{ color: T.muted }}>Why do you want to be a Nursing Officer?</div>
+        </div>
+
+        {/* The private "vow" panel — an intimate, journal-like moment. */}
+        <div className="rounded-3xl p-5 mb-3 relative overflow-hidden"
+             style={{ background: VOW_PANEL, boxShadow: '0 18px 44px rgba(10,14,28,0.45)' }}>
+          <div aria-hidden="true" className="absolute -top-10 -right-8 w-32 h-32 rounded-full pointer-events-none"
+               style={{ background: 'radial-gradient(circle, rgba(224,36,94,0.22), transparent 70%)' }} />
+          <div className="font-display leading-none mb-0.5" style={{ color: 'rgba(224,36,94,0.85)', fontSize: 40 }}>{'“'}</div>
+          <textarea value={ikigaiText} onChange={e => setIkigaiText(e.target.value.slice(0, IKIGAI_MAX))}
+                    rows={4} maxLength={IKIGAI_MAX}
+                    placeholder="To buy my parents a house. To prove I can do it. To serve my community."
+                    className="w-full bg-transparent resize-none outline-none text-[15px] leading-relaxed -mt-2 relative"
+                    style={{ color: '#F3EEE3', caretColor: '#E0245E' }} />
+          <div className="flex items-center justify-between mt-2 pt-2.5 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
+            <div className="text-[11px] flex items-center gap-1.5" style={{ color: 'rgba(243,238,227,0.62)' }}>
+              <Lock size={12} /> Private — only you will ever see this.
+            </div>
+            <div className="text-[10px] tabular-nums" style={{ color: ikigaiText.length >= IKIGAI_MAX ? '#FF9A9A' : 'rgba(243,238,227,0.55)' }}>{ikigaiText.length}/{IKIGAI_MAX}</div>
+          </div>
+        </div>
+
+        <div className="text-[12px] leading-relaxed text-center px-3 mb-4" style={{ color: T.muted }}>
+          On your hardest days, NurseHolic will bring this back to you — in your own words.
+        </div>
+
+        <Button onClick={saveIkigai} size="lg" className="w-full" icon={<Heart size={17} fill="#FFF" />}>
+          {has ? 'Anchor my why' : 'Continue'}
+        </Button>
+        {!has && (
+          <button onClick={nextStep}
+                  className="no-tap-highlight w-full inline-flex items-center justify-center gap-1 text-[13px] font-medium py-2.5 mt-1 rounded-xl active:bg-black/5"
+                  style={{ color: T.muted }}>
+            Skip this one <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     );
   }

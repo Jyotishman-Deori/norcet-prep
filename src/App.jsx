@@ -1503,7 +1503,7 @@ function quizTypeLabel(mode) {
     case 'mock':       return 'Mock Test';
     case 'bookmarks':  return 'Bookmarks Review';
     case 'review-due': return 'Spaced Review';
-    case 'wrong':      return 'Wrong-Answer Redo';
+    case 'wrong':      return 'The Autopsy';  // PHIL-05 — mistakes are the asset
     default:           return 'Practice quiz';
   }
 }
