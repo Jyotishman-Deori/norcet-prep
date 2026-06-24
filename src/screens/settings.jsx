@@ -8,8 +8,8 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Download, Edit3, Eye, EyeOff,
-  FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
+  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Copy, Download, Edit3, Eye, EyeOff,
+  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
   Shield, Sigma, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
@@ -67,6 +67,16 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     setCribSheetEnabled(next);
   };
   const [importMsg, setImportMsg] = useState(null);
+  // BUG-06 — copy-to-clipboard feedback for the account ID card.
+  const [idCopied, setIdCopied] = useState(false);
+  const accountId = profile ? (profile.uid || profile.id) : null; // matches what the admin allow-list checks
+  const copyAccountId = async () => {
+    if (!accountId) return;
+    try {
+      await navigator.clipboard.writeText(accountId);
+      setIdCopied(true); setTimeout(() => setIdCopied(false), 1600);
+    } catch (e) { /* clipboard blocked — the id is still visible to copy manually */ }
+  };
   const fileInputRef = useRef(null);
   // P11 Feature C — topic-notes export/import (separate from the data backup;
   // notes live in a local shared:false blob, not in `data`).
@@ -286,6 +296,46 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               <div className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
                 {onRenameProfile ? 'Tap to rename · syncs across devices' : 'Logged in · syncs across devices'}
               </div>
+            </div>
+          </div>
+        </Card>
+      )}
+      {/* BUG-06 — Account ID. Shown here so anyone can copy their id and send
+          it to the owner to be granted admin access (the owner adds it in
+          Admin → Manage admins). The owner sees their own id here too. */}
+      {accountId && (
+        <Card className="p-4 mb-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: T.primary + '15' }}>
+              <Fingerprint size={18} style={{ color: T.primary }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Account ID</div>
+              <div className="font-mono text-[13px] truncate" style={{ color: T.ink }}>{accountId}</div>
+            </div>
+            <button onClick={copyAccountId}
+                    className="no-tap-highlight flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold flex-shrink-0 active:scale-95 transition"
+                    style={{ background: idCopied ? T.success + '18' : T.surfaceWarm, border: `1px solid ${idCopied ? T.success : T.border}`, color: idCopied ? T.success : T.inkSoft }}
+                    aria-label="Copy account ID">
+              {idCopied ? <Check size={14} /> : <Copy size={14} />}{idCopied ? 'Copied' : 'Copy'}
+            </button>
+          </div>
+          <div className="text-[11px] leading-relaxed mt-2.5" style={{ color: T.muted }}>
+            Share this with the app owner to be made an admin. {isAdmin ? "You're an admin — manage others in Admin → Manage admins." : ''}
+          </div>
+        </Card>
+      )}
+      {/* FEAT-05 — cross-device sync reassurance. The app already syncs every
+          profile to the account (broker + security-question recovery), so the
+          "restore on a new device" story is just: sign in again. Stated plainly
+          here instead of adding a weaker redundant 6-digit-key path. */}
+      {profile && !profile.isGuest && (
+        <Card className="p-3.5 mb-3" style={{ background: T.successSoft, border: `1px solid ${T.success}30` }}>
+          <div className="flex items-start gap-2.5">
+            <RefreshCw size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
+            <div className="text-[12px] leading-relaxed" style={{ color: T.inkSoft }}>
+              <span className="font-semibold" style={{ color: T.ink }}>Backed up &amp; synced.</span> Your progress is saved to your account. On a new phone or laptop, just sign in with the same name &amp; password — everything restores automatically.
             </div>
           </div>
         </Card>

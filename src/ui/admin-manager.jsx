@@ -114,11 +114,19 @@ export default function AdminManager({ onBack }) {
           <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>No admins listed yet.</div></Card>
         ) : (
           <div className="space-y-2 mb-3">
-            {list.map(a => (
-              <Card key={a.profile_id} className="p-3">
+            {list.map(a => {
+              const isMe = myId && a.profile_id === myId;
+              return (
+              <Card key={a.profile_id} className="p-3" style={isMe ? { border: `1.5px solid ${T.primary}55`, background: T.primary + '08' } : undefined}>
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
-                    <div className="text-sm font-mono truncate" style={{ color: T.ink }}>{a.profile_id}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="text-sm font-mono truncate" style={{ color: T.ink }}>{a.profile_id}</div>
+                      {isMe && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0"
+                              style={{ background: T.primary + '18', color: T.primary }}>you</span>
+                      )}
+                    </div>
                     {a.note && <div className="text-[11px] truncate" style={{ color: T.muted }}>{a.note}</div>}
                   </div>
                   <button onClick={() => onRemove(a.profile_id)} disabled={busy}
@@ -128,7 +136,8 @@ export default function AdminManager({ onBack }) {
                   </button>
                 </div>
               </Card>
-            ))}
+              );
+            })}
           </div>
         )}
 
