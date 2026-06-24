@@ -355,8 +355,10 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             <Heart size={28} color="#FFF" fill="#FFF" />
           </div>
           <div className="text-[11px] uppercase tracking-[0.22em] mb-1.5 relative" style={{ color: T.muted }}>One last thing</div>
-          <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>What is your Ikigai?</h1>
-          <div className="text-[13px] relative" style={{ color: T.muted }}>Why do you want to be a Nursing Officer?</div>
+          <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>What's your reason why?</h1>
+          <div className="text-[13px] leading-relaxed relative px-3" style={{ color: T.muted }}>
+            Your <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span> — the deeper reason you want to become a Nursing Officer. What makes all this worth it?
+          </div>
         </div>
 
         {/* The private "vow" panel — an intimate, journal-like moment. */}

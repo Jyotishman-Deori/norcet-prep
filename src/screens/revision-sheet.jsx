@@ -22,6 +22,7 @@ import { loadCribs, removeCrib, daysAgo } from '../lib/cribs.js';
 import { FileText, ListChecks, Trash2 } from 'lucide-react';
 import { Tip } from '../ui/tooltip.jsx';
 import { useBackHandler } from '../lib/back-handler.js';
+import BackToTop from '../ui/back-to-top.jsx';
 
 const PRINT_STYLES = `
 @media print {
@@ -336,9 +337,11 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
             </Card>
           )}
 
-          {/* Toggle wrong — only relevant in the live "Today" view */}
+          {/* Toggle wrong — only relevant in the live "Today" view. Turning it
+              ON makes the list long, so auto-collapse to keep it scannable. */}
           {!isSnapshot && (
-            <Card className="p-3.5 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => setIncludeWrong(v => !v)}>
+            <Card className="p-3.5 mb-3 cursor-pointer no-tap-highlight pressable"
+                  onClick={() => { const next = !includeWrong; setIncludeWrong(next); if (next) collapseAll(); }}>
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors"
@@ -390,19 +393,26 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
             </div>
           )}
 
-          {/* Expand / collapse all */}
+          {/* Expand / collapse — a segmented control whose ACTIVE side is filled,
+              so it's always obvious which state the list is in. + a Q count. */}
           {items.length > 0 && (
-            <div className="flex gap-2 mb-1">
-              <button onClick={expandAll}
-                      className="no-tap-highlight flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-                <ChevronDown size={12} /> Expand all
-              </button>
-              <button onClick={collapseAll}
-                      className="no-tap-highlight flex-1 py-2 rounded-lg text-xs font-medium flex items-center justify-center gap-1.5"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-                <ChevronUp size={12} /> Collapse all
-              </button>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="flex flex-1 rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                <button onClick={expandAll}
+                        aria-pressed={allExpanded}
+                        className="no-tap-highlight flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                        style={{ background: allExpanded ? T.primary : 'transparent', color: allExpanded ? '#FFF' : T.inkSoft }}>
+                  <ChevronDown size={13} /> Expanded
+                </button>
+                <button onClick={collapseAll}
+                        aria-pressed={!allExpanded}
+                        className="no-tap-highlight flex-1 py-2 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                        style={{ background: !allExpanded ? T.primary : 'transparent', color: !allExpanded ? '#FFF' : T.inkSoft,
+                                 borderLeft: `1px solid ${T.border}` }}>
+                  <ChevronUp size={13} /> Collapsed
+                </button>
+              </div>
+              <span className="text-[11px] font-medium tabular-nums flex-shrink-0 px-1" style={{ color: T.muted }}>{items.length} Q</span>
             </div>
           )}
           </>)}
@@ -525,6 +535,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
         )}
         </>)}
       </div>
+      <BackToTop />
     </div>
   );
 }

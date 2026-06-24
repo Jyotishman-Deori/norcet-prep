@@ -193,10 +193,12 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     return () => obs.disconnect();
   }, [limit, items.length]);
 
-  // Floating scroll-to-top after the user is a few cards deep.
+  // Floating scroll-to-top — appears once the user is a little way down (long
+  // crib sheets scroll a lot; surface it early so getting back up is one tap).
   const [showTop, setShowTop] = useState(false);
   useEffect(() => {
-    const onScroll = () => setShowTop((window.scrollY || 0) > 900);
+    const onScroll = () => setShowTop((window.scrollY || 0) > 420);
+    onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -432,13 +434,14 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       {/* #8 — Listen player, floated above the action bar */}
       <ListenBar ctl={listen} label="Revision" bottomOffset={76} />
 
-      {/* floating scroll-to-top */}
+      {/* floating scroll-to-top — premium pill, sits above the action bar */}
       {showTop && (
         <button onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }}
-                aria-label="Scroll to top"
-                className="crib-no-print no-tap-highlight fixed right-4 z-30 w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition anim-fadeup"
-                style={{ bottom: 76, background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}>
-          <ArrowUp size={18} style={{ color: T.inkSoft }} />
+                aria-label="Back to top"
+                className="crib-no-print no-tap-highlight fixed right-4 z-30 inline-flex items-center gap-1.5 rounded-full pl-3 pr-3.5 py-2.5 active:scale-95 transition-transform anim-fadeup"
+                style={{ bottom: 80, background: T.primary, color: '#FFF', boxShadow: `0 8px 24px ${T.primary}66` }}>
+          <ArrowUp size={16} />
+          <span className="text-xs font-semibold">Top</span>
         </button>
       )}
     </div>

@@ -8,7 +8,7 @@
 //   • Employment    → pacing (mock length, audio/micro-drill emphasis)
 // Saves go to the synced profile blob via onSave({ field: value }).
 // =====================================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserCircle2, ChevronRight, Check, Heart, Lightbulb } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
@@ -50,10 +50,17 @@ export default function StudyProfileCard({ demographics, onSave }) {
   const filled = demographicsFilled(demographics);
   // PHIL-08 — editable-later Ikigai. Local while typing; saved (sanitised) on blur.
   const [ikigai, setIkigai] = useState(d.ikigai || '');
+  // Never make the user guess whether it saved — flash an explicit "Saved ✓".
+  const [ikigaiSaved, setIkigaiSaved] = useState(false);
   const saveIkigai = () => {
     const clean = sanitizeIkigai(ikigai);
-    if (onSave && clean !== (d.ikigai || '')) onSave({ ikigai: clean });
+    if (onSave && clean !== (d.ikigai || '')) { onSave({ ikigai: clean }); setIkigaiSaved(true); }
   };
+  useEffect(() => {
+    if (!ikigaiSaved) return undefined;
+    const t = setTimeout(() => setIkigaiSaved(false), 2400);
+    return () => clearTimeout(t);
+  }, [ikigaiSaved]);
 
   const pick = (field, value) => { if (onSave) onSave({ [field]: value }); };
 
@@ -91,19 +98,26 @@ export default function StudyProfileCard({ demographics, onSave }) {
                        hint="Shapes mock length and audio / micro-drill emphasis."
                        onPick={(v) => pick('employment', v)} />
 
-            {/* PHIL-08 — your private "why", editable any time. */}
+            {/* PHIL-08 — your private "why" (Ikigai), editable any time. */}
             <div className="mb-3.5">
               <div className="text-[11px] uppercase tracking-wider font-semibold mb-1.5 flex items-center gap-1.5" style={{ color: T.muted }}>
                 <Heart size={11} style={{ color: '#E0245E' }} /> Your Ikigai
+                <span className="normal-case font-normal tracking-normal" style={{ color: T.muted }}>· your reason why</span>
+                {/* explicit save confirmation — never let the user guess */}
+                {ikigaiSaved && (
+                  <span className="anim-fadeup ml-auto inline-flex items-center gap-1 normal-case tracking-normal font-semibold" style={{ color: T.success }}>
+                    <Check size={11} /> Saved
+                  </span>
+                )}
               </div>
               <textarea value={ikigai} onChange={e => setIkigai(e.target.value.slice(0, IKIGAI_MAX))} onBlur={saveIkigai}
                         rows={3} maxLength={IKIGAI_MAX}
                         placeholder="Why do you want to be a Nursing Officer? (private)"
                         className="w-full rounded-xl px-3 py-2.5 text-sm resize-none outline-none"
-                        style={{ background: T.surface, border: `1.5px solid ${T.border}`, color: T.ink }} />
+                        style={{ background: T.surface, border: `1.5px solid ${ikigaiSaved ? T.success : T.border}`, color: T.ink, transition: 'border-color 0.3s' }} />
               <div className="flex items-center justify-between mt-1">
                 <div className="text-[10px] flex items-center gap-1" style={{ color: T.muted }}>
-                  <Lightbulb size={11} /> Private — only you ever see this.
+                  <Lightbulb size={11} /> Private — only you ever see this. Saves when you tap away.
                 </div>
                 <div className="text-[10px]" style={{ color: ikigai.length >= IKIGAI_MAX ? T.error : T.muted }}>{ikigai.length}/{IKIGAI_MAX}</div>
               </div>

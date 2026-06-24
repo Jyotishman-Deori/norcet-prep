@@ -276,8 +276,23 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
       <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
 
-        {/* #1 — Where you stand: recent full-length marks on the official ladder */}
-        <WhereYouStandCard history={data.advancedTestHistory} onStartAdvanced={onStartAdvanced} />
+        {/* #1 — Where you stand: real marks (Advanced Test) OR an estimate from
+            everyday practice, on the official ladder. Estimate = accuracy with
+            1/3 negative marking applied — a low-barrier preview before a full
+            Advanced Test. Needs ≥10 attempts to be meaningful. */}
+        {(() => {
+          const t = (data.stats && data.stats.totalAttempted) || 0;
+          const c = (data.stats && data.stats.totalCorrect) || 0;
+          let estimate = null;
+          if (t >= 10) {
+            const acc = c / t;
+            estimate = { pct: Math.max(0, Math.round((acc - (1 - acc) / 3) * 100)), n: t };
+          }
+          return (
+            <WhereYouStandCard history={data.advancedTestHistory} estimate={estimate}
+                               onStartAdvanced={onStartAdvanced} onQuick={onQuick} />
+          );
+        })()}
 
         {/* Headline */}
         <div className="grid grid-cols-2 gap-3 mb-3">

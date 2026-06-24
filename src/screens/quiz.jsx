@@ -209,7 +209,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   if (!q) {
     const emptyTitle = mode === 'bookmarks' ? 'Bookmarks'
       : mode === 'review-due' ? 'Review'
-      : mode === 'wrong' ? 'The Autopsy'
+      : mode === 'wrong' ? 'Review'
       : 'Practice';
     return (
       <div className="anim-fadeup">
@@ -220,7 +220,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
           <div className="text-sm text-muted">
             {mode === 'bookmarks' && 'You have no bookmarked questions yet — bookmark a few during practice, then come back.'}
             {mode === 'review-due' && 'Nothing is due for review yet — come back tomorrow.'}
-            {mode === 'wrong' && 'The Autopsy is clean — no mistakes to review. Keep your accuracy high.'}
+            {mode === 'wrong' && 'No wrong answers to review.'}
             {!['bookmarks', 'review-due', 'wrong'].includes(mode) && 'Nothing to show here.'}
           </div>
         </div>
