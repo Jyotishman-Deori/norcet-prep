@@ -17,11 +17,11 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Activity, AlertCircle, AlertTriangle, Check, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, ShieldCheck, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown
+  Activity, AlertCircle, AlertTriangle, Check, CheckSquare, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
-import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Pill, Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
 import AdminTile from '../ui/admin-tile.jsx';
 import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import AdminManager from '../ui/admin-manager.jsx';
@@ -29,7 +29,7 @@ import AdminFaqManager from '../ui/admin-faq-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
-import { loadHelpfulnessReport } from '../lib/helpful-votes.js';
+import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
 import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
 import { loadEngagement } from '../lib/analytics.js';
 // FAV — Favourites insights: hearts + average priority rank per section.
@@ -123,6 +123,10 @@ function AdminPanel({
   const [helpfulLoading, setHelpfulLoading] = useState(true);
   const [helpfulSort, setHelpfulSort] = useState('notHelpful'); // 'helpful'|'notHelpful'|'ratio'
   const [helpfulOpen, setHelpfulOpen] = useState(null);          // expanded row id
+  // BUG-05 — selection + bulk/single clear for the helpfulness report.
+  const [helpfulSelMode, setHelpfulSelMode] = useState(false);
+  const [helpfulSel, setHelpfulSel] = useState(() => new Set());  // selected row ids
+  const [helpfulBusy, setHelpfulBusy] = useState(false);
   const refreshHelpful = useCallback(async () => {
     setHelpfulLoading(true);
     const rows = await loadHelpfulnessReport(allQuestions);
@@ -297,7 +301,7 @@ function AdminPanel({
   // #19 — open (unhandled) reports for the dashboard summary band.
   const openFeedback = feedback.filter(it => !(it.status === 'fixed' || it.status === 'wontfix' || it.status === 'thanks')).length;
 
-  const backToDash = () => setView('dashboard');
+  const backToDash = () => { setHelpfulSelMode(false); setHelpfulSel(new Set()); setView('dashboard'); };
 
   // ---- Reusable count/badge signals for the tiles ----
   const bigCount = (n, loading) => (
@@ -318,6 +322,46 @@ function AdminPanel({
       { id: 'helpful',    label: 'Most ✓' },
       { id: 'ratio',      label: 'Best ratio' }
     ];
+    // BUG-05 — selection, single + bulk clear, and clear-history (all cautioned).
+    const totalResponses = helpful.reduce((s, r) => s + r.total, 0);
+    const selCount = helpfulSel.size;
+    const visibleIds = sorted.map(r => r.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every(id => helpfulSel.has(id));
+    const toggleOne = (id) => setHelpfulSel(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+    const toggleAll = () => setHelpfulSel(allSelected ? new Set() : new Set(visibleIds));
+    const exitSel = () => { setHelpfulSelMode(false); setHelpfulSel(new Set()); };
+    const runClear = async (ids) => {
+      setHelpfulBusy(true);
+      try { await clearHelpfulnessMany(ids); } catch (e) {}
+      setHelpfulBusy(false);
+      exitSel();
+      await refreshHelpful();
+    };
+    const confirmClearOne = (r) => requestConfirm({
+      icon: <Trash2 size={20} style={{ color: T.error }} />,
+      title: "Clear this question's votes?",
+      body: 'Resets the helpful / not-helpful tally for this one question so it drops off the list. Users can rate it again later — nothing is permanently deleted.',
+      confirmLabel: 'Clear votes', cancelLabel: 'Cancel', tone: 'danger',
+      onConfirm: () => runClear([r.id]),
+    });
+    const confirmClearSelected = () => requestConfirm({
+      icon: <Trash2 size={20} style={{ color: T.error }} />,
+      title: `Clear votes for ${selCount} question${selCount === 1 ? '' : 's'}?`,
+      body: 'Resets the helpful / not-helpful tally for each selected question so they drop off the list. Users can rate them again later — nothing is permanently deleted.',
+      confirmLabel: `Clear ${selCount}`, cancelLabel: 'Cancel', tone: 'danger',
+      onConfirm: () => runClear([...helpfulSel]),
+    });
+    const confirmClearAll = () => requestConfirm({
+      icon: <AlertTriangle size={20} style={{ color: T.error }} />,
+      title: 'Clear ALL helpfulness history?',
+      body: "This resets every question's helpful / not-helpful votes across all users. The report starts empty. Users can rate again afterwards, but the current signal can't be recovered.",
+      confirmLabel: 'Clear everything', cancelLabel: 'Cancel', tone: 'danger', confirmWord: 'CLEAR',
+      onConfirm: async () => { setHelpfulBusy(true); try { await clearAllHelpfulness(); } catch (e) {} setHelpfulBusy(false); exitSel(); await refreshHelpful(); },
+    });
+    const pillBtn = (active) => ({
+      background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
+      border: `1px solid ${active ? T.primary : T.border}`,
+    });
     return (
       <div className="anim-fadeup">
         <TopBar title="Helpfulness" onBack={backToDash}
@@ -327,23 +371,66 @@ function AdminPanel({
                     <RefreshCw size={18} style={{ color: T.muted }} className={helpfulLoading ? 'animate-spin' : ''} />
                   </button>
                 } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <div className="max-w-md mx-auto px-4 pb-28 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             How users rate explanations. Only questions with at least one response appear — silent users are intentionally excluded. A high <span style={{ color: T.error, fontWeight: 600 }}>✕</span> count flags an explanation worth rewriting. Tap a row to read the full question and explanation.
           </div>
 
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {sortOpts.map(o => {
-              const active = helpfulSort === o.id;
-              return (
-                <button key={o.id} onClick={() => setHelpfulSort(o.id)}
-                        className="no-tap-highlight py-2 rounded-xl text-xs font-semibold transition-all"
-                        style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.ink, border: `1.5px solid ${active ? T.primary : T.border}` }}>
-                  {o.label}
+          {/* Summary band + Select / Clear-history actions */}
+          {!helpfulLoading && sorted.length > 0 && (
+            <Card className="p-3 mb-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="text-[13px] min-w-0" style={{ color: T.ink }}>
+                  <span className="font-semibold tabular-nums">{sorted.length}</span> rated
+                  <span style={{ color: T.muted }}> · {totalResponses} response{totalResponses === 1 ? '' : 's'}</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button onClick={() => { if (helpfulSelMode) exitSel(); else setHelpfulSelMode(true); }}
+                          className="no-tap-highlight inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-full active:scale-95 transition"
+                          style={pillBtn(helpfulSelMode)}>
+                    <CheckSquare size={13} /> {helpfulSelMode ? 'Done' : 'Select'}
+                  </button>
+                  <button onClick={confirmClearAll} disabled={helpfulBusy}
+                          className="no-tap-highlight inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-full active:scale-95 transition disabled:opacity-50"
+                          style={{ background: T.error + '12', color: T.error, border: `1px solid ${T.error}30` }}>
+                    <Trash2 size={13} /> Clear history
+                  </button>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* Controls: sort chips, OR the selection toolbar in select mode */}
+          {!helpfulLoading && sorted.length > 0 && (
+            helpfulSelMode ? (
+              <div className="flex items-center gap-2 mb-4">
+                <button onClick={toggleAll}
+                        className="no-tap-highlight text-xs font-semibold px-3 py-2 rounded-xl active:scale-95 transition"
+                        style={pillBtn(allSelected)}>
+                  {allSelected ? 'Unselect all' : 'Select all'}
                 </button>
-              );
-            })}
-          </div>
+                <div className="text-xs flex-1" style={{ color: T.muted }}>{selCount} selected</div>
+                <button onClick={confirmClearSelected} disabled={selCount === 0 || helpfulBusy}
+                        className="no-tap-highlight inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-xl active:scale-95 transition disabled:opacity-40"
+                        style={{ background: selCount > 0 ? T.error : T.surface, color: selCount > 0 ? '#FFF' : T.muted, border: `1px solid ${selCount > 0 ? T.error : T.border}` }}>
+                  <Trash2 size={14} /> Clear{selCount > 0 ? ` (${selCount})` : ''}
+                </button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {sortOpts.map(o => {
+                  const active = helpfulSort === o.id;
+                  return (
+                    <button key={o.id} onClick={() => setHelpfulSort(o.id)}
+                            className="no-tap-highlight py-2 rounded-xl text-xs font-semibold transition-all"
+                            style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.ink, border: `1.5px solid ${active ? T.primary : T.border}` }}>
+                      {o.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )
+          )}
 
           {helpfulLoading ? (
             <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
@@ -355,11 +442,20 @@ function AdminPanel({
           ) : (
             <div className="space-y-2.5">
               {sorted.map(r => {
-                const open = helpfulOpen === r.id;
+                const open = !helpfulSelMode && helpfulOpen === r.id;
+                const checked = helpfulSel.has(r.id);
                 return (
                   <Card key={r.id} className="p-3.5 cursor-pointer no-tap-highlight pressable"
-                        onClick={() => setHelpfulOpen(open ? null : r.id)}>
+                        style={helpfulSelMode && checked ? { borderColor: T.primary, boxShadow: `0 0 0 1.5px ${T.primary}` } : undefined}
+                        onClick={() => helpfulSelMode ? toggleOne(r.id) : setHelpfulOpen(open ? null : r.id)}>
                     <div className="flex items-start gap-3">
+                      {helpfulSelMode && (
+                        <div className="flex-shrink-0 mt-0.5">
+                          {checked
+                            ? <CheckSquare size={20} style={{ color: T.primary }} />
+                            : <Square size={20} style={{ color: T.muted }} />}
+                        </div>
+                      )}
                       <div className="min-w-0 flex-1">
                         <div className="text-sm" style={{ color: T.ink, ...(open ? {} : { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>
                           {r.stem}
@@ -369,6 +465,13 @@ function AdminPanel({
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-xs font-semibold" style={{ color: T.success }}>✓ {r.helpful}</span>
                         <span className="text-xs font-semibold" style={{ color: T.error }}>✕ {r.notHelpful}</span>
+                        {!helpfulSelMode && (
+                          <button onClick={(e) => { e.stopPropagation(); confirmClearOne(r); }}
+                                  aria-label="Clear this question's votes"
+                                  className="no-tap-highlight p-1.5 -m-1 rounded-lg active:bg-black/5">
+                            <Trash2 size={15} style={{ color: T.error }} />
+                          </button>
+                        )}
                       </div>
                     </div>
                     {/* ratio bar */}

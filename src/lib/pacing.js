@@ -13,10 +13,93 @@
 // and zero/absent times are ignored.
 // =====================================================================
 
-// NORCET Prelims pace: 100 questions in 90 minutes ≈ 54s per question. This is
-// the "finish on time" yardstick; it is a target, not a verdict on any single
-// question.
-export const EXAM_PACE_SEC = 54;
+// =====================================================================
+// FEAT-01 — VERIFIED NORCET PACING DATA
+// =====================================================================
+// PRELIMS: 5 sections × 20 questions × 18 min/section = 100 Qs / 90 min
+//          → 5400s / 100 = 54s per-question ceiling (the "finish on time"
+//          yardstick; a target, not a verdict on any single question).
+// MAINS:   4 sections × 40 questions × 45 min/section = 160 Qs / 180 min
+//          → 10800s / 160 = 67.5s per-question ceiling.
+export const PRELIMS_PACE_SEC = 54;
+export const MAINS_PACE_SEC   = 67.5;
+// Back-compat alias — existing callers (pacing-card, paceVerdict default) use
+// EXAM_PACE_SEC and the app's tests are Prelims-style (100 Q), so it maps to
+// the Prelims ceiling.
+export const EXAM_PACE_SEC = PRELIMS_PACE_SEC;
+
+// Negative marking — AIIMS NORCET deducts 1/3 mark per wrong answer.
+export const NEGATIVE_MARK = -1 / 3;
+export const NEGATIVE_MARK_LABEL = '−1/3';
+
+// Topper vs average per-question pacing, by TOPIC TYPE (verified ranges, in
+// seconds). `avg` = typical candidate; `topper` = the target a top-rank
+// aspirant holds. Consumed by the pacing analytics + (later) NEW-04 Three-Wave
+// and NEW-07 benchmark panel. Ranges are inclusive [min, max].
+export const PACING_TIERS = {
+  gk_current: {
+    label: 'GK & Current Affairs',
+    avg: [35, 45], topper: [15, 20],
+  },
+  aptitude: {
+    label: 'Aptitude & Reasoning',
+    avg: [70, 90], topper: [45, 60],
+  },
+  fact_heavy: {
+    label: 'Fact-Heavy Nursing',          // Anatomy, Microbiology, BMW, Nutrition
+    avg: [45, 50], topper: [25, 30],
+  },
+  conceptual: {
+    label: 'Conceptual Nursing',          // Pharmacology, Med-Surg basics
+    avg: [55, 65], topper: [40, 45],
+  },
+  priority_clinical: {
+    label: 'Priority / Clinical Nursing', // Critical care, Fundamentals, OBG, Peds, MHN, CH
+    avg: [65, 80], topper: [50, 55],
+  },
+};
+
+// Map each app topic id (src/data/seed.js) to a pacing tier above. Anything
+// unmapped falls back to the mid 'conceptual' tier.
+export const TOPIC_PACING_TIER = {
+  gk: 'gk_current',
+  apt: 'aptitude',
+  anat: 'fact_heavy', micro: 'fact_heavy', nutr: 'fact_heavy',
+  pharm: 'conceptual', msn: 'conceptual',
+  fund: 'priority_clinical', peds: 'priority_clinical', obg: 'priority_clinical',
+  ch: 'priority_clinical', mhn: 'priority_clinical',
+};
+
+// Resolve a topic id to its tier object (never null).
+export function pacingTierForTopic(topicId) {
+  return PACING_TIERS[TOPIC_PACING_TIER[topicId] || 'conceptual'];
+}
+// Topper target range [min,max] seconds for a topic (mid-point is a good single target).
+export function topperTargetForTopic(topicId) {
+  return pacingTierForTopic(topicId).topper;
+}
+
+// ── Context the engine assumes (notes, not code) ─────────────────────
+// • Toppers typically attempt only 78–85 of 100 questions in Prelims — they
+//   deliberately SKIP rather than risk the 1/3 negative penalty. "Attempt all"
+//   is an average-candidate mistake.
+// • Sectional lock: each Prelims section locks 18 minutes after it opens, for
+//   good. So PER-SECTION pacing matters more than overall paper pacing — you
+//   cannot borrow time from a later section.
+
+// ── TODO (future features — do NOT implement here) ───────────────────
+// • NEW-04 Three-Wave topper strategy:
+//     Sprint       (0–8 min)  — sure-shot recalls, max 20s/question.
+//     Deep Dive    (8–15 min) — return to skipped clinical/aptitude, 60–80s buffer.
+//     Calculated Risk (15–18 min) — eliminate 2 of 4 or skip; never blind-guess.
+// • Topper tie-breaker rule: "If I can only do ONE thing and leave the room,
+//   which action keeps the patient alive?"
+// • Clinical priority frameworks to surface in rationale/coaching: ADPIE
+//   (assess before intervening), ABCs (airway beats everything), Maslow
+//   (physiological before psychosocial), Acute vs Chronic (unexpected
+//   deterioration over expected symptoms), Least Restrictive first.
+// • PwBD pacing considerations may differ (extra time / scribe) — tier targets
+//   above are for the standard candidate.
 
 const round = (n) => Math.round(n);
 

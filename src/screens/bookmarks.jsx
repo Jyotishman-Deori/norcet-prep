@@ -17,6 +17,7 @@ import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { TTSButton } from '../ui/question-widgets.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { useContent } from '../lib/content.js';
+import { useBackHandler } from '../lib/back-handler.js';
 import EmptyState from '../ui/empty-state.jsx';
 
 function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
@@ -38,6 +39,12 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
   // scroll, no clutter.
   const [topicFilter, setTopicFilter] = useState('all');
   const [selectedId, setSelectedId] = useState(null);
+  // BUG-01 — device/browser back returns from a bookmark's DETAIL view to the
+  // index first (mirrors the on-screen ← arrow), instead of leaving the screen.
+  useBackHandler(() => {
+    if (selectedId !== null) { setSelectedId(null); return true; }
+    return false;
+  });
   // #19 — unbookmark with a smooth exit: ids currently fading out. The actual
   // removal (onToggleBookmark) fires after the 280ms row-fade-out completes,
   // so the card never vanishes instantly — and the empty state appears only

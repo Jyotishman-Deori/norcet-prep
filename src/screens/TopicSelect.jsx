@@ -41,7 +41,9 @@ function TopicSelect({ onPick, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} />
+      {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
+          Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
+      <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} solid />
       <div className="max-w-md mx-auto px-4 pb-24 pt-4">
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many questions?</div>
         <div className="grid grid-cols-4 gap-2 mb-5">
@@ -61,7 +63,7 @@ function TopicSelect({ onPick, onBack }) {
             const acc = accuracyByTopic[topic.id];
             const accPct = acc && acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : null;
             return (
-              <Card key={topic.id} className="p-4" onClick={() => onPick(topic.id, count)}>
+              <Card key={topic.id} className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
@@ -78,11 +80,11 @@ function TopicSelect({ onPick, onBack }) {
                       </div>
                     </div>
                   </div>
-                  {/* Premium per-row Start button — removes any doubt about how
-                      to begin a test. Colour matches the subject; the whole card
-                      stays tappable too (stopPropagation avoids a double-fire). */}
+                  {/* BUG-03 — the test starts ONLY from this explicit Start button.
+                      The row card is no longer tappable, so a stray tap while
+                      scrolling the subject list can't launch a test by accident. */}
                   <button
-                    onClick={(e) => { e.stopPropagation(); onPick(topic.id, count); }}
+                    onClick={() => onPick(topic.id, count)}
                     aria-label={`Start ${topic.name} test`}
                     className="no-tap-highlight flex items-center gap-1.5 pl-3 pr-3.5 py-2 rounded-xl text-sm font-semibold flex-shrink-0 active:scale-95 transition"
                     style={{ background: topic.color, color: '#FFF', boxShadow: `0 4px 12px ${topic.color}55` }}>

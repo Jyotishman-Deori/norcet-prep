@@ -25,7 +25,9 @@ function QuickPracticeSetup({ onStart, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Quick test" onBack={onBack} feedback={{ screen: "Quick practice setup" }} />
+      {/* BUG-02 — solid bar (no backdrop-filter) so launching this screen from
+          the colourful Favourites honeycomb can't flash a re-sampled backdrop. */}
+      <TopBar title="Quick test" onBack={onBack} feedback={{ screen: "Quick practice setup" }} solid />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
         <Card className="p-4 mb-5" style={{ background: T.sec.quick, border: 'none' }}>
           <div className="flex items-center gap-3">

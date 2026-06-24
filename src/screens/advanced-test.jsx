@@ -94,7 +94,9 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} />
+      {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
+          Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
+      <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} solid />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
 
         {/* Slimmed tagline — the heavy teal hero became visual noise once

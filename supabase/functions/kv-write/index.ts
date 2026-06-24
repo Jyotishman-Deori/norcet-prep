@@ -12,16 +12,23 @@
 // expiry, and read { id, uid } from it. The anon key is transport only.
 //
 // AUTHORIZATION MATRIX (agreed in the design step):
-//   profile: / profilemeta: / myfeedback: / leaderboard: / favorder:
+//   profile: / profilemeta: / myfeedback: / leaderboard: / favorder: /
+//   analytics:user:
 //        -> only if token.id === the key's <id> suffix  (or caller is admin)
-//   helpful: / notHelpful: / favsec:
-//        -> any logged-in user may SET; DELETE is denied (app never deletes)
+//   helpful: / notHelpful: / favsec: / errlog:
+//        -> any logged-in user may SET; DELETE denied for the counters,
+//           and errlog: DELETE is admin-only (admin clears crash groups)
 //   bank: / feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
 //   announcement: / faq:
 //        -> admins only
 //   anything else -> DENIED (fail closed)
+//
+// BUG-04 — analytics:user: and errlog: were added here. Both were written as
+// `shared` by the client (engagement summaries + crash-report groups) but were
+// NOT in this matrix, so post-Stage-2 the broker fail-closed (403) on them and
+// the Admin Panel's Engagement + Crash-Report sections never received data.
 //
 // DEPLOY:
 //   supabase secrets set SESSION_SIGNING_SECRET="<same value as auth-secure>"
@@ -215,7 +222,8 @@ Deno.serve(async (req: Request) => {
     const admin = await isAdmin(session);
 
     // 2) Owner-scoped private keys: id suffix must match (admins may moderate).
-    const OWNER_PREFIXES = ["profile:", "profilemeta:", "myfeedback:", "leaderboard:", "favorder:"];
+    // analytics:user:<id> — each user writes ONLY their own engagement summary.
+    const OWNER_PREFIXES = ["profile:", "profilemeta:", "myfeedback:", "leaderboard:", "favorder:", "analytics:user:"];
     for (const p of OWNER_PREFIXES) {
       if (key.startsWith(p)) {
         if (admin || suffix(key, p) === session.id) {
@@ -237,6 +245,18 @@ Deno.serve(async (req: Request) => {
     // 4) Community counters: any logged-in user may SET; never DELETE.
     if (key.startsWith("helpful:") || key.startsWith("notHelpful:") || key.startsWith("favsec:")) {
       if (op === "del") return json({ error: "Forbidden: counters are not deletable" }, 403);
+      return await writeRow(key, String(body.value ?? ""));
+    }
+
+    // 4b) Crash-report groups (BUG-04): any logged-in user may SET (report a
+    // crash signature; the group is keyed by signature, not by user, so users
+    // share + increment the same row). DELETE is admin-only — admins clear or
+    // resolve groups from the Crash Reports section. (Resolve is itself a SET.)
+    if (key.startsWith("errlog:")) {
+      if (op === "del") {
+        if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+        return await deleteRow(key);
+      }
       return await writeRow(key, String(body.value ?? ""));
     }
 

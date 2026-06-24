@@ -83,12 +83,12 @@
     "why": "A focused single-question view, optimised for re-reading and reflection — not for re-testing. The point of a bookmark is that you already attempted it; now you’re studying the explanation.",
     "example": "You open a saved DKA question while commuting, tap the speaker icon, and listen to the stem and explanation read aloud — revising hands-free. Once you're sure you know it, tap the bookmark icon to drop it from your list."
   },
-  "Exam date": {
-    "title": "Exam date",
-    "what": "The page where you tell the app when your NORCET (or similar) exam is. Once set, you get a countdown on the home screen, plus an automatic daily question target so you know whether you’re on pace.",
-    "how": "Tap the date field and pick your exam date. Then choose how to set your daily target: “Decide for me” uses how many questions are left in your pool plus how many days remain to compute a sensible pace, while “I’ll pick” lets you set your own number per day. You can change either anytime.",
-    "why": "A daily target turns a vague “I should study more” into a concrete “I need to finish 30 questions today.” Most people fall behind because they don’t track pace — this stops that quietly.",
-    "example": "You set your exam for 60 days away with 1,200 questions left and choose “Decide for me.” The app sets a 20-a-day target and shows “60 days left” on Home, so “I should study more” becomes “20 to go today.”"
+  "Study plan": {
+    "title": "Study plan",
+    "what": "One place to set your NORCET exam date and daily goal, and get a personalised day-by-day plan to exam day. Once a date is set you get a home-screen countdown, an automatic daily question target, and a schedule that front-loads your weak topics, drips in spaced reviews, and drops timed mocks as checkpoints.",
+    "how": "Open Study plan from the sidebar. Pick your exam date, then choose how to set the daily target: “Decide for me” works out a pace from how many questions are left and how many days remain, while “I’ll pick” lets you set your own. The day-by-day plan builds automatically below — tap a topic to practise it, start a mock on mock days, or jump into due reviews. Use “Edit” to change the date or goal, and the refresh icon to regenerate the schedule.",
+    "why": "A daily target turns a vague “I should study more” into a concrete “I need to finish 30 questions today,” and a dated plan turns the whole run-up into one tick-box-a-day path instead of guesswork. Most people fall behind because they don’t track pace — this stops that quietly.",
+    "example": "You set your exam for 60 days away with 1,200 questions left and choose “Decide for me.” The app sets a 20-a-day target, shows “60 days left” on Home, and lays out a schedule: weak topics first, a mock every Sunday, spaced reviews daily."
   },
   "Stats": {
     "title": "Stats",

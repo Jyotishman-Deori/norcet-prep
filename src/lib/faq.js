@@ -23,8 +23,13 @@ export const faqAnswerVoteId = (faqId) => `faq:${faqId}`;
 export const faqReplyVoteId = (questionId) => `faqr:${questionId}`;
 
 // ---------- FAQ entries (admin-authored) ----------
+// BUG-04 — admin FAQ writes go through the STRICT broker path (throws on
+// failure) exactly like the announcement path. The old non-strict set()
+// swallowed broker rejections (stale token / rate-limit / offline), so the
+// editor closed as if it had saved while nothing reached Supabase. Throwing
+// lets admin-faq-manager surface the real reason instead of failing silently.
 export async function saveFaq(entry) {
-  await safeStorage.set(KEYS.faq(entry.id), JSON.stringify(entry), true);
+  await safeStorage.setSharedStrict(KEYS.faq(entry.id), JSON.stringify(entry));
 }
 
 export async function listFaqs() {
@@ -62,7 +67,8 @@ export async function updateFaq(entry, patch) {
 }
 
 export async function deleteFaq(id) {
-  try { await safeStorage.delete(KEYS.faq(id), true); } catch (e) {}
+  // BUG-04 — strict delete so a failed removal surfaces (was a swallowed catch).
+  await safeStorage.delSharedStrict(KEYS.faq(id));
   // Best-effort: remove its community questions too (don't leave orphans).
   try {
     const r = await safeStorage.list(`${KEY_PREFIXES.FAQ_Q}${id}:`, true);

@@ -19,18 +19,31 @@ export default function AdminFaqManager({ onBack }) {
   const [form, setForm] = useState(null); // null = list view; object = editing/creating
   const [busy, setBusy] = useState(false);
   const [confirmDel, setConfirmDel] = useState(null);
+  // BUG-04 — surface write failures instead of swallowing them. The save/delete
+  // now use the strict broker path (faq.js), so a rejection (stale token,
+  // rate-limit, offline, not-an-admin) THROWS — and the admin sees why.
+  const [err, setErr] = useState(null);
 
   const refresh = () => listFaqs().then(setFaqs).catch(() => setFaqs([]));
   useEffect(() => { refresh(); }, []);
 
-  const startNew = () => setForm({ ...blank });
-  const startEdit = (f) => setForm({ id: f.id, question: f.question, answer: f.answer, category: f.category || '', order: typeof f.order === 'number' ? String(f.order) : '' });
+  const startNew = () => { setErr(null); setForm({ ...blank }); };
+  const startEdit = (f) => { setErr(null); setForm({ id: f.id, question: f.question, answer: f.answer, category: f.category || '', order: typeof f.order === 'number' ? String(f.order) : '' }); };
 
   const canSave = form && form.question.trim() && form.answer.trim();
+
+  const failText = (e) => {
+    const m = String((e && e.message) || e || '');
+    if (/401/.test(m)) return 'Your admin session expired — log out and back in, then try again.';
+    if (/403/.test(m)) return 'This profile is not authorised to publish FAQs (admin only).';
+    if (/429|rate/i.test(m)) return 'Too many admin writes for now — wait a little and try again.';
+    return 'Could not save — are you online and using the admin profile? Please try again.';
+  };
 
   const save = async () => {
     if (!canSave || busy) return;
     setBusy(true);
+    setErr(null);
     try {
       const order = form.order.trim() === '' ? undefined : Number(form.order);
       if (form.id) {
@@ -41,12 +54,17 @@ export default function AdminFaqManager({ onBack }) {
       }
       setForm(null);
       await refresh();
-    } catch (e) {} finally { setBusy(false); }
+    } catch (e) {
+      setErr(failText(e));
+    } finally { setBusy(false); }
   };
 
   const remove = async (id) => {
     setBusy(true);
-    try { await deleteFaq(id); setConfirmDel(null); await refresh(); } catch (e) {} finally { setBusy(false); }
+    setErr(null);
+    try { await deleteFaq(id); setConfirmDel(null); await refresh(); }
+    catch (e) { setErr(failText(e)); }
+    finally { setBusy(false); }
   };
 
   const input = { background: T.surface, border: `1px solid ${T.border}`, color: T.ink };
@@ -80,6 +98,9 @@ export default function AdminFaqManager({ onBack }) {
             </div>
           </div>
           <div className="text-[11px]" style={{ color: T.muted }}>Lower order numbers appear first. Leave blank to add at the end.</div>
+          {err && (
+            <div className="text-xs rounded-xl px-3 py-2.5" style={{ background: T.errorSoft, border: `1px solid ${T.error}40`, color: T.error }}>{err}</div>
+          )}
           <Button onClick={save} size="lg" className="w-full" disabled={!canSave || busy} icon={<Save size={18} />}>
             {busy ? 'Saving…' : (form.id ? 'Save changes' : 'Create FAQ')}
           </Button>
@@ -98,6 +119,10 @@ export default function AdminFaqManager({ onBack }) {
                 style={{ background: T.primary, color: '#FFF' }}>
           <Plus size={18} /> Add a FAQ
         </button>
+
+        {err && (
+          <div className="text-xs rounded-xl px-3 py-2.5 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40`, color: T.error }}>{err}</div>
+        )}
 
         {faqs === null ? (
           <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>

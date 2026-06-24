@@ -92,4 +92,36 @@ async function loadHelpfulnessReport(allQuestions) {
   }).filter(r => r.total > 0);
 }
 
-export { loadHelpfulState, toggleHelpful, loadHelpfulnessReport };
+// BUG-05 — Admin: "clear" the helpfulness votes for one or more questions.
+// The kv-write broker FORBIDS DELETE on helpful:/notHelpful: counters ("not
+// deletable"), but ALLOWS SET — so we reset both tallies to an empty array.
+// loadHelpfulnessReport filters rows with total === 0, so a cleared question
+// drops out of the report. Votes aren't gone forever — a user can vote again
+// later; this is a "mark handled / reset the signal" action, not destruction.
+// Uses the strict broker path so a rejection surfaces to the admin UI.
+async function clearHelpfulnessMany(qIds) {
+  const ids = Array.isArray(qIds) ? qIds.filter(Boolean) : [];
+  if (ids.length === 0) return { cleared: 0, failed: 0 };
+  const results = await Promise.allSettled(
+    ids.flatMap(qId => [
+      safeStorage.setSharedStrict(helpfulKey(qId), '[]'),
+      safeStorage.setSharedStrict(notHelpfulKey(qId), '[]'),
+    ])
+  );
+  const failed = results.filter(r => r.status === 'rejected').length;
+  return { cleared: ids.length, failed };
+}
+
+// BUG-05 — Admin: clear ALL helpfulness history (every tracked question).
+// Best-effort SET-empty across every existing helpful:/notHelpful: key.
+async function clearAllHelpfulness() {
+  let helpKeys = [], noKeys = [];
+  try { const r = await safeStorage.list(HELPFUL_PREFIX, true); helpKeys = (r && r.keys) ? r.keys : []; } catch (e) {}
+  try { const r = await safeStorage.list(NOT_HELPFUL_PREFIX, true); noKeys = (r && r.keys) ? r.keys : []; } catch (e) {}
+  const all = [...new Set([...helpKeys, ...noKeys])];
+  const results = await Promise.allSettled(all.map(k => safeStorage.setSharedStrict(k, '[]')));
+  const failed = results.filter(r => r.status === 'rejected').length;
+  return { total: all.length, failed };
+}
+
+export { loadHelpfulState, toggleHelpful, loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness };

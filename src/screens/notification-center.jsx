@@ -24,7 +24,7 @@ import {
   CheckCircle2, ChevronRight, X, Target, CalendarDays, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
-import { Card, TopBar } from '../ui/primitives.jsx';
+import { Card, TopBar, requestConfirm } from '../ui/primitives.jsx';
 import {
   loadNotifications, saveNotifications, categoryOf,
   CATEGORY_ORDER, CATEGORY_LABELS, unreadByCategory,
@@ -95,15 +95,35 @@ function NotificationCenter({ onBack, onNavigate }) {
   const markAllRead = () => persist(markAllReadFn(notifications));
   const clearAll = () => persist([]);
 
+  // BUG-03 — a notification whose action LAUNCHES A TEST (screen: 'quiz') is
+  // cautioned first, so tapping a reminder can't drop the user straight into a
+  // test by surprise. Non-test actions (open Stats, Doubts, …) navigate as-is.
+  const go = (action) => {
+    if (!action) return;
+    if (action.screen === 'quiz') {
+      requestConfirm({
+        icon: <RotateCcw size={20} style={{ color: T.success }} />,
+        title: 'Start this test now?',
+        body: "This opens a practice test with instant feedback. Make sure you're ready before you begin.",
+        confirmLabel: 'Start test',
+        cancelLabel: 'Not now',
+        tone: 'primary',
+        onConfirm: () => onNavigate(action),
+      });
+      return;
+    }
+    onNavigate(action);
+  };
+
   const handleTap = async (notif) => {
     await persist(markReadFn(notifications, notif.id));
-    if (notif.action) onNavigate(notif.action);
+    go(notif.action);
   };
   const handleDismiss = (e, id) => { e.stopPropagation(); persist(dismissOne(notifications, id)); };
   const handleAction = (e, notif) => {
     e.stopPropagation();
     persist(markReadFn(notifications, notif.id));
-    if (notif.action) onNavigate(notif.action);
+    go(notif.action);
   };
 
   // ---- Per-type visual metadata -------------------------------------

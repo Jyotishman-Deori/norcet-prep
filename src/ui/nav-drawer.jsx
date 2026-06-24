@@ -244,7 +244,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   ];
   // ---- Category 3 — Tools ----
   const tools = [
-    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Exam date', tip: 'Set your NORCET date for a countdown and a daily target.', sub: 'Countdown & daily goal', action: () => go('exam-date', null, 'examdate') },
+    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Study plan', tip: 'Set your NORCET date and daily goal, and get a personalised day-by-day plan to exam day.', sub: 'Date, daily goal & day-by-day plan', action: () => go('study-plan', null, 'examdate') },
     { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
   ];
   // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as

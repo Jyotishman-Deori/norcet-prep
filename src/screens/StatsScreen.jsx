@@ -18,13 +18,66 @@ import { calibrationFromItems } from '../lib/calibration.js';
 import PacingCard from '../ui/pacing-card.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 
+// FEAT-03 — Topic-trend ranges. Short ranges bucket by day/week, longer ones by
+// calendar month, with thresholds scaled to how much data a window can hold
+// (a 1-week window can't expect 5 attempts per bucket the way 6 months can).
+//   unit    — day | week | month bucket granularity
+//   count   — number of buckets
+//   minCell — attempts a bucket needs before its accuracy point is plotted
+//   minTotal— attempts a topic needs across the window to appear at all
+const TREND_RANGES = [
+  { id: '1w',  label: '1W',  unit: 'day',   count: 7,  minCell: 1, minTotal: 3,  note: 'Daily accuracy by topic.' },
+  { id: '2w',  label: '2W',  unit: 'day',   count: 14, minCell: 1, minTotal: 4,  note: 'Daily accuracy by topic.' },
+  { id: '3w',  label: '3W',  unit: 'week',  count: 3,  minCell: 2, minTotal: 5,  note: 'Weekly accuracy by topic.' },
+  { id: '1m',  label: '1M',  unit: 'week',  count: 4,  minCell: 2, minTotal: 6,  note: 'Weekly accuracy by topic.' },
+  { id: '2m',  label: '2M',  unit: 'week',  count: 8,  minCell: 2, minTotal: 8,  note: 'Weekly accuracy by topic.' },
+  { id: '3M',  label: '3M',  unit: 'month', count: 3,  minCell: 5, minTotal: 10, note: 'Monthly accuracy by topic.' },
+  { id: '6M',  label: '6M',  unit: 'month', count: 6,  minCell: 5, minTotal: 10, note: 'Monthly accuracy by topic.' },
+  { id: '12M', label: '12M', unit: 'month', count: 12, minCell: 5, minTotal: 10, note: 'Monthly accuracy by topic.' },
+];
+const TREND_RANGE_BY_ID = Object.fromEntries(TREND_RANGES.map(r => [r.id, r]));
+const DAY_MS = 86400000;
+function startOfDayMs(ms) { const d = new Date(ms); d.setHours(0, 0, 0, 0); return d.getTime(); }
+
+// Build the ordered buckets [{ key, label, start, end }] for a range, oldest
+// first, the last bucket ending at end-of-today.
+function buildTrendBuckets(range, nowMs) {
+  const buckets = [];
+  if (range.unit === 'month') {
+    const now = new Date(nowMs);
+    for (let i = range.count - 1; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 1).getTime();
+      buckets.push({ key: `m${i}`, label: d.toLocaleDateString('en-US', { month: 'short' }), start: d.getTime(), end });
+    }
+  } else if (range.unit === 'week') {
+    const end0 = startOfDayMs(nowMs) + DAY_MS; // end of today (exclusive)
+    for (let i = range.count - 1; i >= 0; i--) {
+      const end = end0 - i * 7 * DAY_MS;
+      const start = end - 7 * DAY_MS;
+      buckets.push({ key: `w${i}`, label: new Date(start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }), start, end });
+    }
+  } else { // day
+    const todayStart = startOfDayMs(nowMs);
+    for (let i = range.count - 1; i >= 0; i--) {
+      const start = todayStart - i * DAY_MS;
+      const d = new Date(start);
+      const label = range.count <= 7
+        ? d.toLocaleDateString('en-US', { weekday: 'short' })
+        : d.toLocaleDateString('en-US', { day: 'numeric' });
+      buckets.push({ key: `d${i}`, label, start, end: start + DAY_MS });
+    }
+  }
+  return { buckets, windowStart: buckets.length ? buckets[0].start : nowMs };
+}
+
 function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const [topicSort, setTopicSort] = useState('weak'); // 'weak' | 'strong'
   const [chartReady, setChartReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setChartReady(true), 280); return () => clearTimeout(t); }, []);
-  const [trendWindow, setTrendWindow] = useState(6);          // P13: months — 3 | 6 | 12
+  const [trendRangeId, setTrendRangeId] = useState('6M');     // FEAT-03: 1w…12M
   const [showAllTrends, setShowAllTrends] = useState(false);  // P13: top-6 vs all topics
 
   const byTopic = useMemo(() => {
@@ -136,18 +189,15 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
   // trend window here is ≤12 months, well inside the 730-day per-attempt
   // retention, so attempts[] is always complete within the window.
   const topicTrends = useMemo(() => {
-    const now = new Date();
-    const months = [];
-    for (let i = trendWindow - 1; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      months.push({
-        key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
-        label: d.toLocaleDateString('en-US', { month: 'short' })
-      });
-    }
-    const windowStart = new Date(now.getFullYear(), now.getMonth() - (trendWindow - 1), 1).getTime();
+    const range = TREND_RANGE_BY_ID[trendRangeId] || TREND_RANGE_BY_ID['6M'];
+    const { buckets, windowStart } = buildTrendBuckets(range, Date.now());
+    // ts -> bucket key (linear scan; ≤14 buckets, modest attempt counts).
+    const bucketKeyOf = (ts) => {
+      for (let i = 0; i < buckets.length; i++) if (ts >= buckets[i].start && ts < buckets[i].end) return buckets[i].key;
+      return null;
+    };
 
-    const acc = {};    // topicId -> monthKey -> { c, t }
+    const acc = {};    // topicId -> bucketKey -> { c, t }
     const totals = {}; // topicId -> attempts within the window
     Object.entries(data.history).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
@@ -155,21 +205,21 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
       (h.attempts || []).forEach(at => {
         if (typeof at.ts !== 'number' || at.ts < windowStart) return;
         if (at.revealed) return; // neutral reveal — excluded from accuracy
-        const d = new Date(at.ts);
-        const mk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        const bk = bucketKeyOf(at.ts);
+        if (!bk) return;
         acc[q.topic] = acc[q.topic] || {};
-        acc[q.topic][mk] = acc[q.topic][mk] || { c: 0, t: 0 };
-        acc[q.topic][mk].t++; if (at.correct) acc[q.topic][mk].c++;
+        acc[q.topic][bk] = acc[q.topic][bk] || { c: 0, t: 0 };
+        acc[q.topic][bk].t++; if (at.correct) acc[q.topic][bk].c++;
         totals[q.topic] = (totals[q.topic] || 0) + 1;
       });
     });
 
     const topics = Object.keys(acc)
-      .filter(tid => (totals[tid] || 0) >= 10)            // require ≥10 attempts in window
+      .filter(tid => (totals[tid] || 0) >= range.minTotal)
       .map(tid => {
-        const series = months.map(m => {
+        const series = buckets.map(m => {
           const cell = acc[tid][m.key];
-          const ok = cell && cell.t >= 5;                  // skip months with <5 (too noisy)
+          const ok = cell && cell.t >= range.minCell;      // skip buckets with too few attempts
           return {
             key: m.key, label: m.label, n: cell ? cell.t : 0,
             accuracy: ok ? Math.round((cell.c / cell.t) * 100) : null
@@ -180,7 +230,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
       .filter(t => t.series.filter(p => p.accuracy !== null).length >= 2) // a line needs ≥2 points
       .sort((a, b) => b.total - a.total);
 
-    // Auto-derived insights: compare first vs last plotted month per topic.
+    // Auto-derived insights: compare first vs last plotted bucket per topic.
     const cand = [];
     topics.forEach(t => {
       const pts = t.series.filter(p => p.accuracy !== null);
@@ -193,8 +243,8 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
     const movers = cand.filter(c => c.type !== 'strong').sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
     const insights = [...movers, ...cand.filter(c => c.type === 'strong')].slice(0, 3);
 
-    return { months, topics, insights };
-  }, [data.history, allQuestions, trendWindow]);
+    return { buckets, topics, insights, note: range.note };
+  }, [data.history, allQuestions, trendRangeId]);
 
   if (data.stats.totalAttempted === 0) {
     return (
@@ -406,30 +456,33 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
 
         {/* Topic trends — P13: per-topic accuracy over time */}
         <Card className="p-4 mb-5">
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-xs uppercase tracking-wider" style={{ color: T.muted }}>Topic trends</div>
-            <div className="flex rounded-lg overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-              {[3, 6, 12].map(w => {
-                const active = trendWindow === w;
-                return (
-                  <button key={w} onClick={() => setTrendWindow(w)}
-                          className="no-tap-highlight text-[11px] font-medium px-2.5 py-1 transition-colors"
-                          style={{ background: active ? T.primary : 'transparent', color: active ? '#FFF' : T.muted }}>
-                    {w}M
-                  </button>
-                );
-              })}
-            </div>
+          <div className="text-xs uppercase tracking-wider mb-2.5" style={{ color: T.muted }}>Topic trends</div>
+          {/* FEAT-03 — premium range selector: short (1–3W, 1–2M) + long (3–12M)
+              windows in one horizontally-scrollable pill rail. */}
+          <div className="-mx-1 px-1 mb-2.5 flex gap-1.5 overflow-x-auto no-scrollbar" style={{ scrollbarWidth: 'none' }}>
+            {TREND_RANGES.map(r => {
+              const active = trendRangeId === r.id;
+              return (
+                <button key={r.id} onClick={() => setTrendRangeId(r.id)}
+                        className="no-tap-highlight flex-shrink-0 text-[12px] font-semibold px-3 py-1.5 rounded-full transition-all active:scale-95"
+                        style={{ background: active ? T.primary : T.surface,
+                                 color: active ? '#FFF' : T.inkSoft,
+                                 border: `1.5px solid ${active ? T.primary : T.border}`,
+                                 boxShadow: active ? `0 2px 8px ${T.primary}33` : 'none' }}>
+                  {r.label}
+                </button>
+              );
+            })}
           </div>
-          <div className="text-[11px] mb-3" style={{ color: T.muted }}>Monthly accuracy by topic.</div>
+          <div className="text-[11px] mb-3" style={{ color: T.muted }}>{topicTrends.note}</div>
 
           {topicTrends.topics.length === 0 ? (
             <div className="text-sm text-center py-6" style={{ color: T.muted }}>
-              Not enough data yet. Practise at least 10 questions in a topic across a couple of months to see its trend.
+              Not enough data in this window yet. Practise a topic across at least two periods of the selected range to see its trend — or pick a longer range.
             </div>
           ) : (() => {
             const visible = showAllTrends ? topicTrends.topics : topicTrends.topics.slice(0, 6);
-            const rows = topicTrends.months.map(m => {
+            const rows = topicTrends.buckets.map(m => {
               const row = { label: m.label };
               visible.forEach(t => {
                 const pt = t.series.find(p => p.key === m.key);

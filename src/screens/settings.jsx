@@ -28,6 +28,7 @@ import AccountSecurityCard from './account-security-card.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
+import { useBackHandler } from '../lib/back-handler.js';
 
 function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
@@ -115,6 +116,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // #16 — Legal pages render as a self-contained sub-view of Settings (no app
   // routing needed). Set to 'privacy' | 'terms' to open; back returns here.
   const [legalView, setLegalView] = useState(null);
+  // BUG-01 — device/browser back pops Settings' own sub-views first (the same
+  // order the on-screen ← arrow uses): an open Legal doc, then the sub-page,
+  // then (nothing left) the app leaves Settings.
+  useBackHandler(() => {
+    if (legalView) { setLegalView(null); return true; }
+    if (subPage) { setSubPage(null); return true; }
+    return false;
+  });
   const [drBusy, setDrBusy] = useState(false);
   const reminderOn = !!reminder.enabled;
   const onToggleReminder = async () => {

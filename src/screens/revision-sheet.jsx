@@ -9,7 +9,7 @@
 // topicName/Color/Icon from lib/topics; TTSButton from ui/question-widgets.
 // =====================================================================
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Printer, CalendarDays, Clock, RotateCcw, ChevronDown, ChevronUp, Bookmark, Check, Lightbulb, Target, ChevronRight } from 'lucide-react';
+import { Printer, CalendarDays, Clock, RotateCcw, ChevronDown, ChevronUp, Bookmark, Check, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
@@ -21,6 +21,7 @@ import { useProfile } from '../lib/app-context.jsx';
 import { loadCribs, removeCrib, daysAgo } from '../lib/cribs.js';
 import { FileText, ListChecks, Trash2 } from 'lucide-react';
 import { Tip } from '../ui/tooltip.jsx';
+import { useBackHandler } from '../lib/back-handler.js';
 
 const PRINT_STYLES = `
 @media print {
@@ -61,6 +62,12 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
   const [allExpanded, setAllExpanded] = useState(true); // default to expanded for revision
   // null = live "Today" set; a 'YYYY-MM-DD' string = read-only snapshot from history.
   const [viewDate, setViewDate] = useState(null);
+  // BUG-01 — device/browser back returns from a dated snapshot to the live set
+  // first (matching the in-content "back to list" control), not out of Revision.
+  useBackHandler(() => {
+    if (viewDate) { setViewDate(null); return true; }
+    return false;
+  });
 
   const revisionLog = useMemo(() => Array.isArray(data.revisionLog) ? data.revisionLog : [], [data.revisionLog]);
   const todayKey = new Date().toLocaleDateString('en-CA');
@@ -272,21 +279,8 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
           )}
 
           {tab === 'digest' && (<>
-          {/* #6 — entry to the personalised day-by-day study plan */}
-          {onOpenPlan && (
-            <button onClick={onOpenPlan}
-                    className="no-tap-highlight w-full text-left mb-3 rounded-2xl p-3.5 flex items-center gap-3 active:scale-[0.99] transition"
-                    style={{ background: ((T.sec && T.sec.revision) || T.primary) + '14', border: `1px solid ${((T.sec && T.sec.revision) || T.primary)}33` }}>
-              <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0" style={{ background: ((T.sec && T.sec.revision) || T.primary) + '22' }}>
-                <Target size={17} style={{ color: (T.sec && T.sec.revision) || T.primary }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="text-[14px] font-semibold" style={{ color: T.ink }}>Study plan</div>
-                <div className="text-[12px]" style={{ color: T.muted }}>Your day-by-day run to exam day</div>
-              </div>
-              <ChevronRight size={18} style={{ color: T.muted }} />
-            </button>
-          )}
+          {/* FEAT-02 — the Study Plan entry moved OUT of Revision into its own
+              sidebar item (the former "Exam date"). Removed here to de-duplicate. */}
 
           {/* #7 — upcoming spaced-review load (due today + next 7 days) */}
           <ReviewForecastCard history={data.history} onStartReview={onStartReview} />

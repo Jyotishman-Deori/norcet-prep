@@ -8,14 +8,17 @@
 // start a mock, or jump into due reviews. Day completion persists.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { CalendarDays, Target, BookOpen, Timer, Moon, CheckCircle2, Circle, Play, RefreshCw, CalendarPlus } from 'lucide-react';
+import { CalendarDays, Target, BookOpen, Timer, Moon, CheckCircle2, Circle, Play, RefreshCw, ChevronDown, Pencil } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
-import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Card, TopBar } from '../ui/primitives.jsx';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 import { buildStudyPlan, planProgress, planMatchesExam, PLAN_KINDS } from '../lib/study-plan.js';
 import { getWeakTopics, topicName, topicColor } from '../lib/topics.js';
 import { reviewForecast } from '../lib/review-forecast.js';
+// FEAT-02 — the exam-date + daily-goal editor is embedded here so Study Plan
+// is the single home for "set your date" AND "see your day-by-day plan".
+import { ExamDateEditor } from './exam-date-screen.jsx';
 
 function dateLabel(ms, offsetFromToday) {
   if (offsetFromToday === 0) return 'Today';
@@ -25,7 +28,8 @@ function dateLabel(ms, offsetFromToday) {
 
 const KIND_ICON = { study: BookOpen, mock: Timer, rest: Moon };
 
-export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock, onStartReview, onSetExamDate }) {
+export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock, onStartReview,
+                                    allQuestionsCount = 0, onSetExamDateValue, onClearExamDate, onSaveTarget }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const examDate = (data && data.stats && data.stats.examDate) || null;
@@ -33,6 +37,10 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
 
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+  // FEAT-02 — embedded exam-date/goal editor. Open by default until a date is
+  // set (so a first-time user lands straight on the date picker), collapsed once
+  // a plan exists (tap "Edit" to change date/goal).
+  const [editorOpen, setEditorOpen] = useState(false);
 
   // Inputs for generation (weak topics worst-first, coverage gaps, all topics).
   const inputs = useMemo(() => {
@@ -112,9 +120,49 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
         {loading ? (
           <div className="py-16 text-center text-sm" style={{ color: T.muted }}>Building your plan…</div>
         ) : !plan || !plan.ok ? (
-          <EmptyState T={T} accent={accent} reason={plan && plan.reason} onSetExamDate={onSetExamDate} />
+          // No date yet (or it has passed) → the embedded editor IS the screen.
+          <>
+            <div className="mt-1 mb-4 px-0.5">
+              <div className="text-[16px] font-semibold mb-1" style={{ color: T.ink }}>
+                {plan && plan.reason === 'past' ? 'Your exam date has passed' : 'Plan your run to exam day'}
+              </div>
+              <p className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
+                {plan && plan.reason === 'past'
+                  ? 'Set a new exam date below and we’ll build a fresh day-by-day plan.'
+                  : 'Set your exam date below and we’ll build a personalised schedule — weak topics first, spaced reviews daily, and timed mocks as checkpoints.'}
+              </p>
+            </div>
+            <ExamDateEditor allQuestionsCount={allQuestionsCount}
+                            onSave={onSetExamDateValue} onClear={onClearExamDate} onSaveTarget={onSaveTarget} />
+          </>
         ) : (
           <>
+            {/* FEAT-02 — collapsible exam-date / daily-goal editor. Collapsed by
+                default (the plan is the star); "Edit" expands the full editor. */}
+            <button onClick={() => setEditorOpen(o => !o)}
+                    className="no-tap-highlight w-full flex items-center gap-2.5 mb-3 rounded-2xl px-3.5 py-2.5 active:scale-[0.99] transition"
+                    style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+              <CalendarDays size={16} style={{ color: accent }} className="flex-shrink-0" />
+              <div className="min-w-0 flex-1 text-left">
+                <div className="text-[13px] font-semibold" style={{ color: T.ink }}>Exam date &amp; daily goal</div>
+                <div className="text-[11px]" style={{ color: T.muted }}>
+                  {new Date(examDate).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {prog.daysLeft >= 0 ? ` · ${prog.daysLeft} day${prog.daysLeft === 1 ? '' : 's'} left` : ''}
+                  {data.stats.dailyTarget > 0 ? ` · ${data.stats.dailyTarget}/day` : ' · auto pace'}
+                </div>
+              </div>
+              {editorOpen
+                ? <ChevronDown size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+                : <Pencil size={14} style={{ color: T.muted }} className="flex-shrink-0" />}
+            </button>
+            {editorOpen && (
+              <div className="mb-5 anim-fadeup">
+                <ExamDateEditor allQuestionsCount={allQuestionsCount}
+                                onSave={onSetExamDateValue} onClear={onClearExamDate} onSaveTarget={onSaveTarget}
+                                onSaved={() => setEditorOpen(false)} />
+              </div>
+            )}
+
             <HeaderCard T={T} accent={accent} prog={prog} onRegenerate={regenerate} />
             <div className="mt-5 space-y-2.5">
               {plan.days.map((d) => (
@@ -131,28 +179,6 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
         )}
       </div>
     </div>
-  );
-}
-
-function EmptyState({ T, accent, reason, onSetExamDate }) {
-  const past = reason === 'past';
-  return (
-    <Card className="p-5 mt-3 text-center" style={{ background: accent + '0E', border: `1px solid ${accent}33` }}>
-      <div className="mx-auto mb-3 w-12 h-12 rounded-full flex items-center justify-center" style={{ background: accent + '1A' }}>
-        <CalendarDays size={22} style={{ color: accent }} />
-      </div>
-      <div className="text-[16px] font-semibold mb-1" style={{ color: T.ink }}>
-        {past ? 'Your exam date has passed' : 'Plan your run to exam day'}
-      </div>
-      <p className="text-[13px] leading-relaxed mb-4" style={{ color: T.inkSoft }}>
-        {past
-          ? 'Set a new exam date and we’ll build you a fresh day-by-day plan.'
-          : 'Set your exam date and we’ll build a personalised schedule — weak topics first, spaced reviews daily, and timed mocks as checkpoints.'}
-      </p>
-      <Button onClick={onSetExamDate} icon={<CalendarPlus size={16} />}>
-        {past ? 'Update exam date' : 'Set exam date'}
-      </Button>
-    </Card>
   );
 }
 

@@ -18,7 +18,9 @@ import { safeStorage } from './safe-storage.js';
 // v4: updated the "Learn — topics" help for Quick Revision (Feature F-D).
 // v5: added the "Doubts" help section (Feature F-E).
 // v6: added the "FAQ" help section (Feature F-F).
-const CONTENT_VERSION = 11;
+// v12 (FEAT-02): renamed the "Exam date" help section to "Study plan" and
+//     expanded it (date + daily goal + the day-by-day plan now live together).
+const CONTENT_VERSION = 12;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

@@ -27,6 +27,7 @@ import {
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
 import { requestHelp, requestFeedback } from '../ui/primitives.jsx';
+import { useBackHandler } from '../lib/back-handler.js';
 import MindmapNodePopup from './mindmap-node-popup.jsx';
 import MindmapNoteEditor from './mindmap-note-editor.jsx';
 
@@ -655,6 +656,17 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const [noteEditor, setNoteEditor] = useState(null);   // node payload being edited | null
   const [query, setQuery] = useState('');               // search text
   const [searchOpen, setSearchOpen] = useState(false);  // search bar expanded?
+  // BUG-01 — device/browser back closes the topmost open overlay before it ever
+  // leaves the map: the note editor, then a node popup, the guide, the search
+  // bar, and finally fullscreen. Only when nothing is open does back exit.
+  useBackHandler(() => {
+    if (noteEditor) { setNoteEditor(null); return true; }
+    if (selected) { setSelected(null); return true; }
+    if (guideOpen) { setGuideOpen(false); return true; }
+    if (searchOpen) { setQuery(''); setSearchOpen(false); return true; }
+    if (fullscreen) { setFullscreen(false); return true; }
+    return false;
+  });
   useEffect(() => {
     let alive = true;
     loadMindmapNotes(profileId).then(n => { if (alive) setNotes(n || {}); });

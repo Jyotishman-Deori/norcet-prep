@@ -58,6 +58,8 @@ import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/qui
 import { examTopicWeightage } from './lib/weightage.js';
 import { captureError, setErrorContext } from './lib/errorlog.js';
 import { initAnalytics, trackScreen } from './lib/analytics.js';
+// BUG-01 — unified back-button interception for screens with internal sub-views.
+import { runTopBackHandler } from './lib/back-handler.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -217,7 +219,8 @@ import SignInGate from './screens/sign-in-gate.jsx';
 import GuestMergePrompt from './screens/guest-merge-prompt.jsx';
 // [A1 slice 19] DatePicker, RenameProfileModal, AdminTile extracted.
 import DatePicker from './screens/date-picker.jsx';
-import ExamDateScreen from './screens/exam-date-screen.jsx';
+// FEAT-02 — the standalone Exam Date route is gone; Study Plan embeds the
+// ExamDateEditor instead. exam-date-screen.jsx is still imported there.
 import AddQuestion from './screens/add-question.jsx';
 import MindmapNoteEditor from './screens/mindmap-note-editor.jsx';
 // [A1 slice 24] feedback inbox storage extracted.
@@ -2487,6 +2490,12 @@ export default function App() {
         }
         return;
       }
+      // BUG-01 — give the active screen a chance to pop its OWN internal
+      // sub-view first (Settings sub-pages, Bookmark detail, Knowledge-Map
+      // overlays, the Revision date view). The sentinel is already re-armed
+      // above, so if a screen consumes the back we stop here and stay put —
+      // making the device back, browser back and on-screen ← arrow consistent.
+      if (runTopBackHandler()) return;
       restoreNextScrollRef.current = true;          // #30 — hardware back restores scroll
       // #8 — hardware back also pops the nav stack (same rule as goHome).
       {
@@ -4369,9 +4378,10 @@ export default function App() {
 
       {nav.screen === 'revision-sheet' && (
         <Suspense fallback={<LazyScreenFallback />}>
+        {/* FEAT-02 — the Study Plan entry was REMOVED from Revision; it now lives
+            as its own sidebar item (the former "Exam date" entry). */}
         <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome}
                        onStartReview={() => startQuiz({ mode: 'review-due' })}
-                       onOpenPlan={() => navigate({ screen: 'study-plan' })}
                        onOpenCrib={(c) => navigate({
                          screen: 'crib-sheet', items: c.items,
                          cribTitle: c.title, cribSubtitle: c.subtitle,
@@ -4380,23 +4390,20 @@ export default function App() {
         </Suspense>
       )}
 
+      {/* FEAT-02 — Study Plan is the single home for exam date + daily goal +
+          the day-by-day plan (the embedded ExamDateEditor sets the date). The
+          old standalone 'exam-date' route is gone; the sidebar opens this. */}
       {nav.screen === 'study-plan' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <StudyPlan profileId={profile.id} onBack={goHome}
                    onStartTopic={(topic) => startQuiz({ mode: 'topic', topic, count: 10 })}
                    onStartMock={() => navigate({ screen: 'mock-setup' })}
                    onStartReview={() => startQuiz({ mode: 'review-due' })}
-                   onSetExamDate={() => navigate({ screen: 'exam-date' })} />
+                   allQuestionsCount={allQuestions.length}
+                   onSetExamDateValue={setExamDate}
+                   onClearExamDate={clearExamDate}
+                   onSaveTarget={setDailyTarget} />
         </Suspense>
-      )}
-
-      {nav.screen === 'exam-date' && (
-        <ExamDateScreen
-                        allQuestionsCount={allQuestions.length}
-                        onSave={setExamDate}
-                        onClear={clearExamDate}
-                        onSaveTarget={setDailyTarget}
-                        onBack={goHome} />
       )}
 
       {/* Issues round — dedicated Share page (was inline in Settings). */}

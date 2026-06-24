@@ -9,7 +9,7 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
@@ -20,7 +20,7 @@ import { countsInNursingStats } from '../data/seed.js';
 import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { pushNotification } from '../lib/notifications.js';
-import { Card, Button } from '../ui/primitives.jsx';
+import { Card, Button, requestConfirm } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
 import FavStrip from '../ui/fav-strip.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
@@ -739,11 +739,23 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         }
         if (!enabled || dismissedToday) return null;
 
+        // BUG-03 — the review test now starts ONLY from the explicit Start
+        // button below (the card body no longer launches it), and that button
+        // shows a short caution first so a stray tap can't drop the user into
+        // a spaced-review test by accident.
+        const startReview = () => requestConfirm({
+          icon: <RotateCcw size={20} style={{ color: T.success }} />,
+          title: 'Start your review test?',
+          body: `${due.length} question${due.length === 1 ? '' : 's'} are due for spaced revision. You'll get instant feedback as you go.`,
+          confirmLabel: 'Start review',
+          cancelLabel: 'Not now',
+          tone: 'primary',
+          onConfirm: () => onNavigate({ screen: 'quiz', mode: 'review-due' }),
+        });
         return (
-          <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable"
-                onClick={() => onNavigate({ screen: 'quiz', mode: 'review-due' })}
+          <Card className="p-4 mb-4"
                 style={{ background: T.successSoft, border: `1px solid ${T.success}30` }}>
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center justify-between gap-2 mb-3">
               <div className="flex items-center gap-3 min-w-0 flex-1">
                 <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.success }}>
                   <RotateCcw size={18} color="#FFF" />
@@ -751,7 +763,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 <div className="min-w-0">
                   <div className="font-display text-base font-semibold flex items-center gap-1.5" style={{ color: T.ink }}>
                     Review due
-                    <button onClick={(e) => { e.stopPropagation(); onShowReviewInfo && onShowReviewInfo(); }}
+                    <button onClick={() => onShowReviewInfo && onShowReviewInfo()}
                             className="no-tap-highlight p-0.5 -m-0.5 rounded-full"
                             aria-label="What is this?">
                       <HelpCircle size={13} style={{ color: T.muted }} />
@@ -762,16 +774,20 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button onClick={(e) => { e.stopPropagation(); onDismissReviewToday && onDismissReviewToday(); }}
-                        className="no-tap-highlight p-2 -m-1 rounded-full active:bg-black/5"
-                        aria-label="Hide for today"
-                        title="Hide for today">
-                  <X size={16} style={{ color: T.muted }} />
-                </button>
-                <ChevronRight size={20} style={{ color: T.muted }} />
-              </div>
+              <button onClick={() => onDismissReviewToday && onDismissReviewToday()}
+                      className="no-tap-highlight p-2 -m-1 rounded-full active:bg-black/5 flex-shrink-0"
+                      aria-label="Hide for today"
+                      title="Hide for today">
+                <X size={16} style={{ color: T.muted }} />
+              </button>
             </div>
+            <button onClick={startReview}
+                    aria-label="Start review test"
+                    className="no-tap-highlight w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition"
+                    style={{ background: T.success, color: '#FFF', boxShadow: `0 4px 12px ${T.success}55` }}>
+              <Play size={15} fill="#FFF" strokeWidth={0} />
+              Start review
+            </button>
           </Card>
         );
       })()}
@@ -917,7 +933,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         const bg = examPassed ? T.surfaceWarm : daysLeft <= 14 ? T.accent : daysLeft <= 30 ? T.accent + 'CC' : T.primary;
 
         return (
-          <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'exam-date' })}
+          <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable" onClick={() => onNavigate({ screen: 'study-plan' })}
                 style={{ background: bg, border: 'none' }}>
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0 flex-1">

@@ -39,7 +39,9 @@ function MockSetup({ onStart, onBack, totalQuestions }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Mock test setup" onBack={onBack} feedback={{ screen: "Mock setup" }} />
+      {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
+          Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
+      <TopBar title="Mock test setup" onBack={onBack} feedback={{ screen: "Mock setup" }} solid />
       <div className="max-w-md mx-auto px-4 pt-4 pb-24">
         <div className="text-sm mb-6" style={{ color: T.muted }}>
           Timed practice across all topics. The timer counts down — if it hits zero, the test ends with whatever you've answered.
