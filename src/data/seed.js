@@ -729,6 +729,9 @@ export const DEFAULT_DATA = {
     lastCompactedTs: null  // P15 — timestamp of last lazy compaction pass; null = never run yet
   },
   advancedTestHistory: [],
+  // Phase 3 — light, non-monetary in-app economy (Accuracy Coins + Clinical
+  // Hearts). Pure motivation; no paywall. See lib/economy.js.
+  economy: { coins: 0, hearts: 5, heartsTs: 0, whyClaimed: [] },
   // P7 — Previous Year NORCET Papers attempt records, keyed by paper id.
   // Separate from advancedTestHistory (fixed official paper vs random pool).
   // Shape: { [paperId]: { attempts: [{ts,count,correct,wrong,blank,netScore,

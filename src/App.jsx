@@ -62,6 +62,8 @@ import { initAnalytics, trackScreen } from './lib/analytics.js';
 import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
+// Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
+import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure } from './lib/economy.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -892,6 +894,7 @@ function hydrateLoaded(rawData) {
     bookmarks: Array.isArray(migrated.bookmarks) ? migrated.bookmarks : DEFAULT_DATA.bookmarks,
     stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
     advancedTestHistory: migrated.advancedTestHistory || [],
+    economy: { ...DEFAULT_DATA.economy, ...(migrated.economy || {}) },
     bankVersionsSeen: migrated.bankVersionsSeen || {},
     bankPublishedSeen: migrated.bankPublishedSeen || {},
     disabledBanks: migrated.disabledBanks || {},
@@ -3012,6 +3015,16 @@ export default function App() {
     goHome();
   }, [goHome]);
 
+  // PHIL-03 — current economy snapshot in a ref so claimWhyBonus can decide
+  // (awarded vs already-claimed) synchronously, then commit via setData.
+  const economyRef = useRef(null);
+  economyRef.current = data && data.economy;
+  const claimWhyBonus = useCallback((questionId) => {
+    const { economy, awarded } = claimWhyBonusPure(economyRef.current, questionId);
+    if (awarded) setData(prev => ({ ...prev, economy }));
+    return awarded;
+  }, []);
+
   // NEW-02 — merge a demographics patch into the synced profile blob. Defaults
   // customTargetPercentile to the UR/Open-Merit standard (98.5) the first time
   // anything is set. setData auto-persists + syncs, so no extra plumbing.
@@ -4115,6 +4128,8 @@ export default function App() {
       {nav.screen === 'quiz' && (
         <Quiz questions={nav.questions} mode={nav.mode} timed={nav.timed}
               timeLimitMin={nav.timeLimitMin}
+              coins={normalizeEconomy(data && data.economy).coins}
+              onWhyBonus={claimWhyBonus}
               onComplete={completeQuiz} onBack={goHome} profileId={profile && profile.id} />
       )}
 

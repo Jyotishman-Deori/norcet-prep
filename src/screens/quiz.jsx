@@ -10,7 +10,7 @@
 // was dead in the body and has been dropped.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Flag, FlaskConical, Lightbulb, Timer, X } from 'lucide-react';
+import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Coins, Flag, FlaskConical, Lightbulb, Sparkles, Timer, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
@@ -54,7 +54,7 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const [index, setIndex] = useState(0);
@@ -62,6 +62,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [submitted, setSubmitted] = useState(false);
   const [revealed, setRevealed] = useState(false);   // user tapped "Show answer" without selecting
   const [confidence, setConfidence] = useState('unsure'); // #4 — per-question self-rating
+  // PHIL-03 — The Why Bonus: staying on a CORRECT answer's explanation for 15s
+  // rewards coins (depth over speed). `lastCorrect` marks the current question's
+  // outcome; `whyBonus` drives the celebratory toast.
+  const [lastCorrect, setLastCorrect] = useState(false);
+  const [whyBonus, setWhyBonus] = useState(false);
   const [results, setResults] = useState([]);        // per question { qId, correct, selected, timeMs, revealed? }
   const [bookmarkedLocal, setBookmarkedLocal] = useState(new Set(data.bookmarks));
   // For count-down (mock): seconds remaining. For count-up (legacy): seconds elapsed.
@@ -197,6 +202,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setAltShown(false);
     setRevealed(false);
     setConfidence('unsure');   // #4 — start each question neutral
+    setLastCorrect(false);     // PHIL-03 — reset Why-Bonus tracking per question
+    setWhyBonus(false);
   }, [index]);
 
   if (!q) {
@@ -235,8 +242,28 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     const correct = arraysEqualUnordered(selected, q.correct);
     const timeMs = Date.now() - questionStart.current;
     setResults(r => [...r, { qId: q.id, correct, selected, timeMs, confidence }]);
+    setLastCorrect(correct);
     setSubmitted(true);
   };
+
+  // PHIL-03 — The Why Bonus. After a CORRECT answer, if the explanation stays
+  // open for 15s, award the bonus once (server-of-record is the data blob via
+  // onWhyBonus, which dedups per question forever). The timer resets/cancels on
+  // question change or unmount (useEffect cleanup) so there's no farming and no
+  // memory leak. Capped at 15s — staying 10 minutes earns the same as 15s.
+  useEffect(() => {
+    if (!submitted || !lastCorrect || revealed || !onWhyBonus || !q) return undefined;
+    const t = setTimeout(() => {
+      try { if (onWhyBonus(q.id)) setWhyBonus(true); } catch (e) {}
+    }, 15000);
+    return () => clearTimeout(t);
+  }, [submitted, lastCorrect, revealed, q && q.id, onWhyBonus]);
+  // Auto-dismiss the bonus toast.
+  useEffect(() => {
+    if (!whyBonus) return undefined;
+    const t = setTimeout(() => setWhyBonus(false), 3600);
+    return () => clearTimeout(t);
+  }, [whyBonus]);
 
   // Neutral "Submit" — the user chose not to answer; reveal the solution
   // WITHOUT it counting for or against them. Recorded with `revealed: true`,
@@ -313,6 +340,15 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         feedback={{ screen: `Quiz · ${mode || 'practice'}`, questionId: q.id }}
         right={
           <div className="flex items-center gap-2">
+            {/* PHIL-03 — Accuracy Coins balance (premium, non-monetary). Pops
+                when a Why Bonus lands. */}
+            <Tip text="Accuracy Coins — earned by studying the 'why', not just guessing">
+            <div className={"flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums" + (whyBonus ? ' q-pulse' : '')}
+                 style={{ background: '#F59E0B18', color: '#B45309', border: '1px solid #F59E0B40' }}>
+              <Coins size={12} />
+              {coins}
+            </div>
+            </Tip>
             {timed && (() => {
               // Countdown: show time remaining; flash red when under a minute.
               // Count-up: show elapsed (legacy).
@@ -339,6 +375,25 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
           </div>
         }
       />
+
+      {/* PHIL-03 — The Why Bonus celebration. Rewards depth over speed. */}
+      {whyBonus && (
+        <div className="fixed left-1/2 -translate-x-1/2 z-50 px-4 w-full max-w-md"
+             style={{ top: 'calc(64px + env(safe-area-inset-top, 0px))', pointerEvents: 'none' }}>
+          <div className="anim-fadeup rounded-2xl px-4 py-3 flex items-center gap-3"
+               style={{ background: 'linear-gradient(135deg, #F59E0B, #B45309)', boxShadow: '0 12px 30px rgba(180,83,9,0.4)', color: '#FFF' }}>
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.2)' }}>
+              <Sparkles size={18} color="#FFF" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-display text-sm font-semibold">+50 Coins · The Why Bonus</div>
+              <div className="text-[12px] leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>
+                You got the mark and stayed to understand the <i>why</i>. That's true clinical instinct.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-md mx-auto px-4 pb-40 pt-2">
         {/* Progress */}
