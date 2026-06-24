@@ -25,12 +25,13 @@ import { ComparisonToggle } from '../ui/comparison-cards.jsx';
 // FAV — Favourites strip toggle (per profile, OFF by default).
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
+import StudyProfileCard from './study-profile-card.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 import { useBackHandler } from '../lib/back-handler.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile, isAdmin } = useProfile();
@@ -369,6 +370,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
         </Card>
       </div>
+      {/* NEW-02 — Study profile (optional, editable any time). Anything skipped
+          during onboarding can be set here, like the optional recovery email. */}
+      {profile && <StudyProfileCard demographics={data.demographics} onSave={onSetDemographics} />}
       {/* Fix 6 — Account Security (logged-in only; the Profile sub-page is only
           reachable when signed in). One-time recovery question + optional email. */}
       {profile && <AccountSecurityCard profile={profile} />}

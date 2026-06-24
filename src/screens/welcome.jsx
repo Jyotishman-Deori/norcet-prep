@@ -19,7 +19,7 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, X, Hand, MousePointerClick, Heart } from 'lucide-react';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
@@ -27,13 +27,38 @@ import { useContent } from '../lib/content.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import { KEYS } from '../lib/keys.js';
+import {
+  GENDER_OPTIONS, QUALIFICATION_OPTIONS, EMPLOYMENT_OPTIONS,
+  QUALIFICATION_UNLOCK, EMPLOYMENT_UNLOCK, normalizeDemographics,
+} from '../lib/demographics.js';
 
-function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
+// NEW-01 — premium, quiet "Skip tour" pill with a micro-interaction (the arrow
+// nudges on press). Shown on every onboarding page EXCEPT the final one.
+function SkipButton({ T, onClick, label = 'Skip tour' }) {
+  return (
+    <button onClick={onClick}
+            className="no-tap-highlight group inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full active:scale-95 transition"
+            style={{ color: T.muted, background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+      {label}
+      <ArrowRight size={13} className="transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-hover:translate-x-0.5 group-active:translate-x-1" />
+    </button>
+  );
+}
+
+function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemographics, onDismiss, onLaunch }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { profile } = useProfile();
   const { data: help } = useContent('help');
   const profileId = (profile && profile.id) || 'guest';
   const storeKey = `${KEYS.WELCOME_TOUR_VISITED}${profileId}`;
+  const demo = normalizeDemographics(demographics);
+
+  // NEW-01/02 — first-run onboarding adds App-Pitch, Library and the three
+  // demographic screens before the "what's inside" tour. Replays from Settings
+  // skip straight to the tour (no re-collecting data).
+  const STEP_ORDER = firstRun
+    ? ['pitch', 'library', 'gender', 'qualification', 'employment', 'tour', 'tips']
+    : ['tour', 'tips'];
 
   // Each row is a launchable section. `helpKey` maps to its help.json entry so
   // the popup reuses the same accurate What/How/Why the Help button shows.
@@ -50,8 +75,14 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
   ];
 
   const [selected, setSelected] = useState(null); // item whose popup is open
-  const [step, setStep] = useState('tour');        // 'tour' | 'tips' (2nd onboarding page)
+  const [step, setStep] = useState(STEP_ORDER[0]); // first step of the active flow
   const [visited, setVisited] = useState(() => new Set());
+  const nextStep = () => { const i = STEP_ORDER.indexOf(step); if (i >= 0 && i < STEP_ORDER.length - 1) setStep(STEP_ORDER[i + 1]); };
+  const prevStep = () => { const i = STEP_ORDER.indexOf(step); if (i > 0) setStep(STEP_ORDER[i - 1]); };
+  // NEW-02 — the reassuring "we just unlocked X" copy shown after a choice that
+  // has one (GNM / employment). Cleared whenever the step changes.
+  const [pendingUnlock, setPendingUnlock] = useState(null);
+  useEffect(() => { setPendingUnlock(null); }, [step]);
   // Issues round — the DEVICE back button mirrors the tour's own back:
   // App re-arms its history sentinel and dispatches 'norcet:welcome-back';
   // here it closes the open help popup first (one step back), and at the
@@ -63,12 +94,14 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
   stepRef.current = step;
   useEffect(() => {
     const onBack = () => {
-      if (selectedRef.current) setSelected(null);
-      else if (stepRef.current === 'tips') setStep('tour');
-      else setLeaveConfirm(true);
+      if (selectedRef.current) { setSelected(null); return; }   // close help popup first
+      const i = STEP_ORDER.indexOf(stepRef.current);
+      if (i > 0) setStep(STEP_ORDER[i - 1]);                    // step back through the flow
+      else setLeaveConfirm(true);                               // at the first page → confirm leave
     };
     window.addEventListener('norcet:welcome-back', onBack);
     return () => window.removeEventListener('norcet:welcome-back', onBack);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -106,6 +139,196 @@ function WelcomeScreen({ displayName, onDismiss, onLaunch }) {
     { label: 'How to use it', icon: <ListChecks size={13} />, text: c.how },
     { label: 'Why it\u2019s here', icon: <Sparkles size={13} />, text: c.why },
   ].filter(s => s.text) : [];
+
+  // Shared chrome for the onboarding pages: quiet Back (when not first) + the
+  // premium Skip-tour pill (every page except the final one).
+  const atFirst = STEP_ORDER.indexOf(step) === 0;
+  const pageHead = (
+    <div className="flex justify-between items-center mb-1">
+      {atFirst
+        ? <span />
+        : <button onClick={prevStep}
+                  className="no-tap-highlight inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
+                  style={{ color: T.muted }}><ArrowLeft size={14} /> Back</button>}
+      <SkipButton T={T} onClick={() => setLeaveConfirm(true)} />
+    </div>
+  );
+  const heroIcon = (Icon, color) => (
+    <div className="text-center mb-6 relative">
+      <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 -top-6 w-48 h-48 rounded-full pointer-events-none"
+           style={{ background: `radial-gradient(circle, ${color}26, transparent 65%)` }} />
+      <div className="welcome-float relative inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-3"
+           style={{ background: `linear-gradient(140deg, ${color}, ${color}B3)`, boxShadow: `0 10px 26px ${color}50` }}>
+        <Icon size={28} color="#FFF" />
+      </div>
+    </div>
+  );
+
+  // ---- NEW-01 page 1: App pitch ----
+  if (step === 'pitch') {
+    const points = [
+      { icon: <Target size={18} />, color: T.error, title: 'Most aspirants drown in PDFs', body: 'Endless notes, no idea where they actually stand or what to fix next.' },
+      { icon: <Brain size={18} />, color: T.primary, title: 'This app makes prep deliberate', body: 'Spaced revision, weak-area targeting, real exam-style timing and a clear map of your syllabus.' },
+      { icon: <Sparkles size={18} />, color: T.accent, title: 'Built to feel like exam day', body: 'Negative marking, sectional pacing and topper benchmarks — so the real CBT feels familiar.' },
+    ];
+    return (
+      <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+        {pageHead}
+        {heroIcon(Rocket, T.primary)}
+        <div className="text-center mb-6">
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>Welcome{displayName ? `, ${displayName}` : ''}</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>Your NORCET edge</h1>
+          <div className="text-sm" style={{ color: T.muted }}>Sixty seconds on why this beats another PDF.</div>
+        </div>
+        <div className="space-y-2.5 mb-6">
+          {points.map((p, i) => (
+            <div key={p.title} className="welcome-row" style={{ animationDelay: `${i * 70}ms` }}>
+              <Card className="p-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{ background: `linear-gradient(135deg, ${p.color}, ${p.color}B3)`, boxShadow: `0 6px 16px ${p.color}45`, color: '#FFF' }}>
+                    {p.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>{p.title}</div>
+                    <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{p.body}</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+        <div className="welcome-row" style={{ animationDelay: `${points.length * 70 + 60}ms` }}>
+          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Next</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- NEW-01 page 2: Library & question-bank explainer ----
+  if (step === 'library') {
+    const rows = [
+      { icon: <Layers size={18} />, color: T.sec.library, title: 'The Library holds question banks', body: 'Curated sets of questions grouped by topic and source — the heart of your practice pool.' },
+      { icon: <Download size={18} />, color: T.primary, title: 'Download the sets you want', body: 'Add a bank and its questions join your tests, stats and revision — and work offline after.' },
+      { icon: <PlusCircle size={18} />, color: T.accent, title: 'Or build your own', body: 'Create custom question sets (Add question / Library) to drill exactly what you need.' },
+    ];
+    return (
+      <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+        {pageHead}
+        {heroIcon(Layers, T.sec.library)}
+        <div className="text-center mb-6">
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>How questions work</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>Start with the Library</h1>
+          <div className="text-sm" style={{ color: T.muted }}>Find it in the sidebar menu anytime.</div>
+        </div>
+        <div className="space-y-2.5 mb-6">
+          {rows.map((r, i) => (
+            <div key={r.title} className="welcome-row" style={{ animationDelay: `${i * 70}ms` }}>
+              <Card className="p-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+                       style={{ background: `linear-gradient(135deg, ${r.color}, ${r.color}B3)`, boxShadow: `0 6px 16px ${r.color}45`, color: '#FFF' }}>
+                    {r.icon}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>{r.title}</div>
+                    <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{r.body}</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+          ))}
+        </div>
+        <div className="welcome-row" style={{ animationDelay: `${rows.length * 70 + 60}ms` }}>
+          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Next</Button>
+        </div>
+      </div>
+    );
+  }
+
+  // ---- NEW-02 demographic screens (gender / qualification / employment) ----
+  // All optional: tapping a choice saves + advances; "Skip this one" advances
+  // without saving; "Skip tour" exits (fill it in later in Settings → Profile).
+  if (step === 'gender' || step === 'qualification' || step === 'employment') {
+    const cfg = {
+      gender: { icon: Users, color: T.primary, kicker: 'A quick calibration',
+        title: 'Where do you stand?',
+        trust: 'AIIMS applies a strict 80:20 gender quota. We use this only to calibrate your simulated leaderboard rank in your pool — never to limit content.',
+        field: 'gender', kind: 'gender', options: GENDER_OPTIONS },
+      qualification: { icon: GraduationCap, color: T.accent, kicker: 'Your background',
+        title: 'Your highest qualification?',
+        trust: 'Lets us frame examples for your training — GNM nurses get bedside-to-theory drills.',
+        field: 'qualification', kind: 'qualification', options: QUALIFICATION_OPTIONS },
+      employment: { icon: Clock, color: T.sec.revision || T.primary, kicker: 'Your schedule',
+        title: 'How does prep fit your day?',
+        trust: 'We adapt your dashboard — a working nurse can’t sit a 3-hour mock on a Tuesday afternoon.',
+        field: 'employment', kind: 'employment', options: EMPLOYMENT_OPTIONS },
+    }[step];
+    const Icon = cfg.icon;
+    const current = demo[cfg.field];
+    const pick = (id) => {
+      if (onSaveDemographics) onSaveDemographics({ [cfg.field]: id });
+      const unlock = cfg.kind === 'qualification' ? QUALIFICATION_UNLOCK[id]
+                   : cfg.kind === 'employment' ? EMPLOYMENT_UNLOCK[id] : null;
+      if (unlock) setPendingUnlock(unlock);
+      else nextStep();
+    };
+    return (
+      <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
+        {pageHead}
+        {heroIcon(Icon, cfg.color)}
+        <div className="text-center mb-5">
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>{cfg.kicker}</div>
+          <h1 className="font-display text-2xl font-semibold mb-1.5" style={{ color: T.ink }}>{cfg.title}</h1>
+          <div className="text-[13px] leading-relaxed px-2" style={{ color: T.muted }}>{cfg.trust}</div>
+        </div>
+        <div className="space-y-2.5 mb-4">
+          {cfg.options.map((o, i) => {
+            const active = current === o.id;
+            return (
+              <button key={o.id} onClick={() => pick(o.id)}
+                      className="welcome-row no-tap-highlight w-full text-left active:scale-[0.98] transition-transform"
+                      style={{ animationDelay: `${i * 60}ms` }}>
+                <Card className="p-4" style={active
+                  ? { background: cfg.color + '12', border: `1.5px solid ${cfg.color}` }
+                  : undefined}>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                         style={{ background: active ? cfg.color : cfg.color + '18', color: active ? '#FFF' : cfg.color }}>
+                      {active ? <Check size={16} /> : <span className="text-sm font-bold">{o.label[0]}</span>}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-display text-[15px] font-semibold" style={{ color: T.ink }}>{o.label}</div>
+                      {o.sub && <div className="text-[11px]" style={{ color: T.muted }}>{o.sub}</div>}
+                    </div>
+                  </div>
+                </Card>
+              </button>
+            );
+          })}
+        </div>
+
+        {pendingUnlock ? (
+          <div className="anim-fadeup">
+            <div className="rounded-2xl p-4 mb-3 flex items-start gap-3" style={{ background: cfg.color + '12', border: `1px solid ${cfg.color}33` }}>
+              <Headphones size={18} className="flex-shrink-0 mt-0.5" style={{ color: cfg.color }} />
+              <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{pendingUnlock}</div>
+            </div>
+            <Button onClick={() => { setPendingUnlock(null); nextStep(); }} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Continue</Button>
+          </div>
+        ) : (
+          <button onClick={nextStep}
+                  className="no-tap-highlight w-full inline-flex items-center justify-center gap-1 text-[13px] font-medium py-2.5 rounded-xl active:bg-black/5"
+                  style={{ color: T.muted }}>
+            {current ? 'Continue' : 'Skip this one'} <ArrowRight size={14} />
+          </button>
+        )}
+        <div className="text-[10.5px] text-center mt-2" style={{ color: T.muted }}>
+          Optional &amp; private · change it anytime in Settings → Profile.
+        </div>
+      </div>
+    );
+  }
 
   // ---- Second onboarding page: the gestures + tap-and-hold first-timers miss ----
   if (step === 'tips') {

@@ -60,6 +60,8 @@ import { captureError, setErrorContext } from './lib/errorlog.js';
 import { initAnalytics, trackScreen } from './lib/analytics.js';
 // BUG-01 — unified back-button interception for screens with internal sub-views.
 import { runTopBackHandler } from './lib/back-handler.js';
+// NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
+import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -1900,6 +1902,10 @@ export default function App() {
   const [banksLoading, setBanksLoading] = useState(false);
   const [themeMode, setThemeMode] = useState('light');
   const [showWelcome, setShowWelcome] = useState(false);
+  // NEW-01 — true when the welcome screen is a genuine FIRST RUN (show the App
+  // Pitch / Library / demographic onboarding pages); false when replayed from
+  // Settings (jump straight to the "what's inside" tour, no re-collecting data).
+  const [welcomeFirstRun, setWelcomeFirstRun] = useState(true);
   // When the user launches a section from the welcome tour (e.g. Settings →
   // Show welcome tour → tap "Quick test"), the next "back to home" should
   // return them to the welcome tour rather than dropping them on Home. This
@@ -3006,6 +3012,19 @@ export default function App() {
     goHome();
   }, [goHome]);
 
+  // NEW-02 — merge a demographics patch into the synced profile blob. Defaults
+  // customTargetPercentile to the UR/Open-Merit standard (98.5) the first time
+  // anything is set. setData auto-persists + syncs, so no extra plumbing.
+  const setDemographics = useCallback((patch) => {
+    if (!patch || typeof patch !== 'object') return;
+    setData(prev => {
+      const cur = (prev && prev.demographics) || {};
+      const next = { ...cur, ...patch };
+      if (typeof next.customTargetPercentile !== 'number') next.customTargetPercentile = DEFAULT_TARGET_PERCENTILE;
+      return { ...prev, demographics: next };
+    });
+  }, []);
+
   const completeDosage = useCallback((results, questions) => {
     setNav({ screen: 'dosage-results', results, questions });
   }, []);
@@ -3913,6 +3932,9 @@ export default function App() {
       <div className="font-body min-h-screen" style={{ background: T.bg, color: T.ink }}>
         <style>{fontStyles}</style>
         <WelcomeScreen displayName={profile.displayName}
+                       firstRun={welcomeFirstRun}
+                       demographics={data && data.demographics}
+                       onSaveDemographics={setDemographics}
                        onDismiss={dismissWelcome}
                        onLaunch={launchFromWelcome} />
       </div>
@@ -4426,7 +4448,7 @@ export default function App() {
                   onUnlockAdmin={handleUnlockAdmin} onLockAdmin={handleLockAdmin}
                   onToggleTheme={toggleTheme}
                   onSetColorTheme={setColorTheme}
-                  onShowWelcome={() => { setShowWelcome(true); }}
+                  onShowWelcome={() => { setWelcomeFirstRun(false); setShowWelcome(true); }}
                   onOpenFeedbackInbox={() => setNav({ screen: 'feedback-inbox' })}
                   onOpenAdminPanel={() => setNav({ screen: 'admin-panel' })}
                   onOpenMyReports={() => setNav({ screen: 'my-reports' })}
@@ -4438,6 +4460,7 @@ export default function App() {
                   onToggleReviewReminders={toggleReviewReminders}
                   onToggleIncludeGkInStats={toggleIncludeGkInStats}
                   onSetDailyReminder={setDailyReminder}
+                  onSetDemographics={setDemographics}
                   unseenReplyCount={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
                   onBack={goHome} />
       )}
