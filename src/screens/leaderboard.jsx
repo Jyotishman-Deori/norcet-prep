@@ -10,7 +10,7 @@
 // onStartQuiz) + optional myMastered for the empty/your-standing copy.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight } from 'lucide-react';
+import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight, Zap } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
@@ -18,7 +18,10 @@ import { loadLeaderboard } from '../lib/leaderboard.js';
 
 function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, attemptedCount = 0, onStartQuiz, myMastered = 0 }) {
   const { theme: T } = useTheme();
-  const [tab, setTab] = useState('week'); // 'week' | 'mastery' | 'streak' | 'accuracy'
+  // Two boards: Normal (week/mastery/streak/accuracy) and Flashpoint (its own
+  // 2×-points ranking). `tab === 'flashpoint'` selects the Flashpoint board.
+  const [tab, setTab] = useState('week'); // 'week' | 'mastery' | 'streak' | 'accuracy' | 'flashpoint'
+  const isFlash = tab === 'flashpoint';
   const [entries, setEntries] = useState(null); // null = loading
   const [offline, setOffline] = useState(false);
 
@@ -34,6 +37,10 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
 
   const ranked = useMemo(() => {
     const list = entries || [];
+    if (tab === 'flashpoint') {
+      return list.filter(e => (e.flashpointPoints || 0) > 0)
+                 .sort((a, b) => (b.flashpointPoints || 0) - (a.flashpointPoints || 0) || (b.totalAnswered || 0) - (a.totalAnswered || 0));
+    }
     if (tab === 'mastery') {
       return list.filter(e => (e.masteredTopics || 0) > 0)
                  .sort((a, b) => (b.masteredTopics || 0) - (a.masteredTopics || 0) || (b.totalAnswered || 0) - (a.totalAnswered || 0));
@@ -58,6 +65,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
     { id: 'accuracy', label: 'Accuracy',  icon: Target },
   ];
   const metricOf = (e) => {
+    if (tab === 'flashpoint') return `${(e.flashpointPoints || 0).toLocaleString()} pts`;
     if (tab === 'mastery') return `${e.masteredTopics || 0} \u2605`;
     if (tab === 'streak') return `${e.currentStreak || 0}d`;
     if (tab === 'accuracy') return `${Math.round((e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0) * 100)}%`;
@@ -65,7 +73,9 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
   };
   const medal = (i) => i === 0 ? '#D4AF37' : i === 1 ? '#A8B0B8' : i === 2 ? '#B87333' : null;
   const myRank = ranked.findIndex(e => e.id === profileId);
-  const notRankedNote = tab === 'mastery'
+  const notRankedNote = tab === 'flashpoint'
+    ? 'Play a test in Flashpoint pace to score points and rank here.'
+    : tab === 'mastery'
     ? 'Master your first topic in the Knowledge Map to claim a spot here.'
     : tab === 'accuracy'
       ? 'Answer at least 50 questions to qualify for the accuracy board.'
@@ -106,22 +116,49 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
           </Card>
         )}
 
-        {/* Tabs — horizontally scrollable chips with icons. */}
-        <div className="flex gap-2 mb-4 overflow-x-auto -mx-1 px-1 pb-0.5" style={{ scrollbarWidth: 'none' }}>
-          {tabs.map(t => {
-            const active = tab === t.id;
-            const Icon = t.icon;
+        {/* Board switch — Normal vs the separate Flashpoint board. */}
+        <div className="grid grid-cols-2 gap-1.5 mb-3 p-1 rounded-2xl" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+          {[
+            { id: 'normal', label: 'Normal', tint: T.primary },
+            { id: 'flashpoint', label: 'Flashpoint', tint: '#F59E0B' },
+          ].map(b => {
+            const on = b.id === 'flashpoint' ? isFlash : !isFlash;
             return (
-              <button key={t.id} onClick={() => setTab(t.id)}
-                      className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 active:scale-95"
-                      style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
-                               border: `1.5px solid ${active ? T.primary : T.border}`,
-                               transition: 'background .2s, color .2s, border-color .2s' }}>
-                <Icon size={14} /> {t.label}
+              <button key={b.id} onClick={() => setTab(b.id === 'flashpoint' ? 'flashpoint' : 'week')}
+                      className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold active:scale-[0.98] transition-colors"
+                      style={{ background: on ? b.tint : 'transparent', color: on ? '#FFF' : T.inkSoft }}>
+                {b.id === 'flashpoint' && <Zap size={14} fill={on ? '#FFF' : 'none'} />}{b.label}
               </button>
             );
           })}
         </div>
+
+        {/* Normal sub-tabs — hidden on the Flashpoint board. */}
+        {!isFlash && (
+          <div className="flex gap-2 mb-4 overflow-x-auto -mx-1 px-1 pb-0.5" style={{ scrollbarWidth: 'none' }}>
+            {tabs.map(t => {
+              const active = tab === t.id;
+              const Icon = t.icon;
+              return (
+                <button key={t.id} onClick={() => setTab(t.id)}
+                        className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 active:scale-95"
+                        style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
+                                 border: `1.5px solid ${active ? T.primary : T.border}`,
+                                 transition: 'background .2s, color .2s, border-color .2s' }}>
+                  <Icon size={14} /> {t.label}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Flashpoint context line. */}
+        {isFlash && !offline && entries !== null && (
+          <div className="text-[12px] leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
+            <Zap size={12} className="inline -mt-0.5 mr-1" style={{ color: '#F59E0B' }} />
+            Ranked by lifetime <span style={{ color: T.ink, fontWeight: 600 }}>Flashpoint points</span> — correct answers in Flashpoint pace score 2×.
+          </div>
+        )}
 
         {/* Mastery context line — ties the board to the Knowledge Map. */}
         {tab === 'mastery' && !offline && entries !== null && (
@@ -144,15 +181,17 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
           </div>
         ) : ranked.length === 0 ? (
           <EmptyState
-            icon={tab === 'mastery' ? Crown : Trophy}
-            title={tab === 'mastery' ? 'Light up your first constellation' : 'Your name belongs on this board'}
-            text={tab === 'mastery'
+            icon={isFlash ? Zap : tab === 'mastery' ? Crown : Trophy}
+            title={isFlash ? 'Ignite the Flashpoint board' : tab === 'mastery' ? 'Light up your first constellation' : 'Your name belongs on this board'}
+            text={isFlash
+              ? 'Finish a test in Flashpoint pace — half the time, double the points — to claim your spot here.'
+              : tab === 'mastery'
               ? 'Master a topic in the Knowledge Map to appear here and compare your progress with other aspirants.'
               : 'Complete 10 questions to appear on the leaderboard and see how you rank against other NORCET aspirants.'}
-            progress={tab === 'mastery' ? `${myMastered} topic${myMastered === 1 ? '' : 's'} mastered so far` : `${Math.min(attemptedCount, 10)} / 10 questions completed`}
-            actionLabel={onStartQuiz ? 'Start Practising' : undefined}
+            progress={isFlash ? undefined : tab === 'mastery' ? `${myMastered} topic${myMastered === 1 ? '' : 's'} mastered so far` : `${Math.min(attemptedCount, 10)} / 10 questions completed`}
+            actionLabel={onStartQuiz ? (isFlash ? 'Start a test' : 'Start Practising') : undefined}
             onAction={onStartQuiz}
-            kmNote />
+            kmNote={!isFlash} />
         ) : (
           <>
             {/* Your standing — pinned summary. */}

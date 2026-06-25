@@ -49,6 +49,8 @@ function computeLeaderboardEntry(profile, data, allQuestions) {
     currentStreak: s.streakCurrent || 0,
     weeklyAnswered,
     masteredTopics,
+    // Flashpoint — lifetime 2× points; ranks the Flashpoint board.
+    flashpointPoints: s.flashpointPoints || 0,
     lastActiveDate: s.lastStudiedDate || todayStr(),
     ts: Date.now()
   };
