@@ -164,6 +164,8 @@ import SorterDrill from './screens/sorter.jsx';
 import DistractorAssassin from './screens/distractor-assassin.jsx';
 // NEW-06 — Tie-Breaker: two reasonable actions, pick the priority.
 import TieBreaker from './screens/tie-breaker.jsx';
+// NEW-09 — IBQ: data-driven hotspot "tap the structure" diagrams (uploadable).
+import Ibq from './screens/ibq.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -929,7 +931,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4412,6 +4414,15 @@ export default function App() {
                       if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                       goHomeDirect();
                     }} />
+      )}
+
+      {/* NEW-09 — IBQ: tap the structure on a data-driven diagram. */}
+      {nav.screen === 'ibq' && (
+        <Ibq onBack={goHome} onSetPace={setPace}
+             onComplete={(coins) => {
+               if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
+               goHomeDirect();
+             }} />
       )}
 
       {nav.screen === 'advanced-setup' && (

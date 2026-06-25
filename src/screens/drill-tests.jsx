@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -219,6 +219,28 @@ function DrillTests({ onBack, onNavigate }) {
                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
                 </div>
                 <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Waste & isolation · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </div>
+          </Card>
+          </Tip>
+        </Reveal>
+
+        {/* IBQ — tap-the-structure on data-driven diagrams (NEW) */}
+        <Reveal delay={146}>
+          <Tip title="Spot the Structure" text="Image-based questions: tap the right part on a diagram — ECG waves, heart-sound areas, abdominal regions — the picture fills in as you find each one.">
+          <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('ibq')}
+                style={{ background: 'linear-gradient(135deg, #0891B2, #0B4F66)', border: 'none', boxShadow: '0 6px 18px rgba(11,79,102,0.3)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                <ScanSearch size={22} color="#FFF" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">Spot the Structure</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Tap it on the diagram · earn coins</div>
               </div>
               <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
             </div>
