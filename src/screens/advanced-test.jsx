@@ -27,6 +27,7 @@ import {
 import { isPYQ } from '../lib/pyq.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
+import GhostShiftCard from '../ui/ghost-shift-card.jsx';
 
 function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -587,7 +588,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 // ADVANCED TEST — RESULTS
 // =====================================================================
 function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, onHome, onReview, label, timeMinutes, profileId,
-                              everCorrectIds = [],
+                              everCorrectIds = [], advancedTestHistory = null,
                               displayName = null, streak = 0, referralCode = null, isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const summary = useMemo(() => {
@@ -705,6 +706,10 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
             <div className="text-[10px]" style={{ color: T.muted }}>~{Math.round(summary.avgTime)}s per Q</div>
           </Card>
         </div>
+
+        {/* PHIL-04 — The Ghost Shift: you vs your ~2-weeks-ago self. Only on the
+            random-pool Advanced mock (history passed); hidden on paper results. */}
+        <GhostShiftCard history={advancedTestHistory} />
 
         {summary.topicArr.length > 0 && (
           <Card className="p-4 mb-5">

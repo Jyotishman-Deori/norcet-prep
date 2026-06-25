@@ -4282,6 +4282,7 @@ export default function App() {
                              timeMinutes={nav.timeMinutes}
                              auto={nav.auto}
                              everCorrectIds={nav.everCorrectIds}
+                             advancedTestHistory={data && data.advancedTestHistory}
                              onHome={goHomeDirect}
                              onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                              displayName={profile ? (profile.displayName || profile.id) : null}
