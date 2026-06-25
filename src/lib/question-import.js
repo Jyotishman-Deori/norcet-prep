@@ -47,7 +47,14 @@ function normalizeQuestion(raw, idPrefix) {
     // is implied — these are optional, like `source`/`difficulty`/`image`.
     ...(raw.isPYQ === true ? { isPYQ: true } : {}),
     ...((typeof raw.pyqYear === 'number' && raw.pyqYear > 0) ? { pyqYear: raw.pyqYear } : {}),
-    ...((typeof raw.pyqExam === 'string' && raw.pyqExam.trim()) ? { pyqExam: raw.pyqExam.trim() } : {})
+    ...((typeof raw.pyqExam === 'string' && raw.pyqExam.trim()) ? { pyqExam: raw.pyqExam.trim() } : {}),
+    // FOUNDATION A1 — optional must-know survival/safety flag. Accept the app's
+    // `foundational` or the spec's `is_foundational` (CSV `is_foundational`
+    // column → "true"/"1"). Powers PHIL-06 Vitals Check. Purely additive, like
+    // source/difficulty/image — a question without it stays exactly as before.
+    ...(raw.foundational === true || raw.is_foundational === true
+        || /^(true|1|yes)$/i.test(String(raw.foundational ?? raw.is_foundational ?? '').trim())
+        ? { foundational: true } : {})
   };
 }
 
