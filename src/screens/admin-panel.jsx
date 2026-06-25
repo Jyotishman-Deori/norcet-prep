@@ -27,6 +27,7 @@ import ConfirmDialog from '../ui/confirm-dialog.jsx';
 import AdminManager from '../ui/admin-manager.jsx';
 import AdminFaqManager from '../ui/admin-faq-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
+import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
@@ -692,7 +693,11 @@ function AdminPanel({
                     </div>
                   </div>
                   {sortedReferrers.length === 0 ? (
-                    <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No referrals attributed yet.</div></Card>
+                    <AdminEmpty icon={Award} accent={T.accent}
+                      title="No referrals attributed yet"
+                      what="Your word-of-mouth leaderboard — who has invited the most friends, and how many of those actually stuck around."
+                      when="It populates when someone joins through a user’s share link (Settings → Share). Direct sign-ups don’t count as referrals."
+                      collecting />
                   ) : sortedReferrers.map((r, i) => {
                     const isTop3 = referrerSort === 'volume' && i < 3;
                     const open = openReferrer === r.id;
@@ -829,11 +834,11 @@ function AdminPanel({
           {feedbackLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : feedback.length === 0 ? (
-            <Card className="p-8 text-center">
-              <AlertCircle size={36} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
-              <div className="font-display text-lg mb-0.5" style={{ color: T.ink }}>No reports yet</div>
-              <div className="text-sm" style={{ color: T.muted }}>Users can tap the report icon on any screen.</div>
-            </Card>
+            <AdminEmpty icon={AlertCircle} accent={T.accent}
+              title="No reports yet"
+              what="Bug reports and feature ideas users send via the report icon on any screen — each one tagged with the exact screen and question."
+              when="As soon as someone submits feedback it shows here, where you can reply (they see it in “My feedback”) and set a status."
+              collecting />
           ) : shown.length === 0 ? (
             <Card className="p-8 text-center">
               <Check size={32} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
@@ -1175,11 +1180,11 @@ function AdminPanel({
           {errsLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : errs.length === 0 ? (
-            <Card className="p-8 text-center">
-              <Check size={32} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
-              <div className="font-display text-lg mb-0.5" style={{ color: T.ink }}>No crashes recorded</div>
-              <div className="text-sm" style={{ color: T.muted }}>Nothing has thrown an uncaught error. That's the goal.</div>
-            </Card>
+            <AdminEmpty icon={Check} accent={T.success} tone={T.success}
+              title="No crashes recorded"
+              what="Uncaught errors, promise rejections and render crashes from across the app, grouped by signature so you can fix the worst first."
+              when="An empty list is the goal — nothing has thrown. If a crash happens anywhere, it lands here automatically with its stack and a hit count."
+              collecting />
           ) : shown.length === 0 ? (
             <Card className="p-8 text-center">
               <Check size={28} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
@@ -1334,11 +1339,11 @@ function AdminPanel({
           {engLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : !eng || eng.totalUsers === 0 ? (
-            <Card className="p-8 text-center">
-              <Activity size={32} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
-              <div className="font-display text-lg mb-0.5" style={{ color: T.ink }}>No usage data yet</div>
-              <div className="text-sm" style={{ color: T.muted }}>Summaries appear as people use the app.</div>
-            </Card>
+            <AdminEmpty icon={Activity} accent={T.primary}
+              title="No usage data yet"
+              what="Active users, sessions and most-visited screens — an at-a-glance pulse of how the app is being used (members and guests, never an individual)."
+              when="It fills in the next time members open and use the app. Brand-new projects start empty."
+              collecting />
           ) : (
             <>
               <div className="grid grid-cols-2 gap-2.5 mb-2.5">
