@@ -27,7 +27,7 @@ import HelpfulBulb from '../ui/helpful-bulb.jsx';
 // Issues round — the same quick Reference lookup the other quiz modes have.
 import { ReferenceLookupModal } from './reference.jsx';
 
-function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark }) {
+function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark, count = 10 }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   // Dosage inherits the global Pace (same Off/Pulse/Flashpoint setting). The
@@ -43,7 +43,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
   const [showReference, setShowReference] = useState(false);
   // A2 — dosage questions loaded lazily from /public/data/dosage.json.
   const { data: dosageData, loading, error, reload } = useContent('dosage');
-  const questions = useMemo(() => dosageData ? shuffle(dosageData).slice(0, 10) : [], [dosageData]);
+  const questions = useMemo(() => dosageData ? shuffle(dosageData).slice(0, Math.max(1, count)) : [], [dosageData, count]);
   const q = questions[index];
 
   // #4 — bookmarking a dosage question. Persists immediately via the app-level

@@ -148,6 +148,7 @@ import FavoritesScreen from './screens/favorites.jsx';
 import DosageResults from './screens/dosage-results.jsx';
 // [A1 slice 29] DosagePractice extracted (T+isDark; useContent; no fgOnDark).
 import DosagePractice from './screens/dosage-practice.jsx';
+import DosageSetup from './screens/DosageSetup.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -912,7 +913,7 @@ function hydrateLoaded(rawData) {
 // F-B — screens with custom full-screen gestures or timed flows where a
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
-  'quiz', 'advanced-test', 'paper-test', 'dosage', 'knowledge-map', 'results',
+  'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
   'advanced-results', 'paper-results', 'dosage-results',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
@@ -4455,8 +4456,16 @@ export default function App() {
         <Reference onBack={goHome} />
       )}
 
+      {/* 'dosage' is now the SETUP gate (keeps the favourites/drill key stable);
+          the timed drill itself runs under 'dosage-run'. */}
       {nav.screen === 'dosage' && (
+        <DosageSetup onStart={({ count }) => setNav({ screen: 'dosage-run', count })}
+                     onBack={goHome} onSetPace={setPace} />
+      )}
+
+      {nav.screen === 'dosage-run' && (
         <DosagePractice onComplete={completeDosage} onBack={goHome} profile={profile} isAdmin={isAdmin}
+                        count={nav.count || 10}
                         bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById} />
       )}
 
@@ -4464,7 +4473,25 @@ export default function App() {
         <DosageResults results={nav.results} questions={nav.questions} onHome={goHomeDirect}
                        displayName={profile ? (profile.displayName || profile.id) : null}
                        streak={(data && data.stats && data.stats.streakCurrent) || 0}
-                       profile={profile} isAdmin={isAdmin} />
+                       profile={profile} isAdmin={isAdmin}
+                       onCribSheet={isCribSheetEnabled() ? () => {
+                         // Shape the dosage session into Crib Sheet items. Dosage
+                         // is numeric: `selected` carries the user's typed answer;
+                         // CribSheet renders a numeric block when q.options is absent.
+                         const items = (nav.results || []).map(r => {
+                           const q = (nav.questions || []).find(qq => qq.id === r.qId);
+                           if (!q) return null;
+                           const status = (r.revealed || r.skipped || r.userAnswer == null)
+                             ? 'na' : (r.correct ? 'correct' : 'wrong');
+                           return { q, selected: r.userAnswer, status };
+                         }).filter(Boolean);
+                         setNav({
+                           screen: 'crib-sheet', items,
+                           cribTitle: 'Dosage Calculation',
+                           cribSubtitle: `${items.length} questions · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`,
+                           backNav: nav,
+                         });
+                       } : null} />
       )}
 
       {nav.screen === 'bookmarks-view' && (

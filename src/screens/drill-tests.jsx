@@ -106,7 +106,7 @@ function DrillTests({ onBack, onNavigate }) {
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
             <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
-                     sub="Numeric drug-math · type-in" onClick={() => go('dosage')} fav="dosage"
+                     sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
         </Reveal>

@@ -40,7 +40,9 @@ import ListenBar from '../ui/listen-bar.jsx';
 // #8 — compose what gets read aloud for one card: stem, answer, explanation.
 function composeListenText(q, i) {
   if (!q) return '';
-  const ans = (q.correct || []).map(c => q.options && q.options[c]).filter(Boolean).join(', ');
+  const ans = (!Array.isArray(q.options) || q.options.length === 0)
+    ? (q.answer != null ? `${q.answer}${q.unit ? ' ' + q.unit : ''}` : '')
+    : (q.correct || []).map(c => q.options && q.options[c]).filter(Boolean).join(', ');
   const parts = [`Question ${i + 1}.`, q.q];
   if (ans) parts.push(`The answer is: ${ans}.`);
   if (q.exp) parts.push(String(q.exp));
@@ -52,6 +54,9 @@ const WINDOW = 25;
 
 function QuestionCard({ item, num, T, negative, profileId, accent }) {
   const { q, selected, status } = item;
+  // Dosage questions are numeric (no options) — render a "your answer vs correct"
+  // block instead of the A/B/C/D list.
+  const isNumeric = !Array.isArray(q.options) || q.options.length === 0;
   return (
     <Card className="p-4 crib-card" style={{ borderLeft: `3px solid ${accent}`, borderRadius: 12 }}>
       {/* number + tags row */}
@@ -90,7 +95,29 @@ function QuestionCard({ item, num, T, negative, profileId, accent }) {
       </div>
       <div className="text-sm mb-3" style={{ color: T.ink, lineHeight: 1.6 }}>{q.q}</div>
 
-      {/* all four options */}
+      {/* numeric (dosage) answer block */}
+      {isNumeric ? (
+        <div className="flex items-stretch gap-2.5 mb-3">
+          {selected != null && selected !== '' && (
+            <div className="flex-1 rounded-lg px-3 py-2.5"
+                 style={{ background: status === 'correct' ? T.successSoft : T.errorSoft,
+                          border: `1px solid ${(status === 'correct' ? T.success : T.error)}55`,
+                          borderLeft: `3px solid ${status === 'correct' ? T.success : T.error}` }}>
+              <div className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: T.muted }}>You gave</div>
+              <div className="font-display font-semibold tabular-nums text-sm" style={{ color: status === 'correct' ? T.success : T.error }}>
+                {selected}{q.unit ? ` ${q.unit}` : ''}
+              </div>
+            </div>
+          )}
+          <div className="flex-1 rounded-lg px-3 py-2.5"
+               style={{ background: T.successSoft, border: `1px solid ${T.success}55`, borderLeft: `3px solid ${T.success}` }}>
+            <div className="text-[9px] uppercase tracking-wider font-semibold mb-0.5" style={{ color: T.muted }}>Correct</div>
+            <div className="font-display font-semibold tabular-nums text-sm" style={{ color: T.success }}>
+              {q.answer}{q.unit ? ` ${q.unit}` : ''}
+            </div>
+          </div>
+        </div>
+      ) : (
       <div className="space-y-1.5 mb-3">
         {q.options.map((opt, i) => {
           const ok = q.correct.includes(i);
@@ -117,6 +144,7 @@ function QuestionCard({ item, num, T, negative, profileId, accent }) {
           );
         })}
       </div>
+      )}
 
       {/* explanation — always visible, never behind a tap */}
       <div className="pt-2.5" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
