@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -135,6 +135,33 @@ function DrillTests({ onBack, onNavigate }) {
                 <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Order the steps · earn coins</div>
               </div>
               <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </div>
+          </Card>
+          </Tip>
+        </Reveal>
+
+        {/* ICU Monitor — read the rhythm (NEW, zero-asset animated ECG) */}
+        <Reveal delay={135}>
+          <Tip title="ICU Monitor" text="A live bedside monitor: read the scrolling ECG and vitals, then name the rhythm — NSR, AF, VT, VF, asystole and more, with the first clinical action after each.">
+          <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('icu-monitor')}
+                style={{ background: '#06100E', border: '1px solid #0F2A24', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
+            {/* faint phosphor pulse line in the backdrop */}
+            <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.16 }}>
+              <path d="M0 20 L60 20 L66 8 L72 32 L78 20 L200 20" fill="none" stroke="#46F08A" strokeWidth="2" />
+            </svg>
+            <div className="relative flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(70,240,138,0.14)' }}>
+                <Activity size={22} color="#46F08A" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#E6FFF6' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">ICU Monitor</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(70,240,138,0.18)', color: '#46F08A' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: '#7FA89C' }}>Read the rhythm · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(127,168,156,0.8)" />
             </div>
           </Card>
           </Tip>
