@@ -23,7 +23,9 @@ import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
+import VitalsCheck from '../ui/vitals-check.jsx';
 import { questionBudgetSec } from '../lib/pacing.js';
+import { isFoundational } from '../lib/foundational.js';
 
 // NEW-03 — modes where The Pulse per-question countdown is meaningful (timed
 // test practice). Review modes (bookmarks / due / wrong) are deliberately
@@ -121,6 +123,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [confirmExit, setConfirmExit] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const questionStart = useRef(Date.now());
+  // PHIL-06 — Vitals Check. Fires once per question per session when a
+  // FOUNDATIONAL (must-know) question is missed; pauses the timer until the
+  // user reviews the rationale. `vitalsOpenRef` gates the countdown tick so the
+  // mock clock (and elapsed) freeze while the overlay is up.
+  const [vitalsCheck, setVitalsCheck] = useState(null);     // the missed question, or null
+  const [vitalsShown, setVitalsShown] = useState(() => new Set());
+  const vitalsOpenRef = useRef(false);
 
   // Mode capabilities:
   //   - Hints & Show-answer are study aids — Quick Practice only.
@@ -153,6 +162,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   useEffect(() => {
     if (!timed) return;
     const t = setInterval(() => {
+      // PHIL-06 — the timer is paused while a Vitals Check is being read.
+      if (vitalsOpenRef.current) return;
       if (isCountdown) {
         setSecondsRemaining(s => {
           if (s <= 1) {
@@ -251,6 +262,19 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setResults(r => [...r, { qId: q.id, correct, selected, timeMs, confidence }]);
     setLastCorrect(correct);
     setSubmitted(true);
+    // PHIL-06 — Vitals Check: missing a FOUNDATIONAL question forcibly pauses the
+    // session for a rationale read. Practice/test modes only (not review modes),
+    // and at most once per question per session.
+    if (!correct && PULSE_MODES.includes(mode) && isFoundational(q) && !vitalsShown.has(q.id)) {
+      setVitalsShown(prev => { const n = new Set(prev); n.add(q.id); return n; });
+      vitalsOpenRef.current = true;
+      setVitalsCheck(q);
+    }
+  };
+
+  const resumeFromVitals = () => {
+    vitalsOpenRef.current = false;
+    setVitalsCheck(null);
   };
 
   // PHIL-03 — The Why Bonus. After a CORRECT answer, if the explanation stays
@@ -737,6 +761,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         position:fixed anchors to the viewport. Toggling it preserves all quiz
         state, so the user returns to the exact same question. */}
     <ReferenceLookupModal open={showReference} onClose={() => setShowReference(false)} />
+
+    {/* PHIL-06 — Vitals Check (React Portal; pauses the session on a
+        foundational miss until the rationale is reviewed). */}
+    <VitalsCheck open={!!vitalsCheck} question={vitalsCheck} onResume={resumeFromVitals} />
     </>
   );
 }
