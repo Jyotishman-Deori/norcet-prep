@@ -17,7 +17,7 @@ import { GuestSavePrompt, MotivationCard, ShareScoreButton, ShareNudge, TimeQuad
 import { PeerComparisonCard, ComparisonReengage } from '../ui/comparison-cards.jsx';
 
 
-function Results({ results, questions, elapsed, onHome, onReview, mode = null,
+function Results({ results, questions, elapsed, onHome, onReview, mode = null, whatIfOn = true,
                    displayName = null, streak = 0, quizType = 'Quick Test',
                    totalAttempted = 0, referralCode = null, examDate = null,
                    isGuest = false, onGuestSignIn, onCribSheet = null }) {
@@ -125,7 +125,7 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null,
 
       {/* Exam-reality note — Mock only. A light reminder (not the full What-If
           simulator, which lives on the negative-marking Advanced/PYQ results). */}
-      {mode === 'mock' && total > 0 && (
+      {whatIfOn && mode === 'mock' && total > 0 && (
         <Card className="p-3.5 mb-5" style={{ background: (wrongAttempts > 0 ? T.accent : T.success) + '10', border: `1px solid ${(wrongAttempts > 0 ? T.accent : T.success)}33` }}>
           <div className="flex items-start gap-2.5">
             <Scale size={15} className="flex-shrink-0 mt-0.5" style={{ color: wrongAttempts > 0 ? T.accent : T.success }} />

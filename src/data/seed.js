@@ -756,7 +756,7 @@ export const DEFAULT_DATA = {
     pulseIntroSeen: false,       // one-time The Pulse entry note
     flashpointIntroSeen: false,  // one-time Flashpoint entry warning
     // Drill-Tests coaching toggles (all ON by default; absent also reads as ON).
-    drillCoaching: { vitalsCheck: true, codeBlue: true, ghostShift: true },
+    drillCoaching: { vitalsCheck: true, codeBlue: true, ghostShift: true, whatIf: true },
     // Spaced-revision reminder card on Home.
     //   reviewRemindersEnabled — permanent off-switch (Settings)
     //   reviewDismissedDate    — "hide for today" (YYYY-MM-DD). Reappears tomorrow.

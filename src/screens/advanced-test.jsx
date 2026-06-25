@@ -609,7 +609,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 // ADVANCED TEST — RESULTS
 // =====================================================================
 function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, onHome, onReview, label, timeMinutes, profileId,
-                              everCorrectIds = [], advancedTestHistory = null,
+                              everCorrectIds = [], advancedTestHistory = null, showWhatIf = true,
                               displayName = null, streak = 0, referralCode = null, isGuest = false, onGuestSignIn, onCribSheet = null }) {
   const { theme: T } = useTheme();
   const summary = useMemo(() => {
@@ -732,9 +732,12 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
             random-pool Advanced mock (history passed); hidden on paper results. */}
         <GhostShiftCard history={advancedTestHistory} />
 
-        {/* NEW-07.1 — Negative-marking what-if simulator (1/3 penalty modes only). */}
-        <WhatIfCard correct={summary.correct} wrong={summary.wrong} blank={summary.blank}
-                    count={questions.length} netScore={summary.netScore} className="mb-5" />
+        {/* NEW-07.1 — Negative-marking what-if simulator (1/3 penalty modes only).
+            Toggleable from Drill Tests settings (drillCoaching.whatIf). */}
+        {showWhatIf && (
+          <WhatIfCard correct={summary.correct} wrong={summary.wrong} blank={summary.blank}
+                      count={questions.length} netScore={summary.netScore} className="mb-5" />
+        )}
 
         {summary.topicArr.length > 0 && (
           <Card className="p-4 mb-5">

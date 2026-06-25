@@ -6,7 +6,7 @@
 // sections. Reached from the gear on the Drill Tests screen.
 // =====================================================================
 import React from 'react';
-import { HeartPulse, Activity, Ghost, Sparkles } from 'lucide-react';
+import { HeartPulse, Activity, Ghost, Scale, Sparkles } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import { drillFeatureOn, setDrillFeature } from '../lib/drill-settings.js';
@@ -21,6 +21,9 @@ const FEATURES = [
   { key: 'ghostShift', label: 'Ghost Shift', icon: Ghost, accent: '#16A34A',
     where: 'Advanced Test results',
     desc: 'After an Advanced Test, see how you did against your own self from about two weeks ago — your only opponent.' },
+  { key: 'whatIf', label: 'Negative-marking what-if', icon: Scale, accent: '#B8791A',
+    where: 'Advanced · PYQ · Mock results',
+    desc: 'See what your wrong answers would cost under NORCET’s 1/3 negative marking — an interactive simulator on Advanced/PYQ, a one-line reminder on Mock.' },
 ];
 
 function Toggle({ on, accent }) {

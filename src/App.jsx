@@ -4197,6 +4197,7 @@ export default function App() {
       {nav.screen === 'results' && (
         <Results results={nav.results} questions={nav.questions} elapsed={nav.elapsed || 0}
                  mode={nav.mode}
+                 whatIfOn={drillFeatureOn(data && data.preferences, 'whatIf')}
                  displayName={profile ? (profile.displayName || profile.id) : null}
                  streak={(data && data.stats && data.stats.streakCurrent) || 0}
                  totalAttempted={(data && data.stats && data.stats.totalAttempted) || 0}
@@ -4339,6 +4340,7 @@ export default function App() {
                              auto={nav.auto}
                              everCorrectIds={nav.everCorrectIds}
                              advancedTestHistory={drillFeatureOn(data && data.preferences, 'ghostShift') ? (data && data.advancedTestHistory) : null}
+                             showWhatIf={drillFeatureOn(data && data.preferences, 'whatIf')}
                              onHome={goHomeDirect}
                              onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                              displayName={profile ? (profile.displayName || profile.id) : null}
@@ -4377,6 +4379,7 @@ export default function App() {
                              timeMinutes={nav.timeMinutes}
                              auto={nav.auto}
                              label={nav.paperName}
+                             showWhatIf={drillFeatureOn(data && data.preferences, 'whatIf')}
                              onHome={() => setNav({ screen: 'previous-papers' })}
                              onCribSheet={isCribSheetEnabled() ? () => openAnswersCrib(nav.paperName || 'Previous Year Paper') : null}
                              displayName={profile ? (profile.displayName || profile.id) : null}
