@@ -92,6 +92,7 @@ import TopicSelect from './screens/TopicSelect.jsx';
 import QuickPracticeSetup from './screens/QuickPracticeSetup.jsx';
 import WeakAreasScreen from './screens/WeakAreasScreen.jsx';
 const StatsScreen = lazy(() => import('./screens/StatsScreen.jsx'));
+const IkigaiScreen = lazy(() => import('./screens/ikigai-screen.jsx'));
 
 // [A1 s4 / Pipeline step 38] batch 1b slice 1 — Results cluster extracted.
 // Results is dispatched here.
@@ -4278,6 +4279,13 @@ export default function App() {
 
       {nav.screen === 'learn-cards' && (
         <LearnCards topicId={nav.topicId} subFilter={nav.sub || null} onBack={goHome} />
+      )}
+
+      {nav.screen === 'ikigai' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <IkigaiScreen onBack={goHome}
+                      onStartQuick={() => navigate({ screen: 'quick-setup' })} />
+        </Suspense>
       )}
 
       {nav.screen === 'stats' && (

@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
@@ -238,6 +238,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   ];
   // ---- Category 2 — Progress ----
   const progress = [
+    { key: 'ikigai',      fav: 'ikigai', icon: Compass,   color: '#9333EA',   label: 'Ikigai Compass', badge: 'New', tip: 'Your living 4-circle readiness map — Passion, Profession, Mission and Vocation drift together as you practise.', sub: 'Your readiness, balanced', action: () => go('ikigai', null, 'ikigai') },
     { key: 'stats',       fav: 'stats', icon: BarChart3, color: T.sec.stats, label: 'Stats', tip: 'Accuracy, streaks and progress, broken down topic by topic.',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
     { key: 'leaderboard', fav: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard', tip: 'See how your week stacks up against other aspirants.',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
     { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: 'Exam weightage', tip: 'How many marks each subject carries — study where the marks are.', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
