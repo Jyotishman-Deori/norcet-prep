@@ -8,13 +8,14 @@ import React, { useState, useMemo } from 'react';
 import { Timer } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
-import PulseToggle from '../ui/pulse-toggle.jsx';
+import PaceSelector from '../ui/pace-selector.jsx';
+import { normalizePace } from '../lib/pace.js';
 
-function MockSetup({ onStart, onBack, totalQuestions }) {
+function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const [count, setCount] = useState(Math.min(20, totalQuestions));
-  const [pulse, setPulse] = useState(!!(data && data.preferences && data.preferences.pulseTimer));
+  const pace = normalizePace(data && data.preferences);
   const presets = [10, 25, 50, 100].filter(p => p <= totalQuestions);
   if (presets.length === 0) presets.push(totalQuestions);
 
@@ -107,9 +108,9 @@ function MockSetup({ onStart, onBack, totalQuestions }) {
           </div>
         </Card>
 
-        <PulseToggle value={pulse} onChange={setPulse} T={T} />
+        <PaceSelector value={pace} onChange={onSetPace} T={T} />
 
-        <Button onClick={() => onStart(count, durationMinutes, pulse)} size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
+        <Button onClick={() => onStart(count, durationMinutes)} size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
           Start mock test
         </Button>
       </div>

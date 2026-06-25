@@ -16,7 +16,7 @@
 // every frame. Reduced-motion safe (no transition/beat when the user opts out).
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Activity } from 'lucide-react';
+import { Heart, Activity, Zap } from 'lucide-react';
 
 // Zone thresholds on the fraction of time REMAINING. First match wins.
 const ZONES = [
@@ -31,15 +31,21 @@ const prefersReducedMotion = () => {
   catch (e) { return false; }
 };
 
-export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T }) {
+export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T, flashpoint = false, onExpire }) {
   const [remaining, setRemaining] = useState(budgetSec);
   const startRef = useRef(Date.now());
   const reduced = useRef(prefersReducedMotion());
+  const expiredRef = useRef(false);
+  // Keep the latest onExpire in a ref so it never re-triggers the ticking effect
+  // (an inline callback changes identity each render and would restart the clock).
+  const onExpireRef = useRef(onExpire);
+  onExpireRef.current = onExpire;
 
   // Reset on every new question (declared BEFORE the ticking effect so the
   // fresh start time is in place before the interval reads it).
   useEffect(() => {
     startRef.current = Date.now();
+    expiredRef.current = false;
     setRemaining(budgetSec);
   }, [resetKey, budgetSec]);
 
@@ -50,7 +56,13 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
       const elapsed = (Date.now() - startRef.current) / 1000;
       const rem = Math.max(0, budgetSec - elapsed);
       setRemaining(rem);
-      if (rem <= 0) clearInterval(id);
+      if (rem <= 0) {
+        clearInterval(id);
+        // Flashpoint — the clock enforces: fire onExpire exactly once so the
+        // Quiz can auto-lock the question. (The Pulse, non-flashpoint, ignores
+        // this — onExpire is only passed in flashpoint mode.)
+        if (!expiredRef.current && onExpireRef.current) { expiredRef.current = true; onExpireRef.current(); }
+      }
     }, 200);
     return () => clearInterval(id);
   }, [paused, resetKey, budgetSec]);
@@ -85,11 +97,17 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-1.5">
           <span className={'inline-flex' + beat} style={{ color: barColor }}>
-            {flat && !paused ? <Activity size={14} /> : <Heart size={13} fill={barColor} />}
+            {flashpoint
+              ? <Zap size={13} fill={barColor} />
+              : (flat && !paused ? <Activity size={14} /> : <Heart size={13} fill={barColor} />)}
           </span>
           <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: barColor }}>
-            The Pulse · {tag}
+            {flashpoint ? 'Flashpoint' : 'The Pulse'} · {tag}
           </span>
+          {flashpoint && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                  style={{ background: '#F59E0B22', color: '#B45309' }}>2×</span>
+          )}
         </div>
         <span className="text-sm font-semibold tabular-nums" style={{ color: barColor }}>
           {flat ? '0' : secs}s

@@ -303,6 +303,19 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     }
   };
 
+  // Flashpoint — the per-question clock ENFORCES. When it hits zero: if the user
+  // has a selection, auto-submit it (full normal flow); otherwise lock the
+  // question as a timed-out blank (counts as wrong, scores no Flashpoint points).
+  const onFlashpointExpire = () => {
+    if (submitted || revealed) return;
+    if (selected.length > 0) { submit(); return; }
+    const timeMs = Date.now() - questionStart.current;
+    setResults(r => [...r, { qId: q.id, correct: false, selected: [], timeMs, timedOut: true }]);
+    setLastCorrect(false);
+    setSubmitted(true);
+    setConsecutiveWrong(w => w + 1);
+  };
+
   // Pre-load the recovery drill from THIS session's mistakes (no fetch): unique
   // wrong (non-revealed) questions, easiest-first, capped at RECOVERY_MAX.
   const buildRecoverySet = (resultList) => {
@@ -502,6 +515,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         {pulse && PULSE_MODES.includes(mode) && (
           <PulseTimer budgetSec={questionBudgetSec(q.topic, { flashpoint, difficulty: q.difficulty })}
                       resetKey={q.id} flashpoint={flashpoint}
+                      onExpire={flashpoint ? onFlashpointExpire : undefined}
                       paused={submitted || revealed} T={T} />
         )}
 

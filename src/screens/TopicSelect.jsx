@@ -10,14 +10,17 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { TOPICS } from '../data/seed.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PaceSelector from '../ui/pace-selector.jsx';
+import { normalizePace } from '../lib/pace.js';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
 
-function TopicSelect({ onPick, onBack }) {
+function TopicSelect({ onPick, onBack, onSetPace }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const history = data.history;
   const [count, setCount] = useState(10);
+  const pace = normalizePace(data && data.preferences);
   const countsByTopic = useMemo(() => {
     const c = {};
     allQuestions.forEach(q => { c[q.topic] = (c[q.topic] || 0) + 1; });
@@ -57,7 +60,10 @@ function TopicSelect({ onPick, onBack }) {
             </button>
           ))}
         </div>
-        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Choose a subject</div>
+
+        <PaceSelector value={pace} onChange={onSetPace} T={T} />
+
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2 mt-5" style={{ color: T.muted }}>Choose a subject</div>
         <div className="space-y-2.5">
           {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {
             const acc = accuracyByTopic[topic.id];

@@ -10,17 +10,18 @@ import React, { useState } from 'react';
 import { Shuffle } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
-import PulseToggle from '../ui/pulse-toggle.jsx';
+import PaceSelector from '../ui/pace-selector.jsx';
+import { normalizePace } from '../lib/pace.js';
 
 const COUNT_OPTIONS = [3, 5, 10, 15, 20];
 
-function QuickPracticeSetup({ onStart, onBack }) {
+function QuickPracticeSetup({ onStart, onBack, onSetPace }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   const prefs = data.preferences || { quickCount: 5 };
   const initial = COUNT_OPTIONS.includes(prefs.quickCount) ? prefs.quickCount : 5;
   const [count, setCount] = useState(initial);
-  const [pulse, setPulse] = useState(!!prefs.pulseTimer);
+  const pace = normalizePace(prefs);
 
   const poolSize = allQuestions.length;
   const canStart = poolSize >= count;
@@ -69,7 +70,7 @@ function QuickPracticeSetup({ onStart, onBack }) {
           </div>
         </Card>
 
-        <PulseToggle value={pulse} onChange={setPulse} T={T} />
+        <PaceSelector value={pace} onChange={onSetPace} T={T} />
 
         {!canStart && (
           <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40` }}>
@@ -83,7 +84,7 @@ function QuickPracticeSetup({ onStart, onBack }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md mx-auto">
-          <Button onClick={() => onStart({ count, pulse })} disabled={!canStart} size="lg" className="w-full" icon={<Shuffle size={16} />}>
+          <Button onClick={() => onStart({ count })} disabled={!canStart} size="lg" className="w-full" icon={<Shuffle size={16} />}>
             Start {count} question{count === 1 ? '' : 's'}
           </Button>
         </div>

@@ -726,7 +726,8 @@ export const DEFAULT_DATA = {
     examDate: null,
     streakGraceAvailable: true,
     dailyTarget: null,  // user-set questions-per-day goal; null = "auto" (derive from pool/days left)
-    lastCompactedTs: null  // P15 — timestamp of last lazy compaction pass; null = never run yet
+    lastCompactedTs: null,  // P15 — timestamp of last lazy compaction pass; null = never run yet
+    flashpointPoints: 0  // Flashpoint — lifetime 2× points; ranks the Flashpoint leaderboard
   },
   advancedTestHistory: [],
   // Phase 3 — light, non-monetary in-app economy (Accuracy Coins + Clinical
@@ -750,6 +751,9 @@ export const DEFAULT_DATA = {
   preferences: {          // remembers user choices
     quickCount: 5,
     quickTopic: 'all',
+    // NEW-03 / Flashpoint — global per-question Pace: 'off' | 'pulse' | 'flashpoint'.
+    pace: 'off',
+    flashpointIntroSeen: false,  // one-time Flashpoint entry warning
     // Spaced-revision reminder card on Home.
     //   reviewRemindersEnabled — permanent off-switch (Settings)
     //   reviewDismissedDate    — "hide for today" (YYYY-MM-DD). Reappears tomorrow.
