@@ -160,6 +160,8 @@ import IcuMonitor from './screens/icu-monitor.jsx';
 import CrashCart from './screens/crash-cart.jsx';
 // NEW-10 (Module A) — The Sorter tap-to-sort drill (setup + drill inline).
 import SorterDrill from './screens/sorter.jsx';
+// NEW-05 — Distractor Assassin: eliminate-the-wrong drill over the live bank.
+import DistractorAssassin from './screens/distractor-assassin.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -925,7 +927,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4389,6 +4391,16 @@ export default function App() {
                        if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                        goHomeDirect();
                      }} />
+      )}
+
+      {/* NEW-05 — Distractor Assassin: eliminate the wrong options (uses the
+          existing bank's wrong{} rationales — no new content). */}
+      {nav.screen === 'distractor-assassin' && (
+        <DistractorAssassin allQuestions={allQuestions} onBack={goHome} onSetPace={setPace}
+                            onComplete={(coins) => {
+                              if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
+                              goHomeDirect();
+                            }} />
       )}
 
       {nav.screen === 'advanced-setup' && (
