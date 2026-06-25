@@ -60,8 +60,12 @@ function gradeColor(frac) {
   return { solid: hsl(1), soft: hsl(0.10), border: hsl(0.34), glow: hsl(0.6), edge: hsl(0.78) };
 }
 
-export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T, flashpoint = false, onExpire }) {
-  const [remaining, setRemaining] = useState(budgetSec);
+export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T, flashpoint = false, onExpire, initialElapsedSec = 0 }) {
+  // initialElapsedSec — time already spent on THIS question on earlier visits
+  // (a skipped question that's come back). The countdown RESUMES from the
+  // remaining budget rather than restarting, so skipping can't buy fresh time.
+  const startBudget = Math.max(0, budgetSec - (initialElapsedSec || 0));
+  const [remaining, setRemaining] = useState(startBudget);
   const [shake, setShake] = useState(false);
   const startRef = useRef(Date.now());
   const reduced = useRef(prefersReducedMotion());
@@ -73,16 +77,16 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
   useEffect(() => {
     startRef.current = Date.now();
     expiredRef.current = false;
-    setRemaining(budgetSec);
+    setRemaining(startBudget);
     setShake(false);
-  }, [resetKey, budgetSec]);
+  }, [resetKey, budgetSec, startBudget]);
 
   // Tick while running. ~16ms-smooth via 100ms sampling + CSS width transition.
   useEffect(() => {
     if (paused) return undefined;
     const id = setInterval(() => {
       const elapsed = (Date.now() - startRef.current) / 1000;
-      const rem = Math.max(0, budgetSec - elapsed);
+      const rem = Math.max(0, startBudget - elapsed);
       setRemaining(rem);
       if (rem <= 0) {
         clearInterval(id);
@@ -90,7 +94,7 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
       }
     }, 100);
     return () => clearInterval(id);
-  }, [paused, resetKey, budgetSec]);
+  }, [paused, resetKey, budgetSec, startBudget]);
 
   const frac = Math.max(0, Math.min(1, remaining / budgetSec));
   const flat = remaining <= 0;
