@@ -22,6 +22,13 @@ import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
+import PulseTimer from '../ui/pulse-timer.jsx';
+import { questionBudgetSec } from '../lib/pacing.js';
+
+// NEW-03 — modes where The Pulse per-question countdown is meaningful (timed
+// test practice). Review modes (bookmarks / due / wrong) are deliberately
+// excluded — revisiting mistakes shouldn't be a race against the clock.
+const PULSE_MODES = ['quick', 'topic', 'weak-topic', 'mock'];
 
 // #4 — per-question self-rating. Defaults to "Unsure" so it's a zero-friction
 // optional tap; the choice feeds the calibration report on Results + Stats.
@@ -54,7 +61,7 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, pulse = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const [index, setIndex] = useState(0);
@@ -402,6 +409,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             <div className="h-1 rounded-full transition-all duration-300" style={{ background: T.primary, width: `${progress}%` }} />
           </div>
         </div>
+
+        {/* NEW-03 "The Pulse" — opt-in per-question countdown. Non-enforcing;
+            freezes the instant the answer is locked in, resets each question. */}
+        {pulse && PULSE_MODES.includes(mode) && (
+          <PulseTimer budgetSec={questionBudgetSec(q.topic)} resetKey={q.id}
+                      paused={submitted || revealed} T={T} />
+        )}
 
         {/* Topic + type pills — #4: the bookmark sits at the rightmost edge of
             this tags row, inline with the question's metadata (same position

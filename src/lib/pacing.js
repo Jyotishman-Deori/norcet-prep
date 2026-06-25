@@ -79,6 +79,17 @@ export function topperTargetForTopic(topicId) {
   return pacingTierForTopic(topicId).topper;
 }
 
+// NEW-03 "The Pulse" — per-question time budget for the dramatic countdown bar.
+// Uses the TYPICAL-candidate average band (mid-point) for the topic so the bar
+// is topic-aware: tight & thrilling on quick GK recalls, a touch more breathing
+// room on heavy clinical reasoning. Purely a pacing-pressure visual — never
+// enforces or penalises. Clamped to a sane [25s, 90s] window.
+export function questionBudgetSec(topicId) {
+  const [lo, hi] = pacingTierForTopic(topicId).avg;
+  const mid = Math.round((lo + hi) / 2);
+  return Math.max(25, Math.min(90, mid));
+}
+
 // ── Context the engine assumes (notes, not code) ─────────────────────
 // • Toppers typically attempt only 78–85 of 100 questions in Prelims — they
 //   deliberately SKIP rather than risk the 1/3 negative penalty. "Attempt all"

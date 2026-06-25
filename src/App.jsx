@@ -2553,6 +2553,13 @@ export default function App() {
       }
     }
     let qs = [];
+    // NEW-03 "The Pulse" — explicit choice (from a setup screen) wins and is
+    // remembered; otherwise inherit the saved preference so topic-wise tests
+    // launched straight from a picker still honour it.
+    const pulseOn = spec.pulse !== undefined ? !!spec.pulse : !!(data && data.preferences && data.preferences.pulseTimer);
+    if (spec.pulse !== undefined) {
+      setData(prev => ({ ...prev, preferences: { ...prev.preferences, pulseTimer: !!spec.pulse } }));
+    }
     // B2 — bias selection so questions the user was shown but never attempted
     // (and didn't reveal/skip) come back FIRST, then fall through to the normal
     // unseen-first / weakest-next selector to fill the remaining slots.
@@ -2618,7 +2625,7 @@ export default function App() {
       qs = [...shuffle(wrong), ...shuffle(unseen), ...shuffle(rest)].slice(0, target);
       // Route as 'quick' for the Quiz renderer — Weak Area drills are study
       // sessions, not exams, so hints + alt explanations should remain visible.
-      setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false });
+      setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false, pulse: pulseOn });
       return;
     } else if (spec.mode === 'mock') {
       qs = shuffle(allQuestions).slice(0, spec.count || 50);
@@ -2635,7 +2642,8 @@ export default function App() {
       mode: spec.mode,
       timed: spec.mode === 'mock',
       // Countdown duration for mock. Other modes leave this undefined.
-      timeLimitMin: spec.mode === 'mock' ? (spec.durationMin || spec.count || 50) : null
+      timeLimitMin: spec.mode === 'mock' ? (spec.durationMin || spec.count || 50) : null,
+      pulse: pulseOn
     });
   }, [allQuestions, data]);
 
@@ -3788,15 +3796,17 @@ export default function App() {
   }, []);
 
   // ===== Quick Practice setup =====
-  const startQuickPractice = useCallback(({ count }) => {
-    setData(prev => ({ ...prev, preferences: { ...prev.preferences, quickCount: count } }));
+  const startQuickPractice = useCallback(({ count, pulse }) => {
+    // NEW-03 — remember The Pulse choice so topic-wise tests inherit it too.
+    setData(prev => ({ ...prev, preferences: { ...prev.preferences, quickCount: count, ...(pulse !== undefined ? { pulseTimer: !!pulse } : {}) } }));
     // #20 — Quick Test is a topic-balanced black box: sample the whole syllabus
     // in proportion to the real exam's topic weightage (derived from the PYQ
     // papers), preferring fresh/unseen questions (#21) and naturally blending
     // in PYQ-tagged items (#25, they live in allQuestions).
     const weights = examTopicWeightage(PREVIOUS_YEAR_PAPERS, false);
     const qs = selectBalancedQuestions(allQuestions, count, weights, data ? data.history : {});
-    setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false });
+    const pulseOn = pulse !== undefined ? !!pulse : !!(data && data.preferences && data.preferences.pulseTimer);
+    setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false, pulse: pulseOn });
   }, [allQuestions, data]);
 
   const bridgeBanner = (bridgeDead && !bridgeWarnDismissed) ? (
@@ -4121,13 +4131,13 @@ export default function App() {
       )}
 
       {nav.screen === 'mock-setup' && (
-        <MockSetup onStart={(count, durationMin) => startQuiz({ mode: 'mock', count, durationMin })}
+        <MockSetup onStart={(count, durationMin, pulse) => startQuiz({ mode: 'mock', count, durationMin, pulse })}
                    onBack={goHome} totalQuestions={allQuestions.length} />
       )}
 
       {nav.screen === 'quiz' && (
         <Quiz questions={nav.questions} mode={nav.mode} timed={nav.timed}
-              timeLimitMin={nav.timeLimitMin}
+              timeLimitMin={nav.timeLimitMin} pulse={nav.pulse}
               coins={normalizeEconomy(data && data.economy).coins}
               onWhyBonus={claimWhyBonus}
               onComplete={completeQuiz} onBack={goHome} profileId={profile && profile.id} />

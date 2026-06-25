@@ -6,12 +6,15 @@
 // =====================================================================
 import React, { useState, useMemo } from 'react';
 import { Timer } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PulseToggle from '../ui/pulse-toggle.jsx';
 
 function MockSetup({ onStart, onBack, totalQuestions }) {
   const { theme: T } = useTheme();
+  const { data } = useData();
   const [count, setCount] = useState(Math.min(20, totalQuestions));
+  const [pulse, setPulse] = useState(!!(data && data.preferences && data.preferences.pulseTimer));
   const presets = [10, 25, 50, 100].filter(p => p <= totalQuestions);
   if (presets.length === 0) presets.push(totalQuestions);
 
@@ -104,7 +107,9 @@ function MockSetup({ onStart, onBack, totalQuestions }) {
           </div>
         </Card>
 
-        <Button onClick={() => onStart(count, durationMinutes)} size="lg" className="w-full" icon={<Timer size={18} />}>
+        <PulseToggle value={pulse} onChange={setPulse} T={T} />
+
+        <Button onClick={() => onStart(count, durationMinutes, pulse)} size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
           Start mock test
         </Button>
       </div>
