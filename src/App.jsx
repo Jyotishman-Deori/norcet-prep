@@ -3082,6 +3082,15 @@ export default function App() {
   }, []);
 
   const completeDosage = useCallback((results, questions) => {
+    // Flashpoint dosage session → award 2× points so the "2×" badge is honest.
+    // (Dosage otherwise stays out of the main stats, as before.)
+    setData(prev => {
+      const isFlash = paceFlags(normalizePace(prev && prev.preferences)).flashpoint;
+      if (!isFlash) return prev;
+      const correctCount = (results || []).filter(r => r && r.correct).length;
+      if (correctCount <= 0) return prev;
+      return { ...prev, stats: { ...prev.stats, flashpointPoints: (prev.stats.flashpointPoints || 0) + correctCount * FLASHPOINT_POINTS_MULTIPLIER } };
+    });
     setNav({ screen: 'dosage-results', results, questions });
   }, []);
 

@@ -9,19 +9,30 @@
 // =====================================================================
 import React, { useState, useMemo } from 'react';
 import { Bookmark, BookmarkCheck, Calculator, Check, X, Eye, FlaskConical, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { useTheme, useData } from '../lib/app-context.jsx';
 import { useContent } from '../lib/content.js';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
 import { shuffle } from '../lib/utils.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PulseTimer from '../ui/pulse-timer.jsx';
+import { normalizePace, paceFlags } from '../lib/pace.js';
+
+// Dosage is compute-AND-type, so it gets a more generous budget than the
+// aptitude MCQ tier — never rush patient-safety math into an error.
+const DOSAGE_PULSE_SEC = 75;
+const DOSAGE_FLASHPOINT_SEC = 40;
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
 // Issues round — the same quick Reference lookup the other quiz modes have.
 import { ReferenceLookupModal } from './reference.jsx';
 
 function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
+  const { data } = useData();
+  // Dosage inherits the global Pace (same Off/Pulse/Flashpoint setting). The
+  // clock enforces like the other instant-feedback drills, on a generous budget.
+  const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const [index, setIndex] = useState(0);
   const [input, setInput] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -110,6 +121,14 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
 
   const next = () => goNext(results);
 
+  // Pulse/Flashpoint — the clock enforces: a valid answer auto-checks; an empty
+  // field reveals the worked solution (recorded as revealed, not a harsh wrong).
+  const onTimerExpire = () => {
+    if (done) return;
+    if (isValidInput) submit();
+    else reveal();
+  };
+
   const progress = ((index + (done ? 1 : 0)) / questions.length) * 100;
 
   return (
@@ -127,6 +146,14 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
         <div className="h-1.5 rounded-full mb-6" style={{ background: T.borderSoft }}>
           <div className="h-1.5 rounded-full transition-all duration-300" style={{ background: T.primary, width: `${progress}%` }} />
         </div>
+
+        {/* NEW-03 — optional Pulse/Flashpoint (inherits the global Pace). Generous
+            budget; the clock enforces but reveals the solution on an empty timeout. */}
+        {paceOn && (
+          <PulseTimer budgetSec={flashpoint ? DOSAGE_FLASHPOINT_SEC : DOSAGE_PULSE_SEC}
+                      resetKey={q.id} flashpoint={flashpoint}
+                      onExpire={onTimerExpire} paused={done} T={T} />
+        )}
 
         {/* Order card — reads like a prescription */}
         <Card className="p-5 mb-5" style={{ borderLeft: `3px solid ${T.primary}` }}>
