@@ -373,6 +373,10 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const answeredCount = Object.values(answers).filter(a => a && a.length > 0).length;
   const markedCount = Object.values(marked).filter(Boolean).length;
   const blankCount = questions.length - answeredCount;
+  // Of the blanks, how many were actually SEEN (read then left) vs never opened —
+  // the palette colours these differently (red = seen-but-blank, grey = not seen).
+  const seenBlankCount = questions.filter(qq => visited[qq.id] && !(answers[qq.id] && answers[qq.id].length > 0)).length;
+  const notSeenCount = blankCount - seenBlankCount;
 
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
   const timeColor = timeRemaining < 60 ? T.error : timeRemaining < 300 ? T.accent : T.ink;
@@ -524,11 +528,11 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       </div>
 
       {paletteOpen && (
-        <div className="fixed inset-0 z-50 flex items-end" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setPaletteOpen(false)}>
-          <div className="w-full max-w-md mx-auto rounded-t-2xl anim-fadeup"
-               style={{ background: T.bg, maxHeight: '85vh', overflowY: 'auto' }}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }} onClick={() => setPaletteOpen(false)}>
+          <div className="w-full max-w-sm rounded-3xl anim-scalein flex flex-col overflow-hidden"
+               style={{ background: T.bg, maxHeight: '86vh', boxShadow: '0 24px 70px rgba(0,0,0,0.45)', border: `1px solid ${T.borderSoft}` }}
                onClick={e => e.stopPropagation()}>
-            <div className="p-4 sticky top-0" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}` }}>
+            <div className="p-4" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}` }}>
               <div className="flex items-center justify-between mb-3">
                 <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>Question palette</div>
                 <button onClick={() => setPaletteOpen(false)} className="no-tap-highlight p-2 -mr-2 rounded-lg active:bg-black/5">
@@ -537,30 +541,32 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               </div>
               <div className="grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs" style={{ color: T.inkSoft }}>
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.success }} />Answered <span style={{ color: T.muted }}>({answeredCount})</span></div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.error + '1F', border: `1.5px solid ${T.error}66` }} />Not answered <span style={{ color: T.muted }}>({blankCount})</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.error }} />Seen, blank <span style={{ color: T.muted }}>({seenBlankCount})</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.surfaceWarm, border: `1.5px solid ${T.border}` }} />Not seen <span style={{ color: T.muted }}>({notSeenCount})</span></div>
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: PALETTE_MARKED }} />Marked <span style={{ color: T.muted }}>({markedCount})</span></div>
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.surface, boxShadow: `0 0 0 2px ${T.primary}` }} />Current</div>
               </div>
             </div>
-            <div className="p-4">
+            <div className="p-4 overflow-y-auto">
               <div className="grid grid-cols-6 gap-2 mb-4">
                 {questions.map((qq, i) => {
                   const ans = answers[qq.id] && answers[qq.id].length > 0;
                   const mk = !!marked[qq.id];
+                  const seen = !!visited[qq.id];
                   const isCurrent = i === index;
-                  // Marked (violet) wins the fill; else answered (green) / not
-                  // answered (soft red). Current adds a primary ring + lift.
-                  let bg, textColor;
+                  // Precedence: Marked (violet) → Answered (green) → Seen-but-blank
+                  // (solid RED) → Not seen (neutral). Current adds a primary ring.
+                  let bg, textColor, border = 'none';
                   if (mk) { bg = PALETTE_MARKED; textColor = '#FFF'; }
                   else if (ans) { bg = T.success; textColor = '#FFF'; }
-                  else { bg = T.error + '14'; textColor = T.error; }
+                  else if (seen) { bg = T.error; textColor = '#FFF'; }
+                  else { bg = T.surfaceWarm; textColor = T.muted; border = `1px solid ${T.border}`; }
                   return (
                     <button key={qq.id} onClick={() => goTo(i)}
                             className="no-tap-highlight relative w-full aspect-square rounded-lg text-sm font-semibold active:scale-90 transition-transform seq-item"
-                            style={{ background: bg, color: textColor,
-                                     animationDelay: `${Math.min(i, 24) * 16}ms`,
-                                     boxShadow: isCurrent ? `0 0 0 2.5px ${T.primary}, 0 4px 12px ${T.primary}44` : 'none',
-                                     border: (!mk && !ans) ? `1px solid ${T.error}3A` : 'none' }}>
+                            style={{ background: bg, color: textColor, border,
+                                     animationDelay: `${Math.min(i, 24) * 14}ms`,
+                                     boxShadow: isCurrent ? `0 0 0 2.5px ${T.primary}, 0 4px 12px ${T.primary}44` : 'none' }}>
                       {i + 1}
                       {/* answered AND marked → small green corner dot */}
                       {mk && ans && (
