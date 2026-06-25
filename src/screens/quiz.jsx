@@ -134,6 +134,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [confirmExit, setConfirmExit] = useState(false);
   const [showReference, setShowReference] = useState(false);
   const questionStart = useRef(Date.now());
+  // NEW-03 — carry the Pulse clock across re-visits of a SKIPPED question, so
+  // coming back doesn't grant a fresh timer (the exploit). pulseSpent banks the
+  // live seconds already spent per qId; pulseShownAt marks when this visit began.
+  const pulseSpentRef = useRef({});
+  const pulseShownAtRef = useRef(Date.now());
   // PHIL-06 — Vitals Check. Fires once per question per session when a
   // FOUNDATIONAL (must-know) question is missed; pauses the timer until the
   // user reviews the rationale. `vitalsOpenRef` gates the countdown tick so the
@@ -234,6 +239,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   // Reset question start time + hint/reveal visibility on every question change
   useEffect(() => {
     questionStart.current = Date.now();
+    pulseShownAtRef.current = Date.now();   // new question's Pulse visit starts now
     setHintShown(false);
     setAltShown(false);
     setRevealed(false);
@@ -401,6 +407,9 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (!canSkip) return;
     const qId = q.id;
     setSkipCounts(s => ({ ...s, [qId]: (s[qId] || 0) + 1 }));
+    // Bank the Pulse time spent on this question THIS visit, so when it cycles
+    // back the clock resumes from what's left instead of restarting (the exploit).
+    pulseSpentRef.current[qId] = (pulseSpentRef.current[qId] || 0) + (Date.now() - pulseShownAtRef.current) / 1000;
 
     // Move the realIndex from `scheduleIndex` to the end of the schedule.
     setSchedule(prev => {
@@ -414,6 +423,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     // schedule itself changed, so `q` updates automatically; reset per-question
     // state explicitly here since the index didn't change.
     questionStart.current = Date.now();
+    pulseShownAtRef.current = Date.now();   // the next question's Pulse visit starts now
     setHintShown(false);
     setAltShown(false);
     setRevealed(false);
@@ -522,6 +532,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         {pulse && PACE_MODES.includes(mode) && (
           <PulseTimer budgetSec={questionBudgetSec(q.topic, { flashpoint, difficulty: q.difficulty })}
                       resetKey={q.id} flashpoint={flashpoint}
+                      initialElapsedSec={pulseSpentRef.current[q.id] || 0}
                       onExpire={onTimerExpire}
                       paused={submitted || revealed} T={T} />
         )}
