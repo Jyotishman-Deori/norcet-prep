@@ -4197,6 +4197,7 @@ export default function App() {
 
       {nav.screen === 'results' && (
         <Results results={nav.results} questions={nav.questions} elapsed={nav.elapsed || 0}
+                 mode={nav.mode}
                  displayName={profile ? (profile.displayName || profile.id) : null}
                  streak={(data && data.stats && data.stats.streakCurrent) || 0}
                  totalAttempted={(data && data.stats && data.stats.totalAttempted) || 0}

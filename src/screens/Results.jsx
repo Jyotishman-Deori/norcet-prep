@@ -6,7 +6,7 @@
 // The result cards it renders now come from ../ui/result-cards.jsx.
 // =====================================================================
 import React, { useEffect, useState } from 'react';
-import { Check, Timer, X } from 'lucide-react';
+import { Check, Scale, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { Button, Card } from '../ui/primitives.jsx';
@@ -17,7 +17,7 @@ import { GuestSavePrompt, MotivationCard, ShareScoreButton, ShareNudge, TimeQuad
 import { PeerComparisonCard, ComparisonReengage } from '../ui/comparison-cards.jsx';
 
 
-function Results({ results, questions, elapsed, onHome, onReview,
+function Results({ results, questions, elapsed, onHome, onReview, mode = null,
                    displayName = null, streak = 0, quizType = 'Quick Test',
                    totalAttempted = 0, referralCode = null, examDate = null,
                    isGuest = false, onGuestSignIn, onCribSheet = null }) {
@@ -26,6 +26,11 @@ function Results({ results, questions, elapsed, onHome, onReview,
   const correct = results.filter(r => r.correct).length;
   const pct = total > 0 ? Math.round((correct / total) * 100) : 0;
   const wrong = results.filter(r => !r.correct);
+  // "Exam reality" one-liner (Mock only — the most exam-like practice mode).
+  // Mock scores on accuracy with NO penalty; this just reminds the learner what
+  // those wrong answers would cost under NORCET's real 1/3 negative marking.
+  const wrongAttempts = results.filter(r => !r.correct && !r.revealed).length;
+  const examPenalty = (wrongAttempts / 3);
   const roundCalibration = calibrationFromItems(results); // #4
   // #5 — pacing entries: join each result with its question's topic.
   const pacingEntries = (() => {
@@ -116,6 +121,22 @@ function Results({ results, questions, elapsed, onHome, onReview,
             <div className="text-[10px] uppercase tracking-wider" style={{ color: T.muted }}>Time</div>
           </Card>
         </div>
+      )}
+
+      {/* Exam-reality note — Mock only. A light reminder (not the full What-If
+          simulator, which lives on the negative-marking Advanced/PYQ results). */}
+      {mode === 'mock' && total > 0 && (
+        <Card className="p-3.5 mb-5" style={{ background: (wrongAttempts > 0 ? T.accent : T.success) + '10', border: `1px solid ${(wrongAttempts > 0 ? T.accent : T.success)}33` }}>
+          <div className="flex items-start gap-2.5">
+            <Scale size={15} className="flex-shrink-0 mt-0.5" style={{ color: wrongAttempts > 0 ? T.accent : T.success }} />
+            <div className="text-[12.5px] leading-relaxed" style={{ color: T.inkSoft }}>
+              <b style={{ color: T.ink }}>Exam reality:</b>{' '}
+              {wrongAttempts > 0
+                ? <>under NORCET's <b>1/3 negative marking</b>, your {wrongAttempts} wrong {wrongAttempts === 1 ? 'answer' : 'answers'} would cost <b style={{ color: T.accent }}>~{examPenalty.toFixed(2)} marks</b>. When you can't narrow it to two, leaving it blank often beats guessing.</>
+                : <>you lost <b style={{ color: T.success }}>nothing</b> to negative marking — that restraint is exactly what protects rank on exam day.</>}
+            </div>
+          </div>
+        </Card>
       )}
 
       {/* #4 — how well your confidence matched reality, this round */}
