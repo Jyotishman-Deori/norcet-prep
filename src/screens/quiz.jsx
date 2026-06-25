@@ -303,10 +303,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     }
   };
 
-  // Flashpoint — the per-question clock ENFORCES. When it hits zero: if the user
-  // has a selection, auto-submit it (full normal flow); otherwise lock the
-  // question as a timed-out blank (counts as wrong, scores no Flashpoint points).
-  const onFlashpointExpire = () => {
+  // The clock ENFORCES in both The Pulse and Flashpoint — when it hits zero the
+  // question locks. If the user has a selection, auto-submit it (full normal
+  // flow); otherwise lock it as a timed-out blank (counts as wrong, scores no
+  // Flashpoint points). This is what makes the timer "matter".
+  const onTimerExpire = () => {
     if (submitted || revealed) return;
     if (selected.length > 0) { submit(); return; }
     const timeMs = Date.now() - questionStart.current;
@@ -515,7 +516,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         {pulse && PULSE_MODES.includes(mode) && (
           <PulseTimer budgetSec={questionBudgetSec(q.topic, { flashpoint, difficulty: q.difficulty })}
                       resetKey={q.id} flashpoint={flashpoint}
-                      onExpire={flashpoint ? onFlashpointExpire : undefined}
+                      onExpire={onTimerExpire}
                       paused={submitted || revealed} T={T} />
         )}
 

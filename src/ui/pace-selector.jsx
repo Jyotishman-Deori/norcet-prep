@@ -5,12 +5,12 @@
 // global data.preferences.pace via onChange; every test mode inherits it.
 // =====================================================================
 import React from 'react';
-import { Ban, Heart, Zap } from 'lucide-react';
+import { TimerOff, HeartPulse, Zap } from 'lucide-react';
 
 const OPTS = [
-  { id: 'off',        label: 'Off',        sub: 'No timer',            icon: Ban,   tint: '#6B7280' },
-  { id: 'pulse',      label: 'The Pulse',  sub: 'Race the clock',      icon: Heart, tint: '#16A34A' },
-  { id: 'flashpoint', label: 'Flashpoint', sub: '½ time · 2× points',  icon: Zap,   tint: '#F59E0B' },
+  { id: 'off',        label: 'Off',        sub: 'No timer',            icon: TimerOff,   tint: '#6B7280' },
+  { id: 'pulse',      label: 'The Pulse',  sub: 'Beat the clock',      icon: HeartPulse, tint: '#16A34A' },
+  { id: 'flashpoint', label: 'Flashpoint', sub: '½ time · 2× points',  icon: Zap,        tint: '#F59E0B' },
 ];
 
 export default function PaceSelector({ value = 'off', onChange, T, compact = false }) {
@@ -30,7 +30,7 @@ export default function PaceSelector({ value = 'off', onChange, T, compact = fal
                     style={on
                       ? { background: o.tint, color: '#FFF', boxShadow: `0 8px 20px ${o.tint}44` }
                       : { background: 'transparent', color: T.inkSoft }}>
-              <Icon size={compact ? 15 : 17} fill={on && o.id !== 'off' ? '#FFF' : 'none'} />
+              <Icon size={compact ? 15 : 17} strokeWidth={2} fill={on && o.id === 'flashpoint' ? '#FFF' : 'none'} />
               <span className="text-[12px] font-semibold leading-none">{o.label}</span>
               {!compact && (
                 <span className="text-[9.5px] leading-tight text-center" style={{ color: on ? 'rgba(255,255,255,0.88)' : T.muted }}>{o.sub}</span>

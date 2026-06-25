@@ -1,29 +1,44 @@
 // =====================================================================
-// src/ui/pulse-timer.jsx — NEW-03 "The Pulse"
-// A dramatic, per-question countdown bar that drains in real time and
-// colour-grades green → amber → red → dark-red as the seconds bleed away,
-// like a patient's vitals on a monitor. Each question is a "patient"; the
-// bar is their pulse. Purely a PACING-PRESSURE visual — it never enforces,
-// auto-advances, or penalises. Short zone dialogues add the thrill / relief.
+// src/ui/pulse-timer.jsx — NEW-03 "The Pulse" / Flashpoint
+// A LIVE per-question countdown bar. The colour grades CONTINUOUSLY (smooth
+// hue interpolation, green → amber → red — never a hard step), the fill carries
+// a moving sheen, the glow + heartbeat intensify as time bleeds away, and the
+// seconds pop on every tick in the final stretch. When the clock hits zero the
+// question locks with a shake + an unmistakable "TIME'S UP". Teasing one-liners
+// rotate per question to keep it playful. The clock ENFORCES (Quiz auto-locks
+// via onExpire). Reduced-motion safe.
 //
-// Props:
-//   budgetSec  — seconds budgeted for this question (topic-aware; pacing.js)
-//   resetKey   — changes per question (q.id); resets the countdown
-//   paused     — freeze the bar (true once the answer is submitted/revealed)
-//   T          — theme tokens
-//
-// Self-contained: owns its own ticking so the parent Quiz doesn't re-render
-// every frame. Reduced-motion safe (no transition/beat when the user opts out).
+// Props: budgetSec · resetKey (q.id) · paused · T · flashpoint · onExpire
 // =====================================================================
-import React, { useState, useEffect, useRef } from 'react';
-import { Heart, Activity, Zap } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { HeartPulse, Activity, Zap, TimerOff, Check } from 'lucide-react';
 
-// Zone thresholds on the fraction of time REMAINING. First match wins.
+// Discrete zones drive only the TAG + the teasing copy. Colour is continuous.
 const ZONES = [
-  { min: 0.60, color: '#16A34A', tag: 'STABLE',   line: 'Stable — read it fully, then commit.' },
-  { min: 0.35, color: '#F59E0B', tag: 'WATCH',    line: "Clock's ticking — start eliminating options." },
-  { min: 0.12, color: '#EF4444', tag: 'CRITICAL', line: 'Critical — trust your prep and choose.' },
-  { min: 0.00, color: '#B91C1C', tag: 'CODE',     line: 'Lock something in — a blank scores zero too.' },
+  { min: 0.60, tag: 'STABLE', lines: [
+    'Plenty of clock — read it like a topper.',
+    'Cool head. The answer is in there.',
+    'No rush… yet. 😏',
+    'Breathe. You own this one.',
+  ] },
+  { min: 0.34, tag: 'WATCH', lines: [
+    'Half gone — start cutting options.',
+    'Tick… tick… commit soon.',
+    'The clock is watching you. 👀',
+    "Don't fall in love with one option.",
+  ] },
+  { min: 0.12, tag: 'CRITICAL', lines: [
+    'Crunch time — trust your gut!',
+    'Now or never. Pick one!',
+    'Heart-rate rising… decide!',
+    'Instinct over second-guessing. Go!',
+  ] },
+  { min: 0.00, tag: 'CODE', lines: [
+    'Lock it in — anything beats a blank!',
+    'Final seconds! 🚨',
+    'Slam an answer — NOW!',
+    'Do not freeze. Choose!',
+  ] },
 ];
 
 const prefersReducedMotion = () => {
@@ -31,25 +46,38 @@ const prefersReducedMotion = () => {
   catch (e) { return false; }
 };
 
+const hashStr = (s) => { let h = 0; const str = String(s); for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0; return Math.abs(h); };
+
+// Continuous colour from the fraction of time remaining. Hue sweeps 145°(green)
+// → 0°(red) on a gentle curve (stays green a touch longer, then rushes to red),
+// gaining saturation and losing lightness as it gets critical.
+function gradeColor(frac) {
+  const f = Math.max(0, Math.min(1, frac));
+  const hue = 146 * Math.pow(f, 0.78);
+  const sat = Math.round(74 + (1 - f) * 18);
+  const light = Math.round(47 - (1 - f) * 7);
+  const hsl = (a) => `hsla(${hue.toFixed(0)}, ${sat}%, ${light}%, ${a})`;
+  return { solid: hsl(1), soft: hsl(0.10), border: hsl(0.34), glow: hsl(0.6), edge: hsl(0.78) };
+}
+
 export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T, flashpoint = false, onExpire }) {
   const [remaining, setRemaining] = useState(budgetSec);
+  const [shake, setShake] = useState(false);
   const startRef = useRef(Date.now());
   const reduced = useRef(prefersReducedMotion());
   const expiredRef = useRef(false);
-  // Keep the latest onExpire in a ref so it never re-triggers the ticking effect
-  // (an inline callback changes identity each render and would restart the clock).
   const onExpireRef = useRef(onExpire);
   onExpireRef.current = onExpire;
 
-  // Reset on every new question (declared BEFORE the ticking effect so the
-  // fresh start time is in place before the interval reads it).
+  // Reset on every new question (before the ticking effect reads startRef).
   useEffect(() => {
     startRef.current = Date.now();
     expiredRef.current = false;
     setRemaining(budgetSec);
+    setShake(false);
   }, [resetKey, budgetSec]);
 
-  // Tick while running. Frozen the moment the answer is locked in.
+  // Tick while running. ~16ms-smooth via 100ms sampling + CSS width transition.
   useEffect(() => {
     if (paused) return undefined;
     const id = setInterval(() => {
@@ -58,76 +86,94 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
       setRemaining(rem);
       if (rem <= 0) {
         clearInterval(id);
-        // Flashpoint — the clock enforces: fire onExpire exactly once so the
-        // Quiz can auto-lock the question. (The Pulse, non-flashpoint, ignores
-        // this — onExpire is only passed in flashpoint mode.)
         if (!expiredRef.current && onExpireRef.current) { expiredRef.current = true; onExpireRef.current(); }
       }
-    }, 200);
+    }, 100);
     return () => clearInterval(id);
   }, [paused, resetKey, budgetSec]);
 
   const frac = Math.max(0, Math.min(1, remaining / budgetSec));
-  const zone = ZONES.find(z => frac >= z.min) || ZONES[ZONES.length - 1];
-  const flat = remaining <= 0;            // flatline
+  const flat = remaining <= 0;
   const secs = Math.ceil(remaining);
+  const zone = ZONES.find(z => frac >= z.min) || ZONES[ZONES.length - 1];
 
-  // Heart beats quicker the lower the pulse gets (reuses the app's timer-beat
-  // keyframes). Frozen state shows a calm, non-beating heart.
-  const beat = paused || reduced.current ? '' : (frac <= 0.12 ? ' timer-beat-fast' : frac <= 0.35 ? ' timer-beat' : '');
+  // States: timed-out (locked at 0) · cleared-in-time · running.
+  const timedOut = paused && flat;
+  const cleared = paused && !flat;
 
-  // Post-answer relief / coaching beat.
-  let footLine = zone.line;
-  let footColor = T.muted;
-  let tag = zone.tag;
-  if (paused) {
-    if (flat) { footLine = 'Over the pace this time — bank a few seconds on the next one.'; footColor = T.muted; tag = 'TIME UP'; }
-    else { footLine = `Locked in with ${secs}s in hand — that's topper tempo.`; footColor = '#16A34A'; tag = 'CLEARED'; }
-  } else if (flat) {
-    footColor = '#B91C1C';
-  } else {
-    footColor = zone.color;
-  }
+  // One-shot shake the instant the clock runs out.
+  useEffect(() => {
+    if (timedOut && !reduced.current) { setShake(true); const t = setTimeout(() => setShake(false), 520); return () => clearTimeout(t); }
+    return undefined;
+  }, [timedOut]);
 
-  const barColor = paused && !flat ? '#16A34A' : zone.color;
+  // Teasing line — stable per (question, zone) so it doesn't flicker each tick.
+  const teaseLine = useMemo(
+    () => zone.lines[hashStr(`${resetKey}|${zone.tag}`) % zone.lines.length],
+    [resetKey, zone.tag, zone.lines]
+  );
+
+  // Colour: continuous while running; calm green when cleared; hard red on timeout.
+  const C = timedOut ? gradeColor(0) : cleared ? gradeColor(0.85) : gradeColor(frac);
+
+  let tag = zone.tag, footLine = teaseLine, footColor = C.solid, FootIcon = null;
+  if (timedOut) { tag = "TIME'S UP"; footLine = 'The clock won this one — locked.'; footColor = C.solid; FootIcon = TimerOff; }
+  else if (cleared) { tag = 'CLEARED'; footLine = `Locked in with ${secs}s to spare — topper tempo.`; footColor = '#16A34A'; FootIcon = Check; }
+
+  // Heartbeat speeds up as it drains; glow intensifies; sheen sweeps the fill.
+  const beat = paused || reduced.current ? '' : (frac <= 0.12 ? ' timer-beat-fast' : frac <= 0.30 ? ' timer-beat' : '');
+  const glowPx = paused ? (timedOut ? 16 : 0) : Math.round(4 + (1 - frac) * 18);
+  const numberPops = !reduced.current && !paused && remaining <= 10;
+
+  const HeadIcon = flashpoint ? Zap : (timedOut ? TimerOff : (cleared ? Check : (flat ? Activity : HeartPulse)));
 
   return (
-    <div className="rounded-2xl px-3.5 py-2.5 mb-4 anim-fadeup"
-         style={{ background: barColor + '0E', border: `1px solid ${barColor}33` }}>
+    <div className={'rounded-2xl px-3.5 py-2.5 mb-4 anim-fadeup' + (shake ? ' q-shake' : '')}
+         style={{ background: C.soft, border: `1px solid ${C.border}`, transition: reduced.current ? 'none' : 'background 0.5s ease, border-color 0.5s ease' }}>
       <div className="flex items-center justify-between mb-1.5">
-        <div className="flex items-center gap-1.5">
-          <span className={'inline-flex' + beat} style={{ color: barColor }}>
-            {flashpoint
-              ? <Zap size={13} fill={barColor} />
-              : (flat && !paused ? <Activity size={14} /> : <Heart size={13} fill={barColor} />)}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <span className={'inline-flex flex-shrink-0' + beat} style={{ color: C.solid }}>
+            <HeadIcon size={14} strokeWidth={2.2} fill={flashpoint && !paused ? C.solid : 'none'} />
           </span>
-          <span className="text-[10px] font-bold uppercase tracking-[0.14em]" style={{ color: barColor }}>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] truncate" style={{ color: C.solid }}>
             {flashpoint ? 'Flashpoint' : 'The Pulse'} · {tag}
           </span>
-          {flashpoint && (
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+          {flashpoint && !paused && (
+            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none flex-shrink-0"
                   style={{ background: '#F59E0B22', color: '#B45309' }}>2×</span>
           )}
         </div>
-        <span className="text-sm font-semibold tabular-nums" style={{ color: barColor }}>
+        <span key={numberPops ? secs : 'static'}
+              className={'text-sm font-bold tabular-nums flex-shrink-0' + (numberPops ? ' q-pulse' : '')}
+              style={{ color: C.solid }}>
           {flat ? '0' : secs}s
         </span>
       </div>
 
-      {/* draining bar — width = fraction remaining, colour = zone */}
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: T.borderSoft }}>
-        <div className="h-full rounded-full"
+      {/* draining bar — continuous colour, moving sheen, intensifying glow */}
+      <div className="relative h-2.5 rounded-full overflow-hidden" style={{ background: T.borderSoft }}>
+        <div className="absolute inset-y-0 left-0 rounded-full overflow-hidden"
              style={{
                width: `${frac * 100}%`,
-               background: flat
-                 ? `repeating-linear-gradient(90deg, ${barColor}, ${barColor} 6px, ${barColor}99 6px, ${barColor}99 12px)`
-                 : `linear-gradient(90deg, ${barColor}CC, ${barColor})`,
-               boxShadow: frac <= 0.35 && !paused ? `0 0 10px ${barColor}88` : 'none',
-               transition: reduced.current ? 'none' : 'width 0.2s linear, background 0.4s ease',
-             }} />
+               background: `linear-gradient(90deg, ${C.solid}, ${C.edge})`,
+               boxShadow: glowPx ? `0 0 ${glowPx}px ${C.glow}` : 'none',
+               transition: reduced.current ? 'none' : 'width 0.1s linear, box-shadow 0.3s ease',
+             }}>
+          {!paused && !reduced.current && (
+            <div className="absolute inset-0"
+                 style={{
+                   background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.5) 50%, transparent 100%)',
+                   backgroundSize: '200% 100%',
+                   animation: `shimmer ${frac <= 0.3 ? 1 : 1.8}s linear infinite`,
+                 }} />
+          )}
+        </div>
       </div>
 
-      <div className="text-[11px] mt-1.5 leading-snug" style={{ color: footColor }}>{footLine}</div>
+      <div key={tag} className="text-[11px] mt-1.5 leading-snug anim-fadeup flex items-center gap-1.5" style={{ color: footColor }}>
+        {FootIcon && <FootIcon size={12} className="flex-shrink-0" />}
+        <span>{footLine}</span>
+      </div>
     </div>
   );
 }
