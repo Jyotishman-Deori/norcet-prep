@@ -16,14 +16,13 @@ import PulseTimer from '../ui/pulse-timer.jsx';
 import IbqDiagram from '../ui/ibq-diagram.jsx';
 import { IBQ_DIAGRAMS } from '../data/ibq-diagrams.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
 
 const CYAN = '#0891B2';
 const COIN_PER = 4;
 const SEC_BUDGET = 9;
 const SEC_BUDGET_FLASH = 5;
-const POOL = IBQ_DIAGRAMS.length;
-const COUNT_OPTIONS = Array.from(new Set([1, 2, POOL])).filter((c) => c <= POOL);
 
 function Ibq({ onBack, onComplete, onSetPace }) {
   const { theme: T } = useTheme();
@@ -31,6 +30,11 @@ function Ibq({ onBack, onComplete, onSetPace }) {
   const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const pace = normalizePace(data && data.preferences);
   const coinPer = flashpoint ? COIN_PER * 2 : COIN_PER;
+
+  // seed diagrams + any installed IBQ packs
+  const allDiagrams = useMemo(() => mergePackItems('ibq', IBQ_DIAGRAMS, data), [data]);
+  const POOL = allDiagrams.length;
+  const COUNT_OPTIONS = useMemo(() => Array.from(new Set([1, 2, POOL])).filter((c) => c <= POOL), [POOL]);
 
   const [phase, setPhase] = useState('intro');
   const [count, setCount] = useState(POOL);
@@ -51,7 +55,7 @@ function Ibq({ onBack, onComplete, onSetPace }) {
   const totalPrompts = useMemo(() => diagrams.reduce((s, d) => s + d.prompts.length, 0), [diagrams]);
 
   const begin = () => {
-    setDiagrams(shuffle(IBQ_DIAGRAMS).slice(0, Math.max(1, count)));
+    setDiagrams(shuffle(allDiagrams).slice(0, Math.max(1, count)));
     setDIdx(0); setPIdx(0); setPicked(null); setChecked(false); setTimedOut(false); setFound([]); setCorrectTotal(0);
     setPhase('drill');
   };

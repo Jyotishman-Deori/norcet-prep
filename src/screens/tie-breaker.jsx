@@ -6,7 +6,7 @@
 // countdown that locks on timeout) and pays Accuracy Coins for correct calls.
 //   intro → drill (scenario + A/B → which is priority) → done (coins)
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Scale, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -14,14 +14,13 @@ import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import { TIE_BREAKERS } from '../data/tie-breaker.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
 
 const INDIGO = '#4338CA';
 const COIN_BASE = 15;
 const SEC_BUDGET = 14;
 const SEC_BUDGET_FLASH = 8;
-const POOL = TIE_BREAKERS.length;
-const COUNT_OPTIONS = Array.from(new Set([5, 10, POOL])).filter((c) => c <= POOL);
 
 function TieBreaker({ onBack, onComplete, onSetPace }) {
   const { theme: T } = useTheme();
@@ -29,6 +28,11 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
   const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const pace = normalizePace(data && data.preferences);
   const coinPer = flashpoint ? COIN_BASE * 2 : COIN_BASE;
+
+  // seed rounds + any installed Tie-Breaker packs
+  const pool = useMemo(() => mergePackItems('tie-breaker', TIE_BREAKERS, data), [data]);
+  const POOL = pool.length;
+  const COUNT_OPTIONS = useMemo(() => Array.from(new Set([5, 10, POOL])).filter((c) => c <= POOL), [POOL]);
 
   const [phase, setPhase] = useState('intro');
   const [count, setCount] = useState(Math.min(10, POOL));
@@ -44,7 +48,7 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
   const isCorrect = checked && picked === (r && r.answer);
 
   const begin = () => {
-    const picks = shuffle(TIE_BREAKERS).slice(0, Math.max(1, count)).map((tb) => ({ ...tb, flip: Math.random() < 0.5 }));
+    const picks = shuffle(pool).slice(0, Math.max(1, count)).map((tb) => ({ ...tb, flip: Math.random() < 0.5 }));
     setRounds(picks);
     setIdx(0); setPicked(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
     setPhase('drill');

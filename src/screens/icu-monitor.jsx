@@ -20,14 +20,13 @@ import PulseTimer from '../ui/pulse-timer.jsx';
 import { ECG_RHYTHMS } from '../data/ecg-rhythms.js';
 import { createMonitorAudio } from '../lib/ecg-audio.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
 
 const TEAL = '#0E7490';
 const COIN_BASE = 15;
 const SEC_BUDGET = 15;       // The Pulse — seconds to read a strip
 const SEC_BUDGET_FLASH = 8;  // Flashpoint — half the clock, double the coins
-const POOL = ECG_RHYTHMS.length;
-const COUNT_OPTIONS = [3, 5, POOL].filter((c, i, a) => c <= POOL && a.indexOf(c) === i);
 
 const SEV = {
   stable:   { label: 'STABLE',   color: '#22C55E' },
@@ -57,6 +56,11 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
   const pace = normalizePace(data && data.preferences);
   const coinPer = flashpoint ? COIN_BASE * 2 : COIN_BASE;
 
+  // seed rhythms + any installed ECG drill packs
+  const pool = useMemo(() => mergePackItems('ecg-rhythms', ECG_RHYTHMS, data), [data]);
+  const POOL = pool.length;
+  const COUNT_OPTIONS = useMemo(() => [3, 5, POOL].filter((c, i, a) => c <= POOL && a.indexOf(c) === i), [POOL]);
+
   const [phase, setPhase] = useState('intro');   // intro | drill | done
   const [count, setCount] = useState(Math.min(5, POOL));
   const [soundOn, setSoundOn] = useState(true);
@@ -84,7 +88,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
   }, [phase, idx, soundOn, checked, scenario && scenario.id]);
 
   const begin = () => {
-    setScenarios(shuffle(ECG_RHYTHMS).slice(0, Math.max(1, count)));
+    setScenarios(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setSelected(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
     setPhase('drill');
   };

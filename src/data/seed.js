@@ -714,6 +714,12 @@ export const DEFAULT_DATA = {
   // runner and walk forward through every migration on next load.
   schemaVersion: CURRENT_SCHEMA_VERSION,
   customQuestions: [],
+  // NEW-09/10 — installed Drill Packs (portable, uploadable content for the
+  // interactive drills: IBQ diagrams, crash cases, tie-breakers, sorter sets,
+  // ECG rhythms). Each entry: { id, kind, name, version, enabled, items:[...] }.
+  // Lives in the synced blob so packs carry across devices; merged into each
+  // drill's pool at runtime (see lib/drill-packs.js).
+  drillPacks: [],
   history: {},        // qId -> { attempts: [{ts, correct, timeMs}], reviewCount, nextDue, lastResult }
   bookmarks: [],
   stats: {

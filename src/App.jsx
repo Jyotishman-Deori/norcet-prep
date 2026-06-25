@@ -166,6 +166,8 @@ import DistractorAssassin from './screens/distractor-assassin.jsx';
 import TieBreaker from './screens/tie-breaker.jsx';
 // NEW-09 — IBQ: data-driven hotspot "tap the structure" diagrams (uploadable).
 import Ibq from './screens/ibq.jsx';
+// Drill Packs — import/manage/author portable content for the drills.
+import DrillPacks from './screens/drill-packs.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -3075,6 +3077,21 @@ export default function App() {
     setData(prev => ({ ...prev, economy: restoreHeartsPure(prev && prev.economy, 1) }));
   }, []);
 
+  // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
+  // synced blob so packs carry across devices; merged into each drill's pool.
+  const installDrillPack = useCallback((pack) => {
+    setData(prev => {
+      const list = (prev && prev.drillPacks) || [];
+      return { ...prev, drillPacks: [...list.filter(p => p.id !== pack.id), pack] };
+    });
+  }, []);
+  const setDrillPackEnabled = useCallback((id, enabled) => {
+    setData(prev => ({ ...prev, drillPacks: ((prev && prev.drillPacks) || []).map(p => p.id === id ? { ...p, enabled } : p) }));
+  }, []);
+  const removeDrillPack = useCallback((id) => {
+    setData(prev => ({ ...prev, drillPacks: ((prev && prev.drillPacks) || []).filter(p => p.id !== id) }));
+  }, []);
+
   // NEW-03 / Flashpoint — set the global Pace (persisted). Switching to The
   // Pulse or Flashpoint for the first time shows that mode's one-time entry note.
   const [flashpointIntro, setFlashpointIntro] = useState(false);
@@ -4423,6 +4440,12 @@ export default function App() {
                if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                goHomeDirect();
              }} />
+      )}
+
+      {/* Drill Packs — import / manage / author portable drill content. */}
+      {nav.screen === 'drill-packs' && (
+        <DrillPacks data={data} onBack={goHome}
+                    onInstall={installDrillPack} onToggle={setDrillPackEnabled} onRemove={removeDrillPack} />
       )}
 
       {nav.screen === 'advanced-setup' && (

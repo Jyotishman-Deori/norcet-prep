@@ -7,7 +7,7 @@
 // auto-checks on timeout) and pays Accuracy Coins per correctly-sorted item.
 //   intro → drill (bins + tray → review) → done (coins)
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Recycle, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, RotateCcw, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -15,14 +15,13 @@ import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import { SORTER_CASES } from '../data/sorter-cases.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
 
 const GREEN = '#15803D';
 const COIN_PER_ITEM = 3;
 const SEC_PER_ITEM = 7;
 const SEC_PER_ITEM_FLASH = 4;
-const POOL = SORTER_CASES.length;
-const COUNT_OPTIONS = Array.from(new Set([1, POOL])).filter((c) => c >= 1 && c <= POOL);
 
 function SorterDrill({ onBack, onComplete, onSetPace }) {
   const { theme: T } = useTheme();
@@ -30,6 +29,11 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
   const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const pace = normalizePace(data && data.preferences);
   const coinPerItem = flashpoint ? COIN_PER_ITEM * 2 : COIN_PER_ITEM;
+
+  // seed sets + any installed Sorter packs
+  const pool = useMemo(() => mergePackItems('sorter', SORTER_CASES, data), [data]);
+  const POOL = pool.length;
+  const COUNT_OPTIONS = useMemo(() => Array.from(new Set([1, POOL])).filter((c) => c >= 1 && c <= POOL), [POOL]);
 
   const [phase, setPhase] = useState('intro');
   const [count, setCount] = useState(POOL);
@@ -52,7 +56,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
   useEffect(() => { setAssign({}); setPicked(null); }, [kase && kase.id]);
 
   const begin = () => {
-    setCases(shuffle(SORTER_CASES).slice(0, Math.max(1, count)));
+    setCases(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setAssign({}); setPicked(null); setChecked(false); setTimedOut(false);
     setCorrectTotal(0); setItemTotal(0); setPhase('drill');
   };

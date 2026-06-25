@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch, Package } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -360,6 +360,17 @@ function DrillTests({ onBack, onNavigate }) {
             </div>
           </Card>
           </Tip>
+        </Reveal>
+
+        {/* Drill Packs — import/manage extra content for the interactive drills */}
+        <Reveal delay={230}>
+          <button onClick={() => go('drill-packs')}
+                  className="no-tap-highlight w-full flex items-center gap-2.5 mt-5 px-3 py-2.5 rounded-xl active:scale-[0.99] transition"
+                  style={{ background: T.surfaceWarm, border: `1px dashed ${T.border}` }}>
+            <Package size={15} style={{ color: T.muted }} />
+            <span className="text-[12.5px] font-medium" style={{ color: T.inkSoft }}>Drill Packs — import &amp; manage extra content</span>
+            <ChevronRight size={16} style={{ color: T.muted }} className="ml-auto" />
+          </button>
         </Reveal>
 
       </div>

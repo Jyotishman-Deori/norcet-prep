@@ -7,7 +7,7 @@
 // existing "Code Blue Mode" (which re-drills your own past mistakes).
 //   intro → drill (vignette + drug cards → rationale) → done (coins)
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Syringe, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, AlertTriangle, Activity, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -15,14 +15,13 @@ import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import { CRASH_CASES } from '../data/crash-cart.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
 
 const RED = '#DC2626';
 const COIN_BASE = 15;
 const SEC_BUDGET = 16;
 const SEC_BUDGET_FLASH = 9;
-const POOL = CRASH_CASES.length;
-const COUNT_OPTIONS = [3, 5, POOL].filter((c, i, a) => c <= POOL && a.indexOf(c) === i);
 
 const SEV = {
   warning:  { label: 'URGENT',   color: '#F59E0B' },
@@ -35,6 +34,11 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const pace = normalizePace(data && data.preferences);
   const coinPer = flashpoint ? COIN_BASE * 2 : COIN_BASE;
+
+  // seed cases + any installed Crash Cart packs
+  const pool = useMemo(() => mergePackItems('crash-cart', CRASH_CASES, data), [data]);
+  const POOL = pool.length;
+  const COUNT_OPTIONS = useMemo(() => [3, 5, POOL].filter((c, i, a) => c <= POOL && a.indexOf(c) === i), [POOL]);
 
   const [phase, setPhase] = useState('intro');
   const [count, setCount] = useState(Math.min(5, POOL));
@@ -55,7 +59,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   }, [kase && kase.id]);
 
   const begin = () => {
-    setCases(shuffle(CRASH_CASES).slice(0, Math.max(1, count)));
+    setCases(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setSelected(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
     setPhase('drill');
   };
