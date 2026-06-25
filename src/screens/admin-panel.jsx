@@ -436,10 +436,11 @@ function AdminPanel({
           {helpfulLoading ? (
             <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
           ) : sorted.length === 0 ? (
-            <Card className="p-6 text-center" style={{ background: T.surfaceWarm }}>
-              <Lightbulb size={32} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.4 }} />
-              <div className="text-sm" style={{ color: T.muted }}>No feedback yet. Once users start rating explanations, they'll show up here.</div>
-            </Card>
+            <AdminEmpty icon={Lightbulb} accent={T.primary}
+              title="No ratings yet"
+              what="Every explanation users mark “helpful” or “not helpful” lands here, sorted so the weakest ones rise to the top — your shortlist of explanations to rewrite."
+              when="It fills in as members tap the 👍 / 👎 on an explanation after answering. Questions no one has rated stay hidden."
+              collecting />
           ) : (
             <div className="space-y-2.5">
               {sorted.map(r => {
@@ -530,6 +531,12 @@ function AdminPanel({
           </Card>
           {favInsLoading ? (
             <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
+          ) : favIns.users === 0 ? (
+            <AdminEmpty icon={Heart} accent="#E0245E"
+              title="No favourites yet"
+              what="A popularity board for your sections — how many users heart each one, and how high they rank it in their priority order. It tells you which features to double down on and which need better discovery."
+              when="It populates the first time a member hearts a section (the ♥ on a section card). Guests are never counted."
+              collecting />
           ) : (
             <div className="space-y-2">
               {favIns.rows.map(r => (
@@ -883,7 +890,10 @@ function AdminPanel({
           {usersLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : users.length === 0 ? (
-            <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>No profiles yet.</div></Card>
+            <AdminEmpty icon={User} accent={T.primary}
+              title="No members yet"
+              what="A high-level roster of everyone who has signed up — display name, when they joined, and when they were last active. Personal answers and progress are never shown."
+              when="The first person to create an account appears here. Guests (who never sign up) are not listed." />
           ) : (() => {
             const q = userSearch.trim().toLowerCase();
             const shownUsers = users
@@ -1262,7 +1272,7 @@ function AdminPanel({
             Supply (questions in each bank) vs demand (how heavily the exam tests that topic). Topics the exam emphasises but your bank is thin on get used up fastest — add questions there first. {demand.total} questions total.
           </div>
 
-          {demand.highCount > 0 && (
+          {demand.highCount > 0 ? (
             <Card className="p-3.5 mb-4" style={{ background: T.error + '10', border: `1px solid ${T.error}40` }}>
               <div className="flex items-center gap-2">
                 <AlertTriangle size={18} style={{ color: T.error }} />
@@ -1271,8 +1281,23 @@ function AdminPanel({
                 </div>
               </div>
             </Card>
-          )}
+          ) : demand.rows.length > 0 ? (
+            <Card className="p-3.5 mb-4" style={{ background: T.success + '10', border: `1px solid ${T.success}40` }}>
+              <div className="flex items-center gap-2">
+                <ShieldCheck size={18} style={{ color: T.success }} />
+                <div className="text-sm font-medium" style={{ color: T.success }}>
+                  Every topic is well-supplied for its exam weight
+                </div>
+              </div>
+            </Card>
+          ) : null}
 
+          {demand.rows.length === 0 ? (
+            <AdminEmpty icon={Layers} accent={T.primary}
+              title="No questions in the pool yet"
+              what="A supply-vs-demand map of every topic — how many questions you have against how heavily the exam tests it, so you know where to write next."
+              when="It appears once a question bank is loaded. Upload or add a bank from the Banks section to begin." />
+          ) : (
           <div className="space-y-2.5">
             {demand.rows.map(r => {
               const supplyPct = Math.round(r.supplyShare * 100);
@@ -1308,6 +1333,7 @@ function AdminPanel({
               );
             })}
           </div>
+          )}
         </div>
       </div>
     );
