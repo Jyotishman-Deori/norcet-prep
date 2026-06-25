@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -115,6 +115,29 @@ function DrillTests({ onBack, onNavigate }) {
                      sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
+        </Reveal>
+
+        {/* Clinical Skill Drill — interactive procedure sequencing (NEW) */}
+        <Reveal delay={120}>
+          <Tip title="Clinical Skill Drill" text="Tap clinical procedure steps into the correct order — PPE donning, BLS, tracheostomy suctioning and more — with the rationale after each.">
+          <Card className="p-4 mb-3 relative" onClick={() => go('skill-drill')}
+                style={{ background: '#0E7490', border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(255,255,255,0.16)' }}>
+                <ListOrdered size={22} color="#FFF" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">Clinical Skill Drill</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Order the steps · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </div>
+          </Card>
+          </Tip>
         </Reveal>
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}

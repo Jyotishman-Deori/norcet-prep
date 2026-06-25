@@ -152,6 +152,7 @@ import DosagePractice from './screens/dosage-practice.jsx';
 import DosageSetup from './screens/DosageSetup.jsx';
 import DrillSettings from './screens/drill-settings.jsx';
 import { drillFeatureOn } from './lib/drill-settings.js';
+import SkillSequence from './screens/skill-sequence.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -917,7 +918,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4338,6 +4339,16 @@ export default function App() {
 
       {nav.screen === 'drill-settings' && (
         <DrillSettings onBack={goHome} />
+      )}
+
+      {/* NEW-10 (Module B) — Clinical Skill Sequence drill. Correct sequences
+          earn Accuracy Coins via the existing economy. */}
+      {nav.screen === 'skill-drill' && (
+        <SkillSequence onBack={goHome}
+                       onComplete={(coins) => {
+                         if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
+                         goHomeDirect();
+                       }} />
       )}
 
       {nav.screen === 'advanced-setup' && (
