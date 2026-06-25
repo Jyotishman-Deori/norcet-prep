@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -226,6 +226,28 @@ function DrillTests({ onBack, onNavigate }) {
                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
                 </div>
                 <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Eliminate the wrong · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </div>
+          </Card>
+          </Tip>
+        </Reveal>
+
+        {/* Tie-Breaker — priority reasoning drill (NEW) */}
+        <Reveal delay={160}>
+          <Tip title="Tie-Breaker" text="Both options are right — pick the one that comes FIRST. Trains the prioritisation frameworks examiners love: ABC, Maslow, safety-first, acute-over-chronic.">
+          <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('tie-breaker')}
+                style={{ background: 'linear-gradient(135deg, #4338CA, #312E81)', border: 'none', boxShadow: '0 6px 18px rgba(49,46,129,0.3)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                <Scale size={22} color="#FFF" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">Tie-Breaker</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Which comes first · earn coins</div>
               </div>
               <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
             </div>

@@ -162,6 +162,8 @@ import CrashCart from './screens/crash-cart.jsx';
 import SorterDrill from './screens/sorter.jsx';
 // NEW-05 — Distractor Assassin: eliminate-the-wrong drill over the live bank.
 import DistractorAssassin from './screens/distractor-assassin.jsx';
+// NEW-06 — Tie-Breaker: two reasonable actions, pick the priority.
+import TieBreaker from './screens/tie-breaker.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -927,7 +929,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4401,6 +4403,15 @@ export default function App() {
                               if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                               goHomeDirect();
                             }} />
+      )}
+
+      {/* NEW-06 — Tie-Breaker: which action comes first. */}
+      {nav.screen === 'tie-breaker' && (
+        <TieBreaker onBack={goHome} onSetPace={setPace}
+                    onComplete={(coins) => {
+                      if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
+                      goHomeDirect();
+                    }} />
       )}
 
       {nav.screen === 'advanced-setup' && (
