@@ -63,7 +63,7 @@ import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
-import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure } from './lib/economy.js';
+import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure } from './lib/economy.js';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -3033,6 +3033,12 @@ export default function App() {
     return awarded;
   }, []);
 
+  // PHIL-02 — Code Blue resolved: restore 1 Heart (capped). Future-safe while
+  // Hearts stay at max; meaningful once the Accuracy Wallet drains them.
+  const onCodeBlueResolved = useCallback(() => {
+    setData(prev => ({ ...prev, economy: restoreHeartsPure(prev && prev.economy, 1) }));
+  }, []);
+
   // NEW-02 — merge a demographics patch into the synced profile blob. Defaults
   // customTargetPercentile to the UR/Open-Merit standard (98.5) the first time
   // anything is set. setData auto-persists + syncs, so no extra plumbing.
@@ -4140,6 +4146,7 @@ export default function App() {
               timeLimitMin={nav.timeLimitMin} pulse={nav.pulse}
               coins={normalizeEconomy(data && data.economy).coins}
               onWhyBonus={claimWhyBonus}
+              onCodeBlueResolved={onCodeBlueResolved}
               onComplete={completeQuiz} onBack={goHome} profileId={profile && profile.id} />
       )}
 

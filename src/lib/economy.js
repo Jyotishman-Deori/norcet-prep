@@ -59,3 +59,12 @@ export function addCoins(e, n) {
   const o = normalizeEconomy(e);
   return { ...o, coins: Math.max(0, o.coins + (Number.isFinite(n) ? Math.floor(n) : 0)) };
 }
+
+// PHIL-02 — restore Hearts after a resolved Code Blue. Capped at HEART_MAX;
+// resets the regen clock when full. Future-safe: harmless while Hearts stay at
+// max (no depletion mechanic yet), correct once the Accuracy Wallet drains them.
+export function restoreHearts(e, n = 1) {
+  const o = normalizeEconomy(e);
+  const hearts = Math.min(HEART_MAX, o.hearts + Math.max(0, Math.floor(n)));
+  return { ...o, hearts, heartsTs: hearts >= HEART_MAX ? 0 : o.heartsTs };
+}

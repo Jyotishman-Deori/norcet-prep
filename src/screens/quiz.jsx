@@ -24,8 +24,15 @@ import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import VitalsCheck from '../ui/vitals-check.jsx';
+import CodeBlue from '../ui/code-blue.jsx';
 import { questionBudgetSec } from '../lib/pacing.js';
 import { isFoundational } from '../lib/foundational.js';
+
+// PHIL-02 — Code Blue fires after this many wrong answers in a row (gentle
+// mode: in-session streak only, no Hearts drain).
+const CODE_BLUE_STREAK = 3;
+const RECOVERY_MAX = 5;
+const DIFF_RANK = { easy: 0, medium: 1, moderate: 1, hard: 2 };
 
 // NEW-03 — modes where The Pulse per-question countdown is meaningful (timed
 // test practice). Review modes (bookmarks / due / wrong) are deliberately
@@ -63,7 +70,7 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, pulse = false }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const [index, setIndex] = useState(0);
@@ -130,6 +137,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [vitalsCheck, setVitalsCheck] = useState(null);     // the missed question, or null
   const [vitalsShown, setVitalsShown] = useState(() => new Set());
   const vitalsOpenRef = useRef(false);
+  // PHIL-02 — Code Blue. consecutiveWrong is in-session only; on the 3rd wrong
+  // in a row a recovery drill of this session's mistakes takes over. codeBlue
+  // holds the pre-loaded recovery set; codeBlueOpenRef pauses the timer.
+  const [consecutiveWrong, setConsecutiveWrong] = useState(0);
+  const [codeBlue, setCodeBlue] = useState(null);           // recovery question array, or null
+  const [codeBlueDone, setCodeBlueDone] = useState(false);  // one Code Blue per session is plenty
+  const codeBlueOpenRef = useRef(false);
 
   // Mode capabilities:
   //   - Hints & Show-answer are study aids — Quick Practice only.
@@ -162,8 +176,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   useEffect(() => {
     if (!timed) return;
     const t = setInterval(() => {
-      // PHIL-06 — the timer is paused while a Vitals Check is being read.
-      if (vitalsOpenRef.current) return;
+      // PHIL-06 / PHIL-02 — the timer pauses during a Vitals Check or Code Blue.
+      if (vitalsOpenRef.current || codeBlueOpenRef.current) return;
       if (isCountdown) {
         setSecondsRemaining(s => {
           if (s <= 1) {
@@ -259,22 +273,71 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (selected.length === 0) return;
     const correct = arraysEqualUnordered(selected, q.correct);
     const timeMs = Date.now() - questionStart.current;
-    setResults(r => [...r, { qId: q.id, correct, selected, timeMs, confidence }]);
+    const newResults = [...results, { qId: q.id, correct, selected, timeMs, confidence }];
+    setResults(newResults);
     setLastCorrect(correct);
     setSubmitted(true);
-    // PHIL-06 — Vitals Check: missing a FOUNDATIONAL question forcibly pauses the
-    // session for a rationale read. Practice/test modes only (not review modes),
-    // and at most once per question per session.
-    if (!correct && PULSE_MODES.includes(mode) && isFoundational(q) && !vitalsShown.has(q.id)) {
+
+    // Consecutive-wrong streak (in-session) — drives Code Blue.
+    const streak = correct ? 0 : consecutiveWrong + 1;
+    setConsecutiveWrong(streak);
+
+    const inTestMode = PULSE_MODES.includes(mode);
+    // PHIL-06 — Vitals Check takes precedence: missing a FOUNDATIONAL question
+    // forcibly pauses the session for a rationale read (once per question/session).
+    const fireVitals = !correct && inTestMode && isFoundational(q) && !vitalsShown.has(q.id);
+    // PHIL-02 — Code Blue: 3 wrong in a row → recovery drill of this session's
+    // mistakes. Suppressed if a Vitals Check is opening on the same submit.
+    const fireCodeBlue = !correct && inTestMode && !fireVitals && !codeBlueDone && streak >= CODE_BLUE_STREAK;
+
+    if (fireVitals) {
       setVitalsShown(prev => { const n = new Set(prev); n.add(q.id); return n; });
       vitalsOpenRef.current = true;
       setVitalsCheck(q);
+    } else if (fireCodeBlue) {
+      const recovery = buildRecoverySet(newResults);
+      if (recovery.length > 0) {
+        codeBlueOpenRef.current = true;
+        setCodeBlue(recovery);
+      }
     }
+  };
+
+  // Pre-load the recovery drill from THIS session's mistakes (no fetch): unique
+  // wrong (non-revealed) questions, easiest-first, capped at RECOVERY_MAX.
+  const buildRecoverySet = (resultList) => {
+    const byId = new Map(questions.map(x => [x.id, x]));
+    const seen = new Set();
+    const wrong = [];
+    resultList.forEach(r => {
+      if (r.correct || r.revealed || seen.has(r.qId)) return;
+      const qq = byId.get(r.qId);
+      if (qq) { seen.add(r.qId); wrong.push(qq); }
+    });
+    wrong.sort((a, b) => (DIFF_RANK[a.difficulty] ?? 1.5) - (DIFF_RANK[b.difficulty] ?? 1.5));
+    return wrong.slice(0, RECOVERY_MAX);
   };
 
   const resumeFromVitals = () => {
     vitalsOpenRef.current = false;
     setVitalsCheck(null);
+  };
+
+  // Code Blue cleared all recovery questions → restore a Heart + resume.
+  const resolveCodeBlue = () => {
+    codeBlueOpenRef.current = false;
+    setCodeBlue(null);
+    setCodeBlueDone(true);
+    setConsecutiveWrong(0);
+    try { if (onCodeBlueResolved) onCodeBlueResolved(); } catch (e) {}
+  };
+  // Manual bail-out — never trapped. Resets the streak so it won't instantly
+  // re-fire, but no Heart reward (the drill wasn't completed).
+  const exitCodeBlue = () => {
+    codeBlueOpenRef.current = false;
+    setCodeBlue(null);
+    setCodeBlueDone(true);
+    setConsecutiveWrong(0);
   };
 
   // PHIL-03 — The Why Bonus. After a CORRECT answer, if the explanation stays
@@ -765,6 +828,9 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     {/* PHIL-06 — Vitals Check (React Portal; pauses the session on a
         foundational miss until the rationale is reviewed). */}
     <VitalsCheck open={!!vitalsCheck} question={vitalsCheck} onResume={resumeFromVitals} />
+
+    {/* PHIL-02 — Code Blue (React Portal; recovery drill after 3 wrong in a row). */}
+    <CodeBlue open={!!codeBlue} questions={codeBlue || []} onResolve={resolveCodeBlue} onExit={exitCodeBlue} />
     </>
   );
 }
