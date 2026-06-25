@@ -39,6 +39,17 @@ function DrillTests({ onBack, onNavigate }) {
     </div>
   );
 
+  // Lightweight section label so the (now longer) hub reads as grouped tiers
+  // rather than one flat list — without disturbing the ascending journey.
+  const SectionLabel = ({ children, delay = 0 }) => (
+    <Reveal delay={delay}>
+      <div className="flex items-center gap-2 mt-5 mb-2.5">
+        <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>{children}</span>
+        <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
+      </div>
+    </Reveal>
+  );
+
   // --- Top tier: light, energetic, approachable (white + accent top border) ---
   // FAV (issues round) — hearts live in a dedicated TOP-RIGHT action area on
   // every card (never inline with the title), so all hearts across the screen
@@ -93,6 +104,8 @@ function DrillTests({ onBack, onNavigate }) {
           </p>
         </Reveal>
 
+        <SectionLabel delay={20}>Practice</SectionLabel>
+
         {/* Top tier */}
         <Reveal delay={40}>
           <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
@@ -116,6 +129,8 @@ function DrillTests({ onBack, onNavigate }) {
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
         </Reveal>
+
+        <SectionLabel delay={110}>Clinical simulators</SectionLabel>
 
         {/* Clinical Skill Drill — interactive procedure sequencing (NEW) */}
         <Reveal delay={120}>
@@ -211,6 +226,8 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        <SectionLabel delay={150}>Sharp reasoning</SectionLabel>
+
         {/* Distractor Assassin — eliminate-the-wrong reasoning drill (NEW) */}
         <Reveal delay={154}>
           <Tip title="Distractor Assassin" text="Flip the MCQ: instead of the right answer, hunt down the WRONG options one by one — without striking the correct one. Each kill reveals why that option is wrong. Trains elimination, the core exam skill.">
@@ -255,8 +272,10 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        <SectionLabel delay={166}>Exam hall</SectionLabel>
+
         {/* Bottom tier — Previous Year Papers (bold, official) */}
-        <Reveal delay={150}>
+        <Reveal delay={170}>
           <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers — sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
           <Card className="p-4 mb-3 relative" onClick={() => go('previous-papers')}
                 style={{ background: T.sec.revision, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}>
