@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -77,7 +77,13 @@ function DrillTests({ onBack, onNavigate }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Drill Tests" onBack={onBack} />
+      <TopBar title="Drill Tests" onBack={onBack}
+              right={
+                <button onClick={() => go('drill-settings')} aria-label="Drill Tests settings"
+                        className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5">
+                  <SlidersHorizontal size={18} style={{ color: T.muted }} />
+                </button>
+              } />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
 
         <Reveal delay={0}>

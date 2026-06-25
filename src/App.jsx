@@ -149,6 +149,8 @@ import DosageResults from './screens/dosage-results.jsx';
 // [A1 slice 29] DosagePractice extracted (T+isDark; useContent; no fgOnDark).
 import DosagePractice from './screens/dosage-practice.jsx';
 import DosageSetup from './screens/DosageSetup.jsx';
+import DrillSettings from './screens/drill-settings.jsx';
+import { drillFeatureOn } from './lib/drill-settings.js';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -4311,6 +4313,10 @@ export default function App() {
         <DrillTests onBack={goHome} onNavigate={handleHomeNavigate} />
       )}
 
+      {nav.screen === 'drill-settings' && (
+        <DrillSettings onBack={() => handleHomeNavigate({ screen: 'drill-tests' })} />
+      )}
+
       {nav.screen === 'advanced-setup' && (
         <AdvancedTestSetup allQuestions={allQuestions}
                            onStart={startAdvancedTest}
@@ -4331,7 +4337,7 @@ export default function App() {
                              timeMinutes={nav.timeMinutes}
                              auto={nav.auto}
                              everCorrectIds={nav.everCorrectIds}
-                             advancedTestHistory={data && data.advancedTestHistory}
+                             advancedTestHistory={drillFeatureOn(data && data.preferences, 'ghostShift') ? (data && data.advancedTestHistory) : null}
                              onHome={goHomeDirect}
                              onReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                              displayName={profile ? (profile.displayName || profile.id) : null}

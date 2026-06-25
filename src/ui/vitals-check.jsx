@@ -14,34 +14,41 @@
 //   minSeconds — enforced minimum read (default 20)
 //   onResume   — called when the user confirms after the countdown
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { HeartPulse, ShieldCheck } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 
 const ACCENT = '#DC2626'; // clinical red
 
-export default function VitalsCheck({ open, question, minSeconds = 20, onResume }) {
+export default function VitalsCheck({ open, question, minSeconds, onResume }) {
   const { theme: T } = useTheme();
-  const [left, setLeft] = useState(minSeconds);
+  // Smart, brisk enforced read: scale with the rationale length so a short "why"
+  // isn't a long wait. ~0.28s/word, clamped to [5, 10]s (was a flat 20s).
+  const dwell = useMemo(() => {
+    if (typeof minSeconds === 'number') return minSeconds;
+    const words = question && question.exp ? String(question.exp).trim().split(/\s+/).filter(Boolean).length : 0;
+    return Math.max(5, Math.min(10, Math.round(words * 0.28)));
+  }, [minSeconds, question]);
+  const [left, setLeft] = useState(dwell);
 
   // Restart the countdown each time the overlay opens for a new question.
   useEffect(() => {
     if (!open) return undefined;
-    setLeft(minSeconds);
+    setLeft(dwell);
     const started = Date.now();
     const id = setInterval(() => {
-      const rem = Math.max(0, minSeconds - Math.floor((Date.now() - started) / 1000));
+      const rem = Math.max(0, dwell - Math.floor((Date.now() - started) / 1000));
       setLeft(rem);
       if (rem <= 0) clearInterval(id);
     }, 250);
     return () => clearInterval(id);
-  }, [open, question && question.id, minSeconds]);
+  }, [open, question && question.id, dwell]);
 
   if (!open || !question || typeof document === 'undefined') return null;
 
   const ready = left <= 0;
-  const pct = Math.max(0, Math.min(100, ((minSeconds - left) / minSeconds) * 100));
+  const pct = Math.max(0, Math.min(100, ((dwell - left) / dwell) * 100));
 
   return createPortal(
     <div className="fixed inset-0 flex items-center justify-center px-4"

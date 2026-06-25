@@ -27,6 +27,7 @@ import VitalsCheck from '../ui/vitals-check.jsx';
 import CodeBlue from '../ui/code-blue.jsx';
 import { questionBudgetSec } from '../lib/pacing.js';
 import { isFoundational } from '../lib/foundational.js';
+import { drillFeatureOn } from '../lib/drill-settings.js';
 
 // PHIL-02 — Code Blue fires after this many wrong answers in a row (gentle
 // mode: in-session streak only, no Hearts drain).
@@ -286,12 +287,14 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     setConsecutiveWrong(streak);
 
     const inTestMode = PACE_MODES.includes(mode);
+    // Drill-Tests settings — each coaching behaviour can be switched off (default ON).
+    const prefs = data && data.preferences;
     // PHIL-06 — Vitals Check takes precedence: missing a FOUNDATIONAL question
     // forcibly pauses the session for a rationale read (once per question/session).
-    const fireVitals = !correct && inTestMode && isFoundational(q) && !vitalsShown.has(q.id);
+    const fireVitals = !correct && inTestMode && drillFeatureOn(prefs, 'vitalsCheck') && isFoundational(q) && !vitalsShown.has(q.id);
     // PHIL-02 — Code Blue: 3 wrong in a row → recovery drill of this session's
     // mistakes. Suppressed if a Vitals Check is opening on the same submit.
-    const fireCodeBlue = !correct && inTestMode && !fireVitals && !codeBlueDone && streak >= CODE_BLUE_STREAK;
+    const fireCodeBlue = !correct && inTestMode && drillFeatureOn(prefs, 'codeBlue') && !fireVitals && !codeBlueDone && streak >= CODE_BLUE_STREAK;
 
     if (fireVitals) {
       setVitalsShown(prev => { const n = new Set(prev); n.add(q.id); return n; });
