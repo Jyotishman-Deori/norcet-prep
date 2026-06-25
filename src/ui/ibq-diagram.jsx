@@ -48,13 +48,16 @@ export default function IbqDiagram({ diagram, found = [], picked = null, checked
     }
   }), [diagram, noMotion]);
 
-  const center = (hs) => hs.shape === 'circle'
+  const center = (hs) => (hs.shape === 'circle' || hs.shape === 'ellipse')
     ? { x: hs.cx, y: hs.cy }
     : hs.shape === 'rect' ? { x: hs.x + hs.w / 2, y: hs.y + hs.h / 2 }
     : { x: 0, y: 0 };
+  // vertical offset for the label so it sits just below the hotspot
+  const labelDy = (hs) => hs.shape === 'circle' ? hs.r + 14 : hs.shape === 'ellipse' ? hs.ry + 14 : hs.shape === 'rect' ? (hs.h / 2) - 6 : 14;
 
   const shapeProps = (hs) => {
     if (hs.shape === 'circle') return { el: 'circle', attrs: { cx: hs.cx, cy: hs.cy, r: hs.r } };
+    if (hs.shape === 'ellipse') return { el: 'ellipse', attrs: { cx: hs.cx, cy: hs.cy, rx: hs.rx, ry: hs.ry } };
     if (hs.shape === 'rect') return { el: 'rect', attrs: { x: hs.x, y: hs.y, width: hs.w, height: hs.h, rx: hs.rx || 6 } };
     return { el: 'polygon', attrs: { points: hs.points } };
   };
@@ -90,7 +93,7 @@ export default function IbqDiagram({ diagram, found = [], picked = null, checked
                 <g className={noMotion ? '' : 'ibq-pop'} style={{ pointerEvents: 'none' }}>
                   <circle cx={c.x} cy={c.y} r={9} fill={T.success} />
                   <path d={`M ${c.x - 4} ${c.y} l 2.6 2.8 l 5 -5.4`} fill="none" stroke="#fff" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
-                  <text x={c.x} y={c.y + (hs.shape === 'circle' ? hs.r + 14 : (hs.h / 2) - 6)} fontSize={11} fontWeight={700}
+                  <text x={c.x} y={c.y + labelDy(hs)} fontSize={11} fontWeight={700}
                         textAnchor="middle" fill={T.success}
                         style={{ paintOrder: 'stroke', stroke: T.surface, strokeWidth: 3 }}>{hs.label}</text>
                 </g>
