@@ -66,6 +66,7 @@ import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure } from './lib/economy.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
+import PulseIntro from './ui/pulse-intro.jsx';
 import {
   TOPICS, NON_EXAM_TOPICS, isNonExamTopic, countsInNursingStats,
   SEED_QUESTIONS, DEFAULT_DATA
@@ -2555,10 +2556,15 @@ export default function App() {
       }
     }
     let qs = [];
-    // NEW-03 / Flashpoint — the Pace is a single global preference, so every
-    // launch path (incl. topic-wise tests fired straight from a picker) inherits
-    // the same per-question timer + scoring.
-    const { pulse: pulseOn, flashpoint: flashOn } = paceFlags(normalizePace(data && data.preferences));
+    // NEW-03 / Flashpoint — the Pace is a single global preference, but the
+    // per-question clock is only meaningful in fast recall drills (quick/topic/
+    // weak-topic). Mock has its own global exam timer; review modes shouldn't be
+    // a race. Gate the flags by mode so mock never even accrues Flashpoint points.
+    const paceFlagsRaw = paceFlags(normalizePace(data && data.preferences));
+    // Pace applies to the linear instant-feedback test modes (incl. Mock — the
+    // timed-practice drill). Review modes (bookmarks/due/wrong) never get a clock.
+    const paceEligible = (m) => m === 'quick' || m === 'topic' || m === 'weak-topic' || m === 'mock';
+    const navPace = (m) => (paceEligible(m) ? paceFlagsRaw : { pulse: false, flashpoint: false });
     // B2 — bias selection so questions the user was shown but never attempted
     // (and didn't reveal/skip) come back FIRST, then fall through to the normal
     // unseen-first / weakest-next selector to fill the remaining slots.
@@ -2624,7 +2630,7 @@ export default function App() {
       qs = [...shuffle(wrong), ...shuffle(unseen), ...shuffle(rest)].slice(0, target);
       // Route as 'quick' for the Quiz renderer — Weak Area drills are study
       // sessions, not exams, so hints + alt explanations should remain visible.
-      setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false, pulse: pulseOn, flashpoint: flashOn });
+      setNav({ screen: 'quiz', questions: qs, mode: 'quick', timed: false, ...navPace('quick') });
       return;
     } else if (spec.mode === 'mock') {
       qs = shuffle(allQuestions).slice(0, spec.count || 50);
@@ -2642,7 +2648,7 @@ export default function App() {
       timed: spec.mode === 'mock',
       // Countdown duration for mock. Other modes leave this undefined.
       timeLimitMin: spec.mode === 'mock' ? (spec.durationMin || spec.count || 50) : null,
-      pulse: pulseOn, flashpoint: flashOn
+      ...navPace(spec.mode)
     });
   }, [allQuestions, data]);
 
@@ -3041,19 +3047,25 @@ export default function App() {
     setData(prev => ({ ...prev, economy: restoreHeartsPure(prev && prev.economy, 1) }));
   }, []);
 
-  // NEW-03 / Flashpoint — set the global Pace (persisted). Switching to
-  // Flashpoint for the first time shows the one-time entry warning.
+  // NEW-03 / Flashpoint — set the global Pace (persisted). Switching to The
+  // Pulse or Flashpoint for the first time shows that mode's one-time entry note.
   const [flashpointIntro, setFlashpointIntro] = useState(false);
+  const [pulseIntro, setPulseIntro] = useState(false);
   const setPace = useCallback((pace) => {
     setData(prev => {
-      const seen = !!(prev && prev.preferences && prev.preferences.flashpointIntroSeen);
-      if (pace === 'flashpoint' && !seen) setFlashpointIntro(true);
-      return { ...prev, preferences: { ...prev.preferences, pace } };
+      const prefs = (prev && prev.preferences) || {};
+      if (pace === 'flashpoint' && !prefs.flashpointIntroSeen) setFlashpointIntro(true);
+      else if (pace === 'pulse' && !prefs.pulseIntroSeen) setPulseIntro(true);
+      return { ...prev, preferences: { ...prefs, pace } };
     });
   }, []);
   const dismissFlashpointIntro = useCallback(() => {
     setFlashpointIntro(false);
     setData(prev => ({ ...prev, preferences: { ...prev.preferences, flashpointIntroSeen: true } }));
+  }, []);
+  const dismissPulseIntro = useCallback(() => {
+    setPulseIntro(false);
+    setData(prev => ({ ...prev, preferences: { ...prev.preferences, pulseIntroSeen: true } }));
   }, []);
 
   // NEW-02 — merge a demographics patch into the synced profile blob. Defaults
@@ -4002,7 +4014,8 @@ export default function App() {
       {/* F-B — one global pull-to-refresh (disabled on gesture/timed screens). */}
       <PullToRefresh onRefresh={refreshApp} disabled={drawerOpen || PTR_DISABLED_SCREENS.has(nav.screen)} />
 
-      {/* NEW-03 / Flashpoint — one-time entry warning (Portal, app-global). */}
+      {/* NEW-03 / Pace — one-time entry notes (Portals, app-global). */}
+      <PulseIntro open={pulseIntro} onClose={dismissPulseIntro} />
       <FlashpointIntro open={flashpointIntro} onClose={dismissFlashpointIntro} />
 
       {bridgeBanner}

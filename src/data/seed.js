@@ -753,6 +753,7 @@ export const DEFAULT_DATA = {
     quickTopic: 'all',
     // NEW-03 / Flashpoint — global per-question Pace: 'off' | 'pulse' | 'flashpoint'.
     pace: 'off',
+    pulseIntroSeen: false,       // one-time The Pulse entry note
     flashpointIntroSeen: false,  // one-time Flashpoint entry warning
     // Spaced-revision reminder card on Home.
     //   reviewRemindersEnabled — permanent off-switch (Settings)

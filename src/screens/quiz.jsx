@@ -34,10 +34,13 @@ const CODE_BLUE_STREAK = 3;
 const RECOVERY_MAX = 5;
 const DIFF_RANK = { easy: 0, medium: 1, moderate: 1, hard: 2 };
 
-// NEW-03 — modes where The Pulse per-question countdown is meaningful (timed
-// test practice). Review modes (bookmarks / due / wrong) are deliberately
-// excluded — revisiting mistakes shouldn't be a race against the clock.
-const PULSE_MODES = ['quick', 'topic', 'weak-topic', 'mock'];
+// NEW-03 — modes where the per-question Pulse/Flashpoint clock + learning
+// interrupts (Vitals Check, Code Blue) are meaningful: the linear, instant-
+// feedback test modes. Mock IS included — it's the timed-practice drill (the
+// Advanced Test is the deferred exam simulation; that's where the palette +
+// editable answers live). Review modes (bookmarks/due/wrong) are excluded —
+// revisiting mistakes shouldn't be a race.
+const PACE_MODES = ['quick', 'topic', 'weak-topic', 'mock'];
 
 // #4 — per-question self-rating. Defaults to "Unsure" so it's a zero-friction
 // optional tap; the choice feeds the calibration report on Results + Stats.
@@ -282,7 +285,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     const streak = correct ? 0 : consecutiveWrong + 1;
     setConsecutiveWrong(streak);
 
-    const inTestMode = PULSE_MODES.includes(mode);
+    const inTestMode = PACE_MODES.includes(mode);
     // PHIL-06 — Vitals Check takes precedence: missing a FOUNDATIONAL question
     // forcibly pauses the session for a rationale read (once per question/session).
     const fireVitals = !correct && inTestMode && isFoundational(q) && !vitalsShown.has(q.id);
@@ -513,7 +516,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
         {/* NEW-03 "The Pulse" — opt-in per-question countdown. Non-enforcing;
             freezes the instant the answer is locked in, resets each question. */}
-        {pulse && PULSE_MODES.includes(mode) && (
+        {pulse && PACE_MODES.includes(mode) && (
           <PulseTimer budgetSec={questionBudgetSec(q.topic, { flashpoint, difficulty: q.difficulty })}
                       resetKey={q.id} flashpoint={flashpoint}
                       onExpire={onTimerExpire}
