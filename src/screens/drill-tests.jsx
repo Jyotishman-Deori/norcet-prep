@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -182,6 +182,28 @@ function DrillTests({ onBack, onNavigate }) {
                   <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
                 </div>
                 <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Pick the right drug · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
+            </div>
+          </Card>
+          </Tip>
+        </Reveal>
+
+        {/* The Sorter — tap-to-sort drill (NEW) */}
+        <Reveal delay={148}>
+          <Tip title="The Sorter" text="Tap each item into the correct bin — bio-medical waste colour coding and isolation precautions, with the rationale for every miss.">
+          <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('sorter')}
+                style={{ background: 'linear-gradient(135deg, #15803D, #0B5132)', border: 'none', boxShadow: '0 6px 18px rgba(11,81,50,0.3)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                <Recycle size={22} color="#FFF" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">The Sorter</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Waste & isolation · earn coins</div>
               </div>
               <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
             </div>
