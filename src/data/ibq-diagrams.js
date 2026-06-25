@@ -328,4 +328,198 @@ export const IBQ_DIAGRAMS = [
       { id: 'q4', ask: 'Tap the SACRUM', answer: 'sacral', exp: '5 fused vertebrae; a common pressure-injury site.' },
     ],
   },
+
+  // ── 13. Burns — Rule of Nines (adult) ─────────────────────────────
+  {
+    id: 'burns-nines', title: 'Rule of Nines (adult)', viewBox: '0 0 200 280',
+    art: [
+      { type: 'circle', cx: 100, cy: 26, r: 18, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'rect', x: 70, y: 46, width: 60, height: 92, rx: 10, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'rect', x: 44, y: 50, width: 22, height: 84, rx: 11, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'rect', x: 134, y: 50, width: 22, height: 84, rx: 11, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'rect', x: 74, y: 138, width: 24, height: 120, rx: 11, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'rect', x: 102, y: 138, width: 24, height: 120, rx: 11, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+    ],
+    hotspots: [
+      { id: 'head', label: 'Head 9%', shape: 'circle', cx: 100, cy: 26, r: 17 },
+      { id: 'arm', label: 'Arm 9%', shape: 'rect', x: 134, y: 56, w: 22, h: 72 },
+      { id: 'trunk', label: 'Ant. trunk 18%', shape: 'rect', x: 74, y: 50, w: 52, h: 84 },
+      { id: 'leg', label: 'Leg 18%', shape: 'rect', x: 102, y: 150, w: 24, h: 100 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap a region worth 9% — the HEAD', answer: 'head', exp: 'Head & neck = 9% in the adult rule of nines.' },
+      { id: 'q2', ask: 'Tap a region worth 9% — an ARM', answer: 'arm', exp: 'Each entire upper limb = 9%.' },
+      { id: 'q3', ask: 'Tap the ANTERIOR TRUNK (18%)', answer: 'trunk', exp: 'Front of the trunk = 18% (back of the trunk is another 18%).' },
+      { id: 'q4', ask: 'Tap a LOWER LIMB (18%)', answer: 'leg', exp: 'Each entire lower limb = 18%. (Palm ≈ 1%.)' },
+    ],
+  },
+
+  // ── 14. GI tract organs ───────────────────────────────────────────
+  {
+    id: 'git-organs', title: 'The GI Tract', viewBox: '0 0 260 240',
+    art: [
+      { type: 'path', d: 'M 38 52 L 96 48 L 90 84 Q 60 90 38 74 Z', fill: '#C98A5A', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'path', d: 'M 104 52 Q 142 40 150 74 Q 154 100 120 100 Q 96 96 104 52 Z', fill: '#F4B8B8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'polyline', points: '72,190 72,112 190,112 190,190', fill: 'none', stroke: '#C98A5A', strokeWidth: 9, opacity: 0.7 },
+      { type: 'path', d: 'M 100 130 q 18 -8 26 8 q 8 16 26 4 q 16 -8 22 8', fill: 'none', stroke: STROKE, strokeWidth: 3 },
+      { type: 'circle', cx: 72, cy: 198, r: 8, fill: '#F4B8B8', stroke: STROKE, strokeWidth: 1.5 },
+    ],
+    hotspots: [
+      { id: 'liver', label: 'Liver', shape: 'circle', cx: 66, cy: 64, r: 18 },
+      { id: 'stomach', label: 'Stomach', shape: 'circle', cx: 124, cy: 74, r: 20 },
+      { id: 'small', label: 'Small intestine', shape: 'circle', cx: 132, cy: 140, r: 22 },
+      { id: 'colon', label: 'Large intestine', shape: 'circle', cx: 72, cy: 150, r: 16 },
+      { id: 'appendix', label: 'Appendix', shape: 'circle', cx: 72, cy: 198, r: 14 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap the LIVER', answer: 'liver', exp: 'Right-upper quadrant; metabolism, bile, detoxification.' },
+      { id: 'q2', ask: 'Tap the STOMACH', answer: 'stomach', exp: 'Left-upper; churns food, secretes acid and pepsin.' },
+      { id: 'q3', ask: 'Tap the SMALL INTESTINE', answer: 'small', exp: 'Most digestion and absorption (duodenum, jejunum, ileum).' },
+      { id: 'q4', ask: 'Tap the LARGE INTESTINE (colon)', answer: 'colon', exp: 'Reabsorbs water; forms and stores stool.' },
+      { id: 'q5', ask: 'Tap the APPENDIX', answer: 'appendix', exp: 'Right-iliac; inflammation = appendicitis (McBurney’s point).' },
+    ],
+  },
+
+  // ── 15. Pressure-injury sites (supine) ────────────────────────────
+  {
+    id: 'pressure-sites', title: 'Pressure-Injury Sites', viewBox: '0 0 240 180',
+    art: [
+      { type: 'circle', cx: 34, cy: 96, r: 18, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'rect', x: 50, y: 82, width: 120, height: 34, rx: 14, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+      { type: 'rect', x: 168, y: 92, width: 52, height: 20, rx: 8, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2 },
+    ],
+    hotspots: [
+      { id: 'occiput', label: 'Occiput', shape: 'circle', cx: 26, cy: 112, r: 12 },
+      { id: 'scapula', label: 'Scapula', shape: 'circle', cx: 78, cy: 118, r: 12 },
+      { id: 'sacrum', label: 'Sacrum', shape: 'circle', cx: 150, cy: 120, r: 13 },
+      { id: 'heel', label: 'Heel', shape: 'circle', cx: 210, cy: 116, r: 12 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap the SACRUM', answer: 'sacrum', exp: 'The commonest pressure-injury site in a supine patient.' },
+      { id: 'q2', ask: 'Tap the HEEL', answer: 'heel', exp: 'A high-risk bony prominence — offload with pillows/boots.' },
+      { id: 'q3', ask: 'Tap the OCCIPUT', answer: 'occiput', exp: 'Back of the head — at risk in immobile/supine patients.' },
+      { id: 'q4', ask: 'Tap the SCAPULA', answer: 'scapula', exp: 'Shoulder blade — a posterior pressure point when supine.' },
+    ],
+  },
+
+  // ── 16. Fontanelles (fetal skull, top view) ───────────────────────
+  {
+    id: 'fontanelles', title: 'Fontanelles & Sutures', viewBox: '0 0 220 240',
+    art: [
+      { type: 'ellipse', cx: 110, cy: 120, rx: 78, ry: 104, fill: '#F1E9DC', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'line', x1: 110, y1: 40, x2: 110, y2: 200, stroke: STROKE, strokeWidth: 2 },
+      { type: 'line', x1: 70, y1: 84, x2: 150, y2: 84, stroke: STROKE, strokeWidth: 2 },
+      { type: 'path', d: 'M 110 60 L 124 80 L 110 100 L 96 80 Z', fill: '#CDE7F0', stroke: STROKE, strokeWidth: 1.5 },
+      { type: 'path', d: 'M 110 168 L 122 186 L 98 186 Z', fill: '#CDE7F0', stroke: STROKE, strokeWidth: 1.5 },
+    ],
+    hotspots: [
+      { id: 'anterior', label: 'Anterior fontanelle', shape: 'circle', cx: 110, cy: 80, r: 16 },
+      { id: 'posterior', label: 'Posterior fontanelle', shape: 'circle', cx: 110, cy: 178, r: 13 },
+      { id: 'sagittal', label: 'Sagittal suture', shape: 'rect', x: 104, y: 104, w: 12, h: 58 },
+      { id: 'coronal', label: 'Coronal suture', shape: 'rect', x: 72, y: 78, w: 30, h: 12 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap the ANTERIOR fontanelle', answer: 'anterior', exp: 'Diamond-shaped; closes by ~18 months. Sunken = dehydration, bulging = raised ICP.' },
+      { id: 'q2', ask: 'Tap the POSTERIOR fontanelle', answer: 'posterior', exp: 'Triangular; closes by ~2–3 months.' },
+      { id: 'q3', ask: 'Tap the SAGITTAL suture', answer: 'sagittal', exp: 'Runs front-to-back between the parietal bones.' },
+      { id: 'q4', ask: 'Tap the CORONAL suture', answer: 'coronal', exp: 'Runs side-to-side between the frontal and parietal bones.' },
+    ],
+  },
+
+  // ── 17. Abdominal quadrants (4) ───────────────────────────────────
+  {
+    id: 'abdo-quadrants', title: 'Four Abdominal Quadrants', viewBox: '0 0 240 240',
+    art: [
+      { type: 'rect', x: 40, y: 30, width: 160, height: 190, rx: 24, fill: '#F4C9A8', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'line', x1: 120, y1: 30, x2: 120, y2: 220, stroke: STROKE, strokeWidth: 1.5, opacity: 0.6 },
+      { type: 'line', x1: 40, y1: 125, x2: 200, y2: 125, stroke: STROKE, strokeWidth: 1.5, opacity: 0.6 },
+    ],
+    hotspots: [
+      { id: 'ruq', label: 'RUQ', shape: 'rect', x: 40, y: 30, w: 80, h: 95 },
+      { id: 'luq', label: 'LUQ', shape: 'rect', x: 120, y: 30, w: 80, h: 95 },
+      { id: 'rlq', label: 'RLQ', shape: 'rect', x: 40, y: 125, w: 80, h: 95 },
+      { id: 'llq', label: 'LLQ', shape: 'rect', x: 120, y: 125, w: 80, h: 95 },
+    ],
+    prompts: [
+      { id: 'q1', ask: "Tap the RIGHT UPPER quadrant (patient's right)", answer: 'ruq', exp: 'RUQ — liver and gallbladder. (Patient’s right = your left.)' },
+      { id: 'q2', ask: 'Tap the LEFT UPPER quadrant', answer: 'luq', exp: 'LUQ — stomach and spleen.' },
+      { id: 'q3', ask: 'Tap the RIGHT LOWER quadrant', answer: 'rlq', exp: 'RLQ — appendix (McBurney’s point).' },
+      { id: 'q4', ask: 'Tap the LEFT LOWER quadrant', answer: 'llq', exp: 'LLQ — sigmoid colon (diverticulitis).' },
+    ],
+  },
+
+  // ── 18. Meninges ──────────────────────────────────────────────────
+  {
+    id: 'meninges', title: 'The Meninges', viewBox: '0 0 240 220',
+    art: [
+      { type: 'rect', x: 20, y: 20, width: 200, height: 180, rx: 42, fill: '#F1E9DC', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'rect', x: 32, y: 32, width: 176, height: 156, rx: 36, fill: '#F7D2D2', stroke: STROKE, strokeWidth: 1.5 },
+      { type: 'rect', x: 44, y: 44, width: 152, height: 132, rx: 30, fill: '#EADCF2', stroke: STROKE, strokeWidth: 1.5 },
+      { type: 'rect', x: 56, y: 56, width: 128, height: 108, rx: 24, fill: '#CDE7F0', stroke: STROKE, strokeWidth: 1.5 },
+      { type: 'rect', x: 68, y: 68, width: 104, height: 84, rx: 18, fill: '#DCCBEB', stroke: STROKE, strokeWidth: 1.5 },
+    ],
+    hotspots: [
+      { id: 'dura', label: 'Dura mater', shape: 'rect', x: 32, y: 32, w: 176, h: 14 },
+      { id: 'arachnoid', label: 'Arachnoid', shape: 'rect', x: 44, y: 46, w: 152, h: 12 },
+      { id: 'subarachnoid', label: 'Subarachnoid (CSF)', shape: 'rect', x: 56, y: 58, w: 128, h: 12 },
+      { id: 'pia', label: 'Pia mater & brain', shape: 'rect', x: 68, y: 72, w: 104, h: 76 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap the DURA MATER', answer: 'dura', exp: 'The tough outer layer; an extradural bleed sits above it.' },
+      { id: 'q2', ask: 'Tap the ARACHNOID mater', answer: 'arachnoid', exp: 'The middle web-like layer; a subdural bleed lies just beneath the dura.' },
+      { id: 'q3', ask: 'Tap the SUBARACHNOID space', answer: 'subarachnoid', exp: 'Holds CSF; a subarachnoid haemorrhage bleeds here (thunderclap headache).' },
+      { id: 'q4', ask: 'Tap the PIA MATER (on the brain)', answer: 'pia', exp: 'The delicate inner layer hugging the brain surface.' },
+    ],
+  },
+
+  // ── 19. Cardiac conduction system ─────────────────────────────────
+  {
+    id: 'conduction', title: 'Cardiac Conduction', viewBox: '0 0 240 240',
+    art: [
+      { type: 'path', d: 'M 44 72 Q 44 44 84 48 L 168 48 Q 200 44 200 78 L 195 150 Q 180 212 120 222 Q 56 212 48 150 Z', fill: '#F7D2D2', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'line', x1: 120, y1: 96, x2: 120, y2: 150, stroke: '#B91C1C', strokeWidth: 2.5 },
+      { type: 'path', d: 'M 120 150 Q 100 180 92 206', fill: 'none', stroke: '#B91C1C', strokeWidth: 2.5 },
+      { type: 'path', d: 'M 120 150 Q 142 180 150 206', fill: 'none', stroke: '#B91C1C', strokeWidth: 2.5 },
+      { type: 'circle', cx: 96, cy: 80, r: 7, fill: '#B91C1C' },
+      { type: 'circle', cx: 120, cy: 124, r: 7, fill: '#B91C1C' },
+    ],
+    hotspots: [
+      { id: 'sa', label: 'SA node', shape: 'circle', cx: 96, cy: 80, r: 14 },
+      { id: 'av', label: 'AV node', shape: 'circle', cx: 120, cy: 124, r: 14 },
+      { id: 'his', label: 'Bundle of His', shape: 'rect', x: 112, y: 134, w: 16, h: 22 },
+      { id: 'purkinje', label: 'Purkinje fibres', shape: 'circle', cx: 120, cy: 200, r: 18 },
+    ],
+    prompts: [
+      { id: 'q1', ask: 'Tap the SA NODE', answer: 'sa', exp: 'The natural pacemaker (60–100/min), in the right atrium.' },
+      { id: 'q2', ask: 'Tap the AV NODE', answer: 'av', exp: 'Delays the impulse (~0.1 s) so the atria empty before the ventricles fire.' },
+      { id: 'q3', ask: 'Tap the BUNDLE OF HIS', answer: 'his', exp: 'Carries the impulse into the interventricular septum.' },
+      { id: 'q4', ask: 'Tap the PURKINJE FIBRES', answer: 'purkinje', exp: 'Spread the impulse rapidly through the ventricular muscle.' },
+    ],
+  },
+
+  // ── 20. Lung lobes (anterior) ─────────────────────────────────────
+  {
+    id: 'lung-lobes', title: 'Lobes of the Lungs', viewBox: '0 0 240 240',
+    art: [
+      { type: 'ellipse', cx: 70, cy: 130, rx: 48, ry: 92, fill: '#DCEFF5', stroke: STROKE, strokeWidth: 2, draw: true },
+      { type: 'ellipse', cx: 170, cy: 130, rx: 46, ry: 92, fill: '#DCEFF5', stroke: STROKE, strokeWidth: 2 },
+      { type: 'line', x1: 26, y1: 104, x2: 112, y2: 100, stroke: STROKE, strokeWidth: 1.5, opacity: 0.6 },
+      { type: 'line', x1: 30, y1: 152, x2: 112, y2: 150, stroke: STROKE, strokeWidth: 1.5, opacity: 0.6 },
+      { type: 'line', x1: 128, y1: 110, x2: 214, y2: 150, stroke: STROKE, strokeWidth: 1.5, opacity: 0.6 },
+    ],
+    hotspots: [
+      { id: 'rul', label: 'Right upper', shape: 'circle', cx: 70, cy: 78, r: 16 },
+      { id: 'rml', label: 'Right middle', shape: 'circle', cx: 72, cy: 126, r: 14 },
+      { id: 'rll', label: 'Right lower', shape: 'circle', cx: 70, cy: 178, r: 16 },
+      { id: 'lul', label: 'Left upper', shape: 'circle', cx: 170, cy: 96, r: 16 },
+      { id: 'lll', label: 'Left lower', shape: 'circle', cx: 172, cy: 172, r: 16 },
+    ],
+    prompts: [
+      { id: 'q1', ask: "Tap the RIGHT UPPER lobe (patient's right)", answer: 'rul', exp: 'The right lung has 3 lobes. (Patient’s right = your left.)' },
+      { id: 'q2', ask: 'Tap the RIGHT MIDDLE lobe', answer: 'rml', exp: 'Only the right lung has a middle lobe.' },
+      { id: 'q3', ask: 'Tap the RIGHT LOWER lobe', answer: 'rll', exp: 'Lower lobe of the 3-lobed right lung.' },
+      { id: 'q4', ask: 'Tap the LEFT UPPER lobe', answer: 'lul', exp: 'The left lung has only 2 lobes (the heart takes the space).' },
+      { id: 'q5', ask: 'Tap the LEFT LOWER lobe', answer: 'lll', exp: 'Lower lobe of the 2-lobed left lung.' },
+    ],
+  },
 ];
