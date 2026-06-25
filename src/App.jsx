@@ -63,7 +63,7 @@ import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
-import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure } from './lib/economy.js';
+import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -3045,6 +3045,16 @@ export default function App() {
     return awarded;
   }, []);
 
+  // PHIL-01 — Alignment Quest: take it on (bank baseline + launch practice), and
+  // claim the coin bonus once the weakest circle has measurably improved.
+  const startAlignmentQuest = useCallback((key, base) => {
+    setData(prev => ({ ...prev, ikigaiQuest: { key, base: base || 0, ts: Date.now() } }));
+    navigate({ screen: 'quick-setup' });
+  }, []);
+  const claimAlignmentQuest = useCallback((bonus) => {
+    setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, bonus || 0), ikigaiQuest: null }));
+  }, []);
+
   // PHIL-02 — Code Blue resolved: restore 1 Heart (capped). Future-safe while
   // Hearts stay at max; meaningful once the Accuracy Wallet drains them.
   const onCodeBlueResolved = useCallback(() => {
@@ -4286,7 +4296,10 @@ export default function App() {
       {nav.screen === 'ikigai' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <IkigaiScreen onBack={goHome}
-                      onStartQuick={() => navigate({ screen: 'quick-setup' })} />
+                      onStartQuick={() => navigate({ screen: 'quick-setup' })}
+                      ikigaiQuest={data && data.ikigaiQuest}
+                      onStartQuest={startAlignmentQuest}
+                      onClaimQuest={claimAlignmentQuest} />
         </Suspense>
       )}
 

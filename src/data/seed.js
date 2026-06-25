@@ -730,6 +730,8 @@ export const DEFAULT_DATA = {
     flashpointPoints: 0  // Flashpoint — lifetime 2× points; ranks the Flashpoint leaderboard
   },
   advancedTestHistory: [],
+  // PHIL-01 — active Alignment Quest, or null. { key, base, ts }.
+  ikigaiQuest: null,
   // Phase 3 — light, non-monetary in-app economy (Accuracy Coins + Clinical
   // Hearts). Pure motivation; no paywall. See lib/economy.js.
   economy: { coins: 0, hearts: 5, heartsTs: 0, whyClaimed: [] },

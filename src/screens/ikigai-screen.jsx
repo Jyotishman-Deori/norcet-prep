@@ -4,12 +4,18 @@
 // drift together as you practise; balance them all to reach "Ikigai Master".
 // An Alignment nudge points you at your weakest circle with a real action.
 // =====================================================================
-import React, { useMemo } from 'react';
-import { Sparkles, ArrowRight, Compass } from 'lucide-react';
+import React, { useMemo, useEffect, useState } from 'react';
+import { Sparkles, ArrowRight, Compass, Coins, PartyPopper } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import IkigaiCompass from '../ui/ikigai-compass.jsx';
 import { computeIkigai, IKIGAI_DIMENSIONS } from '../lib/ikigai.js';
+
+// PHIL-01 — completing an Alignment Quest (the weakest circle measurably
+// improves after you took it on) rewards a coin bonus: facing your weakness
+// has the highest value. 2× the Why-Bonus, in spirit.
+export const ALIGNMENT_QUEST_BONUS = 100;
+const QUEST_IMPROVE_EPS = 0.02;
 
 // Per-dimension one-liner for the Alignment nudge (what to actually do).
 const ALIGN_COPY = {
@@ -39,11 +45,30 @@ function Dim({ d, score, sub, T }) {
   );
 }
 
-function IkigaiScreen({ onBack, onStartQuick }) {
+function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, onClaimQuest }) {
   const { theme: T, isDark } = useTheme();
   const { data, allQuestions } = useData();
   const ik = useMemo(() => computeIkigai(data, allQuestions), [data, allQuestions]);
   const { scores, overall, master, weakest, detail, hasData } = ik;
+
+  // Alignment Quest lifecycle. A quest is "taken on" against the weakest circle
+  // (baseline score banked). When that circle has measurably improved on a later
+  // visit, the quest is complete → claim the bonus + celebrate (once).
+  const [questDone, setQuestDone] = useState(false);
+  const activeQuest = ikigaiQuest && IKIGAI_DIMENSIONS.find(d => d.key === ikigaiQuest.key);
+  useEffect(() => {
+    if (!ikigaiQuest || !onClaimQuest) return;
+    const cur = scores[ikigaiQuest.key];
+    if (typeof cur === 'number' && cur >= (ikigaiQuest.base || 0) + QUEST_IMPROVE_EPS) {
+      onClaimQuest(ALIGNMENT_QUEST_BONUS);
+      setQuestDone(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ikigaiQuest && ikigaiQuest.key]);
+  const startQuest = () => {
+    if (onStartQuest && weakest) onStartQuest(weakest.key, scores[weakest.key]);
+    else if (onStartQuick) onStartQuick();
+  };
 
   const overallPct = Math.round(overall * 100);
   const verdict = master ? 'Ikigai Master — every circle aligned.'
@@ -82,20 +107,49 @@ function IkigaiScreen({ onBack, onStartQuick }) {
           <div className="text-[13px] leading-relaxed max-w-xs mx-auto" style={{ color: T.inkSoft }}>{verdict}</div>
         </div>
 
+        {/* Quest COMPLETE — the bonus just landed. */}
+        {questDone && (
+          <Card className="p-4 mb-5 anim-fadeup" style={{ background: 'linear-gradient(180deg, #F59E0B16, transparent)', border: '1px solid #F59E0B55' }}>
+            <div className="flex items-center gap-2 mb-1">
+              <PartyPopper size={16} style={{ color: '#B45309' }} />
+              <div className="font-display text-sm font-semibold" style={{ color: '#B45309' }}>Alignment quest complete!</div>
+            </div>
+            <div className="text-[13px] leading-relaxed mb-2" style={{ color: T.inkSoft }}>
+              You faced your weakest circle and pulled it toward centre. That's the highest-value work there is.
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-[13px] font-bold px-2.5 py-1 rounded-full"
+                 style={{ background: '#F59E0B22', color: '#B45309' }}>
+              <Coins size={13} /> +{ALIGNMENT_QUEST_BONUS} Coins
+            </div>
+          </Card>
+        )}
+
         {/* Alignment nudge — point at the weakest circle with a real action */}
-        {weakest && !master && (
+        {weakest && !master && !questDone && (
           <Card className="p-4 mb-5" style={{ background: `linear-gradient(180deg, ${weakest.color}12, transparent)`, border: `1px solid ${weakest.color}40` }}>
             <div className="flex items-center gap-2 mb-1.5">
               <Sparkles size={15} style={{ color: weakest.color }} />
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold" style={{ color: weakest.color }}>Alignment quest</div>
             </div>
-            <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>
-              Your <b style={{ color: T.ink }}>{weakest.short}</b> circle is furthest out. {ALIGN_COPY[weakest.key]}
-            </div>
-            {onStartQuick && (
-              <Button onClick={onStartQuick} size="md" className="w-full" icon={<ArrowRight size={15} />}>
-                Pull it back to centre
-              </Button>
+            {activeQuest && activeQuest.key === weakest.key ? (
+              <>
+                <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>
+                  Quest active on <b style={{ color: T.ink }}>{activeQuest.short}</b>. Keep practising — lift this circle and the <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coin</b> bonus is yours.
+                </div>
+                <Button onClick={startQuest} size="md" className="w-full" icon={<ArrowRight size={15} />}>
+                  Continue the quest
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>
+                  Your <b style={{ color: T.ink }}>{weakest.short}</b> circle is furthest out. {ALIGN_COPY[weakest.key]}
+                  {' '}Take the quest — lift it and earn <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coins</b>.
+                </div>
+                <Button onClick={startQuest} size="md" className="w-full" icon={<ArrowRight size={15} />}>
+                  Take the quest
+                </Button>
+              </>
             )}
           </Card>
         )}
