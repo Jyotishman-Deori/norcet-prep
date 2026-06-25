@@ -156,6 +156,8 @@ import SkillSequence from './screens/skill-sequence.jsx';
 import SkillSetup from './screens/SkillSetup.jsx';
 // NEW-10 (Module D) — ICU Monitor rhythm-recognition drill (setup + drill inline).
 import IcuMonitor from './screens/icu-monitor.jsx';
+// NEW-10 (Module C) — Crash Cart emergency-drug drill (setup + drill inline).
+import CrashCart from './screens/crash-cart.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -921,7 +923,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4367,6 +4369,15 @@ export default function App() {
                       if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                       goHomeDirect();
                     }} />
+      )}
+
+      {/* NEW-10 (Module C) — Crash Cart: pick the emergency drug. */}
+      {nav.screen === 'crash-cart' && (
+        <CrashCart onBack={goHome} onSetPace={setPace}
+                   onComplete={(coins) => {
+                     if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
+                     goHomeDirect();
+                   }} />
       )}
 
       {nav.screen === 'advanced-setup' && (

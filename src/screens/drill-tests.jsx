@@ -16,7 +16,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
@@ -162,6 +162,28 @@ function DrillTests({ onBack, onNavigate }) {
                 <div className="text-xs" style={{ color: '#7FA89C' }}>Read the rhythm · earn coins</div>
               </div>
               <ChevronRight size={20} color="rgba(127,168,156,0.8)" />
+            </div>
+          </Card>
+          </Tip>
+        </Reveal>
+
+        {/* Crash Cart — emergency-drug drill (NEW) */}
+        <Reveal delay={142}>
+          <Tip title="Crash Cart" text="A patient is crashing — read the vignette and grab the right emergency drug & dose off the trolley (ACLS, anaphylaxis, hyperkalaemia, eclampsia and more), with the why after each.">
+          <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('crash-cart')}
+                style={{ background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)', border: 'none', boxShadow: '0 6px 18px rgba(127,29,29,0.3)' }}>
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                <Syringe size={22} color="#FFF" />
+              </div>
+              <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold">Crash Cart</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.22)' }}>New</span>
+                </div>
+                <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Pick the right drug · earn coins</div>
+              </div>
+              <ChevronRight size={20} color="rgba(255,255,255,0.8)" />
             </div>
           </Card>
           </Tip>
