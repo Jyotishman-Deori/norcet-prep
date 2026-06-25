@@ -43,6 +43,7 @@ export const FAV_SECTIONS = [
   { id: 'previous-papers', label: 'Previous Papers',     blurb: 'Official NORCET PYQs',              icon: 'scroll',   hue: '#E67700' },
   { id: 'revision-sheet',  label: 'Revision',            blurb: 'High-yield digest + crib sheets',   icon: 'file',     hue: '#A61E4D' },
   { id: 'study-methods',   label: 'Study Methods',       blurb: 'How to study smarter',              icon: 'grad',     hue: '#1971C2' },
+  { id: 'ikigai',          label: 'Ikigai Compass',      blurb: 'Your 4-circle readiness map',       icon: 'compass',  hue: '#9333EA' },
   { id: 'stats',           label: 'Your Stats',          blurb: 'Accuracy, streaks, trends',         icon: 'chart',    hue: '#6741D9' },
   { id: 'leaderboard',     label: 'Leaderboard',         blurb: 'Where you rank this week',          icon: 'trophy',   hue: '#F08C00' },
   { id: 'bookmarks-view',  label: 'Bookmarks',           blurb: 'Questions you saved',               icon: 'bookmark', hue: '#D6336C' },

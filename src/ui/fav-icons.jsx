@@ -7,7 +7,7 @@
 // =====================================================================
 import React from 'react';
 import {
-  BarChart3, Bookmark, BookOpen, FileText, FlaskConical, Flag, GraduationCap,
+  BarChart3, Bookmark, BookOpen, Compass, FileText, FlaskConical, Flag, GraduationCap,
   HelpCircle, Layers, MapPin, ScrollText, Sigma, Syringe, Target, Timer,
   Trophy, Zap,
 } from 'lucide-react';
@@ -17,7 +17,7 @@ const ICONS = {
   syringe: Syringe, scroll: ScrollText, grad: GraduationCap,
   chart: BarChart3, trophy: Trophy, bookmark: Bookmark, flag: Flag,
   layers: Layers, help: HelpCircle, sigma: Sigma, mappin: MapPin,
-  book: BookOpen, file: FileText,
+  book: BookOpen, file: FileText, compass: Compass,
 };
 
 export function FavIcon({ name, size = 18, color = '#FFF' }) {
