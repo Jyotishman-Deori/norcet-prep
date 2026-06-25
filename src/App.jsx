@@ -153,6 +153,7 @@ import DosageSetup from './screens/DosageSetup.jsx';
 import DrillSettings from './screens/drill-settings.jsx';
 import { drillFeatureOn } from './lib/drill-settings.js';
 import SkillSequence from './screens/skill-sequence.jsx';
+import SkillSetup from './screens/SkillSetup.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -4341,10 +4342,15 @@ export default function App() {
         <DrillSettings onBack={goHome} />
       )}
 
-      {/* NEW-10 (Module B) — Clinical Skill Sequence drill. Correct sequences
-          earn Accuracy Coins via the existing economy. */}
+      {/* NEW-10 (Module B) — Clinical Skill Sequence drill. Setup gate (count +
+          Pace) → the drill; correct sequences earn Accuracy Coins. */}
+      {nav.screen === 'skill-setup' && (
+        <SkillSetup onStart={({ count }) => setNav({ screen: 'skill-drill', count })}
+                    onBack={goHome} onSetPace={setPace} />
+      )}
+
       {nav.screen === 'skill-drill' && (
-        <SkillSequence onBack={goHome}
+        <SkillSequence onBack={goHome} count={nav.count || 5}
                        onComplete={(coins) => {
                          if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
                          goHomeDirect();

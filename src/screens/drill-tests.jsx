@@ -120,7 +120,7 @@ function DrillTests({ onBack, onNavigate }) {
         {/* Clinical Skill Drill — interactive procedure sequencing (NEW) */}
         <Reveal delay={120}>
           <Tip title="Clinical Skill Drill" text="Tap clinical procedure steps into the correct order — PPE donning, BLS, tracheostomy suctioning and more — with the rationale after each.">
-          <Card className="p-4 mb-3 relative" onClick={() => go('skill-drill')}
+          <Card className="p-4 mb-3 relative" onClick={() => go('skill-setup')}
                 style={{ background: '#0E7490', border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
