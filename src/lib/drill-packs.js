@@ -18,7 +18,7 @@ export const PACK_KINDS = {
   'ecg-rhythms': { label: 'ICU Monitor (ECG rhythms)', screen: 'icu-monitor' },
 };
 
-const ECG_WAVEFORMS = ['sinus', 'afib', 'flutter', 'vt', 'vf', 'asystole'];
+const ECG_WAVEFORMS = ['sinus', 'afib', 'flutter', 'vt', 'vf', 'asystole', 'wenckebach', 'mobitz2', 'pvc', 'bigeminy', 'paced', 'chb', 'torsades'];
 
 export const newPackId = () => `pk-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
