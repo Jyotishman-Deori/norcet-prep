@@ -6,7 +6,7 @@
 // blob under preferences.drillCoaching = { [key]: false } (only OFF is written;
 // absent ⇒ ON).
 // =====================================================================
-export const DRILL_FEATURE_KEYS = ['vitalsCheck', 'codeBlue', 'ghostShift'];
+export const DRILL_FEATURE_KEYS = ['vitalsCheck', 'codeBlue', 'ghostShift', 'whatIf'];
 
 // Default ON: a feature is OFF only when explicitly set to false.
 export function drillFeatureOn(prefs, key) {
