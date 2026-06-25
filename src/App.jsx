@@ -4314,7 +4314,7 @@ export default function App() {
       )}
 
       {nav.screen === 'drill-settings' && (
-        <DrillSettings onBack={() => handleHomeNavigate({ screen: 'drill-tests' })} />
+        <DrillSettings onBack={goHome} />
       )}
 
       {nav.screen === 'advanced-setup' && (
