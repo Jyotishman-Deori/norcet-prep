@@ -28,6 +28,7 @@ import { isPYQ } from '../lib/pyq.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
 import GhostShiftCard from '../ui/ghost-shift-card.jsx';
+import WhatIfCard from '../ui/what-if-card.jsx';
 
 // CBT question-palette colour for "marked for review" — a distinct premium
 // violet, separate from answered (green) / current (primary) / unanswered.
@@ -730,6 +731,10 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
         {/* PHIL-04 — The Ghost Shift: you vs your ~2-weeks-ago self. Only on the
             random-pool Advanced mock (history passed); hidden on paper results. */}
         <GhostShiftCard history={advancedTestHistory} />
+
+        {/* NEW-07.1 — Negative-marking what-if simulator (1/3 penalty modes only). */}
+        <WhatIfCard correct={summary.correct} wrong={summary.wrong} blank={summary.blank}
+                    count={questions.length} netScore={summary.netScore} className="mb-5" />
 
         {summary.topicArr.length > 0 && (
           <Card className="p-4 mb-5">
