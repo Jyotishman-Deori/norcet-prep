@@ -9,6 +9,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit3, Trash2, Save, X, MessageCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
+import AdminEmpty from './admin-empty.jsx';
 import { listFaqs, createFaq, updateFaq, deleteFaq } from '../lib/faq.js';
 
 const blank = { id: null, question: '', answer: '', category: '', order: '' };
@@ -127,10 +128,10 @@ export default function AdminFaqManager({ onBack }) {
         {faqs === null ? (
           <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
         ) : faqs.length === 0 ? (
-          <Card className="p-8 text-center">
-            <MessageCircle size={26} className="mx-auto mb-2" style={{ color: T.muted }} />
-            <div className="text-sm" style={{ color: T.muted }}>No FAQs yet. Add your first one above — it appears instantly in the FAQ screen for everyone.</div>
-          </Card>
+          <AdminEmpty icon={MessageCircle} accent={T.primary}
+            title="No FAQs yet"
+            what="The questions and answers shown on the public FAQ screen. You author them here; lower order numbers appear first."
+            when="Tap “Add a FAQ” above — it appears instantly in the FAQ screen for everyone." />
         ) : (
           <div className="space-y-2.5">
             {faqs.map(f => (
