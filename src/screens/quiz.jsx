@@ -70,7 +70,7 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false, flashpoint = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const [index, setIndex] = useState(0);
@@ -500,7 +500,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         {/* NEW-03 "The Pulse" — opt-in per-question countdown. Non-enforcing;
             freezes the instant the answer is locked in, resets each question. */}
         {pulse && PULSE_MODES.includes(mode) && (
-          <PulseTimer budgetSec={questionBudgetSec(q.topic)} resetKey={q.id}
+          <PulseTimer budgetSec={questionBudgetSec(q.topic, { flashpoint, difficulty: q.difficulty })}
+                      resetKey={q.id} flashpoint={flashpoint}
                       paused={submitted || revealed} T={T} />
         )}
 

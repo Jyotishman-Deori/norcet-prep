@@ -79,15 +79,43 @@ export function topperTargetForTopic(topicId) {
   return pacingTierForTopic(topicId).topper;
 }
 
-// NEW-03 "The Pulse" — per-question time budget for the dramatic countdown bar.
-// Uses the TYPICAL-candidate average band (mid-point) for the topic so the bar
-// is topic-aware: tight & thrilling on quick GK recalls, a touch more breathing
-// room on heavy clinical reasoning. Purely a pacing-pressure visual — never
-// enforces or penalises. Clamped to a sane [25s, 90s] window.
-export function questionBudgetSec(topicId) {
-  const [lo, hi] = pacingTierForTopic(topicId).avg;
-  const mid = Math.round((lo + hi) / 2);
-  return Math.max(25, Math.min(90, mid));
+// NEW-03 "The Pulse" + "Flashpoint" — per-CATEGORY per-question time budgets.
+//
+// FLASHPOINT_SEC is the intense, "fingers ready" tier (timers cut in half).
+// Recall-heavy categories get the least time; calculation the most. Normal
+// Pulse = 2× Flashpoint (tense but fair) and is nudged by question difficulty so
+// a genuinely hard / deep-thinking item earns more time and an easy recall less.
+// These replace the older average-band budget, which felt too generous.
+//
+// Category → seconds (FLASHPOINT tier). Topics not in the table fall back to 15s.
+//   gk·anat·ch·micro      10s   (recall: GK, Anatomy, CHN, Microbiology)
+//   pharm·nutr            15s   (applied recall: Pharmacology, Nutrition)
+//   msn·obg·peds·fund·mhn 20s   (clinical reasoning)
+//   apt                   30s   (Aptitude / Math — calculation)
+export const FLASHPOINT_SEC = {
+  gk: 10, anat: 10, ch: 10, micro: 10,
+  pharm: 15, nutr: 15,
+  msn: 20, obg: 20, peds: 20, fund: 20, mhn: 20,
+  apt: 30,
+};
+const FLASHPOINT_DEFAULT = 15;
+
+// Difficulty multiplier for NORMAL pulse only (Flashpoint timers stay fixed).
+// Hard = more thinking time; easy = less. Unknown difficulty → neutral (1.0).
+const DIFFICULTY_FACTOR = { easy: 0.8, medium: 1, moderate: 1, hard: 1.3 };
+
+// Flashpoint (halved) budget for a topic — fixed, the "make time matter" tier.
+export function flashpointBudgetSec(topicId) {
+  return FLASHPOINT_SEC[topicId] || FLASHPOINT_DEFAULT;
+}
+
+// Per-question budget. opts.flashpoint → the fixed Flashpoint tier; otherwise
+// the normal pulse tier (2× Flashpoint) nudged by opts.difficulty. Sane floor.
+export function questionBudgetSec(topicId, opts = {}) {
+  const base = flashpointBudgetSec(topicId);
+  if (opts && opts.flashpoint) return base;
+  const factor = (opts && DIFFICULTY_FACTOR[opts.difficulty]) || 1;
+  return Math.max(8, Math.round(base * 2 * factor));
 }
 
 // ── Context the engine assumes (notes, not code) ─────────────────────
