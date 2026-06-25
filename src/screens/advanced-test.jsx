@@ -29,6 +29,10 @@ import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
 import GhostShiftCard from '../ui/ghost-shift-card.jsx';
 
+// CBT question-palette colour for "marked for review" — a distinct premium
+// violet, separate from answered (green) / current (primary) / unanswered.
+const PALETTE_MARKED = '#7C3AED';
+
 function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [count, setCount] = useState(100);
@@ -393,11 +397,17 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             <Hourglass size={14} />
             {fmtTime(timeRemaining)}
           </div>
-          <button onClick={() => setPaletteOpen(true)}
-                  className="no-tap-highlight flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
-                  style={{ background: T.primary, color: '#FFF' }}>
+          <button onClick={() => setPaletteOpen(true)} aria-label="Open question palette"
+                  className="no-tap-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition"
+                  style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}55` }}>
             <LayoutGrid size={14} />
             {index + 1}/{questions.length}
+            {markedCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+                    style={{ background: PALETTE_MARKED, color: '#FFF', border: `1.5px solid ${T.bg}` }}>
+                {markedCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -422,7 +432,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             {/* P16 — provenance badge (Advanced test + previous-paper mocks) */}
             <PyqBadge q={q} />
             <HighYieldBadge q={q} />
-            {isMarked && <Pill bg={T.accent + '20'} color={T.accent}><Flag size={10} />Marked</Pill>}
+            {isMarked && <Pill bg={PALETTE_MARKED + '20'} color={PALETTE_MARKED}><Flag size={10} />Marked</Pill>}
           </div>
           {onToggleBookmark && (
             <Tip text={isBookmarked ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
@@ -479,11 +489,11 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 
         <div className="flex gap-2">
           <button onClick={toggleMark}
-                  className="no-tap-highlight flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5"
-                  style={{ background: isMarked ? T.accent + '15' : T.surface,
-                           border: `1px solid ${isMarked ? T.accent : T.border}`,
-                           color: isMarked ? T.accent : T.inkSoft }}>
-            <Flag size={12} />
+                  className="no-tap-highlight flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+                  style={{ background: isMarked ? PALETTE_MARKED + '15' : T.surface,
+                           border: `1px solid ${isMarked ? PALETTE_MARKED : T.border}`,
+                           color: isMarked ? PALETTE_MARKED : T.inkSoft }}>
+            <Flag size={12} fill={isMarked ? PALETTE_MARKED : 'none'} />
             {isMarked ? 'Unmark' : 'Mark for review'}
           </button>
           <button onClick={clearAnswer} disabled={selected.length === 0}
@@ -526,9 +536,9 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               </div>
               <div className="grid grid-cols-2 gap-y-1.5 gap-x-3 text-xs" style={{ color: T.inkSoft }}>
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.success }} />Answered <span style={{ color: T.muted }}>({answeredCount})</span></div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.border }} />Blank <span style={{ color: T.muted }}>({blankCount})</span></div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.surface, boxShadow: `0 0 0 2px ${T.accent}` }} />Marked <span style={{ color: T.muted }}>({markedCount})</span></div>
-                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.primary }} />Current</div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.error + '1F', border: `1.5px solid ${T.error}66` }} />Not answered <span style={{ color: T.muted }}>({blankCount})</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: PALETTE_MARKED }} />Marked <span style={{ color: T.muted }}>({markedCount})</span></div>
+                <div className="flex items-center gap-2"><span className="w-3 h-3 rounded" style={{ background: T.surface, boxShadow: `0 0 0 2px ${T.primary}` }} />Current</div>
               </div>
             </div>
             <div className="p-4">
@@ -537,15 +547,25 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
                   const ans = answers[qq.id] && answers[qq.id].length > 0;
                   const mk = !!marked[qq.id];
                   const isCurrent = i === index;
-                  let bg = T.border, textColor = T.muted;
-                  if (ans) { bg = T.success; textColor = '#FFF'; }
-                  if (isCurrent) { bg = T.primary; textColor = '#FFF'; }
+                  // Marked (violet) wins the fill; else answered (green) / not
+                  // answered (soft red). Current adds a primary ring + lift.
+                  let bg, textColor;
+                  if (mk) { bg = PALETTE_MARKED; textColor = '#FFF'; }
+                  else if (ans) { bg = T.success; textColor = '#FFF'; }
+                  else { bg = T.error + '14'; textColor = T.error; }
                   return (
                     <button key={qq.id} onClick={() => goTo(i)}
-                            className="no-tap-highlight w-full aspect-square rounded-lg text-sm font-semibold active:scale-95 transition-all"
+                            className="no-tap-highlight relative w-full aspect-square rounded-lg text-sm font-semibold active:scale-90 transition-transform seq-item"
                             style={{ background: bg, color: textColor,
-                                     boxShadow: mk ? `0 0 0 2px ${T.accent}` : 'none' }}>
+                                     animationDelay: `${Math.min(i, 24) * 16}ms`,
+                                     boxShadow: isCurrent ? `0 0 0 2.5px ${T.primary}, 0 4px 12px ${T.primary}44` : 'none',
+                                     border: (!mk && !ans) ? `1px solid ${T.error}3A` : 'none' }}>
                       {i + 1}
+                      {/* answered AND marked → small green corner dot */}
+                      {mk && ans && (
+                        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
+                              style={{ background: T.success, border: `1.5px solid ${T.bg}` }} />
+                      )}
                     </button>
                   );
                 })}
