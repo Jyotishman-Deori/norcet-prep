@@ -10,7 +10,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
-import { useTheme, useData } from '../lib/app-context.jsx';
+import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
+import { loadFavs } from '../lib/favorites.js';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
 // #13 — live Knowledge Map summary on the Home card (same state math as the map).
@@ -85,6 +86,21 @@ function AllCaughtUpCard() {
 function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
+  const { profile } = useProfile();
+  const profileId = (profile && profile.id) || 'guest';
+
+  // Is the Favourites section turned on? When it is, the desktop dashboard
+  // rebalances (weak-area/syllabus drops into the left column so Favourites can
+  // lead the right column, aligned with the stats row). Mirrors FavStrip's own
+  // source (loadFavs + the 'norcet:favs' event) so the two never disagree.
+  const [favEnabled, setFavEnabled] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    loadFavs(profileId).then(f => { if (alive) setFavEnabled(!!(f && f.enabled)); }).catch(() => {});
+    const onFavs = (e) => { if (e && e.detail) setFavEnabled(!!e.detail.enabled); };
+    window.addEventListener('norcet:favs', onFavs);
+    return () => { alive = false; window.removeEventListener('norcet:favs', onFavs); };
+  }, [profileId]);
 
   // Issue 6 — the top bar (Menu / notifications / settings) is a FIXED bar that
   // hides as you scroll down and slides back in the moment you scroll up, so it's
@@ -927,11 +943,15 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* Focus row (weak area / syllabus) — on MOBILE it stays here, in its
-          original position between Review and the exam countdown. On desktop
-          it's hidden here and instead leads the right actions column (below),
-          directly above Drill Tests. Same computed `focusRow`, shown once. */}
+      {/* Focus row (weak area / syllabus). On MOBILE it always sits here (between
+          Review and the exam countdown). On DESKTOP its column depends on whether
+          Favourites is on:
+            • Favourites ON  → it stays in THIS (left) column, so Favourites can
+              lead the right column, aligned with the stats row.
+            • Favourites OFF → it leads the right actions column instead (below).
+          Same computed `focusRow`; exactly one copy is ever visible. */}
       {focusRow && <div className="md:hidden">{focusRow}</div>}
+      {focusRow && favEnabled && <div className="hidden md:block">{focusRow}</div>}
 
       {/* Exam countdown — the "set a date" entry point now lives in the
           slide-in menu (Tools). The dashboard only shows the countdown once a
@@ -1031,13 +1051,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       </div>{/* /status column */}
       <div className="contents md:block md:col-span-6 lg:col-span-7">
 
-      {/* Focus row on DESKTOP leads the actions column, directly above
-          Favourites + Drill Tests (hidden on mobile, where it renders up in the
-          status column). */}
-      {focusRow && <div className="hidden md:block">{focusRow}</div>}
+      {/* Focus row leads the right actions column on DESKTOP **only when
+          Favourites is OFF**. When Favourites is on it moves to the left column
+          (above) so Favourites can lead here instead — keeping the two columns
+          balanced and aligning Favourites with the stats row. */}
+      {focusRow && !favEnabled && <div className="hidden md:block">{focusRow}</div>}
 
-      {/* FAV on DESKTOP — directly below the weak-area/syllabus row and above
-          Drill Tests, as requested. Renders nothing unless Favourites is on. */}
+      {/* FAV on DESKTOP leads the right actions column (top), aligned with the
+          stats row on the left. Renders nothing unless Favourites is on. */}
       <div className="hidden md:block"><FavStrip onNavigate={onNavigate} /></div>
 
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
