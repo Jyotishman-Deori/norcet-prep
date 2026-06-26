@@ -206,8 +206,10 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
   return (
     <>
       {target ? createPortal(bar, target) : bar}
-      {/* spacer — same height as the fixed bar (row ≈ 60px) + the safe area */}
-      <div aria-hidden="true" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
+      {/* spacer — clears the fixed bar (row ≈ 61px: back button 36px + py-3) with
+          a few px of premium breathing room, so content on every screen sits
+          comfortably below the bar regardless of its own top padding. */}
+      <div aria-hidden="true" style={{ height: 'calc(64px + env(safe-area-inset-top, 0px))' }} />
     </>
   );
 }

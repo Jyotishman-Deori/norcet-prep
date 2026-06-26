@@ -522,8 +522,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </div>,
         document.body
       )}
-      {/* spacer reserving the fixed bar's height (row ≈ 52px + the safe area) */}
-      <div aria-hidden="true" style={{ height: 'calc(52px + env(safe-area-inset-top, 0px))' }} />
+      {/* spacer reserving the fixed bar's REAL height. The bar row is ≈ 59px
+          (Menu button 38px + py-2.5), so the old 52px spacer let the first line
+          (the "NORCET prep" eyebrow) tuck under the bar. 60px clears it on every
+          device; the masthead adds extra top air on desktop below. */}
+      <div aria-hidden="true" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
 
       {/* Notification banners — width-capped on desktop so they read as
           intentional cards instead of full-bleed strips. */}
@@ -670,7 +673,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       <div className="mb-2 lg:mb-6">
 
       {/* Greeting */}
-      <div className="mb-6 mt-2 lg:mt-0">
+      <div className="mb-6 mt-2 lg:mt-4">
         <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NORCET prep</div>
         <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
           Good {timeOfDay}{userName ? `, ${userName}` : ''}
