@@ -12,6 +12,7 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import WhereYouStandCard from '../ui/where-you-stand-card.jsx';
 import CalibrationCard from '../ui/calibration-card.jsx';
 import { calibrationFromItems } from '../lib/calibration.js';
@@ -274,7 +275,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
   return (
     <div className="anim-fadeup">
       <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <PageContainer size="content" className="pb-24 pt-2">
 
         {/* #1 — Where you stand: real marks (Advanced Test) OR an estimate from
             everyday practice, on the official ladder. Estimate = accuracy with
@@ -341,11 +342,13 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
           </Card>
         </div>
 
-        {/* #4 — lifetime confidence calibration */}
-        <CalibrationCard cal={calibration} title="Calibration" subtitle="How often you're right at each confidence level" />
-
-        {/* #5 — lifetime pacing by topic */}
-        <PacingCard entries={pacingEntries} title="Pacing" subtitle="Average time per question, by topic" />
+        {/* #4/#5 — lifetime confidence calibration + pacing. Two analysis cards
+            of similar weight; on desktop they sit side-by-side (mobile stacks
+            them exactly as before). */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start lg:mb-5">
+          <CalibrationCard cal={calibration} title="Calibration" subtitle="How often you're right at each confidence level" />
+          <PacingCard entries={pacingEntries} title="Pacing" subtitle="Average time per question, by topic" />
+        </div>
 
         {/* Focus next — the actionable recommendation */}
         <Card className="p-4 mb-5" style={{ background: recColor + '0E', border: `1px solid ${recColor}33` }}>
@@ -442,7 +445,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: T.error }} />{mastery.weak} to work on</span>
             </div>
 
-            <div className="space-y-1">
+            <div className="space-y-1 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-1">
               {sortedTopics.map(t => (
                 <button key={t.id}
                         onClick={() => onPracticeTopic && onPracticeTopic(t.id)}
@@ -622,7 +625,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               </div>
               <div className="font-display text-2xl font-semibold mb-3" style={{ color: T.ink }}>{fmt(overallAvgMs)}</div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2.5">
                 {Object.entries(speedByTopic)
                   .map(([tid, tt]) => ({ tid, name: tt.name, avgMs: avg(tt.times), n: tt.times.length }))
                   .sort((a, b) => b.avgMs - a.avgMs)
@@ -681,7 +684,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
             </button>
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
