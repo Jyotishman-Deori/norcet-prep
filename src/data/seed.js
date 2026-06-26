@@ -741,6 +741,10 @@ export const DEFAULT_DATA = {
   // Phase 3 — light, non-monetary in-app economy (Accuracy Coins + Clinical
   // Hearts). Pure motivation; no paywall. See lib/economy.js.
   economy: { coins: 0, hearts: 5, heartsTs: 0, whyClaimed: [] },
+  // Level Up — permanent XP/level progression over the gamified drills. Pure,
+  // synced, additive (no new currency — Coins/Hearts above stay as-is). See
+  // lib/levelup.js.
+  levelup: { xp: 0, dailyDate: '', dailyXp: 0 },
   // P7 — Previous Year NORCET Papers attempt records, keyed by paper id.
   // Separate from advancedTestHistory (fixed official paper vs random pool).
   // Shape: { [paperId]: { attempts: [{ts,count,correct,wrong,blank,netScore,

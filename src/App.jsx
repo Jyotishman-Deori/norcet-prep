@@ -64,6 +64,7 @@ import { runTopBackHandler } from './lib/back-handler.js';
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
+import { awardXp as awardXpPure } from './lib/levelup.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -918,6 +919,7 @@ function hydrateLoaded(rawData) {
     stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
     advancedTestHistory: migrated.advancedTestHistory || [],
     economy: { ...DEFAULT_DATA.economy, ...(migrated.economy || {}) },
+    levelup: { ...DEFAULT_DATA.levelup, ...(migrated.levelup || {}) },
     bankVersionsSeen: migrated.bankVersionsSeen || {},
     bankPublishedSeen: migrated.bankPublishedSeen || {},
     disabledBanks: migrated.disabledBanks || {},
@@ -3077,6 +3079,21 @@ export default function App() {
     setData(prev => ({ ...prev, economy: restoreHeartsPure(prev && prev.economy, 1) }));
   }, []);
 
+  // Level Up — a gamified drill finished. Award its Accuracy Coins (existing)
+  // AND XP (new, daily-capped) in ONE place, then return home. XP is the coins
+  // earned, so it already scales with how well the round went. Shared by every
+  // game so the XP wiring lives here, not duplicated across 7 call sites.
+  const handleGameComplete = useCallback((coins) => {
+    const gained = Math.max(0, Math.floor(coins || 0));
+    setData(prev => {
+      let next = prev || {};
+      if (gained > 0) next = { ...next, economy: addCoinsPure(next.economy, gained) };
+      const res = awardXpPure(next.levelup, gained, todayStr());
+      return { ...next, levelup: res.levelup };
+    });
+    goHomeDirect();
+  }, [goHomeDirect]);
+
   // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
   // synced blob so packs carry across devices; merged into each drill's pool.
   const installDrillPack = useCallback((pack) => {
@@ -4379,67 +4396,39 @@ export default function App() {
       )}
 
       {nav.screen === 'skill-drill' && (
-        <SkillSequence onBack={goHome} count={nav.count || 5}
-                       onComplete={(coins) => {
-                         if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                         goHomeDirect();
-                       }} />
+        <SkillSequence onBack={goHome} count={nav.count || 5} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-10 (Module D) — ICU Monitor: read the rhythm. Setup gate is inline
           in the screen; correct reads earn Accuracy Coins. */}
       {nav.screen === 'icu-monitor' && (
-        <IcuMonitor onBack={goHome} onSetPace={setPace}
-                    onComplete={(coins) => {
-                      if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                      goHomeDirect();
-                    }} />
+        <IcuMonitor onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-10 (Module C) — Crash Cart: pick the emergency drug. */}
       {nav.screen === 'crash-cart' && (
-        <CrashCart onBack={goHome} onSetPace={setPace}
-                   onComplete={(coins) => {
-                     if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                     goHomeDirect();
-                   }} />
+        <CrashCart onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-10 (Module A) — The Sorter: tap-to-sort into bins. */}
       {nav.screen === 'sorter' && (
-        <SorterDrill onBack={goHome} onSetPace={setPace}
-                     onComplete={(coins) => {
-                       if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                       goHomeDirect();
-                     }} />
+        <SorterDrill onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-05 — Distractor Assassin: eliminate the wrong options (uses the
           existing bank's wrong{} rationales — no new content). */}
       {nav.screen === 'distractor-assassin' && (
-        <DistractorAssassin allQuestions={allQuestions} onBack={goHome} onSetPace={setPace}
-                            onComplete={(coins) => {
-                              if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                              goHomeDirect();
-                            }} />
+        <DistractorAssassin allQuestions={allQuestions} onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-06 — Tie-Breaker: which action comes first. */}
       {nav.screen === 'tie-breaker' && (
-        <TieBreaker onBack={goHome} onSetPace={setPace}
-                    onComplete={(coins) => {
-                      if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-                      goHomeDirect();
-                    }} />
+        <TieBreaker onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-09 — IBQ: tap the structure on a data-driven diagram. */}
       {nav.screen === 'ibq' && (
-        <Ibq onBack={goHome} onSetPace={setPace}
-             onComplete={(coins) => {
-               if (coins > 0) setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, coins) }));
-               goHomeDirect();
-             }} />
+        <Ibq onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* Drill Packs — import / manage / author portable drill content. */}
