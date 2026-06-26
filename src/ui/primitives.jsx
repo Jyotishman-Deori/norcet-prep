@@ -165,7 +165,12 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
     <div className={"fixed top-0 left-0 right-0 z-40" + (solid ? '' : ' backdrop-blur-md')}
          style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
                   paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-      <div className="flex items-center justify-between px-4 py-3 max-w-md mx-auto">
+      {/* Inner content tracks the app content width on PC (matches PageContainer
+          size="app": max-w-5xl + px-8), so the back button aligns to the left
+          edge of the page and the actions to the right edge — a proper app
+          header instead of a tiny 448px island floating mid-screen. Mobile and
+          tablet widths are unchanged. */}
+      <div className="flex items-center justify-between px-4 lg:px-8 py-3 max-w-md md:max-w-2xl lg:max-w-5xl mx-auto">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
             <Tip text="Go back to the previous screen">
@@ -181,7 +186,7 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
               </button>
             </Tip>
           )}
-          <div className="font-display text-lg truncate" style={{ color: T.ink }}>{title}</div>
+          <div className="font-display text-lg lg:text-xl truncate" style={{ color: T.ink }}>{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
           {/* FAV — heart on favoritable sections (registry-gated; renders
