@@ -119,6 +119,16 @@ function Ibq({ onBack, onComplete, onSetPace }) {
             </>
           )}
 
+          <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How it works</div>
+          <div className="rounded-2xl p-3.5 mb-5 space-y-2" style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
+            {['Read the prompt above the diagram', 'Tap the matching structure on the image', 'Correct taps stay pinned — learn the rest'].map((s, i) => (
+              <div key={i} className="flex items-start gap-2.5">
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: CYAN + '18', color: CYAN }}>{i + 1}</span>
+                <span className="text-[12.5px] leading-snug" style={{ color: T.inkSoft }}>{s}</span>
+              </div>
+            ))}
+          </div>
+
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
             With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each prompt gets a countdown — run out and it reveals.
