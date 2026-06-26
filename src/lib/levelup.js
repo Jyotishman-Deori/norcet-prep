@@ -15,6 +15,8 @@
 // later by spending Hearts on entry. See the project plan.
 // =====================================================================
 
+import { FRAME_IDS, normalizeFrame, unownedFrames } from './cosmetics.js';
+
 export const MAX_LEVEL = 100;
 export const DAILY_XP_CAP = 3000;        // anti-grind ceiling per local day
 
@@ -69,7 +71,7 @@ export function nextTier(level) {
 }
 
 export function normalizeLevelup(l) {
-  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [], crates: 0 };
+  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [], crates: 0, cosmetics: [], frame: 'none' };
   if (l && typeof l === 'object') {
     if (Number.isFinite(l.xp)) o.xp = Math.max(0, Math.floor(l.xp));
     if (typeof l.dailyDate === 'string') o.dailyDate = l.dailyDate;
@@ -77,7 +79,18 @@ export function normalizeLevelup(l) {
     if (Number.isFinite(l.dailyGames)) o.dailyGames = Math.max(0, Math.floor(l.dailyGames));
     if (Array.isArray(l.questClaims)) o.questClaims = l.questClaims.filter(x => typeof x === 'string');
     if (Number.isFinite(l.crates)) o.crates = Math.max(0, Math.floor(l.crates));
+    if (Array.isArray(l.cosmetics)) o.cosmetics = l.cosmetics.filter(x => FRAME_IDS.includes(x));
+    if (typeof l.frame === 'string') o.frame = normalizeFrame(l.frame);
   }
+  // Can't have a frame equipped you don't own (defensive).
+  if (o.frame !== 'none' && !o.cosmetics.includes(o.frame)) o.frame = 'none';
+  return o;
+}
+
+// Equip an owned cosmetic frame (or 'none'). Pure.
+export function equipFrame(l, frameId) {
+  const o = normalizeLevelup(l);
+  if (frameId === 'none' || o.cosmetics.includes(frameId)) return { ...o, frame: normalizeFrame(frameId) };
   return o;
 }
 
@@ -193,11 +206,21 @@ export function rollCrate(rng = Math.random) {
 export function openCrate(l, today, rng = Math.random) {
   let o = rolloverDaily(normalizeLevelup(l), today);
   if ((o.crates || 0) <= 0) return { levelup: o, opened: false, reward: null, leveledUp: false };
-  const reward = rollCrate(rng);
+  const rand = () => (typeof rng === 'function' ? rng() : Math.random());
+  const tier = rollCrate(rng);
   const before = progress(o.xp).level;
-  o = { ...o, crates: o.crates - 1, xp: o.xp + (reward.xp || 0) };
+  // rare/epic also drop a cosmetic frame you don't own yet (if any remain).
+  let frame = null;
+  if (tier.id === 'rare' || tier.id === 'epic') {
+    const pool = unownedFrames(o.cosmetics);
+    if (pool.length) {
+      frame = pool[Math.floor(rand() * pool.length)];
+      o = { ...o, cosmetics: [...o.cosmetics, frame] };
+    }
+  }
+  o = { ...o, crates: o.crates - 1, xp: o.xp + (tier.xp || 0) };
   const after = progress(o.xp).level;
-  return { levelup: o, opened: true, reward, leveledUp: after > before, fromLevel: before, toLevel: after };
+  return { levelup: o, opened: true, reward: { ...tier, frame }, leveledUp: after > before, fromLevel: before, toLevel: after };
 }
 
 // How much of today's cap is left (for a subtle "rested" hint in the hub).

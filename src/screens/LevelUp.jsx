@@ -12,13 +12,15 @@ import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
   ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target,
 } from 'lucide-react';
-import { useTheme, useData } from '../lib/app-context.jsx';
+import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import FavHeart from '../ui/fav-heart.jsx';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import CrateReveal from '../ui/crate-reveal.jsx';
+import FramedAvatar from '../ui/framed-avatar.jsx';
+import { frameDef } from '../lib/cosmetics.js';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
@@ -61,10 +63,12 @@ function LevelRing({ level, pct, accent, track }) {
   );
 }
 
-function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate }) {
+function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame }) {
   const { theme: T } = useTheme();
   const { data } = useData();
+  const { profile } = useProfile();
   const [crateOpen, setCrateOpen] = useState(false);
+  const profileName = (profile && profile.displayName) || 'You';
 
   const lu = normalizeLevelup(data && data.levelup);
   const econ = normalizeEconomy(data && data.economy);
@@ -245,6 +249,39 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate }) {
             );
           })}
         </div>
+
+        {/* PROFILE FRAME — equip a cosmetic frame won from Supply Crates. */}
+        <div className="flex items-center gap-2 mt-6 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Profile frame</span>
+          <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
+        </div>
+        <Card className="p-4 mb-2" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
+          <div className="flex items-center gap-3 mb-3">
+            <FramedAvatar initial={profileName} frame={lu.frame} size={52} bg={T.primary + '22'} fg={T.primary} />
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold truncate" style={{ color: T.ink }}>{profileName}</div>
+              <div className="text-[11px]" style={{ color: T.muted }}>
+                {lu.cosmetics.length > 0
+                  ? `${lu.cosmetics.length} frame${lu.cosmetics.length === 1 ? '' : 's'} unlocked · tap to equip`
+                  : 'Win frames from Supply Crates (rare drops)'}
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {['none', ...lu.cosmetics].map(fid => {
+              const active = lu.frame === fid;
+              return (
+                <Tip key={fid} title={frameDef(fid).name} text={fid === 'none' ? 'No frame' : `${frameDef(fid).name} frame`}>
+                  <button onClick={() => onEquipFrame && onEquipFrame(fid)} aria-label={`Equip ${frameDef(fid).name}`}
+                          className="no-tap-highlight rounded-full active:scale-95 transition"
+                          style={{ padding: 2, border: `2px solid ${active ? T.primary : 'transparent'}` }}>
+                    <FramedAvatar initial={profileName} frame={fid} size={34} bg={T.surfaceWarm} fg={T.inkSoft} />
+                  </button>
+                </Tip>
+              );
+            })}
+          </div>
+        </Card>
 
         {/* Drill Packs — import / manage extra content for the games (moved here
             from Drill Tests, since the games it feeds now live in Level Up). */}

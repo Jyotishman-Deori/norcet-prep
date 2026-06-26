@@ -15,6 +15,8 @@ import { createPortal } from 'react-dom';
 import { Coins, Gift, Sparkles } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { CRATE_ODDS } from '../lib/levelup.js';
+import { frameDef } from '../lib/cosmetics.js';
+import FramedAvatar from './framed-avatar.jsx';
 
 const CSS = `
 @keyframes crateFade { from { opacity:0 } to { opacity:1 } }
@@ -128,7 +130,15 @@ export default function CrateReveal({ onOpen, onClose }) {
           <>
             <div className="text-[12px] uppercase tracking-[0.2em] font-bold mb-1.5" style={{ color: 'rgba(255,255,255,0.92)' }}>You got</div>
             <div className="font-display text-2xl font-semibold mb-1" style={{ color: '#FFF' }}>{reward.label}</div>
-            <div className="text-[12.5px] mb-5" style={{ color: 'rgba(255,255,255,0.85)' }}>Added to your balance.</div>
+            {reward.frame && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full mb-1.5" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                <FramedAvatar initial="★" frame={reward.frame} size={26} bg="rgba(255,255,255,0.28)" fg="#FFF" />
+                <span className="text-xs font-bold" style={{ color: '#FFF' }}>New frame: {frameDef(reward.frame).name}!</span>
+              </div>
+            )}
+            <div className="text-[12.5px] mb-5" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              {reward.frame ? 'Equip it in the Profile frame section.' : 'Added to your balance.'}
+            </div>
             <button onClick={onClose}
                     className="no-tap-highlight w-full py-3 rounded-2xl font-semibold active:scale-[0.98] transition"
                     style={{ background: '#FFF', color: tone }}>

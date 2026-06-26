@@ -11,15 +11,19 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight, Zap } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
+import FramedAvatar from '../ui/framed-avatar.jsx';
+import { normalizeLevelup } from '../lib/levelup.js';
 import { loadLeaderboard } from '../lib/leaderboard.js';
 
 function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, attemptedCount = 0, onStartQuiz, myMastered = 0 }) {
   const { theme: T } = useTheme();
+  const { data } = useData();
+  const myFrame = normalizeLevelup(data && data.levelup).frame;
   // Two boards: Normal (week/mastery/streak/accuracy) and Flashpoint (its own
   // 2×-points ranking). `tab === 'flashpoint'` selects the Flashpoint board.
   const [tab, setTab] = useState('week'); // 'week' | 'mastery' | 'streak' | 'accuracy' | 'flashpoint'
@@ -268,10 +272,8 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
                         <div className="w-8 flex-shrink-0 flex items-center justify-center">
                           <span className="text-sm font-semibold tabular-nums" style={{ color: T.muted }}>{i + 4}</span>
                         </div>
-                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 font-display font-bold text-sm"
-                             style={{ background: (me ? T.primary : T.muted) + '22', color: me ? T.primary : T.inkSoft }}>
-                          {(e.displayName || e.id || '?').charAt(0).toUpperCase()}
-                        </div>
+                        <FramedAvatar initial={e.displayName || e.id} frame={me ? myFrame : 'none'} size={32}
+                                      bg={(me ? T.primary : T.muted) + '22'} fg={me ? T.primary : T.inkSoft} />
                         <div className="min-w-0 flex-1">
                           <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: T.ink }}>
                             <span className="truncate">{e.displayName || e.id}{me ? ' (you)' : ''}</span>
