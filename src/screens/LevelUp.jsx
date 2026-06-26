@@ -10,12 +10,13 @@
 import React from 'react';
 import {
   Activity, Badge, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame,
-  ListOrdered, Network, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles,
+  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles,
 } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
+import FavHeart from '../ui/fav-heart.jsx';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, MAX_LEVEL } from '../lib/levelup.js';
 
@@ -160,9 +161,10 @@ function LevelUp({ onBack, onNavigate }) {
             const Icon = g.icon;
             return (
               <Tip key={g.screen} title={g.label} text={`${g.sub} · earn XP and coins`}>
-              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full" onClick={() => onNavigate({ screen: g.screen })}
+              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full relative" onClick={() => onNavigate({ screen: g.screen })}
                     onContextMenu={(e) => e.preventDefault()}
                     style={{ background: `linear-gradient(135deg, ${g.grad[0]}, ${g.grad[1]})`, border: 'none', boxShadow: `0 6px 18px ${g.grad[1]}4D` }}>
+                <span className="absolute top-2 right-2 z-10"><FavHeart favId={g.screen} inline /></span>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                     <Icon size={20} color="#FFF" />
@@ -178,6 +180,16 @@ function LevelUp({ onBack, onNavigate }) {
             );
           })}
         </div>
+
+        {/* Drill Packs — import / manage extra content for the games (moved here
+            from Drill Tests, since the games it feeds now live in Level Up). */}
+        <button onClick={() => onNavigate({ screen: 'drill-packs' })}
+                className="no-tap-highlight w-full flex items-center gap-2.5 mt-5 px-3 py-2.5 rounded-xl active:scale-[0.99] transition"
+                style={{ background: T.surfaceWarm, border: `1px dashed ${T.border}` }}>
+          <Package size={15} style={{ color: T.muted }} />
+          <span className="text-[12.5px] font-medium" style={{ color: T.inkSoft }}>Drill Packs — import &amp; manage extra content</span>
+          <ChevronRight size={16} style={{ color: T.muted }} className="ml-auto" />
+        </button>
 
       </PageContainer>
     </div>
