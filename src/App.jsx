@@ -3066,6 +3066,21 @@ export default function App() {
   const levelupRef = useRef(null);
   levelupRef.current = data && data.levelup;
   const [levelUpCelebration, setLevelUpCelebration] = useState(null);
+
+  // ⚠️ TEMPORARY TEST GRANT — one-time +100,000 Coins per profile so testers
+  // have plenty to spend while we trial the gamification. Fires ONCE per profile
+  // (the `testCoinGrant` flag is synced in the blob and survives migration +
+  // compaction). REVERT FOR LAUNCH: delete this block — already-granted profiles
+  // just keep their coins; nothing re-grants.
+  const TEST_COIN_GRANT_ID = 'gamification-test-100k-v1';
+  const coinGrantRef = useRef(false);
+  useEffect(() => {
+    if (!data || coinGrantRef.current) return;
+    if (data.testCoinGrant === TEST_COIN_GRANT_ID) { coinGrantRef.current = true; return; }
+    coinGrantRef.current = true;
+    setData(prev => ({ ...prev, economy: addCoinsPure(prev && prev.economy, 100000), testCoinGrant: TEST_COIN_GRANT_ID }));
+  }, [data]);
+
   const claimWhyBonus = useCallback((questionId) => {
     const { economy, awarded } = claimWhyBonusPure(economyRef.current, questionId);
     if (awarded) setData(prev => ({ ...prev, economy }));

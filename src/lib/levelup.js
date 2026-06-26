@@ -20,12 +20,17 @@ import { FRAME_IDS, normalizeFrame, unownedFrames } from './cosmetics.js';
 export const MAX_LEVEL = 100;
 export const DAILY_XP_CAP = 3000;        // anti-grind ceiling per local day
 
+// ⚠️ TEMPORARY TEST TOGGLE — faster levelling so the founder can inspect the
+// loop. Scales the XP each level needs: 1 = real curve, 0.2 ≈ 5× faster.
+// REVERT FOR LAUNCH: set XP_REQ_SCALE back to 1.
+const XP_REQ_SCALE = 0.2;
+
 // XP required to advance FROM `level` TO `level+1`. Exponential curve from the
 // spec: fast early levels, ever-steeper climb. Rounded to a tidy integer.
 export function xpToNext(level) {
   const L = Math.max(1, Math.floor(level));
   if (L >= MAX_LEVEL) return Infinity;
-  return Math.round(100 * Math.pow(L, 1.5));
+  return Math.max(10, Math.round(100 * Math.pow(L, 1.5) * XP_REQ_SCALE));
 }
 
 // Resolve a total-XP value into { level, into, span, pct } — `into` = XP earned
