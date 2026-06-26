@@ -11,6 +11,7 @@ import React, { useState, useMemo, useRef } from 'react';
 import { Package, Upload, Download, Check, X, Trash2, FileJson, Sparkles, AlertTriangle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import { PACK_KINDS, validatePack, exportPackJson, sampleTemplate, normalizePacks } from '../lib/drill-packs.js';
 
 function DrillPacks({ data, onBack, onInstall, onToggle, onRemove }) {
@@ -52,7 +53,7 @@ function DrillPacks({ data, onBack, onInstall, onToggle, onRemove }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Drill Packs" onBack={onBack} feedback={{ screen: 'Drill Packs' }} solid />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-28">
+      <PageContainer size="content" className="pt-2 pb-28">
 
         {/* intro */}
         <Card className="p-4 mb-4 flex items-start gap-3" style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
@@ -141,7 +142,7 @@ function DrillPacks({ data, onBack, onInstall, onToggle, onRemove }) {
             })}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
