@@ -361,7 +361,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         : `An admin responded to ${replies.length} of your reports.`);
 
   return (
-    <div className="max-w-md lg:max-w-5xl mx-auto px-4 lg:px-8 pb-24">
+    <div className="max-w-md md:max-w-2xl lg:max-w-5xl mx-auto px-4 lg:px-8 pb-24">
       {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
           scroll-up. Portaled to <body> so no transformed ancestor can ever
           break its position:fixed. GPU-GLITCH FIX: this bar is now OPAQUE (no
@@ -379,7 +379,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
-          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md lg:max-w-5xl mx-auto">
+          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md md:max-w-2xl lg:max-w-5xl mx-auto">
             <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
@@ -419,6 +419,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       )}
       {/* spacer reserving the fixed bar's height (row ≈ 52px + the safe area) */}
       <div aria-hidden="true" style={{ height: 'calc(52px + env(safe-area-inset-top, 0px))' }} />
+
+      {/* Notification banners — width-capped on desktop so they read as
+          intentional cards instead of full-bleed strips. */}
+      <div className="lg:max-w-3xl">
 
       {/* GUEST MODE (Phase A): subtle, dismissible sign-in nudge — shown only
           to guests who haven't dismissed it this session. Benefit-framed, never
@@ -553,10 +557,17 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
       )}
 
+      </div>{/* /notification banners */}
+
+      {/* HEADER — desktop/tablet: greeting + quote (left), KPI cards (right).
+          On mobile it's a plain stack (lg:flex only), so the order is unchanged. */}
+      <div className="lg:flex lg:items-center lg:justify-between lg:gap-12 mb-1">
+      <div className="lg:flex-1 lg:min-w-0">
+
       {/* Greeting */}
-      <div className="mb-6 mt-2">
-        <div className="text-sm" style={{ color: T.muted }}>NORCET prep</div>
-        <h1 className="font-display text-3xl font-semibold mt-1" style={{ color: T.ink }}>
+      <div className="mb-6 mt-2 lg:mt-0">
+        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NORCET prep</div>
+        <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
           Good {timeOfDay}{userName ? `, ${userName}` : ''}
         </h1>
       </div>
@@ -581,8 +592,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </div>
       )}
 
-      {/* Streak · Accuracy · Today — center-aligned summary strip */}
-      <div className="grid grid-cols-3 gap-2.5 mb-5">
+      </div>{/* /left header column */}
+
+      {/* Streak · Accuracy · Today — compact KPI cluster. On desktop it sits at
+          the right of the header (fixed width) instead of a sparse full-width strip. */}
+      <div className="grid grid-cols-3 gap-2.5 mb-5 lg:mb-0 lg:flex-shrink-0 lg:w-[384px]">
         {/* Streak */}
         <Card className="px-2 py-4 text-center relative cursor-pointer no-tap-highlight pressable"
               onClick={() => onNavigate({ screen: 'stats' })}>
@@ -641,11 +655,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </Card>
       </div>
 
-      {/* Stage-1 multi-device: on lg+ the cards below flow into a balanced
-          TWO-COLUMN dashboard; mobile stays a single column (all lg:-gated, so
-          the phone layout is byte-identical). break-inside-avoid keeps each
-          card whole across the column boundary. */}
-      <div className="lg:columns-2 lg:gap-5 [&>*]:break-inside-avoid">
+      </div>{/* /desktop header */}
+
+      {/* Desktop/tablet dashboard body — two curated columns on lg+: secondary
+          status (left) and the primary action cards (right). Each column
+          wrapper is display:contents on mobile, so it dissolves and the cards
+          fall back to the EXACT single-column mobile order. */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+      <div className="contents lg:block lg:col-span-5">
 
       {/* Feature 4 — weekly summary (first nudge of a new week, Mon–Sat) */}
       {showWeeklySummary && (
@@ -995,6 +1012,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           priority order). Hidden entirely until turned on in Settings. */}
       <FavStrip onNavigate={onNavigate} />
 
+      </div>{/* /status column */}
+      <div className="contents lg:block lg:col-span-7">
+
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
           section; all six test modes now live on the dedicated Drill Tests
           screen. Prominent, gradient, with a mini mode-icon row so it reads
@@ -1101,7 +1121,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       </Card>
       </Tip>
 
-      </div>{/* /lg:columns-2 desktop dashboard */}
+      </div>{/* /actions column */}
+      </div>{/* /desktop dashboard grid */}
 
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}
