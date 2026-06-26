@@ -64,7 +64,8 @@ import { runTopBackHandler } from './lib/back-handler.js';
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
-import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure } from './lib/levelup.js';
+import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
+import { framePrice } from './lib/cosmetics.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -3133,6 +3134,24 @@ export default function App() {
     setData(prev => ({ ...prev, levelup: equipFramePure(prev && prev.levelup, frameId) }));
   }, []);
 
+  // Level Up — buy a locked frame with Coins (then own + equip it). Returns
+  // true on success, false if unaffordable/already owned (caller can flash).
+  const buyCosmeticFrame = useCallback((frameId) => {
+    const econ = normalizeEconomy(economyRef.current);
+    const lu = normalizeLevelupPure(levelupRef.current);
+    const price = framePrice(frameId);
+    if (frameId === 'none' || price <= 0 || lu.cosmetics.includes(frameId) || econ.coins < price) return false;
+    setData(prev => {
+      const pl = normalizeLevelupPure(prev && prev.levelup);
+      return {
+        ...prev,
+        economy: addCoinsPure(prev && prev.economy, -price),
+        levelup: { ...pl, cosmetics: [...pl.cosmetics, frameId], frame: frameId },
+      };
+    });
+    return true;
+  }, []);
+
   // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
   // synced blob so packs carry across devices; merged into each drill's pool.
   const installDrillPack = useCallback((pack) => {
@@ -4433,7 +4452,7 @@ export default function App() {
       {/* Level Up — the gamification hub (XP/levels over the clinical drills). */}
       {nav.screen === 'level-up' && (
         <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} onClaimQuest={claimDailyQuest}
-                 onOpenCrate={openSupplyCrate} onEquipFrame={equipCosmeticFrame} />
+                 onOpenCrate={openSupplyCrate} onEquipFrame={equipCosmeticFrame} onBuyFrame={buyCosmeticFrame} />
       )}
 
       {nav.screen === 'drill-settings' && (

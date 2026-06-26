@@ -20,7 +20,7 @@ import FavHeart from '../ui/fav-heart.jsx';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import CrateReveal from '../ui/crate-reveal.jsx';
 import FramedAvatar from '../ui/framed-avatar.jsx';
-import { frameDef } from '../lib/cosmetics.js';
+import { frameDef, FRAME_IDS } from '../lib/cosmetics.js';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
@@ -63,7 +63,7 @@ function LevelRing({ level, pct, accent, track }) {
   );
 }
 
-function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame }) {
+function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, onBuyFrame }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile } = useProfile();
@@ -250,34 +250,54 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame }
           })}
         </div>
 
-        {/* PROFILE FRAME — equip a cosmetic frame won from Supply Crates. */}
+        {/* PROFILE FRAMES — collection + shop. Equip what you own; buy locked
+            frames with Coins (or win them free from Supply Crates). */}
         <div className="flex items-center gap-2 mt-6 mb-2.5">
-          <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Profile frame</span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Profile frames</span>
           <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
+          <span className="inline-flex items-center gap-1 text-[11px] font-semibold tabular-nums" style={{ color: T.muted }}>
+            <Coins size={12} /> {econ.coins.toLocaleString()}
+          </span>
         </div>
         <Card className="p-4 mb-2" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
-          <div className="flex items-center gap-3 mb-3">
+          <div className="flex items-center gap-3 mb-4">
             <FramedAvatar initial={profileName} frame={lu.frame} size={52} bg={T.primary + '22'} fg={T.primary} />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold truncate" style={{ color: T.ink }}>{profileName}</div>
               <div className="text-[11px]" style={{ color: T.muted }}>
-                {lu.cosmetics.length > 0
-                  ? `${lu.cosmetics.length} frame${lu.cosmetics.length === 1 ? '' : 's'} unlocked · tap to equip`
-                  : 'Win frames from Supply Crates (rare drops)'}
+                {frameDef(lu.frame).id === 'none' ? 'No frame equipped' : `${frameDef(lu.frame).name} equipped`}
+                {' · '}{lu.cosmetics.length}/{FRAME_IDS.length} unlocked
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {['none', ...lu.cosmetics].map(fid => {
-              const active = lu.frame === fid;
+          <div className="grid grid-cols-3 gap-2">
+            {['none', ...FRAME_IDS].map(fid => {
+              const f = frameDef(fid);
+              const owned = fid === 'none' || lu.cosmetics.includes(fid);
+              const equipped = lu.frame === fid;
+              const price = f.price || 0;
+              const afford = econ.coins >= price;
               return (
-                <Tip key={fid} title={frameDef(fid).name} text={fid === 'none' ? 'No frame' : `${frameDef(fid).name} frame`}>
-                  <button onClick={() => onEquipFrame && onEquipFrame(fid)} aria-label={`Equip ${frameDef(fid).name}`}
-                          className="no-tap-highlight rounded-full active:scale-95 transition"
-                          style={{ padding: 2, border: `2px solid ${active ? T.primary : 'transparent'}` }}>
-                    <FramedAvatar initial={profileName} frame={fid} size={34} bg={T.surfaceWarm} fg={T.inkSoft} />
-                  </button>
-                </Tip>
+                <div key={fid} className="rounded-xl p-2.5 flex flex-col items-center text-center"
+                     style={{ background: T.surfaceWarm, border: `1.5px solid ${equipped ? T.primary : T.borderSoft}` }}>
+                  <FramedAvatar initial={profileName} frame={fid} size={40} bg={T.surface} fg={T.inkSoft} />
+                  <div className="text-[11px] font-semibold mt-1.5 truncate w-full" style={{ color: T.ink }}>{f.name}</div>
+                  {owned ? (
+                    equipped ? (
+                      <div className="text-[10px] font-bold mt-1 inline-flex items-center gap-0.5" style={{ color: T.primary }}><Check size={10} /> Equipped</div>
+                    ) : (
+                      <button onClick={() => onEquipFrame && onEquipFrame(fid)}
+                              className="no-tap-highlight text-[10px] font-bold mt-1 px-2.5 py-1 rounded-md active:scale-95 transition"
+                              style={{ background: T.primary + '18', color: T.primary }}>Equip</button>
+                    )
+                  ) : (
+                    <button onClick={() => afford && onBuyFrame && onBuyFrame(fid)} disabled={!afford}
+                            className="no-tap-highlight text-[10px] font-bold mt-1 px-2 py-1 rounded-md active:scale-95 transition inline-flex items-center gap-0.5 disabled:opacity-50"
+                            style={afford ? { background: T.success, color: '#FFF' } : { background: T.surface, color: T.muted, border: `1px solid ${T.border}` }}>
+                      <Coins size={10} /> {price.toLocaleString()}
+                    </button>
+                  )}
+                </div>
               );
             })}
           </div>
