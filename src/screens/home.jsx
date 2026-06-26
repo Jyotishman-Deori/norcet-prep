@@ -361,7 +361,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         : `An admin responded to ${replies.length} of your reports.`);
 
   return (
-    <div className="max-w-md mx-auto px-4 pb-24">
+    <div className="max-w-md lg:max-w-5xl mx-auto px-4 lg:px-8 pb-24">
       {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
           scroll-up. Portaled to <body> so no transformed ancestor can ever
           break its position:fixed. GPU-GLITCH FIX: this bar is now OPAQUE (no
@@ -379,7 +379,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
-          <div className="flex items-center justify-between px-4 py-2.5 max-w-md mx-auto">
+          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md lg:max-w-5xl mx-auto">
             <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
@@ -640,6 +640,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           </div>
         </Card>
       </div>
+
+      {/* Stage-1 multi-device: on lg+ the cards below flow into a balanced
+          TWO-COLUMN dashboard; mobile stays a single column (all lg:-gated, so
+          the phone layout is byte-identical). break-inside-avoid keeps each
+          card whole across the column boundary. */}
+      <div className="lg:columns-2 lg:gap-5 [&>*]:break-inside-avoid">
 
       {/* Feature 4 — weekly summary (first nudge of a new week, Mon–Sat) */}
       {showWeeklySummary && (
@@ -1004,7 +1010,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           glitch-free now that the bubble carries no backdrop-filter and the
           card suppresses the native long-press chrome. */}
       <Tip title="Drill Tests" text="All your test modes in one place — Quick, Topic Wise, Mock, Dosage and Advanced — plus previous-year papers.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
+      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${lightenHex(T.primary, 0.12)} 0%, ${T.primary} 60%, ${darkenHex(T.primary, 0.12)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.45)}38` }}>
         <div className="flex items-center gap-3">
@@ -1033,7 +1039,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           tone, Learn the deeper one — cohesive with the theme grading in every
           palette, while staying clearly distinct from Drill. */}
       <Tip title="Learn topic wise" text="Concept cards that teach each topic — learn the material before you test yourself on it.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
+      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${T.primary} 0%, ${darkenHex(T.primary, 0.26)} 55%, ${darkenHex(T.primary, 0.42)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.5)}40` }}>
         <div className="flex items-center gap-3">
@@ -1059,7 +1065,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
           (same state math as the map) to create pull from Home. */}
       <Tip title="Knowledge Map" text="Your whole syllabus as a constellation — topics light up as you discover, practise and master them.">
-      <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
+      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
                      border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 6px 18px rgba(7,10,20,0.40)' }}>
@@ -1094,6 +1100,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </div>
       </Card>
       </Tip>
+
+      </div>{/* /lg:columns-2 desktop dashboard */}
 
       {/* F-A — Study Methods moved to the sidebar's Help & Learn section (#8);
           its Home card was removed to reduce duplication. */}
