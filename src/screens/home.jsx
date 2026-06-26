@@ -19,6 +19,7 @@ import { mindmapState, masteryTally } from '../lib/kmap.js';
 import { countsInNursingStats } from '../data/seed.js';
 import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
+import { progress as luProgress, tierFor as luTierFor, normalizeLevelup } from '../lib/levelup.js';
 import { pushNotification } from '../lib/notifications.js';
 import { Card, Button, requestConfirm } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
@@ -119,6 +120,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const today = todayStr();
   const todayEntry = data.stats.dailyHistory.find(d => d.date === today);
   const todayCount = todayEntry ? todayEntry.attempted : 0;
+
+  // Level Up — live level / tier / XP progress for the Home entry card.
+  const lu = normalizeLevelup(data.levelup);
+  const luProg = luProgress(lu.xp);
+  const luTier = luTierFor(luProg.level);
 
   // Live time-of-day greeting — re-evaluates each minute so it flips correctly
   // when the hour crosses noon / 5pm even if the app is left open.
@@ -1095,6 +1101,43 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           {[BookOpen, Layers, Lightbulb, GraduationCap, Sparkles, Network].map((Ic, i) => (
             <Ic key={i} size={15} color="rgba(255,255,255,0.8)" />
           ))}
+        </div>
+      </Card>
+      </Tip>
+
+      {/* Level Up — the gamification hub. A LIVE entry: current level, prestige
+          tier and XP-to-next progress. Groups the clinical games + the Knowledge
+          Map under one progression spine. */}
+      <Tip title="Level Up" text="Your progression hub — play the clinical games and the Knowledge Map to earn XP, climb levels and unlock prestige tiers.">
+      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'level-up' })}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ background: `linear-gradient(135deg, ${luTier.accent} 0%, ${luTier.accent}CC 50%, rgba(0,0,0,0.5) 130%)`,
+                     border: 'none', boxShadow: `0 8px 22px ${luTier.accent}55` }}>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl flex flex-col items-center justify-center flex-shrink-0"
+               style={{ background: 'rgba(255,255,255,0.18)' }}>
+            <span className="text-[8px] uppercase tracking-wider font-bold leading-none" style={{ color: 'rgba(255,255,255,0.85)' }}>Lv</span>
+            <span className="font-display text-lg font-semibold leading-none" style={{ color: '#FFF' }}>{luProg.level}</span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+              <div className="font-display text-base font-semibold" style={{ color: '#FFF' }}>Level Up</div>
+              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
+                    style={{ background: 'rgba(255,255,255,0.2)', color: '#FFF' }}>{luTier.title}</span>
+            </div>
+            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Clinical games {'·'} Knowledge Map {'·'} earn XP</div>
+          </div>
+          <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
+        </div>
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.22)' }}>
+            <div className="h-full rounded-full" style={{ width: `${luProg.pct}%`, background: '#FFF', transition: 'width 0.6s ease' }} />
+          </div>
+          <div className="text-[10px] mt-1.5 font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            {luProg.level >= 100
+              ? `${luProg.xp.toLocaleString()} XP · max level`
+              : `${luProg.into.toLocaleString()} / ${luProg.span.toLocaleString()} XP to Level ${luProg.level + 1}`}
+          </div>
         </div>
       </Card>
       </Tip>

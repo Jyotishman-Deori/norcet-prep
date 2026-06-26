@@ -186,6 +186,7 @@ const KnowledgeMap = lazy(() => import('./screens/knowledge-map.jsx'));
 import StudyMethods from './screens/study-methods.jsx';
 // [#11] Drill Tests — consolidated test-mode hub.
 import DrillTests from './screens/drill-tests.jsx';
+import LevelUp from './screens/LevelUp.jsx';
 // [F-B] Global pull-to-refresh overlay.
 import PullToRefresh from './ui/pull-to-refresh.jsx';
 // #30 — Home back-press exit confirmation pill.
@@ -4382,6 +4383,11 @@ export default function App() {
           handleHomeNavigate (plain navigate targets). */}
       {nav.screen === 'drill-tests' && (
         <DrillTests onBack={goHome} onNavigate={handleHomeNavigate} />
+      )}
+
+      {/* Level Up — the gamification hub (XP/levels over the clinical drills). */}
+      {nav.screen === 'level-up' && (
+        <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} />
       )}
 
       {nav.screen === 'drill-settings' && (
