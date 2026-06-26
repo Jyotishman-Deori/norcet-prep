@@ -34,6 +34,7 @@ const CBT_CSS = `
 `;
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { QuestionImage, HelpfulToggle } from '../ui/question-widgets.jsx';
@@ -119,7 +120,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
       {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
           Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
       <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} solid />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-32">
+      <PageContainer size="content" className="pt-2 pb-32">
 
         {/* Premium CBT info panel — sets the expectation that this is a full
             computer-based-test experience (generic; no official exam branding). */}
@@ -257,14 +258,14 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
             </div>
           </Row>
         </Card>
-      </div>
+      </PageContainer>
 
       {/* Bottom bar: summary + Start. The pool-validity check lives here
           rather than as a separate red card — it's a constraint on Start,
           so it belongs next to Start. */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
           {canStart ? (
             <div className="text-xs text-center mb-2 tabular-nums" style={{ color: T.muted }}>
               {count} questions · {timeMinutes} min · ready to start

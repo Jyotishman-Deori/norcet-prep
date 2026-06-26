@@ -10,6 +10,7 @@ import React, { useState } from 'react';
 import { Shuffle } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import { normalizePace } from '../lib/pace.js';
 
@@ -31,7 +32,7 @@ function QuickPracticeSetup({ onStart, onBack, onSetPace }) {
       {/* BUG-02 — solid bar (no backdrop-filter) so launching this screen from
           the colourful Favourites honeycomb can't flash a re-sampled backdrop. */}
       <TopBar title="Quick test" onBack={onBack} feedback={{ screen: "Quick practice setup" }} solid />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-32">
+      <PageContainer size="content" className="pt-2 pb-32">
         <Card className="p-4 mb-5" style={{ background: T.sec.quick, border: 'none' }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
@@ -79,11 +80,11 @@ function QuickPracticeSetup({ onStart, onBack, onSetPace }) {
             </div>
           </Card>
         )}
-      </div>
+      </PageContainer>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
           <Button onClick={() => onStart({ count })} disabled={!canStart} size="lg" className="w-full" icon={<Shuffle size={16} />}>
             Start {count} question{count === 1 ? '' : 's'}
           </Button>
