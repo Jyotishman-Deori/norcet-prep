@@ -64,7 +64,7 @@ import { runTopBackHandler } from './lib/back-handler.js';
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
-import { awardXp as awardXpPure } from './lib/levelup.js';
+import { completeGame as completeGamePure, claimQuest as claimQuestPure } from './lib/levelup.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -3093,8 +3093,9 @@ export default function App() {
   // game so the XP wiring lives here, not duplicated across 7 call sites.
   const handleGameComplete = useCallback((coins) => {
     const gained = Math.max(0, Math.floor(coins || 0));
-    // Award XP off the ref so we know the level-up result synchronously.
-    const res = awardXpPure(levelupRef.current, gained, todayStr());
+    // Complete the game off the ref so we know the level-up result synchronously
+    // (this also counts the game + XP toward today's daily quests).
+    const res = completeGamePure(levelupRef.current, gained, todayStr());
     setData(prev => {
       let next = prev || {};
       if (gained > 0) next = { ...next, economy: addCoinsPure(next.economy, gained) };
@@ -3103,6 +3104,15 @@ export default function App() {
     goHomeDirect();
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
   }, [goHomeDirect]);
+
+  // Level Up — claim a completed daily quest → bonus XP (uncapped). May itself
+  // trigger a level-up celebration.
+  const claimDailyQuest = useCallback((questId) => {
+    const res = claimQuestPure(levelupRef.current, questId, todayStr());
+    if (!res.claimed) return;
+    setData(prev => ({ ...prev, levelup: res.levelup }));
+    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
+  }, []);
 
   // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
   // synced blob so packs carry across devices; merged into each drill's pool.
@@ -4403,7 +4413,7 @@ export default function App() {
 
       {/* Level Up — the gamification hub (XP/levels over the clinical drills). */}
       {nav.screen === 'level-up' && (
-        <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} />
+        <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} onClaimQuest={claimDailyQuest} />
       )}
 
       {nav.screen === 'drill-settings' && (

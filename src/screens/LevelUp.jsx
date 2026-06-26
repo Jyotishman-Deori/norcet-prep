@@ -9,16 +9,17 @@
 // =====================================================================
 import React from 'react';
 import {
-  Activity, Badge, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame,
-  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles,
+  Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
+  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target,
 } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import FavHeart from '../ui/fav-heart.jsx';
+import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
-import { progress, tierFor, nextTier, normalizeLevelup, MAX_LEVEL } from '../lib/levelup.js';
+import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
 
 const TIER_ICONS = {
   badge: Badge, clipboard: ClipboardList, stethoscope: Stethoscope,
@@ -58,7 +59,7 @@ function LevelRing({ level, pct, accent, track }) {
   );
 }
 
-function LevelUp({ onBack, onNavigate }) {
+function LevelUp({ onBack, onNavigate, onClaimQuest }) {
   const { theme: T } = useTheme();
   const { data } = useData();
 
@@ -70,6 +71,7 @@ function LevelUp({ onBack, onNavigate }) {
   const TierIcon = TIER_ICONS[tier.icon] || Badge;
   const streak = (data && data.stats && data.stats.streakCurrent) || 0;
   const atMax = prog.level >= MAX_LEVEL;
+  const quests = questState(data && data.levelup, todayStr());
 
   return (
     <div className="anim-fadeup">
@@ -130,6 +132,47 @@ function LevelUp({ onBack, onNavigate }) {
         <div className="flex items-center gap-1.5 text-[12px] mb-4 px-1" style={{ color: T.muted }}>
           <Sparkles size={13} style={{ color: T.primary }} />
           Play any drill below to earn XP and level up. The harder the round, the more you earn.
+        </div>
+
+        {/* DAILY QUESTS — 3 a day, reset at local midnight. Bonus XP on claim. */}
+        <div className="flex items-center gap-2 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Daily quests</span>
+          <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
+          <span className="text-[10px]" style={{ color: T.muted }}>resets at midnight</span>
+        </div>
+        <div className="space-y-2 mb-5">
+          {quests.map(q => {
+            const accent = q.claimed ? T.muted : q.done ? T.success : T.primary;
+            return (
+              <Card key={q.id} className="p-3 flex items-center gap-3" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
+                <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: accent + '18', color: accent }}>
+                  {q.claimed ? <Check size={16} /> : q.done ? <Gift size={16} /> : <Target size={16} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-[13px] font-semibold" style={{ color: T.ink }}>{q.label}</div>
+                    <div className="text-[11px] font-semibold tabular-nums flex-shrink-0" style={{ color: q.claimed ? T.muted : T.primary }}>+{q.xp} XP</div>
+                  </div>
+                  <div className="h-1.5 rounded-full mt-1.5 overflow-hidden" style={{ background: T.borderSoft }}>
+                    <div className="h-full rounded-full" style={{ width: `${q.pct}%`, background: accent, transition: 'width .5s ease' }} />
+                  </div>
+                  <div className="text-[10px] mt-1 tabular-nums" style={{ color: T.muted }}>{q.current} / {q.goal}{q.metric === 'xp' ? ' XP' : ' drills'}</div>
+                </div>
+                {q.done && !q.claimed && (
+                  <button onClick={() => onClaimQuest && onClaimQuest(q.id)}
+                          className="no-tap-highlight text-[11px] font-bold px-3 py-1.5 rounded-lg active:scale-95 transition flex-shrink-0"
+                          style={{ background: T.success, color: '#FFF', boxShadow: `0 3px 10px ${T.success}55` }}>
+                    Claim
+                  </button>
+                )}
+                {q.claimed && (
+                  <span className="text-[11px] font-semibold flex-shrink-0 inline-flex items-center gap-1" style={{ color: T.success }}>
+                    <Check size={12} /> Claimed
+                  </span>
+                )}
+              </Card>
+            );
+          })}
         </div>
 
         {/* KNOWLEDGE MAP — the "world map" of Level Up, featured full-width */}

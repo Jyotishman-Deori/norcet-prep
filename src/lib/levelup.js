@@ -69,42 +69,102 @@ export function nextTier(level) {
 }
 
 export function normalizeLevelup(l) {
-  const o = { xp: 0, dailyDate: '', dailyXp: 0 };
+  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [] };
   if (l && typeof l === 'object') {
     if (Number.isFinite(l.xp)) o.xp = Math.max(0, Math.floor(l.xp));
     if (typeof l.dailyDate === 'string') o.dailyDate = l.dailyDate;
     if (Number.isFinite(l.dailyXp)) o.dailyXp = Math.max(0, Math.floor(l.dailyXp));
+    if (Number.isFinite(l.dailyGames)) o.dailyGames = Math.max(0, Math.floor(l.dailyGames));
+    if (Array.isArray(l.questClaims)) o.questClaims = l.questClaims.filter(x => typeof x === 'string');
   }
   return o;
 }
 
-// Award XP (pure). Honours the per-day cap (resets when the local date rolls
-// over). Returns the fresh slice plus what actually landed and any level-up so
-// callers can celebrate. `today` is a 'YYYY-MM-DD' local date string.
-export function awardXp(l, amount, today) {
-  const o = normalizeLevelup(l);
+// Roll the daily fields over when the local date changes (cap, games, claims).
+function rolloverDaily(o, today) {
+  if (o.dailyDate === today) return o;
+  return { ...o, dailyDate: today, dailyXp: 0, dailyGames: 0, questClaims: [] };
+}
+
+// A gamified drill finished: roll over, count the game, award XP (daily-capped),
+// and report any level-up so the caller can celebrate. `today` = 'YYYY-MM-DD'.
+export function completeGame(l, xpAmount, today) {
+  let o = rolloverDaily(normalizeLevelup(l), today);
   const before = progress(o.xp).level;
-  const amt = Math.max(0, Math.floor(amount || 0));
-  if (amt === 0) {
-    return { levelup: o, awarded: 0, leveledUp: false, fromLevel: before, toLevel: before };
-  }
-  const dailyXp = o.dailyDate === today ? o.dailyXp : 0;   // roll over at local midnight
-  const room = Math.max(0, DAILY_XP_CAP - dailyXp);
+  const amt = Math.max(0, Math.floor(xpAmount || 0));
+  const room = Math.max(0, DAILY_XP_CAP - o.dailyXp);
   const granted = Math.min(amt, room);
-  const xp = o.xp + granted;
-  const after = progress(xp).level;
-  return {
-    levelup: { xp, dailyDate: today, dailyXp: dailyXp + granted },
-    awarded: granted,
-    leveledUp: after > before,
-    fromLevel: before,
-    toLevel: after,
-  };
+  o = { ...o, xp: o.xp + granted, dailyXp: o.dailyXp + granted, dailyGames: o.dailyGames + 1 };
+  const after = progress(o.xp).level;
+  return { levelup: o, awarded: granted, leveledUp: after > before, fromLevel: before, toLevel: after };
+}
+
+// --- Daily quests -------------------------------------------------------------
+// A small pool; 3 are drawn deterministically per local day. Rewards are BONUS
+// XP on top of play — they don't touch the daily cap (they're the reward for
+// engaging, not a grind vector). metric: 'games' (drills played today) or 'xp'
+// (XP earned today).
+export const QUESTS = {
+  play1: { id: 'play1', label: 'Play any drill', goal: 1,   metric: 'games', xp: 30 },
+  play3: { id: 'play3', label: 'Play 3 drills',  goal: 3,   metric: 'games', xp: 70 },
+  play5: { id: 'play5', label: 'Play 5 drills',  goal: 5,   metric: 'games', xp: 140 },
+  xp120: { id: 'xp120', label: 'Earn 120 XP',    goal: 120, metric: 'xp',    xp: 50 },
+  xp300: { id: 'xp300', label: 'Earn 300 XP',    goal: 300, metric: 'xp',    xp: 120 },
+};
+const QUEST_IDS = Object.keys(QUESTS);
+
+function hashStr(s) {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+
+// The 3 quest ids for `today` — deterministic, so they're stable through the day
+// and vary day to day.
+export function dailyQuestIds(today) {
+  const pool = [...QUEST_IDS];
+  const out = [];
+  let s = hashStr(today || '') || 1;
+  while (out.length < 3 && pool.length) {
+    s = (Math.imul(s, 1103515245) + 12345) >>> 0;
+    out.push(pool.splice(s % pool.length, 1)[0]);
+  }
+  return out;
+}
+
+// Today's quests with live progress / claimed flags.
+export function questState(l, today) {
+  const o = rolloverDaily(normalizeLevelup(l), today);
+  return dailyQuestIds(today).map(id => {
+    const q = QUESTS[id];
+    const current = q.metric === 'games' ? o.dailyGames : o.dailyXp;
+    return {
+      ...q,
+      current: Math.min(current, q.goal),
+      pct: Math.min(100, Math.round((current / q.goal) * 100)),
+      done: current >= q.goal,
+      claimed: o.questClaims.includes(id),
+    };
+  });
+}
+
+// Claim a completed, unclaimed quest → bonus XP (uncapped), mark it claimed.
+// Reports any level-up so the caller can celebrate.
+export function claimQuest(l, questId, today) {
+  let o = rolloverDaily(normalizeLevelup(l), today);
+  const lvl = progress(o.xp).level;
+  const q = QUESTS[questId];
+  const current = q ? (q.metric === 'games' ? o.dailyGames : o.dailyXp) : 0;
+  if (!q || !dailyQuestIds(today).includes(questId) || current < q.goal || o.questClaims.includes(questId)) {
+    return { levelup: o, claimed: false, leveledUp: false, fromLevel: lvl, toLevel: lvl };
+  }
+  o = { ...o, xp: o.xp + q.xp, questClaims: [...o.questClaims, questId] };
+  const after = progress(o.xp).level;
+  return { levelup: o, claimed: true, awarded: q.xp, leveledUp: after > lvl, fromLevel: lvl, toLevel: after };
 }
 
 // How much of today's cap is left (for a subtle "rested" hint in the hub).
 export function dailyRemaining(l, today) {
-  const o = normalizeLevelup(l);
-  const used = o.dailyDate === today ? o.dailyXp : 0;
-  return Math.max(0, DAILY_XP_CAP - used);
+  const o = rolloverDaily(normalizeLevelup(l), today);
+  return Math.max(0, DAILY_XP_CAP - o.dailyXp);
 }

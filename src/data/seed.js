@@ -744,7 +744,7 @@ export const DEFAULT_DATA = {
   // Level Up — permanent XP/level progression over the gamified drills. Pure,
   // synced, additive (no new currency — Coins/Hearts above stay as-is). See
   // lib/levelup.js.
-  levelup: { xp: 0, dailyDate: '', dailyXp: 0 },
+  levelup: { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [] },
   // P7 — Previous Year NORCET Papers attempt records, keyed by paper id.
   // Separate from advancedTestHistory (fixed official paper vs random pool).
   // Shape: { [paperId]: { attempts: [{ts,count,correct,wrong,blank,netScore,
