@@ -22,6 +22,7 @@ import { createMonitorAudio } from '../lib/ecg-audio.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
 import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
+import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
 
 const TEAL = '#0E7490';
 const COIN_BASE = 15;
@@ -74,6 +75,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
 
   const scenario = scenarios[idx];
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
+  const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
 
   // Audio engine — created once, scheduled per live strip, closed on unmount.
   const audioRef = useRef(null);
@@ -90,6 +92,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
   const begin = () => {
     setScenarios(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setSelected(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
+    comboReset();
     setPhase('drill');
   };
 
@@ -97,7 +100,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
     if (checked) return;
     setChecked(true); setSelected(sel);
     const correct = sel != null && sel === scenario.answer;
-    if (correct) setCorrectCount((c) => c + 1);
+    if (correct) { setCorrectCount((c) => c + 1); comboHit(); } else { comboMiss(); }
     if (viaTimeout) setTimedOut(true);
     try { audioRef.current && audioRef.current.stop(); } catch (e) {}
     try { if (navigator.vibrate) navigator.vibrate(correct ? 12 : 22); } catch (e) {}
@@ -235,6 +238,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
 
   return (
     <div className="test-enter">
+      <ComboBurst flash={comboFlash} />
       <TopBar title="ICU Monitor" onBack={onBack}
               right={
                 <div className="flex items-center gap-1.5">

@@ -16,6 +16,7 @@ import { TIE_BREAKERS } from '../data/tie-breaker.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
 import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
+import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
 
 const INDIGO = '#4338CA';
 const COIN_BASE = 15;
@@ -46,18 +47,20 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
   const r = rounds[idx];
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
   const isCorrect = checked && picked === (r && r.answer);
+  const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
 
   const begin = () => {
     const picks = shuffle(pool).slice(0, Math.max(1, count)).map((tb) => ({ ...tb, flip: Math.random() < 0.5 }));
     setRounds(picks);
     setIdx(0); setPicked(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
+    comboReset();
     setPhase('drill');
   };
 
   const finalize = (choice, viaTimeout) => {
     if (checked) return;
     setChecked(true); setPicked(choice);
-    if (choice && choice === r.answer) setCorrectCount((c) => c + 1);
+    if (choice && choice === r.answer) { setCorrectCount((c) => c + 1); comboHit(); } else { comboMiss(); }
     if (viaTimeout) setTimedOut(true);
     try { if (navigator.vibrate) navigator.vibrate(choice === r.answer ? 12 : 22); } catch (e) {}
   };
@@ -194,6 +197,7 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
 
   return (
     <div className="test-enter">
+      <ComboBurst flash={comboFlash} />
       <TopBar title="Tie-Breaker" onBack={onBack}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>

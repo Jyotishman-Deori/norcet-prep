@@ -14,6 +14,7 @@ import { shuffle } from '../lib/utils.js';
 import { SKILL_SEQUENCES } from '../data/skill-sequences.js';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import { paceFlags, normalizePace } from '../lib/pace.js';
+import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
 
 const COIN_BASE = 15;
 const SEC_PER_STEP = 9;          // The Pulse budget per step
@@ -43,6 +44,7 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
   const allPlaced = order.length === scenario.steps.length;
   const isExact = checked && allPlaced && order.every((id, i) => id === correctOrder[i]);
   const budgetSec = scenario.steps.length * (flashpoint ? SEC_PER_STEP_FLASH : SEC_PER_STEP);
+  const { flash: comboFlash, hit: comboHit, miss: comboMiss } = useCombo();
 
   const tapPool = (id) => { if (!checked) setOrder(o => [...o, id]); };
   const tapPlaced = (id) => { if (!checked) setOrder(o => o.filter(x => x !== id)); };
@@ -52,7 +54,7 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
     if (checked) return;
     setChecked(true);
     const exact = allPlaced && order.every((id, i) => id === correctOrder[i]);
-    if (exact) setCorrectCount(c => c + 1);
+    if (exact) { setCorrectCount(c => c + 1); comboHit(); } else { comboMiss(); }
     if (viaTimeout && !allPlaced) setTimedOut(true);
     try { if (navigator.vibrate) navigator.vibrate(exact ? 12 : 20); } catch (e) {}
   };
@@ -99,6 +101,7 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
   // ── DRILL ──
   return (
     <div className="test-enter">
+      <ComboBurst flash={comboFlash} />
       <TopBar title="Clinical Skill Drill" onBack={onBack}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>

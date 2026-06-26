@@ -17,6 +17,7 @@ import { CRASH_CASES } from '../data/crash-cart.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
 import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
+import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
 
 const RED = '#DC2626';
 const COIN_BASE = 15;
@@ -34,6 +35,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   const { pulse: paceOn, flashpoint } = paceFlags(normalizePace(data && data.preferences));
   const pace = normalizePace(data && data.preferences);
   const coinPer = flashpoint ? COIN_BASE * 2 : COIN_BASE;
+  const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
 
   // seed cases + any installed Crash Cart packs
   const pool = useMemo(() => mergePackItems('crash-cart', CRASH_CASES, data), [data]);
@@ -61,6 +63,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   const begin = () => {
     setCases(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setSelected(null); setChecked(false); setTimedOut(false); setCorrectCount(0);
+    comboReset();
     setPhase('drill');
   };
 
@@ -68,7 +71,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
     if (checked) return;
     setChecked(true); setSelected(optIdx);
     const correct = optIdx != null && optIdx === kase.answer;
-    if (correct) setCorrectCount((c) => c + 1);
+    if (correct) { setCorrectCount((c) => c + 1); comboHit(); } else { comboMiss(); }
     if (viaTimeout) setTimedOut(true);
     try { if (navigator.vibrate) navigator.vibrate(correct ? 12 : 22); } catch (e) {}
   };
@@ -183,6 +186,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
 
   return (
     <div className="test-enter">
+      <ComboBurst flash={comboFlash} />
       <TopBar title="Crash Cart" onBack={onBack}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>

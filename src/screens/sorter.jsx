@@ -17,6 +17,7 @@ import { SORTER_CASES } from '../data/sorter-cases.js';
 import { paceFlags, normalizePace } from '../lib/pace.js';
 import { mergePackItems } from '../lib/drill-packs.js';
 import { shuffle } from '../lib/utils.js';
+import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
 
 const GREEN = '#15803D';
 const COIN_PER_ITEM = 3;
@@ -55,10 +56,12 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
 
   useEffect(() => { setAssign({}); setPicked(null); }, [kase && kase.id]);
 
+  const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
+
   const begin = () => {
     setCases(shuffle(pool).slice(0, Math.max(1, count)));
     setIdx(0); setAssign({}); setPicked(null); setChecked(false); setTimedOut(false);
-    setCorrectTotal(0); setItemTotal(0); setPhase('drill');
+    setCorrectTotal(0); setItemTotal(0); comboReset(); setPhase('drill');
   };
 
   const tapItem = (id) => {
@@ -78,6 +81,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
     setChecked(true);
     if (viaTimeout) setTimedOut(true);
     const ok = items.filter((it) => assign[it.id] === it.bin).length;
+    if (ok === items.length) comboHit(); else comboMiss();
     try { if (navigator.vibrate) navigator.vibrate(ok === items.length ? 12 : 20); } catch (e) {}
   };
   const check = () => { if (allAssigned && !checked) finalize(false); };
@@ -197,6 +201,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
 
   return (
     <div className="test-enter">
+      <ComboBurst flash={comboFlash} />
       <TopBar title={kase.title} onBack={onBack}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
