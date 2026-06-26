@@ -6,10 +6,12 @@
 // accents forward (same design language) but gives each mode a premium,
 // considered card and a clear visual hierarchy:
 //
-//   Top tier   (side-by-side) — Quick Test, Topic Wise Test  (light)
-//   Middle tier(side-by-side) — Mock Test, Dosage Calc       (tinted)
-//   Bottom tier(full width)   — Previous Year Papers (PYQ)    (bold)
-//                             — Advanced Test (EXAM)           (darkest)
+//   Practice (row of 4)       — Quick, Topic Wise, Mock, Dosage (one uniform
+//                               family: crisp white cards, each with its own
+//                               accent top-border + round icon)
+//   Clinical simulators       — interactive coin drills (gradient tiles, 2-up)
+//   Sharp reasoning           — elimination + prioritisation drills (2-up)
+//   Exam hall  (side-by-side) — Previous Year Papers (PYQ) · Advanced (EXAM)
 //
 // Colour intensity + elevation rise top→bottom. Learn Topic Wise is NOT
 // here — it lives on Home only. Each card routes to its existing setup
@@ -34,8 +36,8 @@ function DrillTests({ onBack, onNavigate }) {
   // ascending-journey concept. (The literal "Tests multiplies into titles"
   // idea reads as gimmicky at speed; the staggered tilt-in is the cleaner,
   // premium alternative the brief allowed.)
-  const Reveal = ({ delay = 0, children }) => (
-    <div className="drill-card-in" style={{ animationDelay: `${delay}ms` }}>
+  const Reveal = ({ delay = 0, className = '', children }) => (
+    <div className={`drill-card-in ${className}`} style={{ animationDelay: `${delay}ms` }}>
       {children}
     </div>
   );
@@ -51,7 +53,9 @@ function DrillTests({ onBack, onNavigate }) {
     </Reveal>
   );
 
-  // --- Top tier: light, energetic, approachable (white + accent top border) ---
+  // --- Practice card: one uniform family for all four core test modes. A crisp
+  // surface card with the mode's accent as a top-border + round icon, so the
+  // row reads as four equal, premium options (no more "two look disabled").
   // FAV (issues round) — hearts live in a dedicated TOP-RIGHT action area on
   // every card (never inline with the title), so all hearts across the screen
   // align on the same horizontal line.
@@ -66,23 +70,6 @@ function DrillTests({ onBack, onNavigate }) {
         {title}
       </div>
       <div className="text-xs leading-snug" style={{ color: T.muted }}>{sub}</div>
-    </Card>
-    </Tip>
-  );
-
-  // --- Middle tier: tinted background + filled icon — more focused/disciplined ---
-  const MidCard = ({ icon: Icon, color, title, sub, onClick, tip, fav = null }) => (
-    <Tip title={title} text={tip}>
-    <Card className="p-4 h-full relative" onClick={onClick}
-          style={{ background: color + '12', border: `1px solid ${color}33`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-      {fav && <span className="absolute top-2 right-2"><FavHeart favId={fav} inline /></span>}
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-3" style={{ background: color }}>
-        <Icon size={18} color="#FFF" />
-      </div>
-      <div className="font-display text-base font-semibold mb-0.5" style={{ color: T.ink }}>
-        {title}
-      </div>
-      <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>{sub}</div>
     </Card>
     </Tip>
   );
@@ -116,10 +103,10 @@ function DrillTests({ onBack, onNavigate }) {
             <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise Test"
                      sub="Pick a subject" onClick={() => go('topic-select')} fav="topic-select"
                      tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
-            <MidCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
+            <TopCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
-            <MidCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
+            <TopCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
                      sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
@@ -223,8 +210,10 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
-        {/* IBQ — tap-the-structure on data-driven diagrams (NEW) */}
-        <Reveal delay={146}>
+        {/* IBQ — tap-the-structure on data-driven diagrams (NEW). As the 5th
+            (odd) card it spans the full width on desktop, so the 2-up grid never
+            leaves a lonely empty cell. */}
+        <Reveal delay={146} className="lg:col-span-2">
           <Tip title="Spot the Structure" text="Image-based questions: tap the right part on a diagram — ECG waves, heart-sound areas, abdominal regions — the picture fills in as you find each one.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('ibq')}
                 style={{ background: 'linear-gradient(135deg, #0891B2, #0B4F66)', border: 'none', boxShadow: '0 6px 18px rgba(11,79,102,0.3)' }}>
@@ -299,12 +288,13 @@ function DrillTests({ onBack, onNavigate }) {
 
         <SectionLabel delay={166}>Exam hall</SectionLabel>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
+        {/* items-stretch so PYQ and Advanced match height side-by-side on PC */}
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-stretch">
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={170}>
           <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers — sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
-          <Card className="p-4 mb-3 relative" onClick={() => go('previous-papers')}
+          <Card className="p-4 mb-3 relative h-full" onClick={() => go('previous-papers')}
                 style={{ background: T.sec.revision, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}>
             <span className="absolute top-2 right-2"><FavHeart favId="previous-papers" inline /></span>
             <div className="flex items-center gap-3">
@@ -326,6 +316,12 @@ function DrillTests({ onBack, onNavigate }) {
               </div>
               <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
             </div>
+            {/* desktop-only supporting line — balances the height against the
+                Advanced Test card beside it (mobile is unchanged). */}
+            <div className="text-[11px] mt-3 pt-3 leading-relaxed hidden lg:block"
+                 style={{ color: 'rgba(255,255,255,0.7)', borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+              Sit the full timed paper, or open Read Mode for calm question-and-answer revision.
+            </div>
           </Card>
           </Tip>
         </Reveal>
@@ -333,7 +329,7 @@ function DrillTests({ onBack, onNavigate }) {
         {/* Bottom tier — Advanced Test (the final boss: darkest + most elevated) */}
         <Reveal delay={210}>
           <Tip title="Advanced Test" text="The full exam-hall experience: countdown clock, negative marking and a question palette to jump around — scores feed your best-net history.">
-          <Card className="p-5 relative" onClick={() => go('advanced-setup')}
+          <Card className="p-5 relative h-full" onClick={() => go('advanced-setup')}
                 style={{
                   background: `linear-gradient(135deg, ${T.sec.advanced} 55%, rgba(0,0,0,0.22))`,
                   border: 'none',
