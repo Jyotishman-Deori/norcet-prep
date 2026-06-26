@@ -18,7 +18,7 @@
 // screen via onNavigate (handleHomeNavigate). [A7] theme via useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch, Package } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch, Package, Sparkles } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
@@ -26,6 +26,21 @@ import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 // FAV #2 — heart on each test-mode card, beside the title.
 import FavHeart from '../ui/fav-heart.jsx';
+
+// Premium micro-interactions for the "Coming soon" placeholder: a slow sheen
+// sweeps across the card and the icon gently breathes, signalling "alive, just
+// not here yet" without shouting. Honours prefers-reduced-motion.
+const DRILL_CSS = `
+@keyframes drillSoonSheen { 0% { transform: translateX(-140%) } 55%,100% { transform: translateX(140%) } }
+@keyframes drillSoonBreathe { 0%,100% { transform: scale(1); opacity: .82 } 50% { transform: scale(1.09); opacity: 1 } }
+.drill-soon-sheen { position:absolute; inset:0; pointer-events:none;
+  background: linear-gradient(105deg, transparent 38%, rgba(255,255,255,0.30) 50%, transparent 62%);
+  transform: translateX(-140%); animation: drillSoonSheen 3.4s ease-in-out infinite; }
+.drill-soon-icon { animation: drillSoonBreathe 2.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .drill-soon-sheen, .drill-soon-icon { animation: none; }
+}
+`;
 
 function DrillTests({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
@@ -76,6 +91,7 @@ function DrillTests({ onBack, onNavigate }) {
 
   return (
     <div className="anim-fadeup">
+      <style>{DRILL_CSS}</style>
       <TopBar title="Drill Tests" onBack={onBack}
               right={
                 <button onClick={() => go('drill-settings')} aria-label="Drill Tests settings"
@@ -121,6 +137,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="Clinical Skill Drill" text="Tap clinical procedure steps into the correct order — PPE donning, BLS, tracheostomy suctioning and more — with the rationale after each.">
           <Card className="p-4 mb-3 relative" onClick={() => go('skill-setup')}
                 style={{ background: '#0E7490', border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.16)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="skill-setup" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
                    style={{ background: 'rgba(255,255,255,0.16)' }}>
@@ -144,6 +161,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="ICU Monitor" text="A live bedside monitor: read the scrolling ECG and vitals, then name the rhythm — NSR, AF, VT, VF, asystole and more, with the first clinical action after each.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('icu-monitor')}
                 style={{ background: '#06100E', border: '1px solid #0F2A24', boxShadow: '0 6px 18px rgba(0,0,0,0.22)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="icu-monitor" inline /></span>
             {/* faint phosphor pulse line in the backdrop */}
             <svg viewBox="0 0 200 40" preserveAspectRatio="none" className="absolute inset-0 w-full h-full pointer-events-none" style={{ opacity: 0.16 }}>
               <path d="M0 20 L60 20 L66 8 L72 32 L78 20 L200 20" fill="none" stroke="#46F08A" strokeWidth="2" />
@@ -171,6 +189,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="Crash Cart" text="A patient is crashing — read the vignette and grab the right emergency drug & dose off the trolley (ACLS, anaphylaxis, hyperkalaemia, eclampsia and more), with the why after each.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('crash-cart')}
                 style={{ background: 'linear-gradient(135deg, #B91C1C, #7F1D1D)', border: 'none', boxShadow: '0 6px 18px rgba(127,29,29,0.3)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="crash-cart" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <Syringe size={22} color="#FFF" />
@@ -193,6 +212,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="The Sorter" text="Tap each item into the correct bin — bio-medical waste colour coding and isolation precautions, with the rationale for every miss.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('sorter')}
                 style={{ background: 'linear-gradient(135deg, #15803D, #0B5132)', border: 'none', boxShadow: '0 6px 18px rgba(11,81,50,0.3)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="sorter" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <Recycle size={22} color="#FFF" />
@@ -210,13 +230,12 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
-        {/* IBQ — tap-the-structure on data-driven diagrams (NEW). As the 5th
-            (odd) card it spans the full width on desktop, so the 2-up grid never
-            leaves a lonely empty cell. */}
-        <Reveal delay={146} className="lg:col-span-2">
+        {/* IBQ — tap-the-structure on data-driven diagrams (NEW) */}
+        <Reveal delay={146}>
           <Tip title="Spot the Structure" text="Image-based questions: tap the right part on a diagram — ECG waves, heart-sound areas, abdominal regions — the picture fills in as you find each one.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('ibq')}
                 style={{ background: 'linear-gradient(135deg, #0891B2, #0B4F66)', border: 'none', boxShadow: '0 6px 18px rgba(11,79,102,0.3)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="ibq" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <ScanSearch size={22} color="#FFF" />
@@ -234,6 +253,34 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        {/* Coming soon — keeps the clinical grid symmetric (6 cards = 3 rows of
+            2) and signals more simulators are on the way. Non-interactive,
+            premium animated placeholder (sheen sweep + breathing icon). A real
+            slot for the next drill we ship here. */}
+        <Reveal delay={150}>
+          <Tip title="More on the way" text="New clinical simulators are in the works — this slot is reserved for the next one we ship.">
+          <div className="p-4 mb-3 relative overflow-hidden rounded-2xl"
+               style={{ background: T.surfaceWarm, border: `1.5px dashed ${T.border}` }}
+               aria-label="More clinical simulators coming soon">
+            <span className="drill-soon-sheen" aria-hidden="true" />
+            <div className="relative flex items-center gap-3">
+              <div className="drill-soon-icon w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: T.primary + '14', color: T.primary }}>
+                <Sparkles size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <div className="font-display text-base font-semibold" style={{ color: T.inkSoft }}>More coming soon</div>
+                  <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
+                        style={{ background: T.primary + '14', color: T.primary }}>Soon</span>
+                </div>
+                <div className="text-xs" style={{ color: T.muted }}>New simulators in the works</div>
+              </div>
+            </div>
+          </div>
+          </Tip>
+        </Reveal>
+
         </div>{/* /clinical simulators grid */}
 
         <SectionLabel delay={150}>Sharp reasoning</SectionLabel>
@@ -245,6 +292,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="Distractor Assassin" text="Flip the MCQ: instead of the right answer, hunt down the WRONG options one by one — without striking the correct one. Each kill reveals why that option is wrong. Trains elimination, the core exam skill.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('distractor-assassin')}
                 style={{ background: 'linear-gradient(135deg, #9F1239, #6B0F2A)', border: 'none', boxShadow: '0 6px 18px rgba(107,15,42,0.3)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="distractor-assassin" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <Crosshair size={22} color="#FFF" />
@@ -267,6 +315,7 @@ function DrillTests({ onBack, onNavigate }) {
           <Tip title="Tie-Breaker" text="Both options are right — pick the one that comes FIRST. Trains the prioritisation frameworks examiners love: ABC, Maslow, safety-first, acute-over-chronic.">
           <Card className="p-4 mb-3 relative overflow-hidden" onClick={() => go('tie-breaker')}
                 style={{ background: 'linear-gradient(135deg, #4338CA, #312E81)', border: 'none', boxShadow: '0 6px 18px rgba(49,46,129,0.3)' }}>
+            <span className="absolute top-2 right-2 z-10"><FavHeart favId="tie-breaker" inline /></span>
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                 <Scale size={22} color="#FFF" />

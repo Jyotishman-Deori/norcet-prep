@@ -41,6 +41,15 @@ export const FAV_SECTIONS = [
   { id: 'advanced-setup',  label: 'Advanced Test',       blurb: 'Negative marking + palette',        icon: 'flask',    hue: '#C2255C' },
   { id: 'dosage',          label: 'Dosage Calculation',  blurb: 'Numeric drug-math drills',          icon: 'syringe',  hue: '#2F9E44' },
   { id: 'previous-papers', label: 'Previous Papers',     blurb: 'Official NORCET PYQs',              icon: 'scroll',   hue: '#E67700' },
+  // Interactive drill modes (the gamified "earn coins" simulators). ids match
+  // their App nav screen, so a heart in the manage screen routes straight in.
+  { id: 'skill-setup',         label: 'Clinical Skill Drill', blurb: 'Order the procedure steps',     icon: 'listordered', hue: '#0E7490' },
+  { id: 'icu-monitor',         label: 'ICU Monitor',          blurb: 'Read the rhythm',               icon: 'activity',    hue: '#047857' },
+  { id: 'crash-cart',          label: 'Crash Cart',           blurb: 'Grab the right emergency drug',  icon: 'syringe',     hue: '#B91C1C' },
+  { id: 'sorter',              label: 'The Sorter',           blurb: 'Sort waste & isolation',         icon: 'recycle',     hue: '#15803D' },
+  { id: 'ibq',                 label: 'Spot the Structure',   blurb: 'Tap it on the diagram',          icon: 'scan',        hue: '#0891B2' },
+  { id: 'distractor-assassin', label: 'Distractor Assassin',  blurb: 'Eliminate the wrong options',    icon: 'crosshair',   hue: '#9F1239' },
+  { id: 'tie-breaker',         label: 'Tie-Breaker',          blurb: 'Which comes first',              icon: 'scale',       hue: '#4338CA' },
   { id: 'revision-sheet',  label: 'Revision',            blurb: 'High-yield digest + crib sheets',   icon: 'file',     hue: '#A61E4D' },
   { id: 'study-methods',   label: 'Study Methods',       blurb: 'How to study smarter',              icon: 'grad',     hue: '#1971C2' },
   { id: 'ikigai',          label: 'Ikigai Compass',      blurb: 'Your 4-circle readiness map',       icon: 'compass',  hue: '#9333EA' },
