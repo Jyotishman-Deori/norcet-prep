@@ -187,6 +187,7 @@ import StudyMethods from './screens/study-methods.jsx';
 // [#11] Drill Tests — consolidated test-mode hub.
 import DrillTests from './screens/drill-tests.jsx';
 import LevelUp from './screens/LevelUp.jsx';
+import LevelUpCelebration from './ui/level-up-celebration.jsx';
 // [F-B] Global pull-to-refresh overlay.
 import PullToRefresh from './ui/pull-to-refresh.jsx';
 // #30 — Home back-press exit confirmation pill.
@@ -3058,6 +3059,12 @@ export default function App() {
   // (awarded vs already-claimed) synchronously, then commit via setData.
   const economyRef = useRef(null);
   economyRef.current = data && data.economy;
+  // Level Up — current XP snapshot in a ref so handleGameComplete can award XP
+  // and detect a level-up SYNCHRONOUSLY (to fire the celebration) before the
+  // setData commit lands. Same pattern as economyRef above.
+  const levelupRef = useRef(null);
+  levelupRef.current = data && data.levelup;
+  const [levelUpCelebration, setLevelUpCelebration] = useState(null);
   const claimWhyBonus = useCallback((questionId) => {
     const { economy, awarded } = claimWhyBonusPure(economyRef.current, questionId);
     if (awarded) setData(prev => ({ ...prev, economy }));
@@ -3086,13 +3093,15 @@ export default function App() {
   // game so the XP wiring lives here, not duplicated across 7 call sites.
   const handleGameComplete = useCallback((coins) => {
     const gained = Math.max(0, Math.floor(coins || 0));
+    // Award XP off the ref so we know the level-up result synchronously.
+    const res = awardXpPure(levelupRef.current, gained, todayStr());
     setData(prev => {
       let next = prev || {};
       if (gained > 0) next = { ...next, economy: addCoinsPure(next.economy, gained) };
-      const res = awardXpPure(next.levelup, gained, todayStr());
       return { ...next, levelup: res.levelup };
     });
     goHomeDirect();
+    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
   }, [goHomeDirect]);
 
   // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
@@ -4113,6 +4122,13 @@ export default function App() {
       {/* #7 — app-root confirmation dialog. Opened via requestConfirm() — used
           by the un-bookmark caution and reusable for any future confirm. */}
       <ConfirmHost />
+
+      {/* Level Up — rank-up celebration (fires when a game pushes you over a
+          level). App-root so it overlays whatever screen is active. */}
+      {levelUpCelebration && (
+        <LevelUpCelebration fromLevel={levelUpCelebration.fromLevel} toLevel={levelUpCelebration.toLevel}
+                            onClose={() => setLevelUpCelebration(null)} />
+      )}
 
       {/* Nav drawer lives at the app root (no transformed ancestor), so its
           position:fixed is relative to the viewport and it scrolls correctly.
