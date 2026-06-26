@@ -18,6 +18,7 @@ import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
 // TIP — hold (mobile) / hover (PC) info bubbles on quiz chrome.
 import { Tip } from '../ui/tooltip.jsx';
 import { Card, Button, Pill, PyqBadge, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
@@ -519,7 +520,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         </div>
       )}
 
-      <div className="max-w-md mx-auto px-4 pb-40 pt-2">
+      <PageContainer size="content" className="pb-40 pt-2">
         {/* Progress */}
         <div className="mb-5">
           <div className="h-1 rounded-full" style={{ background: T.borderSoft }}>
@@ -777,11 +778,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             )}
           </div>
         )}
-      </div>
+      </PageContainer>
 
       {/* Bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
           {/* Quick reference — opens a lookup overlay (labs, drugs, vitals,
               conversions) without leaving the question. Always available in
               Quick / Topic / Mock; Advanced Test is a separate component and
