@@ -7,7 +7,7 @@
 // Reads progression from data.levelup, coins from data.economy, streak from
 // data.stats — all in the synced blob. [A7] theme via useTheme().
 // =====================================================================
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
   ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target,
@@ -18,6 +18,7 @@ import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import FavHeart from '../ui/fav-heart.jsx';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
+import CrateReveal from '../ui/crate-reveal.jsx';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
@@ -60,9 +61,10 @@ function LevelRing({ level, pct, accent, track }) {
   );
 }
 
-function LevelUp({ onBack, onNavigate, onClaimQuest }) {
+function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate }) {
   const { theme: T } = useTheme();
   const { data } = useData();
+  const [crateOpen, setCrateOpen] = useState(false);
 
   const lu = normalizeLevelup(data && data.levelup);
   const econ = normalizeEconomy(data && data.economy);
@@ -128,6 +130,22 @@ function LevelUp({ onBack, onNavigate, onClaimQuest }) {
             </div>
           </div>
         </Card>
+
+        {/* Supply Crate — earned by clearing all 3 daily quests. Tap to open. */}
+        {lu.crates > 0 && (
+          <button onClick={() => setCrateOpen(true)}
+                  className="no-tap-highlight w-full flex items-center gap-3 mb-4 p-4 rounded-2xl active:scale-[0.99] transition"
+                  style={{ background: 'linear-gradient(135deg, #D97706, #92400E)', border: 'none', boxShadow: '0 8px 22px rgba(146,64,14,0.4)' }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Gift size={22} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1 text-left" style={{ color: '#FFF' }}>
+              <div className="font-display text-base font-semibold">{lu.crates} Supply Crate{lu.crates === 1 ? '' : 's'} ready</div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Tap to open {'·'} earned from your daily quests</div>
+            </div>
+            <ChevronRight size={20} color="rgba(255,255,255,0.85)" className="flex-shrink-0" />
+          </button>
+        )}
 
         {/* How XP works — one quiet line, no jargon */}
         <div className="flex items-center gap-1.5 text-[12px] mb-4 px-1" style={{ color: T.muted }}>
@@ -239,6 +257,8 @@ function LevelUp({ onBack, onNavigate, onClaimQuest }) {
         </button>
 
       </PageContainer>
+
+      {crateOpen && <CrateReveal onOpen={onOpenCrate} onClose={() => setCrateOpen(false)} />}
     </div>
   );
 }

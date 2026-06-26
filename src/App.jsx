@@ -64,7 +64,7 @@ import { runTopBackHandler } from './lib/back-handler.js';
 import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
-import { completeGame as completeGamePure, claimQuest as claimQuestPure } from './lib/levelup.js';
+import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure } from './lib/levelup.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -3114,6 +3114,20 @@ export default function App() {
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
   }, []);
 
+  // Level Up — open one Supply Crate: applies the reward (Coins to economy, any
+  // bonus XP to levelup) and returns the reward so the reveal UI can show it.
+  const openSupplyCrate = useCallback(() => {
+    const res = openCratePure(levelupRef.current, todayStr());
+    if (!res.opened) return null;
+    setData(prev => ({
+      ...prev,
+      levelup: res.levelup,
+      economy: (res.reward.coins > 0) ? addCoinsPure(prev && prev.economy, res.reward.coins) : (prev && prev.economy),
+    }));
+    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
+    return res.reward;
+  }, []);
+
   // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
   // synced blob so packs carry across devices; merged into each drill's pool.
   const installDrillPack = useCallback((pack) => {
@@ -4413,7 +4427,7 @@ export default function App() {
 
       {/* Level Up — the gamification hub (XP/levels over the clinical drills). */}
       {nav.screen === 'level-up' && (
-        <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} onClaimQuest={claimDailyQuest} />
+        <LevelUp onBack={goHome} onNavigate={handleHomeNavigate} onClaimQuest={claimDailyQuest} onOpenCrate={openSupplyCrate} />
       )}
 
       {nav.screen === 'drill-settings' && (

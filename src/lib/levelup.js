@@ -69,13 +69,14 @@ export function nextTier(level) {
 }
 
 export function normalizeLevelup(l) {
-  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [] };
+  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [], crates: 0 };
   if (l && typeof l === 'object') {
     if (Number.isFinite(l.xp)) o.xp = Math.max(0, Math.floor(l.xp));
     if (typeof l.dailyDate === 'string') o.dailyDate = l.dailyDate;
     if (Number.isFinite(l.dailyXp)) o.dailyXp = Math.max(0, Math.floor(l.dailyXp));
     if (Number.isFinite(l.dailyGames)) o.dailyGames = Math.max(0, Math.floor(l.dailyGames));
     if (Array.isArray(l.questClaims)) o.questClaims = l.questClaims.filter(x => typeof x === 'string');
+    if (Number.isFinite(l.crates)) o.crates = Math.max(0, Math.floor(l.crates));
   }
   return o;
 }
@@ -159,8 +160,44 @@ export function claimQuest(l, questId, today) {
     return { levelup: o, claimed: false, leveledUp: false, fromLevel: lvl, toLevel: lvl };
   }
   o = { ...o, xp: o.xp + q.xp, questClaims: [...o.questClaims, questId] };
+  // Capstone: claiming the LAST of the day's 3 quests earns a Supply Crate.
+  let crateEarned = false;
+  if (dailyQuestIds(today).every(id => o.questClaims.includes(id))) {
+    o = { ...o, crates: (o.crates || 0) + 1 };
+    crateEarned = true;
+  }
   const after = progress(o.xp).level;
-  return { levelup: o, claimed: true, awarded: q.xp, leveledUp: after > lvl, fromLevel: lvl, toLevel: after };
+  return { levelup: o, claimed: true, awarded: q.xp, crateEarned, leveledUp: after > lvl, fromLevel: lvl, toLevel: after };
+}
+
+// --- Supply Crates ------------------------------------------------------------
+// Earned by clearing all 3 daily quests. A delightful 3-tap reveal pays out with
+// TRANSPARENT odds (shown in the UI). Coins for now (cosmetics slot in later);
+// the top tier also drops a chunk of bonus XP. No real-money items, ever.
+export const CRATE_ODDS = [
+  { id: 'common',   weight: 60, coins: 60,  xp: 0,   label: '60 Coins',            tone: '#0CA678' },
+  { id: 'uncommon', weight: 28, coins: 150, xp: 0,   label: '150 Coins',           tone: '#2563EB' },
+  { id: 'rare',     weight: 9,  coins: 350, xp: 0,   label: '350 Coins',           tone: '#7C3AED' },
+  { id: 'epic',     weight: 3,  coins: 500, xp: 200, label: '500 Coins + 200 XP',  tone: '#D97706' },
+];
+
+export function rollCrate(rng = Math.random) {
+  const total = CRATE_ODDS.reduce((s, r) => s + r.weight, 0);
+  let r = (typeof rng === 'function' ? rng() : Math.random()) * total;
+  for (const o of CRATE_ODDS) { if ((r -= o.weight) < 0) return o; }
+  return CRATE_ODDS[0];
+}
+
+// Open one crate: decrement, roll a reward. Bonus XP (top tier) is uncapped and
+// applied here; the Coins live in economy, so the caller applies reward.coins.
+export function openCrate(l, today, rng = Math.random) {
+  let o = rolloverDaily(normalizeLevelup(l), today);
+  if ((o.crates || 0) <= 0) return { levelup: o, opened: false, reward: null, leveledUp: false };
+  const reward = rollCrate(rng);
+  const before = progress(o.xp).level;
+  o = { ...o, crates: o.crates - 1, xp: o.xp + (reward.xp || 0) };
+  const after = progress(o.xp).level;
+  return { levelup: o, opened: true, reward, leveledUp: after > before, fromLevel: before, toLevel: after };
 }
 
 // How much of today's cap is left (for a subtle "rested" hint in the hub).
