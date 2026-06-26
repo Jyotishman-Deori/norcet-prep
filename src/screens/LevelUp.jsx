@@ -17,6 +17,7 @@ import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import FavHeart from '../ui/fav-heart.jsx';
+import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
@@ -117,7 +118,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest }) {
               <div className="flex items-center gap-2 mt-3">
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold"
                       style={{ background: 'rgba(255,255,255,0.18)', color: '#FFF' }}>
-                  <Flame size={13} /> {streak} day{streak === 1 ? '' : 's'}
+                  {streak >= STREAK_FIRE_MIN ? <StreakFire size={14} /> : <Flame size={13} />} {streak} day{streak === 1 ? '' : 's'}
                 </span>
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums"
                       style={{ background: 'rgba(255,255,255,0.18)', color: '#FFF' }}>

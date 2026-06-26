@@ -12,6 +12,7 @@ import { createPortal } from 'react-dom';
 import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
+import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
 import { todayStr } from '../lib/utils.js';
@@ -729,7 +730,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           )}
           <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-2"
                style={{ background: T.accent + '15' }}>
-            <Flame size={16} style={{ color: T.accent }} />
+            {data.stats.streakCurrent >= STREAK_FIRE_MIN
+              ? <StreakFire size={16} />
+              : <Flame size={16} style={{ color: T.accent }} />}
           </div>
           <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>
             Streak

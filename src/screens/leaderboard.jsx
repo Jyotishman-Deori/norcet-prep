@@ -15,6 +15,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import EmptyState from '../ui/empty-state.jsx';
+import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import { loadLeaderboard } from '../lib/leaderboard.js';
 
 function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, attemptedCount = 0, onStartQuiz, myMastered = 0 }) {
@@ -234,6 +235,9 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
                                       background: m + '22', color: m, border: `2px solid ${m}`, fontSize: isFirst ? 20 : 17 }}>
                           {(e.displayName || e.id || '?').charAt(0).toUpperCase()}
                         </div>
+                        {(e.currentStreak || 0) >= STREAK_FIRE_MIN && (
+                          <span className="absolute -top-1 -right-1"><StreakFire size={isFirst ? 16 : 14} /></span>
+                        )}
                       </div>
                       <div className="text-[11px] font-semibold text-center truncate w-full px-0.5" style={{ color: me ? T.primary : T.ink }}>
                         {(e.displayName || e.id)}{me ? ' (you)' : ''}
@@ -269,8 +273,9 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
                           {(e.displayName || e.id || '?').charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium truncate" style={{ color: T.ink }}>
-                            {e.displayName || e.id}{me ? ' (you)' : ''}
+                          <div className="text-sm font-medium flex items-center gap-1.5" style={{ color: T.ink }}>
+                            <span className="truncate">{e.displayName || e.id}{me ? ' (you)' : ''}</span>
+                            {(e.currentStreak || 0) >= STREAK_FIRE_MIN && <StreakFire size={14} className="flex-shrink-0" />}
                           </div>
                         </div>
                         <div className="font-display text-base flex-shrink-0 tabular-nums" style={{ color: me ? T.primary : T.ink }}>
