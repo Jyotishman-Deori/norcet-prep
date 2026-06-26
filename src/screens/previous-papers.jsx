@@ -9,7 +9,7 @@
 // (props unchanged: papers, previousPapers, onStart, onRead, onBack).
 // =====================================================================
 import React, { useMemo, useState } from 'react';
-import { BookOpen, ClipboardList, ListChecks, Hourglass, Check, GraduationCap, Play, Search, Flame, FileText } from 'lucide-react';
+import { BookOpen, ClipboardList, ListChecks, Hourglass, Check, GraduationCap, Play, Search, Flame, FileText, Monitor, Keyboard } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
@@ -17,6 +17,14 @@ import { buildHighYieldIndex, HIGH_YIELD_MIN, HIGH_YIELD_HIGH } from '../lib/hig
 import { topicName, topicColor } from '../lib/topics.js';
 
 const HY_AMBER = '#B8791A';
+
+// Premium CBT signposting micro-interaction — a slow light sheen sweeping the
+// banner + Attempt button. Disabled under prefers-reduced-motion.
+const PPR_CSS = `
+@keyframes pprSheen { 0% { transform: translateX(-130%); } 55%, 100% { transform: translateX(240%); } }
+.ppr-sheen { background: linear-gradient(105deg, transparent 42%, rgba(255,255,255,0.16) 50%, transparent 58%); animation: pprSheen 3.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .ppr-sheen { animation: none; display: none; } }
+`;
 
 // Split a paper into { exam, label } — exam = section header, label = the
 // year/session shown on the card (e.g. "2023 Mains").
@@ -199,9 +207,13 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button onClick={() => onStart(paper)}
-                  className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+                  className="no-tap-highlight relative overflow-hidden inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
                   style={{ background: T.sec.mock, color: '#FFF' }}>
-            <Play size={13} /> Attempt
+            <span className="ppr-sheen absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
+            <span className="relative z-10 inline-flex items-center gap-1.5">
+              <Play size={13} /> Attempt
+              <span className="text-[8px] font-bold px-1 py-0.5 rounded leading-none tracking-wide" style={{ background: 'rgba(255,255,255,0.26)' }}>CBT</span>
+            </span>
           </button>
           <button onClick={() => onRead && onRead(paper)}
                   className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
@@ -215,13 +227,28 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
 
   return (
     <div className="anim-fadeup">
+      <style>{PPR_CSS}</style>
       <TopBar title="Previous Year Papers" onBack={onBack} feedback={{ screen: "Previous year papers" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
-        <div className="text-sm leading-relaxed mb-4" style={{ color: T.muted }}>
-          Sit a full official paper under exam conditions — or just{' '}
-          <span style={{ color: T.inkSoft, fontWeight: 500 }}>read</span> through its questions
-          and answers for a calm, no-pressure revision session. Scores are saved per paper
-          for attempted tests only.
+        <div className="text-sm leading-relaxed mb-3" style={{ color: T.muted }}>
+          <b style={{ color: T.inkSoft }}>Attempt</b> a paper as a full computer-based test, or{' '}
+          <b style={{ color: T.inkSoft }}>Read</b> through its questions and answers for calm,
+          no-pressure revision. Scores are saved per paper for attempted tests only.
+        </div>
+
+        {/* premium CBT-mode banner — the Attempt path runs the full CBT engine */}
+        <div className="relative overflow-hidden rounded-2xl mb-4 px-3.5 py-2.5 flex items-center gap-2.5 anim-fadeup"
+             style={{ background: 'linear-gradient(135deg, #1E293B, #0F172A)' }}>
+          <span className="ppr-sheen absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
+          <span className="relative z-10 w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(56,189,248,0.18)' }}>
+            <Monitor size={16} color="#38BDF8" />
+          </span>
+          <div className="relative z-10 min-w-0 flex-1">
+            <div className="text-[12.5px] font-semibold leading-tight" style={{ color: '#FFF' }}>Computer-Based Test mode</div>
+            <div className="text-[10.5px] leading-tight mt-0.5 flex items-center gap-1" style={{ color: 'rgba(255,255,255,0.62)' }}>
+              Timed · palette · mark-for-review · <Keyboard size={10} /> keyboard
+            </div>
+          </div>
         </div>
 
         {totalPapers === 0 ? (
