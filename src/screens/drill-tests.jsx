@@ -15,7 +15,7 @@
 // useTheme().
 // =====================================================================
 import React from 'react';
-import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
@@ -107,24 +107,6 @@ function DrillTests({ onBack, onNavigate }) {
                      sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
                      tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
           </div>
-        </Reveal>
-
-        {/* The interactive clinical games (Skill Drill, ICU Monitor, Crash Cart,
-            Sorter, Spot the Structure, Distractor Assassin, Tie-Breaker) now live
-            ONLY in the Level Up hub — this is a link to them, not a copy. */}
-        <Reveal delay={110}>
-          <button onClick={() => go('level-up')}
-                  className="no-tap-highlight w-full flex items-center gap-3 mb-3 p-4 rounded-2xl active:scale-[0.99] transition"
-                  style={{ background: 'linear-gradient(135deg, #4338CA, #312E81)', border: 'none', boxShadow: '0 6px 18px rgba(49,46,129,0.3)' }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
-              <Sparkles size={20} color="#FFF" />
-            </div>
-            <div className="min-w-0 flex-1 text-left" style={{ color: '#FFF' }}>
-              <div className="font-display text-base font-semibold">Looking for the clinical games?</div>
-              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>They live in Level Up now — play to earn XP</div>
-            </div>
-            <ChevronRight size={20} color="rgba(255,255,255,0.85)" className="flex-shrink-0" />
-          </button>
         </Reveal>
 
         <SectionLabel delay={166}>Exam hall</SectionLabel>

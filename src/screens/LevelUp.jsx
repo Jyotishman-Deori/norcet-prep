@@ -161,10 +161,9 @@ function LevelUp({ onBack, onNavigate }) {
             const Icon = g.icon;
             return (
               <Tip key={g.screen} title={g.label} text={`${g.sub} · earn XP and coins`}>
-              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full relative" onClick={() => onNavigate({ screen: g.screen })}
+              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full" onClick={() => onNavigate({ screen: g.screen })}
                     onContextMenu={(e) => e.preventDefault()}
                     style={{ background: `linear-gradient(135deg, ${g.grad[0]}, ${g.grad[1]})`, border: 'none', boxShadow: `0 6px 18px ${g.grad[1]}4D` }}>
-                <span className="absolute top-2 right-2 z-10"><FavHeart favId={g.screen} inline /></span>
                 <div className="flex items-center gap-3">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
                     <Icon size={20} color="#FFF" />
@@ -173,7 +172,11 @@ function LevelUp({ onBack, onNavigate }) {
                     <div className="font-display text-base font-semibold leading-tight">{g.label}</div>
                     <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{g.sub}</div>
                   </div>
-                  <ChevronRight size={18} color="rgba(255,255,255,0.8)" className="flex-shrink-0" />
+                  {/* heart + chevron grouped at the right, vertically centred */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <FavHeart favId={g.screen} inline emptyColor="rgba(255,255,255,0.82)" />
+                    <ChevronRight size={18} color="rgba(255,255,255,0.8)" />
+                  </div>
                 </div>
               </Card>
               </Tip>

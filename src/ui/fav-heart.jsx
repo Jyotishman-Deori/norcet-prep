@@ -15,7 +15,7 @@ import { Tip } from './tooltip.jsx';
 
 let toastShownThisSession = false;
 
-export default function FavHeart({ favId, inline = false, size = 18 }) {
+export default function FavHeart({ favId, inline = false, size = 18, emptyColor }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
   const profileId = (profile && profile.id) || 'guest';
@@ -92,7 +92,7 @@ export default function FavHeart({ favId, inline = false, size = 18 }) {
                    // mode it no longer looks pre-filled. Filled = pink. 'transparent'
                    // (not 'none') is a real colour, so the fill still animates
                    // smoothly when favouriting/unfavouriting.
-                   color: isFav ? '#E0245E' : T.muted,
+                   color: isFav ? '#E0245E' : (emptyColor || T.muted),
                    transition: 'color .28s ease, fill .3s ease',
                  }} />
         </span>
