@@ -360,8 +360,113 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         ? 'An admin replied to your feedback.'
         : `An admin responded to ${replies.length} of your reports.`);
 
+  // Focus row (Weak area + Syllabus coverage). Computed once here so it can
+  // render in TWO places without duplicating the logic: in the left status
+  // column on MOBILE (its original position, between Review and the exam
+  // countdown) and at the TOP of the right actions column on DESKTOP, directly
+  // above Drill Tests. Returns null when there's nothing meaningful to show.
+  const focusRow = (() => {
+    // Topics she has practised at least a bit, sorted weakest-first.
+    const worstWeak = weak.find(w => w.accuracy < 0.6);
+
+    // How many topics she has 0 attempts in.
+    const practisedTopicIds = new Set(weak.map(w => w.topic));
+    const allTopicIds = new Set();
+    allQuestions.forEach(q => allTopicIds.add(q.topic));
+    const untouchedCount = Array.from(allTopicIds).filter(t => !practisedTopicIds.has(t)).length;
+
+    const hasAnyAttempts = (data.stats.totalAttempted || 0) > 0;
+
+    // Nothing to show on a brand-new profile (no attempts and nothing weak).
+    if (!worstWeak && !hasAnyAttempts) return null;
+
+    // Build each tile so the inner layout can be identical.
+    const tiles = [];
+
+    if (worstWeak) {
+      tiles.push(
+        <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics — the questions you’ve got wrong come back first.">
+        <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
+              onClick={() => onNavigate({ screen: 'weak-areas' })}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ background: `linear-gradient(140deg, ${lightenHex(T.error, 0.10)} 0%, ${T.error} 62%, ${darkenHex(T.error, 0.16)} 100%)`,
+                       border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.error, 0.45)}38` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <AlertCircle size={16} color="#FFF" />
+            </div>
+            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
+              Weak area
+            </div>
+          </div>
+          <div className="font-display text-sm font-semibold leading-tight" style={{ color: '#FFF', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+            {topicName(worstWeak.topic)}
+          </div>
+          <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
+            {Math.round(worstWeak.accuracy * 100)}% accuracy
+          </div>
+        </Card>
+        </Tip>
+      );
+    }
+
+    // Coverage tile — always render once she has any data, since the drawer no
+    // longer surfaces Coverage anywhere else. The message adapts: while there
+    // are untouched topics it warns, once she's started every topic it becomes
+    // a calmer "open the breakdown".
+    if (hasAnyAttempts) {
+      const showWarning = untouchedCount > 0;
+      const sc = showWarning ? T.accent : T.primary;
+      tiles.push(
+        <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown — what you’ve started, what’s mastered, and what’s still untouched.">
+        <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
+              onClick={() => onNavigate({ screen: 'coverage' })}
+              onContextMenu={(e) => e.preventDefault()}
+              style={{ background: `linear-gradient(140deg, ${lightenHex(sc, 0.12)} 0%, ${sc} 60%, ${darkenHex(sc, 0.14)} 100%)`,
+                       border: 'none', boxShadow: `0 8px 22px ${darkenHex(sc, 0.45)}38` }}>
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
+              <Activity size={16} color="#FFF" />
+            </div>
+            <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
+              Syllabus
+            </div>
+          </div>
+          {showWarning ? (
+            <>
+              <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
+                {untouchedCount} topic{untouchedCount === 1 ? '' : 's'}
+              </div>
+              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
+                not started yet
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
+                All topics
+              </div>
+              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
+                view the breakdown
+              </div>
+            </>
+          )}
+        </Card>
+        </Tip>
+      );
+    }
+
+    // If only one tile qualifies, stretch it to full width rather than leaving
+    // a lonely half-width card next to empty space.
+    return (
+      <div className={`grid gap-2 mb-4 ${tiles.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        {tiles}
+      </div>
+    );
+  })();
+
   return (
-    <div className="max-w-md md:max-w-2xl lg:max-w-5xl mx-auto px-4 lg:px-8 pb-24">
+    <div className="max-w-md md:max-w-2xl lg:max-w-6xl mx-auto px-4 lg:px-8 pb-24">
       {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
           scroll-up. Portaled to <body> so no transformed ancestor can ever
           break its position:fixed. GPU-GLITCH FIX: this bar is now OPAQUE (no
@@ -379,7 +484,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
-          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md md:max-w-2xl lg:max-w-5xl mx-auto">
+          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md md:max-w-2xl lg:max-w-6xl mx-auto">
             <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
@@ -559,10 +664,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       </div>{/* /notification banners */}
 
-      {/* HEADER — desktop/tablet: greeting + quote (left), KPI cards (right).
-          On mobile it's a plain stack (lg:flex only), so the order is unchanged. */}
-      <div className="lg:flex lg:items-center lg:justify-between lg:gap-12 mb-1">
-      <div className="lg:flex-1 lg:min-w-0">
+      {/* HEADER — greeting + quote now span the FULL row on every breakpoint.
+          The KPI cluster (Streak · Accuracy · Today) moved out of the header
+          and now leads the left status column below. */}
+      <div className="mb-2 lg:mb-6">
 
       {/* Greeting */}
       <div className="mb-6 mt-2 lg:mt-0">
@@ -592,11 +697,18 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         </div>
       )}
 
-      </div>{/* /left header column */}
+      </div>{/* /header — full-row greeting + quote */}
 
-      {/* Streak · Accuracy · Today — compact KPI cluster. On desktop it sits at
-          the right of the header (fixed width) instead of a sparse full-width strip. */}
-      <div className="grid grid-cols-3 gap-2.5 mb-5 lg:mb-0 lg:flex-shrink-0 lg:w-[384px]">
+      {/* Desktop/tablet dashboard body — two curated columns on lg+: secondary
+          status (left) and the primary action cards (right). Each column
+          wrapper is display:contents on mobile, so it dissolves and the cards
+          fall back to the EXACT single-column mobile order. */}
+      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
+      <div className="contents lg:block lg:col-span-5">
+
+      {/* Streak · Accuracy · Today — the stats cluster now LEADS the left status
+          column (above the weekly summary) on every breakpoint. */}
+      <div className="grid grid-cols-3 gap-2.5 mb-5 lg:mb-4">
         {/* Streak */}
         <Card className="px-2 py-4 text-center relative cursor-pointer no-tap-highlight pressable"
               onClick={() => onNavigate({ screen: 'stats' })}>
@@ -654,15 +766,6 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           </div>
         </Card>
       </div>
-
-      </div>{/* /desktop header */}
-
-      {/* Desktop/tablet dashboard body — two curated columns on lg+: secondary
-          status (left) and the primary action cards (right). Each column
-          wrapper is display:contents on mobile, so it dissolves and the cards
-          fall back to the EXACT single-column mobile order. */}
-      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
-      <div className="contents lg:block lg:col-span-5">
 
       {/* Feature 4 — weekly summary (first nudge of a new week, Mon–Sat) */}
       {showWeeklySummary && (
@@ -815,109 +918,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* Focus row — Weak area & Coverage gaps, side by side.
-          Weak Area = where she's struggling (accuracy too low).
-          Untouched = where she hasn't even started yet.
-          Two halves of the same picture; both deep-link to Coverage. */}
-      {(() => {
-        // Topics she has practised at least a bit, sorted weakest-first.
-        const worstWeak = weak.find(w => w.accuracy < 0.6);
-
-        // How many topics she has 0 attempts in.
-        const practisedTopicIds = new Set(weak.map(w => w.topic));
-        const allTopicIds = new Set();
-        allQuestions.forEach(q => allTopicIds.add(q.topic));
-        const untouchedCount = Array.from(allTopicIds).filter(t => !practisedTopicIds.has(t)).length;
-
-        const hasAnyAttempts = (data.stats.totalAttempted || 0) > 0;
-
-        // Nothing to show on a brand-new profile (no attempts and nothing weak).
-        if (!worstWeak && !hasAnyAttempts) return null;
-
-        // Build each tile so the inner layout can be identical.
-        const tiles = [];
-
-        if (worstWeak) {
-          tiles.push(
-            <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics — the questions you’ve got wrong come back first.">
-            <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
-                  onClick={() => onNavigate({ screen: 'weak-areas' })}
-                  onContextMenu={(e) => e.preventDefault()}
-                  style={{ background: `linear-gradient(140deg, ${lightenHex(T.error, 0.10)} 0%, ${T.error} 62%, ${darkenHex(T.error, 0.16)} 100%)`,
-                           border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.error, 0.45)}38` }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
-                  <AlertCircle size={16} color="#FFF" />
-                </div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Weak area
-                </div>
-              </div>
-              <div className="font-display text-sm font-semibold leading-tight" style={{ color: '#FFF', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {topicName(worstWeak.topic)}
-              </div>
-              <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                {Math.round(worstWeak.accuracy * 100)}% accuracy
-              </div>
-            </Card>
-            </Tip>
-          );
-        }
-
-        // Coverage tile — always render once she has any data, since the
-        // drawer no longer surfaces Coverage anywhere else. The message
-        // adapts: while there are untouched topics it warns, once she's
-        // started every topic it becomes a calmer "open the breakdown".
-        if (hasAnyAttempts) {
-          const showWarning = untouchedCount > 0;
-          const sc = showWarning ? T.accent : T.primary;
-          tiles.push(
-            <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown — what you’ve started, what’s mastered, and what’s still untouched.">
-            <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
-                  onClick={() => onNavigate({ screen: 'coverage' })}
-                  onContextMenu={(e) => e.preventDefault()}
-                  style={{ background: `linear-gradient(140deg, ${lightenHex(sc, 0.12)} 0%, ${sc} 60%, ${darkenHex(sc, 0.14)} 100%)`,
-                           border: 'none', boxShadow: `0 8px 22px ${darkenHex(sc, 0.45)}38` }}>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.18)' }}>
-                  <Activity size={16} color="#FFF" />
-                </div>
-                <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Syllabus
-                </div>
-              </div>
-              {showWarning ? (
-                <>
-                  <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
-                    {untouchedCount} topic{untouchedCount === 1 ? '' : 's'}
-                  </div>
-                  <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                    not started yet
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
-                    All topics
-                  </div>
-                  <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                    view the breakdown
-                  </div>
-                </>
-              )}
-            </Card>
-            </Tip>
-          );
-        }
-
-        // If only one tile qualifies, stretch it to full width rather than
-        // leaving a lonely half-width card next to empty space.
-        return (
-          <div className={`grid gap-2 mb-4 ${tiles.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-            {tiles}
-          </div>
-        );
-      })()}
+      {/* Focus row (weak area / syllabus) — on MOBILE it stays here, in its
+          original position between Review and the exam countdown. On desktop
+          it's hidden here and instead leads the right actions column (below),
+          directly above Drill Tests. Same computed `focusRow`, shown once. */}
+      {focusRow && <div className="lg:hidden">{focusRow}</div>}
 
       {/* Exam countdown — the "set a date" entry point now lives in the
           slide-in menu (Tools). The dashboard only shows the countdown once a
@@ -1008,12 +1013,23 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* FAV — the user's Favourites, above every other section (their
-          priority order). Hidden entirely until turned on in Settings. */}
-      <FavStrip onNavigate={onNavigate} />
+      {/* FAV — Favourites. On MOBILE it sits here (its original position, after
+          the exam countdown). On desktop it's hidden here and instead sits in
+          the right actions column, below the weak-area/syllabus row and above
+          Drill Tests (see below). */}
+      <div className="lg:hidden"><FavStrip onNavigate={onNavigate} /></div>
 
       </div>{/* /status column */}
       <div className="contents lg:block lg:col-span-7">
+
+      {/* Focus row on DESKTOP leads the actions column, directly above
+          Favourites + Drill Tests (hidden on mobile, where it renders up in the
+          status column). */}
+      {focusRow && <div className="hidden lg:block">{focusRow}</div>}
+
+      {/* FAV on DESKTOP — directly below the weak-area/syllabus row and above
+          Drill Tests, as requested. Renders nothing unless Favourites is on. */}
+      <div className="hidden lg:block"><FavStrip onNavigate={onNavigate} /></div>
 
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
           section; all six test modes now live on the dedicated Drill Tests
