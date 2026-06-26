@@ -14,8 +14,24 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   AlertCircle, AlertTriangle, Bookmark, BookmarkCheck, Check, X, ChevronLeft, ChevronRight,
-  ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send, Lock, Repeat
+  ClipboardList, EyeOff, Flag, Hourglass, LayoutGrid, RotateCcw, Send, Lock, Repeat,
+  Keyboard, Monitor
 } from 'lucide-react';
+
+// Premium CBT micro-interaction keyframes (scoped; injected once with the
+// engine). Reduced-motion users get the classes withheld, so nothing animates.
+const CBT_CSS = `
+@keyframes cbtSlideR { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
+@keyframes cbtSlideL { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: none; } }
+@keyframes cbtPop { 0% { transform: scale(.5); opacity: .4; } 60% { transform: scale(1.18); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes cbtSaved { 0% { opacity: 0; transform: translateY(8px) scale(.92); } 16% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; transform: translateY(-7px); } }
+@keyframes cbtCount { 0% { transform: translateY(-3px); opacity: .3; } 100% { transform: none; opacity: 1; } }
+.cbt-slide-r { animation: cbtSlideR .28s ease both; }
+.cbt-slide-l { animation: cbtSlideL .28s ease both; }
+.cbt-pop { animation: cbtPop .34s cubic-bezier(.34,1.56,.64,1) both; }
+.cbt-saved { animation: cbtSaved 1.1s ease forwards; }
+.cbt-count { animation: cbtCount .26s ease both; }
+`;
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
@@ -105,11 +121,28 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
       <TopBar title="Advanced Test" onBack={onBack} feedback={{ screen: "Advanced test setup" }} solid />
       <div className="max-w-md mx-auto px-4 pt-2 pb-32">
 
-        {/* Slimmed tagline — the heavy teal hero became visual noise once
-            the Help popover existed. One line of context is enough. */}
-        <div className="text-sm mb-5 leading-relaxed px-1" style={{ color: T.muted }}>
-          A full exam simulation — timed, with negative marking, and no feedback until the end.
-        </div>
+        {/* Premium CBT info panel — sets the expectation that this is a full
+            computer-based-test experience (generic; no official exam branding). */}
+        <Card className="p-4 mb-4 relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #1E293B, #0F172A)', border: 'none' }}>
+          <div className="absolute -right-7 -top-7 w-28 h-28 rounded-full" style={{ background: 'rgba(255,255,255,0.05)' }} />
+          <div className="relative flex items-center gap-3 mb-2.5">
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(56,189,248,0.18)' }}>
+              <Monitor size={20} color="#38BDF8" className={IS_DARK ? '' : 'timer-beat'} />
+            </div>
+            <div style={{ color: '#FFF' }}>
+              <div className="font-display text-base font-bold leading-tight">Computer-Based Test mode</div>
+              <div className="text-[12px]" style={{ color: 'rgba(255,255,255,0.7)' }}>Sit it like the real exam — on phone, tablet or laptop.</div>
+            </div>
+          </div>
+          <div className="relative flex flex-wrap gap-1.5">
+            {['Timed', 'Question palette', 'Mark for review', 'Negative marking'].map((c, i) => (
+              <span key={c} className="seq-item text-[10.5px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.12)', color: '#E2E8F0', animationDelay: `${120 + i * 70}ms` }}>{c}</span>
+            ))}
+            <span className="seq-item inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(56,189,248,0.18)', color: '#7DD3FC', animationDelay: '400ms' }}>
+              <Keyboard size={11} /> Keyboard shortcuts
+            </span>
+          </div>
+        </Card>
 
         {/* ===== TEST SETUP ===== */}
         <Card className="p-4 mb-3">
@@ -271,6 +304,12 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [confirm, setConfirm] = useState(null); // 'abort' | 'submit' | null
   const [bmAnim, setBmAnim] = useState(null);    // #4 — 'pop' | 'deflate' | null
+  // CBT premium UX: question-transition direction, a Save flash counter, and a
+  // keyboard-shortcut helper popover.
+  const [dir, setDir] = useState(1);             // 1 = forward slide, -1 = back
+  const [savedKey, setSavedKey] = useState(0);   // bumps to flash "Saved" on advance
+  const [showKeys, setShowKeys] = useState(false);
+  const reducedRef = useRef(typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const timePerQ = useRef({});
   const lastTick = useRef(Date.now());
   const currentQId = useRef(null);
@@ -332,6 +371,49 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeMinutes]);
 
+  // CBT keyboard control — number keys pick options, arrows / N / P navigate,
+  // M marks, C clears, G opens the palette, Enter saves & advances. Ignored
+  // while a dialog is open (except Esc) and when typing in a field.
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const onKey = (e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const tag = (e.target && e.target.tagName) || '';
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)) return;
+      const cq = questions[index];
+      if (!cq) return;
+      if (confirm) { if (e.key === 'Escape') setConfirm(null); return; }
+      if (paletteOpen) { if (e.key === 'Escape') setPaletteOpen(false); else if (e.key === 'g' || e.key === 'G') setPaletteOpen(false); return; }
+
+      if (/^[1-9]$/.test(e.key)) {
+        const oi = parseInt(e.key, 10) - 1;
+        if (oi < cq.options.length) {
+          e.preventDefault();
+          setAnswers(prev => {
+            const cur = prev[cq.id] || [];
+            const nextSel = cq.type === 'mcq' ? (cur[0] === oi ? [] : [oi]) : (cur.includes(oi) ? cur.filter(x => x !== oi) : [...cur, oi]);
+            if (nextSel.length > 0 && arraysEqualUnordered(nextSel, cq.correct)) everCorrectRef.current.add(cq.id);
+            return { ...prev, [cq.id]: nextSel };
+          });
+        }
+        return;
+      }
+      const k = e.key.toLowerCase();
+      if (e.key === 'ArrowRight' || k === 'n') { e.preventDefault(); setDir(1); setIndex(i => Math.min(questions.length - 1, i + 1)); }
+      else if (e.key === 'ArrowLeft' || k === 'p') { e.preventDefault(); setDir(-1); setIndex(i => Math.max(0, i - 1)); }
+      else if (k === 'm') { e.preventDefault(); setMarked(prev => ({ ...prev, [cq.id]: !prev[cq.id] })); }
+      else if (k === 'c') { e.preventDefault(); setAnswers(prev => ({ ...prev, [cq.id]: [] })); }
+      else if (k === 'g') { e.preventDefault(); setPaletteOpen(true); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (index < questions.length - 1) { setDir(1); setSavedKey(s => s + 1); setIndex(i => i + 1); }
+        else setConfirm('submit');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [index, paletteOpen, confirm, questions]);
+
   if (!q) return <div className="p-6 max-w-md mx-auto text-center">No questions.</div>;
 
   const toggleOption = (i) => {
@@ -355,9 +437,16 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
 
   const clearAnswer = () => setAnswers(prev => ({ ...prev, [q.id]: [] }));
   const toggleMark = () => setMarked(prev => ({ ...prev, [q.id]: !prev[q.id] }));
-  const goNext = () => setIndex(Math.min(questions.length - 1, index + 1));
-  const goPrev = () => setIndex(Math.max(0, index - 1));
-  const goTo = (i) => { setIndex(i); setPaletteOpen(false); };
+  const goNext = () => { setDir(1); setIndex(Math.min(questions.length - 1, index + 1)); };
+  const goPrev = () => { setDir(-1); setIndex(Math.max(0, index - 1)); };
+  const goTo = (i) => { setDir(i >= index ? 1 : -1); setIndex(i); setPaletteOpen(false); };
+  // CBT "Save & Next" — flashes a Saved confirmation when an answer is recorded,
+  // then advances (the answer itself was saved live on selection).
+  const saveAndNext = () => {
+    if ((answers[q.id] || []).length > 0) setSavedKey(s => s + 1);
+    setDir(1);
+    setIndex(Math.min(questions.length - 1, index + 1));
+  };
 
   const doManualSubmit = () => {
     onSubmit({
@@ -383,11 +472,21 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const selected = answers[q.id] || [];
   const isMarked = !!marked[q.id];
 
+  // CBT status legend chips (always-on summary, like a real test centre panel).
+  const legend = [
+    { label: 'Answered', n: answeredCount, color: T.success },
+    { label: 'Skipped', n: seenBlankCount, color: T.error },
+    { label: 'Unseen', n: notSeenCount, color: T.muted },
+    { label: 'Marked', n: markedCount, color: PALETTE_MARKED },
+  ];
+  const aClass = reducedRef.current ? '' : (dir < 0 ? 'cbt-slide-l' : 'cbt-slide-r');
+
   return (
     <div className="test-enter">
+      <style>{CBT_CSS}</style>
       {/* issues round — pad for the device status bar (same fix as TopBar) */}
       <div className="sticky top-0 z-20" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           {strict ? (
             <div className="p-1.5" title="Strict mode — finish the test to exit">
               <Lock size={18} style={{ color: T.muted }} />
@@ -397,25 +496,61 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               <X size={20} style={{ color: T.muted }} />
             </button>
           )}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold tabular-nums"
+          <div className={'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold tabular-nums' + (timeRemaining < 60 && !reducedRef.current ? ' timer-beat-fast' : '')}
                style={{ background: timeRemaining < 60 ? T.errorSoft : T.surfaceWarm, color: timeColor }}>
             <Hourglass size={14} />
             {fmtTime(timeRemaining)}
           </div>
-          <button onClick={() => setPaletteOpen(true)} aria-label="Open question palette"
-                  className="no-tap-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition"
-                  style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}55` }}>
-            <LayoutGrid size={14} />
-            {index + 1}/{questions.length}
-            {markedCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
-                    style={{ background: PALETTE_MARKED, color: '#FFF', border: `1.5px solid ${T.bg}` }}>
-                {markedCount}
-              </span>
-            )}
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button onClick={() => setShowKeys(s => !s)} aria-label="Keyboard shortcuts"
+                    className="no-tap-highlight p-1.5 rounded-lg active:scale-90 transition"
+                    style={{ color: showKeys ? T.primary : T.muted, background: showKeys ? T.primary + '15' : 'transparent' }}>
+              <Keyboard size={18} />
+            </button>
+            <button onClick={() => setPaletteOpen(true)} aria-label="Open question palette"
+                    className="no-tap-highlight relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold active:scale-95 transition"
+                    style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}55` }}>
+              <LayoutGrid size={14} />
+              {index + 1}/{questions.length}
+              {markedCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
+                      style={{ background: PALETTE_MARKED, color: '#FFF', border: `1.5px solid ${T.bg}` }}>
+                  {markedCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+        {/* always-on status legend — the CBT exam-panel summary */}
+        <div className="max-w-md mx-auto px-4 pb-2 flex items-center gap-2">
+          {legend.map((l) => (
+            <div key={l.label} className="flex-1 flex items-center gap-1.5 px-2 py-1 rounded-lg" style={{ background: T.surfaceWarm }}>
+              <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: l.color }} />
+              <span key={l.n} className={'text-[12px] font-bold tabular-nums ' + (reducedRef.current ? '' : 'cbt-count')} style={{ color: T.ink }}>{l.n}</span>
+              <span className="text-[10px] truncate" style={{ color: T.muted }}>{l.label}</span>
+            </div>
+          ))}
         </div>
       </div>
+
+      {/* keyboard shortcut popover */}
+      {showKeys && (
+        <div className="fixed inset-0 z-50" onClick={() => setShowKeys(false)}>
+          <div className="absolute right-3 top-16 w-60 rounded-2xl p-3.5 anim-scalein" onClick={e => e.stopPropagation()}
+               style={{ background: T.bg, border: `1px solid ${T.borderSoft}`, boxShadow: '0 18px 50px rgba(0,0,0,0.35)' }}>
+            <div className="flex items-center gap-2 mb-2.5">
+              <Keyboard size={15} style={{ color: T.primary }} />
+              <span className="font-display text-sm font-semibold" style={{ color: T.ink }}>Keyboard shortcuts</span>
+            </div>
+            {[['1 – 9', 'Choose an option'], ['→ / N', 'Next question'], ['← / P', 'Previous'], ['Enter', 'Save & next'], ['M', 'Mark for review'], ['C', 'Clear response'], ['G', 'Question palette']].map(([key, desc]) => (
+              <div key={key} className="flex items-center justify-between py-1">
+                <span className="text-[12px]" style={{ color: T.inkSoft }}>{desc}</span>
+                <kbd className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: T.surfaceWarm, color: T.ink, border: `1px solid ${T.border}` }}>{key}</kbd>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="max-w-md mx-auto px-4 pt-4 pb-40">
         {/* #4 — tags row with the bookmark at the rightmost edge (same
@@ -457,73 +592,83 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
           )}
         </div>
 
-        <div className="text-xs uppercase tracking-wider mb-2" style={{ color: T.muted }}>Question {index + 1}</div>
-        <div className="font-display text-xl leading-snug mb-6" style={{ color: T.ink }}>{q.q}</div>
-        {/* P17 — optional image, shown between stem and options */}
-        <QuestionImage q={q} />
+        <div key={q.id} className={aClass}>
+          <div className="text-xs uppercase tracking-wider mb-2" style={{ color: T.muted }}>Question {index + 1}</div>
+          <div className="font-display text-xl leading-snug mb-6" style={{ color: T.ink }}>{q.q}</div>
+          {/* P17 — optional image, shown between stem and options */}
+          <QuestionImage q={q} />
 
-        <div className="space-y-2.5 mb-6">
-          {q.options.map((opt, i) => {
-            const isSel = selected.includes(i);
-            return (
-              <div key={i} onClick={() => toggleOption(i)}
-                   role="button"
-                   tabIndex={0}
-                   aria-pressed={isSel}
-                   aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
-                   onKeyDown={(e) => {
-                     if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
-                       e.preventDefault();
-                       toggleOption(i);
-                     }
-                   }}
-                   className="no-tap-highlight rounded-2xl px-4 py-3.5 flex items-start gap-3 cursor-pointer active:scale-[0.99] transition-colors"
-                   style={{ background: isSel ? T.primary + '08' : T.surface,
-                            border: `1.5px solid ${isSel ? T.primary : T.border}` }}>
-                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 text-xs font-semibold"
-                     style={{ background: isSel ? T.primary : T.surface,
+          <div className="space-y-2.5">
+            {q.options.map((opt, i) => {
+              const isSel = selected.includes(i);
+              return (
+                <div key={i} onClick={() => toggleOption(i)}
+                     role="button"
+                     tabIndex={0}
+                     aria-pressed={isSel}
+                     aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
+                     onKeyDown={(e) => {
+                       if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleOption(i); }
+                     }}
+                     className="no-tap-highlight rounded-2xl px-4 py-3.5 flex items-center gap-3 cursor-pointer active:scale-[0.99] transition-colors"
+                     style={{ background: isSel ? T.primary + '0E' : T.surface,
                               border: `1.5px solid ${isSel ? T.primary : T.border}`,
-                              color: isSel ? '#FFF' : T.muted }}>
-                  {String.fromCharCode(65 + i)}
+                              boxShadow: isSel ? `0 4px 14px ${T.primary}22` : 'none' }}>
+                  <div key={isSel ? 'on' : 'off'}
+                       className={'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-semibold ' + (isSel && !reducedRef.current ? 'cbt-pop' : '')}
+                       style={{ background: isSel ? T.primary : T.surface,
+                                border: `1.5px solid ${isSel ? T.primary : T.border}`,
+                                color: isSel ? '#FFF' : T.muted }}>
+                    {isSel ? <Check size={14} /> : String.fromCharCode(65 + i)}
+                  </div>
+                  <div className="text-sm leading-snug flex-1" style={{ color: T.ink }}>{opt}</div>
+                  {i < 9 && (
+                    <kbd className="text-[10px] font-bold px-1.5 py-0.5 rounded flex-shrink-0"
+                         style={{ background: isSel ? T.primary + '18' : T.surfaceWarm, color: isSel ? T.primary : T.muted, border: `1px solid ${isSel ? T.primary + '44' : T.border}` }}>{i + 1}</kbd>
+                  )}
                 </div>
-                <div className="text-sm leading-snug pt-0.5" style={{ color: T.ink }}>{opt}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="flex gap-2">
-          <button onClick={toggleMark}
-                  className="no-tap-highlight flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
-                  style={{ background: isMarked ? PALETTE_MARKED + '15' : T.surface,
-                           border: `1px solid ${isMarked ? PALETTE_MARKED : T.border}`,
-                           color: isMarked ? PALETTE_MARKED : T.inkSoft }}>
-            <Flag size={12} fill={isMarked ? PALETTE_MARKED : 'none'} />
-            {isMarked ? 'Unmark' : 'Mark for review'}
-          </button>
-          <button onClick={clearAnswer} disabled={selected.length === 0}
-                  className="no-tap-highlight flex-1 py-2.5 rounded-xl text-xs font-medium flex items-center justify-center gap-1.5 disabled:opacity-40"
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-            <RotateCcw size={12} />
-            Clear answer
-          </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto flex gap-2">
-          <Button variant="ghost" onClick={goPrev} disabled={index === 0} className="flex-1" icon={<ChevronLeft size={16} />}>
-            Previous
-          </Button>
-          {index < questions.length - 1 ? (
-            <Button onClick={goNext} className="flex-1" icon={<ChevronRight size={16} />}>
-              Next
-            </Button>
-          ) : (
-            <Button variant="accent" onClick={() => setConfirm('submit')} className="flex-1" icon={<Send size={16} />}>
-              Submit test
-            </Button>
+        <div className="max-w-md mx-auto relative">
+          {/* Save & Next confirmation flash */}
+          {savedKey > 0 && (
+            <span key={savedKey} className={'absolute -top-9 left-1/2 -translate-x-1/2 inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full pointer-events-none ' + (reducedRef.current ? '' : 'cbt-saved')}
+                  style={{ background: T.success, color: '#FFF', boxShadow: `0 6px 16px ${T.success}66` }}>
+              <Check size={12} /> Saved
+            </span>
           )}
+          <div className="flex items-center gap-2">
+            <button onClick={goPrev} disabled={index === 0} aria-label="Previous question"
+                    className="no-tap-highlight w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition disabled:opacity-35"
+                    style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+              <ChevronLeft size={18} />
+            </button>
+            <button onClick={clearAnswer} disabled={selected.length === 0} aria-label="Clear response"
+                    className="no-tap-highlight w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition disabled:opacity-35"
+                    style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+              <RotateCcw size={16} />
+            </button>
+            <button onClick={toggleMark} aria-label={isMarked ? 'Unmark for review' : 'Mark for review'}
+                    className="no-tap-highlight h-11 px-3 rounded-xl flex items-center gap-1.5 flex-shrink-0 active:scale-95 transition text-xs font-semibold"
+                    style={{ background: isMarked ? PALETTE_MARKED : T.surface, border: `1px solid ${isMarked ? PALETTE_MARKED : T.border}`, color: isMarked ? '#FFF' : T.inkSoft }}>
+              <Flag size={14} fill={isMarked ? '#FFF' : 'none'} />
+              {isMarked ? 'Marked' : 'Mark'}
+            </button>
+            {index < questions.length - 1 ? (
+              <Button onClick={saveAndNext} className="flex-1" icon={<ChevronRight size={16} />}>
+                Save &amp; Next
+              </Button>
+            ) : (
+              <Button variant="accent" onClick={() => setConfirm('submit')} className="flex-1" icon={<Send size={16} />}>
+                Submit test
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
