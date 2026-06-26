@@ -345,7 +345,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
         {/* #4/#5 — lifetime confidence calibration + pacing. Two analysis cards
             of similar weight; on desktop they sit side-by-side (mobile stacks
             them exactly as before). */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start lg:mb-5">
+        <div className="md:grid md:grid-cols-2 md:gap-4 md:items-start md:mb-5">
           <CalibrationCard cal={calibration} title="Calibration" subtitle="How often you're right at each confidence level" />
           <PacingCard entries={pacingEntries} title="Pacing" subtitle="Average time per question, by topic" />
         </div>
@@ -445,7 +445,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               <span className="inline-flex items-center gap-1"><span className="w-2 h-2 rounded-full" style={{ background: T.error }} />{mastery.weak} to work on</span>
             </div>
 
-            <div className="space-y-1 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-1">
+            <div className="space-y-1 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-1">
               {sortedTopics.map(t => (
                 <button key={t.id}
                         onClick={() => onPracticeTopic && onPracticeTopic(t.id)}
@@ -625,7 +625,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               </div>
               <div className="font-display text-2xl font-semibold mb-3" style={{ color: T.ink }}>{fmt(overallAvgMs)}</div>
 
-              <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-2.5">
+              <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-2.5">
                 {Object.entries(speedByTopic)
                   .map(([tid, tt]) => ({ tid, name: tt.name, avgMs: avg(tt.times), n: tt.times.length }))
                   .sort((a, b) => b.avgMs - a.avgMs)

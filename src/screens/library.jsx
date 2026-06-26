@@ -205,7 +205,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
             </button>
           </div>
         ) : (
-          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:items-start">
+          <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-2.5 md:items-start">
             {visibleBanks.map((b, bi) => {
               const date = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
               const mine = isBankOwner(b, profileId);

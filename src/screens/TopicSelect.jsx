@@ -65,7 +65,7 @@ function TopicSelect({ onPick, onBack, onSetPace }) {
         <PaceSelector value={pace} onChange={onSetPace} T={T} />
 
         <div className="text-xs uppercase tracking-wider font-semibold mb-2 mt-5" style={{ color: T.muted }}>Choose a subject</div>
-        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:items-start">
+        <div className="space-y-2.5 md:space-y-0 md:grid md:grid-cols-2 md:gap-2.5 md:items-start">
           {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {
             const acc = accuracyByTopic[topic.id];
             const accPct = acc && acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : null;

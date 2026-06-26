@@ -130,7 +130,7 @@ function DrillTests({ onBack, onNavigate }) {
 
         <SectionLabel delay={110}>Clinical simulators</SectionLabel>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
+        <div className="md:grid md:grid-cols-2 md:gap-x-3 md:items-start">
 
         {/* Clinical Skill Drill — interactive procedure sequencing (NEW) */}
         <Reveal delay={120}>
@@ -285,7 +285,7 @@ function DrillTests({ onBack, onNavigate }) {
 
         <SectionLabel delay={150}>Sharp reasoning</SectionLabel>
 
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
+        <div className="md:grid md:grid-cols-2 md:gap-x-3 md:items-start">
 
         {/* Distractor Assassin — eliminate-the-wrong reasoning drill (NEW) */}
         <Reveal delay={154}>
@@ -337,8 +337,8 @@ function DrillTests({ onBack, onNavigate }) {
 
         <SectionLabel delay={166}>Exam hall</SectionLabel>
 
-        {/* items-stretch so PYQ and Advanced match height side-by-side on PC */}
-        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-stretch">
+        {/* items-stretch so PYQ and Advanced match height side-by-side (tablet+) */}
+        <div className="md:grid md:grid-cols-2 md:gap-x-3 md:items-stretch">
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={170}>
@@ -365,9 +365,9 @@ function DrillTests({ onBack, onNavigate }) {
               </div>
               <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
             </div>
-            {/* desktop-only supporting line — balances the height against the
+            {/* tablet/desktop supporting line — balances the height against the
                 Advanced Test card beside it (mobile is unchanged). */}
-            <div className="text-[11px] mt-3 pt-3 leading-relaxed hidden lg:block"
+            <div className="text-[11px] mt-3 pt-3 leading-relaxed hidden md:block"
                  style={{ color: 'rgba(255,255,255,0.7)', borderTop: '1px solid rgba(255,255,255,0.18)' }}>
               Sit the full timed paper, or open Read Mode for calm question-and-answer revision.
             </div>
