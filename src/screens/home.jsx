@@ -466,7 +466,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   })();
 
   return (
-    <div className="max-w-md md:max-w-2xl lg:max-w-6xl mx-auto px-4 lg:px-8 pb-24">
+    <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-24">
       {/* Issue 6 — fixed top bar that hides on scroll-down and reveals on
           scroll-up. Portaled to <body> so no transformed ancestor can ever
           break its position:fixed. GPU-GLITCH FIX: this bar is now OPAQUE (no
@@ -484,7 +484,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       paddingTop: 'env(safe-area-inset-top, 0px)',
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
-          <div className="flex items-center justify-between px-4 lg:px-8 py-2.5 max-w-md md:max-w-2xl lg:max-w-6xl mx-auto">
+          <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-2.5 max-w-md md:max-w-3xl lg:max-w-6xl mx-auto">
             <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"

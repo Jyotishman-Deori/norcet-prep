@@ -170,7 +170,7 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
           edge of the page and the actions to the right edge — a proper app
           header instead of a tiny 448px island floating mid-screen. Mobile and
           tablet widths are unchanged. */}
-      <div className="flex items-center justify-between px-4 lg:px-8 py-3 max-w-md md:max-w-2xl lg:max-w-5xl mx-auto">
+      <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-3 max-w-md md:max-w-3xl lg:max-w-5xl mx-auto">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
             <Tip text="Go back to the previous screen">

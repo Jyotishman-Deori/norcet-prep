@@ -265,7 +265,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
           so it belongs next to Start. */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
+        <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8">
           {canStart ? (
             <div className="text-xs text-center mb-2 tabular-nums" style={{ color: T.muted }}>
               {count} questions · {timeMinutes} min · ready to start

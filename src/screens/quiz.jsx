@@ -782,7 +782,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
       {/* Bottom action bar */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
+        <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8">
           {/* Quick reference — opens a lookup overlay (labs, drugs, vitals,
               conversions) without leaving the question. Always available in
               Quick / Topic / Mock; Advanced Test is a separate component and

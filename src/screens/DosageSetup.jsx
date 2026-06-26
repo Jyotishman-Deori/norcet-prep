@@ -89,7 +89,7 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
+        <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8">
           <Button onClick={() => onStart({ count: effectiveCount })} disabled={!canStart} size="lg" className="w-full" icon={<Play size={16} fill="#FFF" strokeWidth={0} />}>
             Start {effectiveCount} question{effectiveCount === 1 ? '' : 's'}
           </Button>
