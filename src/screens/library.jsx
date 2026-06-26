@@ -9,6 +9,7 @@ import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye, PenLine, Target } f
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { bankVisibility, isBankOwner } from '../lib/banks.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 
 function VisibilityPill({ bank }) {
   const { theme: T } = useTheme();
@@ -68,7 +69,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
     <div className="anim-fadeup">
       <TopBar title="Question Bank Library" onBack={onBack}
               feedback={{ screen: "Library" }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <PageContainer size="content" className="pb-24 pt-2">
 
         {/* Anyone can upload a bank. #26/1.1 — app-gradient card (was a dark
             slab that read like a different app), warmer copy, and a single
@@ -204,7 +205,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
             </button>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:items-start">
             {visibleBanks.map((b, bi) => {
               const date = b.updatedAt ? new Date(b.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
               const mine = isBankOwner(b, profileId);
@@ -250,7 +251,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
             })}
           </div>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
