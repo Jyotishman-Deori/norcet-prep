@@ -706,8 +706,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           status (left) and the primary action cards (right). Each column
           wrapper is display:contents on mobile, so it dissolves and the cards
           fall back to the EXACT single-column mobile order. */}
-      <div className="lg:grid lg:grid-cols-12 lg:gap-6 lg:items-start">
-      <div className="contents lg:block lg:col-span-5">
+      <div className="md:grid md:grid-cols-12 md:gap-5 lg:gap-6 md:items-start">
+      <div className="contents md:block md:col-span-6 lg:col-span-5">
 
       {/* Streak · Accuracy · Today — the stats cluster now LEADS the left status
           column (above the weekly summary) on every breakpoint. */}
@@ -925,7 +925,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           original position between Review and the exam countdown. On desktop
           it's hidden here and instead leads the right actions column (below),
           directly above Drill Tests. Same computed `focusRow`, shown once. */}
-      {focusRow && <div className="lg:hidden">{focusRow}</div>}
+      {focusRow && <div className="md:hidden">{focusRow}</div>}
 
       {/* Exam countdown — the "set a date" entry point now lives in the
           slide-in menu (Tools). The dashboard only shows the countdown once a
@@ -1020,19 +1020,19 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           the exam countdown). On desktop it's hidden here and instead sits in
           the right actions column, below the weak-area/syllabus row and above
           Drill Tests (see below). */}
-      <div className="lg:hidden"><FavStrip onNavigate={onNavigate} /></div>
+      <div className="md:hidden"><FavStrip onNavigate={onNavigate} /></div>
 
       </div>{/* /status column */}
-      <div className="contents lg:block lg:col-span-7">
+      <div className="contents md:block md:col-span-6 lg:col-span-7">
 
       {/* Focus row on DESKTOP leads the actions column, directly above
           Favourites + Drill Tests (hidden on mobile, where it renders up in the
           status column). */}
-      {focusRow && <div className="hidden lg:block">{focusRow}</div>}
+      {focusRow && <div className="hidden md:block">{focusRow}</div>}
 
       {/* FAV on DESKTOP — directly below the weak-area/syllabus row and above
           Drill Tests, as requested. Renders nothing unless Favourites is on. */}
-      <div className="hidden lg:block"><FavStrip onNavigate={onNavigate} /></div>
+      <div className="hidden md:block"><FavStrip onNavigate={onNavigate} /></div>
 
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
           section; all six test modes now live on the dedicated Drill Tests
