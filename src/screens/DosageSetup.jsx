@@ -9,6 +9,7 @@ import { Calculator, Sigma, Play } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { useContent } from '../lib/content.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import { normalizePace } from '../lib/pace.js';
@@ -29,7 +30,7 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Dosage calculation" onBack={onBack} feedback={{ screen: 'Dosage setup' }} solid />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-32">
+      <PageContainer size="content" className="pt-2 pb-32">
         {/* Hero — reads like a drug-math drill brief */}
         <Card className="p-4 mb-5" style={{ background: T.sec.stats, border: 'none' }}>
           <div className="flex items-center gap-3">
@@ -84,11 +85,11 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
             )}
           </>
         )}
-      </div>
+      </PageContainer>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-2xl lg:max-w-3xl mx-auto lg:px-8">
           <Button onClick={() => onStart({ count: effectiveCount })} disabled={!canStart} size="lg" className="w-full" icon={<Play size={16} fill="#FFF" strokeWidth={0} />}>
             Start {effectiveCount} question{effectiveCount === 1 ? '' : 's'}
           </Button>

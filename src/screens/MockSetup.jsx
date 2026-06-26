@@ -8,6 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { Timer } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import { normalizePace } from '../lib/pace.js';
 
@@ -46,7 +47,7 @@ function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
       {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
           Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
       <TopBar title="Mock test setup" onBack={onBack} feedback={{ screen: "Mock setup" }} solid />
-      <div className="max-w-md mx-auto px-4 pt-4 pb-24">
+      <PageContainer size="content" className="pt-4 pb-24">
         <div className="text-sm mb-6" style={{ color: T.muted }}>
           Timed practice across all topics. The timer counts down — if it hits zero, the test ends with whatever you've answered.
         </div>
@@ -113,7 +114,7 @@ function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
         <Button onClick={() => onStart(count, durationMinutes)} size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
           Start mock test
         </Button>
-      </div>
+      </PageContainer>
     </div>
   );
 }

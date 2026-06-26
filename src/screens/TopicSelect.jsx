@@ -10,6 +10,7 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { TOPICS } from '../data/seed.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import { normalizePace } from '../lib/pace.js';
 
@@ -47,7 +48,7 @@ function TopicSelect({ onPick, onBack, onSetPace }) {
       {/* BUG-02 — solid bar (no backdrop-filter) so launching from the colourful
           Favourites honeycomb can't flash a re-sampled backdrop on entry. */}
       <TopBar title="Pick a topic" onBack={onBack} feedback={{ screen: "Topic select" }} solid />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-4">
+      <PageContainer size="content" className="pb-24 pt-4">
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many questions?</div>
         <div className="grid grid-cols-4 gap-2 mb-5">
           {COUNT_OPTIONS.map(c => (
@@ -64,7 +65,7 @@ function TopicSelect({ onPick, onBack, onSetPace }) {
         <PaceSelector value={pace} onChange={onSetPace} T={T} />
 
         <div className="text-xs uppercase tracking-wider font-semibold mb-2 mt-5" style={{ color: T.muted }}>Choose a subject</div>
-        <div className="space-y-2.5">
+        <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2.5 lg:items-start">
           {TOPICS.filter(t => countsByTopic[t.id] > 0).map(topic => {
             const acc = accuracyByTopic[topic.id];
             const accPct = acc && acc.t > 0 ? Math.round((acc.c / acc.t) * 100) : null;
@@ -102,7 +103,7 @@ function TopicSelect({ onPick, onBack, onSetPace }) {
             );
           })}
         </div>
-      </div>
+      </PageContainer>
     </div>
   );
 }
