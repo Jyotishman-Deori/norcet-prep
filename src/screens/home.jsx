@@ -14,10 +14,6 @@ import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
-// #13 — live Knowledge Map summary on the Home card (same state math as the map).
-import { attemptStats } from '../lib/compact.js';
-import { mindmapState, masteryTally } from '../lib/kmap.js';
-import { countsInNursingStats } from '../data/seed.js';
 import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { progress as luProgress, tierFor as luTierFor, normalizeLevelup } from '../lib/levelup.js';
@@ -151,15 +147,6 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   }, []);
   const hour = now.getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
-
-  // #13 — live Knowledge Map summary for the Home card: counts sub-topics by
-  // state with the EXACT same aggregation + thresholds the map uses
-  // (attemptStats per question → per-(topic,sub) totals → mindmapState), so the
-  // card's promise always matches what the constellation shows.
-  const kmapSummary = useMemo(() => {
-    const includeGk = !!(data.preferences && data.preferences.includeGkInStats === true);
-    return masteryTally(data.history || {}, allQuestions, attemptStats, (t) => countsInNursingStats(t, includeGk));
-  }, [data.history, data.preferences, allQuestions]);
 
   // Feature 4 — week-over-week snapshot. ADAPTED to the real data model:
   //   • dailyHistory entries are { date, attempted, correct } — NOT `answered`.
@@ -1159,47 +1146,6 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               ? `${luProg.xp.toLocaleString()} XP · max level`
               : `${luProg.into.toLocaleString()} / ${luProg.span.toLocaleString()} XP to Level ${luProg.level + 1}`}
           </div>
-        </div>
-      </Card>
-      </Tip>
-
-      {/* P10 / #13 — Interactive Knowledge Map. The app's USP, so the entry
-          card carries the constellation language itself: deep-space gradient,
-          a tiny star cluster, and a LIVE "X mastered · Y in progress" summary
-          (same state math as the map) to create pull from Home. */}
-      <Tip title="Knowledge Map" text="Your whole syllabus as a constellation — topics light up as you discover, practise and master them.">
-      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
-            onContextMenu={(e) => e.preventDefault()}
-            style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)',
-                     border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 6px 18px rgba(7,10,20,0.40)' }}>
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 relative"
-               style={{ background: 'rgba(255,210,122,0.14)', border: '1px solid rgba(255,210,122,0.35)' }}>
-            <Network size={20} color="#FFD27A" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-0.5">
-              <div className="font-display text-base font-semibold" style={{ color: '#EAF0FF' }}>Knowledge Map</div>
-              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                    style={{ background: 'rgba(255,210,122,0.18)', color: '#FFD27A' }}>{'\u2728'} Game</span>
-            </div>
-            <div className="text-xs" style={{ color: 'rgba(234,240,255,0.62)' }}>
-              {(kmapSummary.mastered + kmapSummary.inProgress) > 0
-                ? <>
-                    <span style={{ color: '#FFD27A', fontWeight: 600 }}>{kmapSummary.mastered} mastered</span>
-                    {' \u00b7 '}
-                    <span style={{ color: '#9CC4FF', fontWeight: 600 }}>{kmapSummary.inProgress} in progress</span>
-                    {' \u00b7 your constellation grows'}
-                  </>
-                : <>A universe of topics, waiting to light up</>}
-            </div>
-          </div>
-          <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} className="flex-shrink-0" />
-        </div>
-        <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.12)' }}>
-          {[Sparkles, Network, Target, Layers, Activity, GraduationCap].map((Ic, i) => (
-            <Ic key={i} size={15} color="rgba(255,210,122,0.72)" />
-          ))}
         </div>
       </Card>
       </Tip>
