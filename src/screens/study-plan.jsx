@@ -11,6 +11,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { CalendarDays, Target, BookOpen, Timer, Moon, CheckCircle2, Circle, Play, RefreshCw, ChevronDown, Pencil } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 import { buildStudyPlan, planProgress, planMatchesExam, PLAN_KINDS } from '../lib/study-plan.js';
@@ -116,7 +117,7 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
                 </button>
               ) : null} />
 
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <PageContainer size="content" className="pb-24 pt-2">
         {loading ? (
           <div className="py-16 text-center text-sm" style={{ color: T.muted }}>Building your plan…</div>
         ) : !plan || !plan.ok ? (
@@ -177,7 +178,7 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
             </div>
           </>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }

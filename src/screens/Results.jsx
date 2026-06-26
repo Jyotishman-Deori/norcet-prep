@@ -10,6 +10,7 @@ import { Check, Scale, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { Button, Card } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import CalibrationCard from '../ui/calibration-card.jsx';
 import { calibrationFromItems } from '../lib/calibration.js';
 import PacingCard from '../ui/pacing-card.jsx';
@@ -78,7 +79,7 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null, w
   }, [pct]);
 
   return (
-    <div className="anim-fadeup max-w-md mx-auto px-4 pt-8 pb-24">
+    <PageContainer size="content" className="anim-fadeup pt-8 pb-24">
       <MotivationCard pct={pct} label="round" />
       {isGuest && <GuestSavePrompt onSignIn={onGuestSignIn} />}
       <div className="text-center mb-8">
@@ -227,7 +228,7 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null, w
           users after a strong session. */}
       <PeerComparisonCard />
       <ComparisonReengage pct={pct} />
-    </div>
+    </PageContainer>
   );
 }
 

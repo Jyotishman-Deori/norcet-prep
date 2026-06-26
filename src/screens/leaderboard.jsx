@@ -13,6 +13,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight, Zap } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 import EmptyState from '../ui/empty-state.jsx';
 import { loadLeaderboard } from '../lib/leaderboard.js';
 
@@ -98,7 +99,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
                   <RefreshCw size={18} style={{ color: T.muted }} className={entries === null && !offline ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-3">
+      <PageContainer size="content" className="pb-24 pt-3">
 
         {isGuest && (
           <Card className="p-3 mb-4 anim-fadeup" style={{ background: T.primary + '0E', border: `1px solid ${T.primary}33` }}>
@@ -292,7 +293,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
             )}
           </>
         )}
-      </div>
+      </PageContainer>
     </div>
   );
 }
