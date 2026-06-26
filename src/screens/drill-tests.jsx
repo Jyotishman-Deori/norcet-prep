@@ -19,6 +19,7 @@ import React from 'react';
 import { Shuffle, ListChecks, Timer, Calculator, ClipboardList, Hourglass, ChevronRight, SlidersHorizontal, ListOrdered, Activity, Syringe, Recycle, Crosshair, Scale, ScanSearch, Package } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
+import PageContainer from '../ui/page-container.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles per test mode.
 import { Tip } from '../ui/tooltip.jsx';
 // FAV #2 — heart on each test-mode card, beside the title.
@@ -95,7 +96,7 @@ function DrillTests({ onBack, onNavigate }) {
                   <SlidersHorizontal size={18} style={{ color: T.muted }} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <PageContainer size="app" className="pt-2 pb-24">
 
         <Reveal delay={0}>
           <p className="text-[13px] leading-relaxed mb-4 px-0.5" style={{ color: T.muted }}>
@@ -106,21 +107,15 @@ function DrillTests({ onBack, onNavigate }) {
 
         <SectionLabel delay={20}>Practice</SectionLabel>
 
-        {/* Top tier */}
+        {/* Practice modes — 2×2 on mobile, a single 4-up row on desktop. */}
         <Reveal delay={40}>
-          <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 items-stretch">
             <TopCard icon={Shuffle}    color={T.sec.quick} title="Quick Test"
                      sub="Pick count + topic" onClick={() => go('quick-setup')} fav="quick-setup"
                      tip="A fast warm-up: choose how many questions and (optionally) a topic — instant feedback after every answer." />
             <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise Test"
                      sub="Pick a subject" onClick={() => go('topic-select')} fav="topic-select"
                      tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
-          </div>
-        </Reveal>
-
-        {/* Middle tier */}
-        <Reveal delay={90}>
-          <div className="grid grid-cols-2 gap-3 mb-3 items-stretch">
             <MidCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
@@ -131,6 +126,8 @@ function DrillTests({ onBack, onNavigate }) {
         </Reveal>
 
         <SectionLabel delay={110}>Clinical simulators</SectionLabel>
+
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
 
         {/* Clinical Skill Drill — interactive procedure sequencing (NEW) */}
         <Reveal delay={120}>
@@ -248,7 +245,11 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        </div>{/* /clinical simulators grid */}
+
         <SectionLabel delay={150}>Sharp reasoning</SectionLabel>
+
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
 
         {/* Distractor Assassin — eliminate-the-wrong reasoning drill (NEW) */}
         <Reveal delay={154}>
@@ -294,7 +295,11 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        </div>{/* /sharp reasoning grid */}
+
         <SectionLabel delay={166}>Exam hall</SectionLabel>
+
+        <div className="lg:grid lg:grid-cols-2 lg:gap-x-3 lg:items-start">
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={170}>
@@ -362,6 +367,8 @@ function DrillTests({ onBack, onNavigate }) {
           </Tip>
         </Reveal>
 
+        </div>{/* /exam hall grid */}
+
         {/* Drill Packs — import/manage extra content for the interactive drills */}
         <Reveal delay={230}>
           <button onClick={() => go('drill-packs')}
@@ -373,7 +380,7 @@ function DrillTests({ onBack, onNavigate }) {
           </button>
         </Reveal>
 
-      </div>
+      </PageContainer>
     </div>
   );
 }
