@@ -16,21 +16,20 @@
 // =====================================================================
 
 import { FRAME_IDS, normalizeFrame, unownedFrames } from './cosmetics.js';
+import { getConfig } from './game-config.js';
 
 export const MAX_LEVEL = 100;
-export const DAILY_XP_CAP = 3000;        // anti-grind ceiling per local day
 
-// ⚠️ TEMPORARY TEST TOGGLE — faster levelling so the founder can inspect the
-// loop. Scales the XP each level needs: 1 = real curve, 0.2 ≈ 5× faster.
-// REVERT FOR LAUNCH: set XP_REQ_SCALE back to 1.
-const XP_REQ_SCALE = 0.2;
-
-// XP required to advance FROM `level` TO `level+1`. Exponential curve from the
-// spec: fast early levels, ever-steeper climb. Rounded to a tidy integer.
+// XP required to advance FROM `level` TO `level+1`. The coefficient / exponent /
+// reqScale (and the daily cap below) are LIVE-TUNABLE via the game_config row
+// (lib/game-config.js) — no redeploy to rebalance. reqScale is the "how fast do
+// levels come" knob (currently 0.2 ≈ 5× faster for testing; set to 1 for the
+// real curve, ideally in the game_config row).
 export function xpToNext(level) {
   const L = Math.max(1, Math.floor(level));
   if (L >= MAX_LEVEL) return Infinity;
-  return Math.max(10, Math.round(100 * Math.pow(L, 1.5) * XP_REQ_SCALE));
+  const { coefficient, exponent, reqScale } = getConfig().xp;
+  return Math.max(10, Math.round(coefficient * Math.pow(L, exponent) * reqScale));
 }
 
 // Resolve a total-XP value into { level, into, span, pct } — `into` = XP earned
@@ -111,7 +110,7 @@ export function completeGame(l, xpAmount, today) {
   let o = rolloverDaily(normalizeLevelup(l), today);
   const before = progress(o.xp).level;
   const amt = Math.max(0, Math.floor(xpAmount || 0));
-  const room = Math.max(0, DAILY_XP_CAP - o.dailyXp);
+  const room = Math.max(0, getConfig().xp.dailyCap - o.dailyXp);
   const granted = Math.min(amt, room);
   o = { ...o, xp: o.xp + granted, dailyXp: o.dailyXp + granted, dailyGames: o.dailyGames + 1 };
   const after = progress(o.xp).level;
@@ -123,14 +122,10 @@ export function completeGame(l, xpAmount, today) {
 // XP on top of play — they don't touch the daily cap (they're the reward for
 // engaging, not a grind vector). metric: 'games' (drills played today) or 'xp'
 // (XP earned today).
-export const QUESTS = {
-  play1: { id: 'play1', label: 'Play any drill', goal: 1,   metric: 'games', xp: 30 },
-  play3: { id: 'play3', label: 'Play 3 drills',  goal: 3,   metric: 'games', xp: 70 },
-  play5: { id: 'play5', label: 'Play 5 drills',  goal: 5,   metric: 'games', xp: 140 },
-  xp120: { id: 'xp120', label: 'Earn 120 XP',    goal: 120, metric: 'xp',    xp: 50 },
-  xp300: { id: 'xp300', label: 'Earn 300 XP',    goal: 300, metric: 'xp',    xp: 120 },
-};
-const QUEST_IDS = Object.keys(QUESTS);
+// Quest defs are LIVE-TUNABLE via the game_config row (lib/game-config.js). The
+// config keys ARE the ids; questDef() injects the id back onto the def.
+function questDefs() { return getConfig().quests || {}; }
+function questDef(id) { const q = questDefs()[id]; return q ? { id, ...q } : null; }
 
 function hashStr(s) {
   let h = 2166136261;
@@ -141,7 +136,7 @@ function hashStr(s) {
 // The 3 quest ids for `today` — deterministic, so they're stable through the day
 // and vary day to day.
 export function dailyQuestIds(today) {
-  const pool = [...QUEST_IDS];
+  const pool = Object.keys(questDefs());
   const out = [];
   let s = hashStr(today || '') || 1;
   while (out.length < 3 && pool.length) {
@@ -155,7 +150,7 @@ export function dailyQuestIds(today) {
 export function questState(l, today) {
   const o = rolloverDaily(normalizeLevelup(l), today);
   return dailyQuestIds(today).map(id => {
-    const q = QUESTS[id];
+    const q = questDef(id);
     const current = q.metric === 'games' ? o.dailyGames : o.dailyXp;
     return {
       ...q,
@@ -172,7 +167,7 @@ export function questState(l, today) {
 export function claimQuest(l, questId, today) {
   let o = rolloverDaily(normalizeLevelup(l), today);
   const lvl = progress(o.xp).level;
-  const q = QUESTS[questId];
+  const q = questDef(questId);
   const current = q ? (q.metric === 'games' ? o.dailyGames : o.dailyXp) : 0;
   if (!q || !dailyQuestIds(today).includes(questId) || current < q.goal || o.questClaims.includes(questId)) {
     return { levelup: o, claimed: false, leveledUp: false, fromLevel: lvl, toLevel: lvl };
@@ -192,18 +187,16 @@ export function claimQuest(l, questId, today) {
 // Earned by clearing all 3 daily quests. A delightful 3-tap reveal pays out with
 // TRANSPARENT odds (shown in the UI). Coins for now (cosmetics slot in later);
 // the top tier also drops a chunk of bonus XP. No real-money items, ever.
-export const CRATE_ODDS = [
-  { id: 'common',   weight: 60, coins: 60,  xp: 0,   label: '60 Coins',            tone: '#0CA678' },
-  { id: 'uncommon', weight: 28, coins: 150, xp: 0,   label: '150 Coins',           tone: '#2563EB' },
-  { id: 'rare',     weight: 9,  coins: 350, xp: 0,   label: '350 Coins',           tone: '#7C3AED' },
-  { id: 'epic',     weight: 3,  coins: 500, xp: 200, label: '500 Coins + 200 XP',  tone: '#D97706' },
-];
+// Crate reward table — LIVE-TUNABLE via the game_config row. `crateOdds()` is
+// what the reveal UI reads to show transparent odds.
+export function crateOdds() { return getConfig().crateOdds || []; }
 
 export function rollCrate(rng = Math.random) {
-  const total = CRATE_ODDS.reduce((s, r) => s + r.weight, 0);
+  const odds = crateOdds();
+  const total = odds.reduce((s, r) => s + r.weight, 0) || 1;
   let r = (typeof rng === 'function' ? rng() : Math.random()) * total;
-  for (const o of CRATE_ODDS) { if ((r -= o.weight) < 0) return o; }
-  return CRATE_ODDS[0];
+  for (const o of odds) { if ((r -= o.weight) < 0) return o; }
+  return odds[0];
 }
 
 // Open one crate: decrement, roll a reward. Bonus XP (top tier) is uncapped and
@@ -231,5 +224,5 @@ export function openCrate(l, today, rng = Math.random) {
 // How much of today's cap is left (for a subtle "rested" hint in the hub).
 export function dailyRemaining(l, today) {
   const o = rolloverDaily(normalizeLevelup(l), today);
-  return Math.max(0, DAILY_XP_CAP - o.dailyXp);
+  return Math.max(0, getConfig().xp.dailyCap - o.dailyXp);
 }

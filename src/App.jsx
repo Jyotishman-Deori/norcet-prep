@@ -66,6 +66,7 @@ import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
 import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
 import { framePrice } from './lib/cosmetics.js';
+import { loadGameConfig } from './lib/game-config.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -2150,6 +2151,17 @@ export default function App() {
   // never loses progress.
   const pendingSaveRef = useRef(null);  // latest unsaved { profile, data }
   const saveTimerRef = useRef(null);
+  // Egress/invocation guard: the serialised blob we last persisted. A debounced
+  // save that produces an IDENTICAL blob is skipped (no Supabase write). Seeded
+  // to the freshly-loaded blob so we never redundantly re-write data we READ.
+  const lastSavedJsonRef = useRef(null);
+  const savedBaselineRef = useRef(false);
+  useEffect(() => {
+    if (data && profile && !loading && !savedBaselineRef.current) {
+      savedBaselineRef.current = true;
+      try { lastSavedJsonRef.current = JSON.stringify(data); } catch (e) {}
+    }
+  }, [data, profile, loading]);
   // Effect A — schedule a debounced save whenever data changes. Deliberately
   // has NO cleanup: a rapid burst of state updates across separate render
   // ticks should reset the same 1.5s timer, not force an immediate flush on
@@ -2173,7 +2185,13 @@ export default function App() {
     saveTimerRef.current = setTimeout(() => {
       const p = pendingSaveRef.current;
       if (p) {
-        saveProfile({ ...p.profile, data: p.data });
+        let json = null;
+        try { json = JSON.stringify(p.data); } catch (e) {}
+        // Only write to Supabase when the blob actually changed.
+        if (json !== null && json !== lastSavedJsonRef.current) {
+          lastSavedJsonRef.current = json;
+          saveProfile({ ...p.profile, data: p.data });
+        }
         pendingSaveRef.current = null;
       }
       saveTimerRef.current = null;
@@ -2187,7 +2205,11 @@ export default function App() {
         clearTimeout(saveTimerRef.current);
         const p = pendingSaveRef.current;
         if (p.guest) { saveGuestData(p.data); }
-        else { saveProfile({ ...p.profile, data: p.data }); }
+        else {
+          let json = null;
+          try { json = JSON.stringify(p.data); } catch (e) {}
+          if (json !== null && json !== lastSavedJsonRef.current) { lastSavedJsonRef.current = json; saveProfile({ ...p.profile, data: p.data }); }
+        }
         pendingSaveRef.current = null;
         saveTimerRef.current = null;
       }
@@ -3072,6 +3094,10 @@ export default function App() {
   // (the `testCoinGrant` flag is synced in the blob and survives migration +
   // compaction). REVERT FOR LAUNCH: delete this block — already-granted profiles
   // just keep their coins; nothing re-grants.
+  // Load the live game_config (tunable XP/quests/crates/frames/combos) once at
+  // boot — a single public read; falls back to hardcoded defaults if absent.
+  useEffect(() => { loadGameConfig(); }, []);
+
   const TEST_COIN_GRANT_ID = 'gamification-test-100k-v1';
   const coinGrantRef = useRef(false);
   useEffect(() => {

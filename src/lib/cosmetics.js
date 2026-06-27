@@ -6,9 +6,10 @@
 // visual (a gradient ring + soft glow around the avatar) is rendered by
 // ui/framed-avatar.jsx. NO real-money items.
 // =====================================================================
+import { getConfig } from './game-config.js';
 
 // id -> { name, rarity, ring:[from,to] | null, glow, price }. 'none' = default.
-// `price` = Coins to buy in the shop (won free from crates too). 'none' = 0.
+// `price` here is the FALLBACK; live prices come from the game_config row.
 export const FRAMES = {
   none:   { id: 'none',   name: 'No frame', rarity: 'base',   ring: null,                  glow: null,                        price: 0 },
   ember:  { id: 'ember',  name: 'Ember',    rarity: 'common', ring: ['#FB923C', '#B45309'], glow: 'rgba(249,115,22,0.5)',   price: 400 },
@@ -19,7 +20,10 @@ export const FRAMES = {
   gold:   { id: 'gold',   name: 'Gold',     rarity: 'epic',   ring: ['#FCD34D', '#B45309'], glow: 'rgba(252,211,77,0.6)',   price: 1800 },
 };
 
+// Live-tunable price from the game_config row, falling back to the catalog.
 export function framePrice(id) {
+  const prices = getConfig().framePrices || {};
+  if (Number.isFinite(prices[id])) return prices[id];
   const f = FRAMES[id];
   return f ? (f.price || 0) : 0;
 }

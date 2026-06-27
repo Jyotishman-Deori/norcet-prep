@@ -8,13 +8,10 @@
 // =====================================================================
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { getConfig } from '../lib/game-config.js';
 
-const TIERS = [
-  { at: 3,  label: 'On a roll!',    tone: '#0CA678' },
-  { at: 5,  label: 'Steady hands!', tone: '#2563EB' },
-  { at: 8,  label: 'Unstoppable!',  tone: '#7C3AED' },
-  { at: 12, label: 'Flawless!',     tone: '#D97706' },
-];
+// Combo milestones (consecutive correct answers) are LIVE-TUNABLE via the
+// game_config row (lib/game-config.js).
 
 const COMBO_CSS = `
 @keyframes comboBurst {
@@ -39,7 +36,7 @@ export function useCombo() {
   const hit = useCallback(() => {
     setCombo(c => {
       const n = c + 1;
-      const tier = TIERS.find(t => t.at === n);
+      const tier = (getConfig().comboTiers || []).find(t => t.at === n);
       if (tier) {
         setFlash({ label: tier.label, tone: tier.tone, combo: n, key: Date.now() });
         try { if (navigator.vibrate) navigator.vibrate([8, 24, 10]); } catch (e) {}

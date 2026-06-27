@@ -14,7 +14,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Coins, Gift, Sparkles } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
-import { CRATE_ODDS } from '../lib/levelup.js';
+import { crateOdds } from '../lib/levelup.js';
 import { frameDef } from '../lib/cosmetics.js';
 import FramedAvatar from './framed-avatar.jsx';
 
@@ -116,8 +116,8 @@ export default function CrateReveal({ onOpen, onClose }) {
             {/* transparent odds */}
             <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: 'rgba(255,255,255,0.7)' }}>Possible drops</div>
             <div className="flex flex-wrap items-center justify-center gap-1.5">
-              {CRATE_ODDS.map(o => {
-                const pct = Math.round((o.weight / CRATE_ODDS.reduce((s, x) => s + x.weight, 0)) * 100);
+              {crateOdds().map(o => {
+                const pct = Math.round((o.weight / crateOdds().reduce((s, x) => s + x.weight, 0)) * 100);
                 return (
                   <span key={o.id} className="text-[10px] font-semibold px-2 py-1 rounded-full" style={{ background: 'rgba(255,255,255,0.16)', color: '#FFF' }}>
                     {o.label} · {pct}%

@@ -1,0 +1,96 @@
+// =====================================================================
+// src/lib/game-config.js — live, tunable game numbers (no redeploy to balance).
+//
+// All balance knobs live HERE as DEFAULTS, and are overridden at boot by a
+// single row in the existing `kv_shared` Supabase table:
+//
+//     key   = 'game_config'
+//     value = JSON of *partial* overrides, deep-merged over DEFAULTS, e.g.
+//             {"xp":{"reqScale":1},"framePrices":{"gold":2500}}
+//
+// loadGameConfig() reads that row once at boot (a normal public anon read —
+// negligible egress) and merges it in. Change the row in Supabase → every
+// client picks it up on next load, WITHOUT a redeploy. If the row is absent or
+// unreachable, the hardcoded DEFAULTS are used (so the app never depends on it).
+//
+// Engines (levelup.js, cosmetics.js, combo-burst.jsx) read these via getConfig()
+// at call time — never import the raw numbers.
+// =====================================================================
+import { get as kvGet } from '../storage.js';
+
+export const DEFAULTS = {
+  // XP curve: xpToNext(level) = round(coefficient * level^exponent * reqScale).
+  // reqScale is the live "how fast do levels come" knob (1 = real curve).
+  // NOTE: 0.2 is the TEMPORARY test value (≈5× faster) — set reqScale to 1 (here
+  // or, better, in the game_config row) to restore the real curve for launch.
+  xp: { coefficient: 100, exponent: 1.5, reqScale: 0.2, dailyCap: 3000 },
+
+  // Daily quests. metric: 'games' (drills played today) | 'xp' (XP earned today).
+  // `xp` here is the BONUS reward for claiming. Keys are the quest ids; 3 are
+  // drawn deterministically per day from this set.
+  quests: {
+    play1: { label: 'Play any drill', goal: 1,   metric: 'games', xp: 30 },
+    play3: { label: 'Play 3 drills',  goal: 3,   metric: 'games', xp: 70 },
+    play5: { label: 'Play 5 drills',  goal: 5,   metric: 'games', xp: 140 },
+    xp120: { label: 'Earn 120 XP',    goal: 120, metric: 'xp',    xp: 50 },
+    xp300: { label: 'Earn 300 XP',    goal: 300, metric: 'xp',    xp: 120 },
+  },
+
+  // Supply Crate reward table (weighted). Rare/epic also drop an unowned frame.
+  crateOdds: [
+    { id: 'common',   weight: 60, coins: 60,  xp: 0,   label: '60 Coins',           tone: '#0CA678' },
+    { id: 'uncommon', weight: 28, coins: 150, xp: 0,   label: '150 Coins',          tone: '#2563EB' },
+    { id: 'rare',     weight: 9,  coins: 350, xp: 0,   label: '350 Coins',          tone: '#7C3AED' },
+    { id: 'epic',     weight: 3,  coins: 500, xp: 200, label: '500 Coins + 200 XP', tone: '#D97706' },
+  ],
+
+  // Cosmetic frame shop prices (Coins). Keys = frame ids from cosmetics.js.
+  framePrices: { ember: 400, frost: 400, forest: 400, neon: 900, royal: 900, gold: 1800 },
+
+  // In-game combo banner milestones (consecutive correct answers).
+  comboTiers: [
+    { at: 3,  label: 'On a roll!',    tone: '#0CA678' },
+    { at: 5,  label: 'Steady hands!', tone: '#2563EB' },
+    { at: 8,  label: 'Unstoppable!',  tone: '#7C3AED' },
+    { at: 12, label: 'Flawless!',     tone: '#D97706' },
+  ],
+};
+
+function isPlainObject(x) { return !!x && typeof x === 'object' && !Array.isArray(x); }
+
+// Deep-merge `over` onto `base`: objects recurse; arrays + primitives REPLACE.
+function deepMerge(base, over) {
+  if (!isPlainObject(over)) return over === undefined ? base : over;
+  const out = Array.isArray(base) ? [...base] : { ...base };
+  for (const k of Object.keys(over)) {
+    out[k] = isPlainObject(base && base[k]) && isPlainObject(over[k])
+      ? deepMerge(base[k], over[k])
+      : over[k];
+  }
+  return out;
+}
+
+// Live config — starts as DEFAULTS, replaced when a remote override loads.
+let CONFIG = DEFAULTS;
+
+export function getConfig() { return CONFIG; }
+
+// Merge partial overrides over DEFAULTS (always from DEFAULTS so it's idempotent).
+export function applyRemoteConfig(remote) {
+  CONFIG = isPlainObject(remote) ? deepMerge(DEFAULTS, remote) : DEFAULTS;
+  return CONFIG;
+}
+
+// Read the `game_config` row once at boot and apply it. Public anon read; safe
+// to call early. Never throws; returns true if a remote override was applied.
+export async function loadGameConfig() {
+  try {
+    const r = await kvGet('game_config', true);
+    if (r && r.value != null) {
+      const remote = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
+      applyRemoteConfig(remote);
+      return true;
+    }
+  } catch (e) { /* fall back to DEFAULTS */ }
+  return false;
+}
