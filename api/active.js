@@ -37,10 +37,12 @@ export default async function handler(req, res) {
     const { subscriptionId } = req.body || {};
     if (!validId(subscriptionId)) return res.status(400).json({ error: 'Missing id' });
     const key = `sub:${subscriptionId}`;
+    // @vercel/kv returns the deserialised OBJECT (no JSON.parse needed); set
+    // takes the object too. Manual stringify/parse double-encodes and throws.
     const existing = await kv.get(key);
     if (!existing) return res.status(404).json({ error: 'Not found' });
-    const updated = { ...JSON.parse(existing), lastActive: new Date().toISOString().slice(0, 10) };
-    await kv.set(key, JSON.stringify(updated));
+    const updated = { ...existing, lastActive: new Date().toISOString().slice(0, 10) };
+    await kv.set(key, updated);
     res.status(200).json({ ok: true });
   } catch (e) {
     res.status(500).json({ error: 'active failed' });

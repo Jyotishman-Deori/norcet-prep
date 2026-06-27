@@ -57,9 +57,29 @@ function isAuthorizedCron(req) {
 
 const CONCURRENCY = 20;
 
+// Trivial 1-row read against Supabase PostgREST (anon) to keep the free-tier
+// project active so it never idles into the 7-day pause. Uses whichever env
+// names are present; no-ops (never throws) if Supabase isn't configured.
+async function pingSupabase() {
+  try {
+    const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+    const key = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
+    if (!url || !key) return;
+    await fetch(`${url}/rest/v1/kv_shared?select=key&limit=1`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+    });
+  } catch (e) { /* best-effort keep-alive */ }
+}
+
 export default async function handler(req, res) {
   // C-4: reject anything that isn't the authenticated cron.
   if (!isAuthorizedCron(req)) return res.status(401).json({ error: 'Unauthorized' });
+
+  // 7-DAY PAUSE GUARD — Supabase free tier pauses a project after 7 days of
+  // zero activity. This daily cron also touches Supabase (a trivial 1-row read)
+  // so the project never idles into a pause, even during quiet pre-launch days.
+  // Best-effort; a failure here must not block the reminders.
+  await pingSupabase();
 
   const today = new Date().toISOString().slice(0, 10);
   let keys = [];
@@ -69,9 +89,10 @@ export default async function handler(req, res) {
 
   async function processOne(key) {
     try {
-      const raw = await kv.get(key);
-      if (!raw) return;
-      const record = JSON.parse(raw);
+      // @vercel/kv returns the deserialised OBJECT — no JSON.parse (which would
+      // throw on an object and fail every send).
+      const record = await kv.get(key);
+      if (!record) return;
       if (record.lastActive === today) { skipped++; return; }
       const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
       await webpush.sendNotification(

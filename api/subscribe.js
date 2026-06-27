@@ -56,12 +56,15 @@ export default async function handler(req, res) {
     if (!validSubscription(subscription)) return res.status(400).json({ error: 'Invalid subscription' });
     const time = validReminderTime(reminderTime) ? reminderTime : '08:00';
     const id = Buffer.from(subscription.endpoint).toString('base64').slice(-32);
-    await kv.set(`sub:${id}`, JSON.stringify({
+    // Store the OBJECT directly. @vercel/kv (Upstash) serialises on set and
+    // deserialises on get, so JSON.stringify-ing here + JSON.parse-ing on read
+    // double-encodes and breaks the readers (active.js / send-reminders.js).
+    await kv.set(`sub:${id}`, {
       subscription,
       reminderTime: time,
       lastActive: null,
       createdAt: Date.now()
-    }));
+    });
     res.status(200).json({ ok: true, id });
   } catch (e) {
     res.status(500).json({ error: 'subscribe failed' });
