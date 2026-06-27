@@ -101,6 +101,37 @@ async function idbList(prefix) {
 }
 
 // ---------------------------------------------------------------------
+// EGRESS ESTIMATE — Supabase free tier meters 5 GB/month of EGRESS (data read
+// OUT), which a blob-sync app hits before the 500 MB DB limit. This sums the
+// bytes received from SHARED reads into a per-MONTH local counter so usage is
+// visible. PER-DEVICE estimate — multiply by your active-user count for a rough
+// global figure. Inspect via `window.__egress()` in the console, or the
+// exported getEgressStats(). content-length is CORS-safelisted, so readable;
+// responses that omit it are simply undercounted (it's an estimate).
+// ---------------------------------------------------------------------
+function egMonthKey() { return new Date().toISOString().slice(0, 7); } // YYYY-MM
+let egMonth = egMonthKey();
+let egBytes = 0;
+let egFlushTimer = null;
+(async () => { try { const v = await idbGet(`__egress:${egMonth}`); if (typeof v === 'number') egBytes = v; } catch (e) {} })();
+
+function bumpEgress(res) {
+  try {
+    const m = egMonthKey();
+    if (m !== egMonth) { egMonth = m; egBytes = 0; }
+    const n = Number(res && res.headers && res.headers.get && res.headers.get('content-length'));
+    if (Number.isFinite(n) && n > 0) egBytes += n;
+    if (egFlushTimer) clearTimeout(egFlushTimer);
+    egFlushTimer = setTimeout(() => { idbSet(`__egress:${egMonth}`, egBytes).catch(() => {}); egFlushTimer = null; }, 4000);
+  } catch (e) {}
+}
+
+export function getEgressStats() {
+  return { month: egMonth, bytes: egBytes, mb: +(egBytes / 1048576).toFixed(2) };
+}
+if (typeof window !== 'undefined') { try { window.__egress = getEgressStats; } catch (e) {} }
+
+// ---------------------------------------------------------------------
 // SHARED STORAGE — Supabase PostgREST
 //
 // We talk to PostgREST directly with `fetch()` instead of pulling in
@@ -206,6 +237,7 @@ async function brokerGet(key) {
     if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
     throw new Error(`kv-read get ${res.status} ${await safeText(res)}`);
   }
+  bumpEgress(res);
   const j = await res.json();
   return (j && j.value != null) ? j.value : null;
 }
@@ -225,6 +257,7 @@ async function brokerList(prefix) {
     if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
     throw new Error(`kv-read list ${res.status} ${await safeText(res)}`);
   }
+  bumpEgress(res);
   const j = await res.json();
   return (j && Array.isArray(j.keys)) ? j.keys : [];
 }
@@ -242,6 +275,7 @@ async function supabaseGet(key) {
   const url = `${REST_URL}?key=eq.${encodeURIComponent(key)}&select=value`;
   const res = await fetch(url, { headers: supabaseHeaders() });
   if (!res.ok) throw new Error(`Supabase GET ${res.status} ${await safeText(res)}`);
+  bumpEgress(res);
   const rows = await res.json();
   if (!rows || !rows.length) return null;
   return rows[0].value;
@@ -271,6 +305,7 @@ async function supabaseList(prefix) {
   // ever exceed it for a single prefix, we add a Range header here.
   const res = await fetch(url, { headers: supabaseHeaders() });
   if (!res.ok) throw new Error(`Supabase LIST ${res.status} ${await safeText(res)}`);
+  bumpEgress(res);
   const rows = await res.json();
   return (rows || []).map(r => r.key);
 }
