@@ -224,8 +224,9 @@ import AuthScreen from './screens/auth-screen.jsx';
 import { AdvancedTestSetup, AdvancedTest, AdvancedTestResults } from './screens/advanced-test.jsx';
 // [A1 slice 44] question-bank detail + editor pair extracted (+ the two single-consumer EXAMPLE_QUESTIONS_* payloads).
 import { BankDetail, BankEditor } from './screens/bank-screens.jsx';
-// [A1 slice 45] AdminPanel (admin hub) extracted; admin user helpers passed as props.
-const AdminPanel = lazy(() => import('./screens/admin-panel.jsx'));
+// [admin-app separation] The Admin Panel now lives ONLY in the standalone admin
+// app (src/AdminApp.jsx, built from admin.html). The student bundle ships no
+// admin panel — so it's no longer imported here.
 
 // #1 — shown briefly while a lazily-loaded screen's chunk is fetched. After
 // the first visit these chunks are precached by the service worker, so this
@@ -2023,7 +2024,7 @@ export default function App() {
       try {
         const tm = await loadThemeMode();
         setThemeMode(tm);
-        setIsAdmin(await loadAdminStatus());
+        // [admin-app separation] no admin in the student app — isAdmin stays false.
         loadAnnouncement().then(setAnnouncement).catch(() => {});
         const session = await loadSession();
         if (session && session.profileId) {
@@ -3462,96 +3463,10 @@ export default function App() {
     return updated;
   }, [profile, data]);
 
-  // ===== Admin =====
-  // A4: passphrase is the UX gate (don't pop admin UI on a stray tap), but
-  // the SOURCE OF TRUTH is the server. We only grant isAdmin if BOTH the
-  // passphrase verifies AND the current profile id is in admin_profile_ids
-  // on Supabase. Returns a string reason on failure so the form can tell the
-  // user WHY (wrong passphrase vs. this profile isn't an admin vs. offline).
-  const handleUnlockAdmin = useCallback(async (passphrase) => {
-    let passOk;
-    try {
-      passOk = await verifyAdminPassphrase(passphrase); // server-side check
-    } catch (e) {
-      // Couldn't reach the verify function (offline / unreachable). Don't claim
-      // "wrong passphrase" — surface the same offline path as the server check.
-      return 'not-authorized';
-    }
-    if (!passOk) return false; // form shows "Incorrect passphrase"
-    const pid = profile ? profile.id : null;
-    const uid = profile ? profile.uid : null;
-    const serverOk = await checkServerAdmin(pid, uid);
-    if (!serverOk) {
-      // Passphrase right, but this profile isn't authorised server-side (or
-      // we're offline / Supabase unreachable). Do NOT grant — fail closed.
-      return 'not-authorized';
-    }
-    await saveAdminStatus(true);
-    setIsAdmin(true);
-    return true;
-  }, [profile]);
-
-  const handleLockAdmin = useCallback(async () => {
-    await saveAdminStatus(false);
-    setIsAdmin(false);
-  }, []);
-
-  // ===== Announcements =====
-  // A4: writes go through the admin direct-fetch path and can THROW (network,
-  // not-authorised, config). Surface the failure to the caller instead of
-  // optimistically flipping local state, so the admin sees a real result.
-  const handleSaveAnnouncement = useCallback(async (text, level, expiresDays = null) => {
-    const pid = profile ? profile.id : null;
-    const entry = await saveAnnouncement(text, level, pid, expiresDays); // throws on failure
-    setAnnouncement(entry);
-    return entry;
-  }, [profile]);
-
-  // #12 — history management for the admin panel.
-  const handleLoadAnnHistory = useCallback(() => loadAnnouncementHistory(), []);
-  const handleDeleteAnnHistoryItem = useCallback(async (id) => {
-    await deleteAnnouncementHistoryItem(id, profile ? profile.id : null);
-    return loadAnnouncementHistory();
-  }, [profile]);
-  const handleClearAnnHistory = useCallback(async () => {
-    await clearAnnouncementHistory(profile ? profile.id : null);
-    return [];
-  }, [profile]);
-
-  const handleClearAnnouncement = useCallback(async () => {
-    const pid = profile ? profile.id : null;
-    await clearAnnouncement(pid); // throws on failure
-    setAnnouncement(null);
-  }, [profile]);
-
-  // A4: server re-verify of cached admin status. The boot path optimistically
-  // trusts the local KEYS.ADMIN_STATUS cache so a legit admin's UI doesn't
-  // flicker. This effect then confirms against Supabase whenever we have both
-  // a profile and a cached-admin flag:
-  //   - If online and the server says this profile is NOT an admin → silently
-  //     downgrade and clear the cache (covers a profile that was de-listed, or
-  //     a stale/forged cache).
-  //   - If offline / Supabase unreachable → leave the cached flag alone. The
-  //     admin keeps their UI, but any actual admin WRITE still goes through the
-  //     server and will be rejected there, so no privilege is actually granted.
-  // We intentionally do NOT auto-PROMOTE here: unlock always requires the
-  // passphrase via handleUnlockAdmin. This effect can only ever downgrade.
-  useEffect(() => {
-    if (!isAdmin) return;            // nothing to verify
-    if (!profile || !profile.id) return;
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) return; // offline: keep cache
-    let cancelled = false;
-    (async () => {
-      const ok = await checkServerAdmin(profile.id, profile.uid);
-      if (cancelled) return;
-      if (!ok) {
-        // Definitive (online) negative — drop admin silently.
-        await saveAdminStatus(false);
-        if (!cancelled) setIsAdmin(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [isAdmin, profile]);
+  // [admin-app separation] All admin actions (unlock/lock, announcements,
+  // user admin, server re-verify) moved to the standalone admin app
+  // (src/AdminApp.jsx + src/lib/admin-ops.js). The student app has no admin
+  // surface, so `isAdmin` is never set true here and these handlers are gone.
 
   const dismissAnnouncement = useCallback((id) => {
     setData(prev => ({ ...prev, dismissedAnnouncementId: id }));
@@ -4352,25 +4267,8 @@ export default function App() {
         <FeedbackInbox onBack={goHome} />
       )}
 
-      {nav.screen === 'admin-panel' && isAdmin && (
-        <Suspense fallback={<LazyScreenFallback />}>
-        <AdminPanel profile={profile} banks={banks} banksLoading={banksLoading}
-                    allQuestions={allQuestions}
-                    announcement={announcement}
-                    onSaveAnnouncement={handleSaveAnnouncement}
-                    onClearAnnouncement={handleClearAnnouncement}
-                    onLoadAnnHistory={handleLoadAnnHistory}
-                    onDeleteAnnHistoryItem={handleDeleteAnnHistoryItem}
-                    onClearAnnHistory={handleClearAnnHistory}
-                    onRefreshBanks={refreshBanks}
-                    onOpenLibrary={() => { setNav({ screen: 'library', adminReturn: true }); refreshBanks(); }}
-                    onCreateBank={() => setNav({ screen: 'bank-editor', adminReturn: true })}
-                    onLockAdmin={async () => { await handleLockAdmin(); goHome(); }}
-                    onListUsers={adminListUsers}
-                    onDeleteProfile={adminDeleteProfile}
-                    onBack={goHome} />
-        </Suspense>
-      )}
+      {/* [admin-app separation] The admin-panel route is gone from the student
+          app — admin work happens in the standalone admin app (admin.html). */}
 
       {nav.screen === 'topic-select' && (
         <TopicSelect
@@ -4850,12 +4748,10 @@ export default function App() {
                   onGuestSignIn={() => setNav({ screen: 'auth' })}
                   onClearAll={clearAll} onImportBackup={importBackup}
                   onLogout={handleLogout} onSwitchProfile={handleLogout}
-                  onUnlockAdmin={handleUnlockAdmin} onLockAdmin={handleLockAdmin}
                   onToggleTheme={toggleTheme}
                   onSetColorTheme={setColorTheme}
                   onShowWelcome={() => { setWelcomeFirstRun(false); setShowWelcome(true); }}
                   onOpenFeedbackInbox={() => setNav({ screen: 'feedback-inbox' })}
-                  onOpenAdminPanel={() => setNav({ screen: 'admin-panel' })}
                   onOpenMyReports={() => setNav({ screen: 'my-reports' })}
                   onOpenShare={() => navigate({ screen: 'share-app' })}
                   onOpenThemes={() => navigate({ screen: 'themes' })}

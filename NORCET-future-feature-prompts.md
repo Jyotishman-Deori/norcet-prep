@@ -9144,3 +9144,37 @@ FILES: ADDED admin.html · src/admin-main.jsx · src/AdminApp.jsx · src/lib/adm
        MODIFIED vite.config.js · package.json · .gitignore
 IMPACT/SAFETY: purely additive; student production unaffected. Admin app not yet
   deployed (no 2nd Vercel project). dev+main.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ADMIN-APP SEPARATION — Phase C (admin code stripped from student app)
+# ─────────────────────────────────────────────────────────────────────
+
+DONE — the student app no longer contains a reachable admin surface:
+  • src/App.jsx — removed: the AdminPanel lazy import, the admin-panel route,
+    the boot `setIsAdmin(loadAdminStatus())`, handleUnlockAdmin/handleLockAdmin,
+    the announcement WRITE handlers (save/clear/history), and the admin re-verify
+    effect. Result: `isAdmin` has NO path to true in the student app → it stays
+    false, so every inline admin branch (FAQ moderation, bank edit/delete/private
+    visibility, dosage admin) is permanently inert. loadAnnouncement (the READ for
+    the student banner) is KEPT. The now-unreferenced module admin fns
+    (adminListUsers/adminDeleteProfile/verifyAdminPassphrase/checkServerAdmin/
+    adminWriteShared/loadAdminStatus/saveAdminStatus/save+history announcement
+    writers) are dead source → TREE-SHAKEN out of the student bundle (optional
+    source cleanup later; not in the bundle either way).
+  • src/screens/settings.jsx — removed the entire Settings "Admin" section
+    (unlock-admin form + "Open Admin Panel"/"Lock admin"). The admin state hooks
+    + the three admin props are now unused (harmless; dropped from App's call).
+
+VERIFY: student build GREEN — the admin-panel chunk (was 86KB) is GONE; main
+  bundle 1425→1411 KB (gzip 421.7→417.3); precache 33→31 entries. Admin build
+  GREEN — admin-panel (219KB) lives only in dist-admin. Normal users are
+  unaffected (isAdmin was already false for them); only an admin loses the
+  in-student admin surface (by design — they use the admin app now).
+
+FILES: MODIFIED src/App.jsx · src/screens/settings.jsx
+IMPACT/SAFETY: student bundle ships zero admin code (admin panel + handlers gone
+  / tree-shaken). Build GREEN both apps. Shipping to dev+main per ship-everything.
+REMAINING: Phase D — deploy the admin app (2nd Vercel project on this repo:
+  build `npm run build:admin`, output `dist-admin`, env VITE_SUPABASE_*, +
+  admin subdomain). Needs the user's Vercel access.
