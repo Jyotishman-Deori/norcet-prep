@@ -9084,3 +9084,15 @@ FILES: MODIFIED supabase/functions/kv-write/index.ts · src/App.jsx ·
 IMPACT/SAFETY: build GREEN. Frontend degrades safe (hides a button). The server
   lock is the real enforcement and is pending the coordinated deploy above.
   dev only; no commit/push made (awaiting user go-ahead to ship).
+
+── ✅ SHIPPED 2026-06-29 (supersedes the "NOT DEPLOYED" note above) ──
+  User switched to a "push every update straight to production" policy.
+  Shipped the admin-only-uploads restructure live, in the safe order:
+    1. Frontend: pushed dev → origin/main (fd51d70) → Vercel prod deploy
+       (www.nurseholic.in). Hides the upload UI for non-admins.
+    2. Broker: `supabase functions deploy kv-write` → live. Enforces
+       bank: writes = admin only.
+  Both production surfaces now consistent. Deploy-flow memory updated:
+  main = frontend prod; the Supabase Edge Function is a SEPARATE prod
+  surface — a change touching both needs BOTH a main push and a function
+  deploy.
