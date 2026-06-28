@@ -1443,6 +1443,18 @@ function AdminPanel({
       </div>
     );
     const maxScreen = eng && eng.topScreens.length ? eng.topScreens[0].count : 1;
+    // UPGRADE 1 feedback valve — join opens (screen visits) with completions for
+    // EVERY known game, so a game opened-but-never-finished shows at 0% (the
+    // strongest "ignored" signal) rather than vanishing. Hide games never opened.
+    const gameRows = !eng ? [] : Object.keys(GAME_LABELS)
+      .map(id => {
+        const opens = (eng.screenViews && eng.screenViews[id]) || 0;
+        const gs = (eng.gameStats && eng.gameStats[id]) || { plays: 0, coins: 0 };
+        const plays = gs.plays || 0;
+        return { id, opens, plays, coins: gs.coins || 0, completionRate: opens ? plays / opens : 0 };
+      })
+      .filter(g => g.opens > 0 || g.plays > 0)
+      .sort((a, b) => b.opens - a.opens || b.plays - a.plays);
     return (
       <div className="anim-fadeup">
         <TopBar title="Engagement" onBack={backToDash} feedback={{ screen: 'Admin · Engagement' }}
@@ -1500,15 +1512,15 @@ function AdminPanel({
 
               {/* UPGRADE 1 — the gamification feedback valve: which games are
                   actually played (completions vs opens) vs quietly ignored. */}
-              {eng.games && eng.games.length > 0 && (
+              {gameRows.length > 0 && (
                 <>
                   <div className="text-xs uppercase tracking-wider font-semibold mt-6 mb-1.5 px-1" style={{ color: T.muted }}>Games — played vs ignored</div>
                   <div className="text-[11px] leading-relaxed mb-2 px-1" style={{ color: T.muted }}>
-                    Completions out of opens, per game. A low rate — or near-zero opens — means a game isn't landing; tune or drop it before building more.
+                    Completions out of opens, per game. A low rate — or opens with no completions — means a game isn't landing; tune or drop it before building more.
                   </div>
                   <Card className="p-3.5">
                     <div className="space-y-3">
-                      {eng.games.map(g => {
+                      {gameRows.map(g => {
                         const pct = Math.round(g.completionRate * 100);
                         const tone = g.opens === 0 ? T.muted : pct >= 50 ? T.success : pct >= 20 ? T.accent : T.error;
                         return (
