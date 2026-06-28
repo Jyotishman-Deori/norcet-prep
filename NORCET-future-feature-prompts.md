@@ -8969,3 +8969,118 @@ FILES: ADDED src/data/shift-survival.js · src/lib/survival-engine.js ·
 IMPACT/SAFETY: frontend-only; reuses chart-engine + existing economy; new
   self-contained screen; build GREEN + unit-tested. dev only — playtest +
   balance pass on a device after deploy. Phase-3 games (3.2 + 3.3) now COMPLETE.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# UPGRADE 1 — Gamification "feedback valve" (game engagement telemetry)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY: just built 3.2 + 3.3 — but there was no way to know if anyone PLAYS the
+  games vs ignores them. The strategy's UPGRADE 1 calls for instrumenting that
+  before investing in more games. Adapted to this codebase (per the doc's own
+  "adapt the spec to the code" rule): NO Mixpanel (we have the privacy-respecting
+  analytics.js; Mixpanel would break the Privacy Policy) and NO energy/ad model
+  (so the "Energy_Depleted" event doesn't map). The faithful version = track
+  game ENGAGEMENT into the existing aggregate analytics + surface it for the
+  founder.
+
+KEY DESIGN CATCH (found via the unit test): trackGameComplete only writes an
+  entry when a game COMPLETES, so a game opened-but-never-finished would have NO
+  games entry → it would VANISH from the panel. But "opened 40×, finished 0" is
+  the single strongest ignored-signal. Fix: analytics returns the full opens map
+  (screenViews) + completions map (gameStats); the admin JOINS them over the
+  KNOWN game-id list, so a 0-completion game shows at 0% instead of disappearing.
+
+DONE:
+  • src/lib/analytics.js — blank summary gains `games:{}`; new trackGameComplete
+    (gameId, coins) aggregates per-game {plays, coins} into the SAME synced
+    analytics:user blob (no new key, no broker change, aggregate-only — same
+    privacy model). loadEngagement refactored: pure aggregateEngagement(users)
+    extracted (testable) + now returns screenViews (full opens map) + gameStats
+    (per-game completions/coins).
+  • src/App.jsx — handleGameComplete now calls trackGameComplete(navRef.current
+    .screen, gained): the active screen IS the game, so all 9 games are covered
+    centrally (zero per-game edits). Opens were already counted via the existing
+    trackScreen(nav.screen).
+  • src/screens/admin-panel.jsx — Engagement view gains a "Games — played vs
+    ignored" panel: per game, completions/opens + a colour-graded completion-rate
+    bar (red <20% · amber <50% · green ≥50% · grey = opened, 0 finishes) + coins
+    earned. Built from a GAME_LABELS id→name map joined with screenViews +
+    gameStats; games never opened are hidden.
+
+TEST: aggregateEngagement 8/8 GREEN against the REAL source (esbuild→node) —
+  opens summed across users, completions/coins summed, rate = plays/opens, a
+  game opened-but-never-completed SHOWS at 0% (ignored signal), sort by opens,
+  never-opened hidden. Full build GREEN. No deploy needed (rides the existing
+  analytics:user blob; broker already permits it).
+
+FILES: MODIFIED src/lib/analytics.js · src/App.jsx · src/screens/admin-panel.jsx
+IMPACT/SAFETY: frontend-only; reuses the existing privacy-preserving analytics
+  (aggregate, no per-user feed); no new storage key / no broker / no deploy;
+  build GREEN + unit-tested. dev only. Now the data can decide whether 3.3 (or
+  any game) earns more investment — exactly UPGRADE 1's intent.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# RESTRUCTURE — Question uploads are now ADMIN ONLY (content authority)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY (user request): "a small restructure — only admin should be able to upload
+  new question sets or anything in the app." A wrong answer-key is the #1
+  trust-killer for a medical-exam app, so content authority must sit with the
+  admin. NOTE: this is the LIGHT version — NOT the full Phase-7 separate-repo
+  split (the admin panel is ALREADY lazy-loaded as its own chunk, and the
+  strategy itself says defer the repo split until >800 Qs). We locked the upload
+  surfaces instead.
+
+THE REAL HOLE was server-side: kv-write section 5 let ANY logged-in user CREATE
+  a `bank:` (the UI card was just the front door). A client-only gate is
+  bypassable, so the enforcement is in the broker.
+
+DONE (frontend on dev, build GREEN):
+  • supabase/functions/kv-write/index.ts — `bank:` is now ADMIN-ONLY for
+    create/edit/delete (moved out of the "any logged-in user may create" branch
+    into its own admin-gated branch; no per-write rate cap so admin can
+    bulk-seed). feedback:/faqq: stay open (they're reports + community FAQ Qs,
+    NOT question-set uploads). Authorization-matrix header comment updated.
+    ⚠️ NOT DEPLOYED YET — see deploy ordering below.
+  • src/App.jsx — bank-editor route gated from `(isAdmin || !nav.bank)` to
+    `isAdmin` (was: new-bank creation open to all). add-question route gated to
+    `isAdmin`; non-admins (incl. guests) now get a friendly "Questions are
+    curated by the team → Go to the Library" notice instead of the editor.
+  • src/screens/library.jsx — "Upload a new bank" card wrapped in `{isAdmin}`
+    (hidden for users); help copy + empty-state copy reworded to browse/import
+    only ("Banks are curated by the team … only an admin can upload").
+  • src/ui/nav-drawer.jsx — pulls isAdmin via useProfile(); the "Add question"
+    drawer row is now admin-only (conditional spread). Library row tip reworded
+    off "upload".
+
+WHAT STAYS OPEN (by design): personal custom questions still EXIST as a feature
+  but are admin-only to AUTHOR now (per "or anything"); they were always LOCAL
+  to the author's own practice pool (data.customQuestions) — never shared, so
+  there was never a server surface to lock. feedback: (question/bug reports →
+  feeds the quality gate) and faqq: (community FAQ questions) remain open.
+
+EDGE CHECKED: profile-claim re-stamps a user's own banks (App.jsx ~L799) — now
+  admin-gated, but that call is already try/catch-tolerated ("banks keep loading
+  even with stale owner"), so no breakage. Previous-paper "banks" are bundled in
+  norcet-pyq-data.js (local seed), NOT written via bank: on boot — so the lock
+  doesn't break PYQ display. No other auto bank: writers exist (saveBank only at
+  the admin editor + the tolerated claim re-stamp).
+
+⚠️ DEPLOY ORDERING (must ship TOGETHER, else a broken window):
+  The broker lock and the frontend hide MUST reach live together. If the broker
+  deploys BEFORE the frontend hits main/live, current live users still see the
+  "Upload a new bank" card but get 403 on save. Sequence:
+    1. Push dev → main (frontend hides the upload UI).  [user-driven ship]
+    2. Deploy the broker:
+       supabase functions deploy kv-write --project-ref jabmjyhdfacoikkgmjzl --no-verify-jwt
+  Order 1-then-2 is safe (UI gone before the server starts rejecting). Doing 2
+  first creates the broken window. (Supabase MCP was just connected but needs a
+  session restart to go live; the CLI deploy above is the proven path.)
+
+FILES: MODIFIED supabase/functions/kv-write/index.ts · src/App.jsx ·
+       src/screens/library.jsx · src/ui/nav-drawer.jsx
+IMPACT/SAFETY: build GREEN. Frontend degrades safe (hides a button). The server
+  lock is the real enforcement and is pending the coordinated deploy above.
+  dev only; no commit/push made (awaiting user go-ahead to ship).

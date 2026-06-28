@@ -19,7 +19,7 @@
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
-import { useTheme, useData } from '../lib/app-context.jsx';
+import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
@@ -36,6 +36,7 @@ let _lastVisitedKey = null;
 function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, faqUnread = 0, replyUnread = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
+  const { isAdmin } = useProfile();
   const panelRef = useRef(null);
   // Lock background scroll while the drawer is open.
   useEffect(() => {
@@ -231,10 +232,11 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // ---- Category 1 — Study ----
   const study = [
     { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today — plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
-    { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse, upload and manage question banks — yours and the community\'s.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
+    { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse and import question banks curated by the team.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
     { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', tip: 'Every question you saved, grouped by topic, ready to re-read or retest.', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
     { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear — resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
-    { key: 'addq',      icon: Plus,        color: T.primary,      label: 'Add question', tip: 'Write your own custom questions; they join your practice pool.', sub: 'Your own custom Qs',          action: () => go('add-question', null, 'addq') },
+    // Adding questions is now ADMIN ONLY (content authority) — hidden for users.
+    ...(isAdmin ? [{ key: 'addq', icon: Plus, color: T.primary, label: 'Add question', tip: 'Upload and write the question sets students practise.', sub: 'Admin · question sets', action: () => go('add-question', null, 'addq') }] : []),
   ];
   // ---- Category 2 — Progress ----
   const progress = [

@@ -18,12 +18,13 @@
 //   helpful: / notHelpful: / favsec: / errlog:
 //        -> any logged-in user may SET; DELETE denied for the counters,
 //           and errlog: DELETE is admin-only (admin clears crash groups)
-//   bank: / feedback: / faqq:
+//   feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
-//   announcement: / faq: / qgate:
-//        -> admins only  (qgate: = the content quality gate's hidden-id list,
-//           crowdsourced auto-flag; world-readable but admin-write-only)
+//   bank: / announcement: / faq: / qgate:
+//        -> admins only  (bank: = question sets — RESTRUCTURED to admin-only
+//           uploads so answer keys stay trustworthy; qgate: = the content
+//           quality gate's hidden-id list; all world-readable, admin-write-only)
 //   anything else -> DENIED (fail closed)
 //
 // BUG-04 — analytics:user: and errlog: were added here. Both were written as
@@ -261,8 +262,20 @@ Deno.serve(async (req: Request) => {
       return await writeRow(key, String(body.value ?? ""));
     }
 
-    // 5) User-created content: create = any logged-in; edit/delete = owner or admin.
-    if (key.startsWith("bank:") || key.startsWith("feedback:") || key.startsWith("faqq:")) {
+    // 5) Question banks: ADMIN ONLY. Restructured so only admins upload / edit /
+    // delete shared question SETS (content authority — keeps every answer key
+    // trustworthy). Was "any logged-in user may create". No per-write rate cap
+    // here (unlike announcement:/faq:) so an admin can bulk-seed in one session.
+    if (key.startsWith("bank:")) {
+      if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+      return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
+    }
+
+    // 6) Other user-created content: create = any logged-in; edit/delete = owner
+    // or admin. (feedback: = question/bug reports — feeds the quality gate;
+    // faqq: = community FAQ questions. Neither is a question-set upload, so both
+    // stay open to logged-in users.)
+    if (key.startsWith("feedback:") || key.startsWith("faqq:")) {
       const existing = await getRow(key);
       if (existing && !admin && !rowOwnedBy(existing, session)) {
         return json({ error: "Forbidden: not your content" }, 403);
@@ -270,7 +283,7 @@ Deno.serve(async (req: Request) => {
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
     }
 
-    // 6) Fail closed on anything unclassified.
+    // 7) Fail closed on anything unclassified.
     return json({ error: `Forbidden: unrecognized key '${key}'` }, 403);
   } catch (e) {
     return json({ error: `server error: ${(e as Error).message ?? e}` }, 500);

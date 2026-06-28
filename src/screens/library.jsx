@@ -71,9 +71,10 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
               feedback={{ screen: "Library" }} />
       <PageContainer size="content" className="pb-24 pt-2">
 
-        {/* Anyone can upload a bank. #26/1.1 — app-gradient card (was a dark
-            slab that read like a different app), warmer copy, and a single
-            shimmer sweep on entry (reduced-motion safe). */}
+        {/* Uploading a bank is ADMIN ONLY now (content authority) — the upload
+            card is shown to admins only; everyone else browses + imports.
+            #26/1.1 — app-gradient card, warmer copy, single shimmer sweep. */}
+        {isAdmin && (
         <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable relative overflow-hidden" onClick={onCreateNew}
               style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, border: 'none', borderRadius: 14 }}>
           <div className="card-shimmer absolute inset-y-0 w-16 pointer-events-none"
@@ -92,6 +93,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
             <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.6)' }} />
           </div>
         </Card>
+        )}
 
         {/* Your numbers — moved from Settings (issues round): structured,
             consistently-styled stat tiles that belong with the question
@@ -122,8 +124,8 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
           Browse banks and import them into your own practice.{' '}
           {isAdmin
-            ? 'As admin you can see every bank and edit, delete, or change the visibility of any of them.'
-            : 'Public banks are shared by everyone; private banks are visible only to whoever uploaded them. Only an admin can edit or delete a bank.'}
+            ? 'As admin you can upload banks and edit, delete, or change the visibility of any of them.'
+            : 'Banks are curated by the team. Browse any bank and import it into your own practice — only an admin can upload, edit, or delete banks.'}
         </div>
 
         {/* Filter chips — quickly switch between everything, just mine, just others.
@@ -189,7 +191,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           <div className="text-center py-12">
             <Layers size={40} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
             <div className="font-display text-lg mb-1" style={{ color: T.ink }}>No banks yet</div>
-            <div className="text-sm" style={{ color: T.muted }}>Upload the first one above.</div>
+            <div className="text-sm" style={{ color: T.muted }}>{isAdmin ? 'Upload the first one above.' : 'Check back soon — the team is adding banks.'}</div>
           </div>
         ) : visibleBanks.length === 0 ? (
           /* Banks exist but the current filter rules them all out. */

@@ -4665,19 +4665,38 @@ export default function App() {
                              profileId={profile && profile.id} />
       )}
 
-      {nav.screen === 'add-question' && !isGuestProfile(profile) && (
+      {nav.screen === 'add-question' && isAdmin && (
         <AddQuestion onSave={saveCustomQuestion} onSaveBulk={saveBulkQuestions}
                      onBack={goHome}
                      existingCustomCount={data.customQuestions.length} />
       )}
 
-      {nav.screen === 'add-question' && isGuestProfile(profile) && (
-        <SignInGate
-          icon={<Plus size={26} style={{ color: T.primary }} />}
-          title="Sign in to add questions"
-          body="Adding your own questions saves them to your account so you can practise and share them. Sign in to start building your own question set."
-          onSignIn={() => setNav({ screen: 'auth' })}
-          onBack={goHome} />
+      {/* Adding questions is now ADMIN ONLY — question sets are curated by the
+          team so answer keys stay reliable. Non-admins (incl. guests) get a
+          friendly notice instead of the editor. */}
+      {nav.screen === 'add-question' && !isAdmin && (
+        <div className="anim-fadeup max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5"
+               style={{ background: T.primary + '14' }}>
+            <Plus size={26} style={{ color: T.primary }} />
+          </div>
+          <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>
+            Questions are curated by the team
+          </div>
+          <div className="text-sm leading-relaxed mb-6" style={{ color: T.inkSoft }}>
+            To keep every answer key reliable, question sets are added by the admin.
+            You can browse and practise everything from the Library.
+          </div>
+          <button onClick={() => setNav({ screen: 'library' })}
+                  className="no-tap-highlight w-full py-3 rounded-xl font-semibold active:scale-95 transition-transform"
+                  style={{ background: T.primary, color: '#FFF' }}>
+            Go to the Library
+          </button>
+          <button onClick={goHome} className="no-tap-highlight mt-3 text-sm font-medium"
+                  style={{ color: T.muted }}>
+            Back to home
+          </button>
+        </div>
       )}
 
       {nav.screen === 'library' && isGuestProfile(profile) && (
@@ -4729,9 +4748,9 @@ export default function App() {
         );
       })()}
 
-      {/* New-bank creation is open to any logged-in user; EDITING an existing
-          bank stays admin-only. */}
-      {nav.screen === 'bank-editor' && (isAdmin || !nav.bank) && (
+      {/* Uploading / editing question banks is ADMIN ONLY (content authority).
+          Non-admins browse + import from the Library but never create or edit. */}
+      {nav.screen === 'bank-editor' && isAdmin && (
         <BankEditor existingBank={nav.bank || null} profile={profile}
                     onSave={handleSaveBank}
                     onBack={() => setNav(nav.bank ? { screen: 'bank-detail', bankId: nav.bank.id, bank: nav.bank } : (nav.adminReturn ? { screen: 'admin-panel' } : { screen: 'library' }))} />
