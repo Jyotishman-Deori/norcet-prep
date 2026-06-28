@@ -38,6 +38,25 @@ const MESSAGES = [
   { title: 'NORCET prep', body: "Remember, it's never where you started, it's always where you finished." },
 ];
 
+// ── Duty Roster: window-aware delivery on the FREE tier ──────────────────────
+// Vercel Hobby caps crons at 2, so we can't fire one run per window. Instead we
+// split the day into TWO sends — an AM run and a PM run (see vercel.json) — and
+// push each device only on the run matching its stored reminderTime. So a user
+// who chose "Morning" gets the AM run; "Afternoon"/"Night" get the PM run. Every
+// device still receives at most ONE nudge/day; nobody who got a daily push
+// before loses it (the old 20:00 default falls in the PM slot).
+const IST_OFFSET_MIN = 330; // audience is IST; reminderTime is a local "HH:MM".
+function istHourNow() {
+  const d = new Date(); // Vercel runs in UTC.
+  const mins = (d.getUTCHours() * 60 + d.getUTCMinutes() + IST_OFFSET_MIN) % 1440;
+  return Math.floor(mins / 60);
+}
+function slotForHour(h) { return (Number.isFinite(h) && h >= 5 && h < 12) ? 'am' : 'pm'; }
+function slotForReminder(t) {
+  const h = parseInt(String(t || '20:00').split(':')[0], 10);
+  return slotForHour(h);
+}
+
 // Constant-time-ish compare for the secret (length check + char xor).
 function safeEqual(a, b) {
   a = String(a); b = String(b);
@@ -82,6 +101,9 @@ export default async function handler(req, res) {
   await pingSupabase();
 
   const today = new Date().toISOString().slice(0, 10);
+  // Which half of the day is this run? AM cron serves "morning" devices; PM cron
+  // serves "afternoon"/"night" devices. A device is pushed only on its slot.
+  const currentSlot = slotForHour(istHourNow());
   let keys = [];
   try { keys = await kv.keys('sub:*'); } catch (e) { return res.status(500).json({ error: 'kv scan failed' }); }
 
@@ -94,6 +116,9 @@ export default async function handler(req, res) {
       const record = await kv.get(key);
       if (!record) return;
       if (record.lastActive === today) { skipped++; return; }
+      // Window gate: only nudge devices whose reminderTime falls in this run's
+      // half of the day, so the push lands near the user's chosen window.
+      if (slotForReminder(record.reminderTime) !== currentSlot) { skipped++; return; }
       const msg = MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
       await webpush.sendNotification(
         record.subscription,

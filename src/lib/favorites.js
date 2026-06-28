@@ -50,6 +50,8 @@ export const FAV_SECTIONS = [
   { id: 'ibq',                 label: 'Spot the Structure',   blurb: 'Tap it on the diagram',          icon: 'scan',        hue: '#0891B2' },
   { id: 'distractor-assassin', label: 'Distractor Assassin',  blurb: 'Eliminate the wrong options',    icon: 'crosshair',   hue: '#9F1239' },
   { id: 'tie-breaker',         label: 'Tie-Breaker',          blurb: 'Which comes first',              icon: 'scale',       hue: '#4338CA' },
+  { id: 'three-am-chart',      label: 'The 3 AM Chart',       blurb: 'Chill block-placement puzzle',   icon: 'moon',        hue: '#B45309' },
+  { id: 'shift-survival',      label: 'Shift Survival',       blurb: 'High-stress survival mode',      icon: 'heartpulse',  hue: '#B91C1C' },
   { id: 'revision-sheet',  label: 'Revision',            blurb: 'High-yield digest + crib sheets',   icon: 'file',     hue: '#A61E4D' },
   { id: 'study-methods',   label: 'Study Methods',       blurb: 'How to study smarter',              icon: 'grad',     hue: '#1971C2' },
   { id: 'ikigai',          label: 'Ikigai Compass',      blurb: 'Your 4-circle readiness map',       icon: 'compass',  hue: '#9333EA' },

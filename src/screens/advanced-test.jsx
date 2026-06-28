@@ -532,6 +532,23 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </div>
           ))}
         </div>
+        {/* Ph2.3 — persistent marking-scheme reminder. Authentic to a real CBT
+            (the exam screen always states the scheme) and the ONE part of the
+            negative-marking-UX ask that fits this mode: it trains skip-discipline
+            WITHOUT revealing correctness (CBT shows right/wrong only at the end —
+            so no live "estimated score" / per-question "−⅓ deducted" flash here,
+            and the penalty-free practice modes deliberately get neither). */}
+        <div className="max-w-md mx-auto px-4 pb-2">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10.5px] leading-tight"
+               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
+            <AlertTriangle size={11} style={{ color: T.error, flexShrink: 0 }} />
+            <span style={{ color: T.muted }}>
+              <span style={{ fontWeight: 700, color: T.inkSoft }}>+1</span> correct
+              {' · '}<span style={{ fontWeight: 700, color: T.error }}>−⅓</span> wrong
+              {' · '}<span style={{ fontWeight: 700, color: T.inkSoft }}>0</span> blank — can't narrow it to two? Blank beats a guess.
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* keyboard shortcut popover */}

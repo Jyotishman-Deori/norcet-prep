@@ -53,10 +53,29 @@ export const EMPLOYMENT_UNLOCK = {
   fulltime:'Great — you’ve got time to build stamina. We’ll surface full-length mock simulations so you’re ready for exam-day marathons.',
 };
 
+// "Duty Roster" (Upgrade 8) — a Day-1 commitment to WHEN they study. The single
+// biggest predictor of week-2 retention in ed-tech is a specific, time-bound
+// commitment on day one. The choice seeds the daily-reminder time so the nudge
+// lands in the user's own window (see setDemographics in App).
+export const STUDY_WINDOW_OPTIONS = [
+  { id: 'morning',   label: 'Morning',   sub: '7 – 9 AM' },
+  { id: 'afternoon', label: 'Afternoon', sub: '1 – 3 PM' },
+  { id: 'night',     label: 'Night',     sub: '9 – 11 PM' },
+];
+// Representative reminder time (24h, device-local) per window — near each window
+// start. Drives the daily study nudge; also what the push subscription stores.
+export const STUDY_WINDOW_TIME = { morning: '08:00', afternoon: '14:00', night: '21:00' };
+export const STUDY_WINDOW_UNLOCK = {
+  morning:   'Locked in for mornings. We’ll nudge you around 8 AM so a fresh-brain session kicks off your day.',
+  afternoon: 'Afternoons it is. We’ll nudge you around 2 PM so prep slots into your midday gap.',
+  night:     'Night owl noted. We’ll nudge you around 9 PM so you close the day with a focused session.',
+};
+
 const ID_SETS = {
   gender: new Set(GENDER_OPTIONS.map(o => o.id)),
   qualification: new Set(QUALIFICATION_OPTIONS.map(o => o.id)),
   employment: new Set(EMPLOYMENT_OPTIONS.map(o => o.id)),
+  studyWindow: new Set(STUDY_WINDOW_OPTIONS.map(o => o.id)),
 };
 
 // PHIL-08 — the Ikigai statement is private free text. Strip all HTML tags
@@ -69,11 +88,12 @@ export function sanitizeIkigai(s) {
 
 // Shape/validate a stored demographics blob (tolerates missing/old data).
 export function normalizeDemographics(d) {
-  const out = { gender: null, qualification: null, employment: null, ikigai: '', customTargetPercentile: DEFAULT_TARGET_PERCENTILE };
+  const out = { gender: null, qualification: null, employment: null, studyWindow: null, ikigai: '', customTargetPercentile: DEFAULT_TARGET_PERCENTILE };
   if (d && typeof d === 'object') {
     if (ID_SETS.gender.has(d.gender)) out.gender = d.gender;
     if (ID_SETS.qualification.has(d.qualification)) out.qualification = d.qualification;
     if (ID_SETS.employment.has(d.employment)) out.employment = d.employment;
+    if (ID_SETS.studyWindow.has(d.studyWindow)) out.studyWindow = d.studyWindow;
     if (typeof d.ikigai === 'string') out.ikigai = sanitizeIkigai(d.ikigai);
     if (typeof d.customTargetPercentile === 'number' && d.customTargetPercentile > 0 && d.customTargetPercentile <= 100) {
       out.customTargetPercentile = d.customTargetPercentile;
@@ -83,7 +103,10 @@ export function normalizeDemographics(d) {
 }
 
 export const labelFor = (kind, id) => {
-  const list = kind === 'gender' ? GENDER_OPTIONS : kind === 'qualification' ? QUALIFICATION_OPTIONS : EMPLOYMENT_OPTIONS;
+  const list = kind === 'gender' ? GENDER_OPTIONS
+             : kind === 'qualification' ? QUALIFICATION_OPTIONS
+             : kind === 'studyWindow' ? STUDY_WINDOW_OPTIONS
+             : EMPLOYMENT_OPTIONS;
   const hit = list.find(o => o.id === id);
   return hit ? hit.label : null;
 };

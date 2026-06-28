@@ -31,7 +31,7 @@ let started = false;
 function blank(id, isGuest) {
   const today = dayStr();
   return { id, isGuest: !!isGuest, v: SUMMARY_V, firstSeen: Date.now(), lastSeen: Date.now(),
-           sessions: 0, screens: {}, days: [today] };
+           sessions: 0, screens: {}, games: {}, days: [today] };
 }
 
 async function ensureGuestLocalId() {
@@ -73,7 +73,7 @@ export async function initAnalytics(profileId, isGuest) {
     ident = { id, isGuest: !!isGuest || !profileId };
     // Merge with any existing shared summary so counts persist across devices/sessions.
     const existing = await loadExisting(KEYS.analyticsUser(id));
-    summary = existing && existing.screens ? { ...blank(id, ident.isGuest), ...existing, screens: existing.screens || {}, days: Array.isArray(existing.days) ? existing.days : [] }
+    summary = existing && existing.screens ? { ...blank(id, ident.isGuest), ...existing, screens: existing.screens || {}, games: existing.games || {}, days: Array.isArray(existing.days) ? existing.days : [] }
                                            : blank(id, ident.isGuest);
     summary.id = id; summary.isGuest = ident.isGuest;
     if (!started) { started = true; bumpSession(); }
@@ -113,12 +113,30 @@ export function trackScreen(screenId) {
   } catch (e) {}
 }
 
-// ---- admin aggregate (never exposes a single user's feed) ----
-export async function loadEngagement() {
-  let keys = [];
-  try { const r = await safeStorage.list(KEY_PREFIXES.ANALYTICS_USER, true); keys = (r && r.keys) ? r.keys : []; } catch (e) { return null; }
-  const users = (await Promise.all(keys.map(k => loadExisting(k)))).filter(Boolean);
+// UPGRADE 1 — the gamification "feedback valve". Records a game COMPLETION (and
+// coins earned) per game id. Paired with the existing per-screen visit count
+// (= opens), the admin can read a completion rate per game and see at a glance
+// which drills are actually played vs ignored — before investing in more of
+// them. Aggregate only (no per-user feed), same privacy model as everything here.
+export function trackGameComplete(gameId, coins = 0) {
+  try {
+    if (!summary || !gameId) return;
+    if (!summary.games) summary.games = {};
+    const g = summary.games[gameId] || { plays: 0, coins: 0 };
+    g.plays += 1;
+    g.coins += Math.max(0, Math.floor(coins || 0));
+    summary.games[gameId] = g;
+    markToday();
+    scheduleFlush();
+  } catch (e) {}
+}
 
+// ---- admin aggregate (never exposes a single user's feed) ----
+// Pure over an array of user summary blobs → the dashboard aggregate. Extracted
+// so the rollup (incl. the UPGRADE 1 game feedback-valve math) is unit-testable
+// without touching storage. loadEngagement() just fetches the blobs and calls it.
+export function aggregateEngagement(users) {
+  users = Array.isArray(users) ? users : [];
   const today = dayStr();
   const weekDays = new Set();
   for (let i = 0; i < 7; i++) { const d = new Date(); d.setDate(d.getDate() - i); weekDays.add(dayStr(d)); }
@@ -126,6 +144,7 @@ export async function loadEngagement() {
   let guests = 0, members = 0, sessions = 0, activeToday = 0, activeWeek = 0, newWeek = 0;
   const weekStart = Date.now() - 7 * 86400000;
   const screenTotals = {};
+  const gameTotals = {};                 // id -> { plays, coins }
   users.forEach(u => {
     if (u.isGuest) guests += 1; else members += 1;
     sessions += (u.sessions || 0);
@@ -134,16 +153,36 @@ export async function loadEngagement() {
     if (days.some(d => weekDays.has(d))) activeWeek += 1;
     if ((u.firstSeen || 0) >= weekStart) newWeek += 1;
     Object.entries(u.screens || {}).forEach(([s, n]) => { screenTotals[s] = (screenTotals[s] || 0) + n; });
+    Object.entries(u.games || {}).forEach(([id, g]) => {
+      const t = gameTotals[id] || { plays: 0, coins: 0 };
+      t.plays += (g && g.plays) || 0;
+      t.coins += (g && g.coins) || 0;
+      gameTotals[id] = t;
+    });
   });
   const topScreens = Object.entries(screenTotals)
     .map(([id, count]) => ({ id, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);
   const totalUsers = users.length;
+  // UPGRADE 1 feedback valve: the caller pairs per-game COMPLETIONS (gameStats)
+  // with OPENS (screenViews — a game's screen-visit count) to get a completion
+  // rate. We expose both full maps rather than a pre-joined list so the admin
+  // can include games that were OPENED but NEVER completed (rate 0 = the
+  // strongest "ignored" signal), which a completions-only list would hide.
   return {
     totalUsers, guests, members, sessions, activeToday, activeWeek, newWeek,
     avgSessions: totalUsers ? (sessions / totalUsers) : 0,
     topScreens,
+    screenViews: screenTotals,
+    gameStats: gameTotals,
     totalScreenViews: Object.values(screenTotals).reduce((a, b) => a + b, 0),
   };
+}
+
+export async function loadEngagement() {
+  let keys = [];
+  try { const r = await safeStorage.list(KEY_PREFIXES.ANALYTICS_USER, true); keys = (r && r.keys) ? r.keys : []; } catch (e) { return null; }
+  const users = (await Promise.all(keys.map(k => loadExisting(k)))).filter(Boolean);
+  return aggregateEngagement(users);
 }

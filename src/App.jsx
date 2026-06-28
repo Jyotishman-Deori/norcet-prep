@@ -57,16 +57,17 @@ import {
 import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/quick-practice.js';
 import { examTopicWeightage } from './lib/weightage.js';
 import { captureError, setErrorContext } from './lib/errorlog.js';
-import { initAnalytics, trackScreen } from './lib/analytics.js';
+import { initAnalytics, trackScreen, trackGameComplete } from './lib/analytics.js';
 // BUG-01 — unified back-button interception for screens with internal sub-views.
 import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
-import { DEFAULT_TARGET_PERCENTILE } from './lib/demographics.js';
+import { DEFAULT_TARGET_PERCENTILE, STUDY_WINDOW_TIME } from './lib/demographics.js';
 // Phase 3 A2 — light non-monetary economy (Accuracy Coins + Clinical Hearts).
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
 import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
 import { framePrice } from './lib/cosmetics.js';
 import { loadGameConfig } from './lib/game-config.js';
+import { loadQuestionGate, filterHidden } from './lib/question-gate.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
 import PulseIntro from './ui/pulse-intro.jsx';
@@ -165,6 +166,8 @@ import CrashCart from './screens/crash-cart.jsx';
 import SorterDrill from './screens/sorter.jsx';
 // NEW-05 — Distractor Assassin: eliminate-the-wrong drill over the live bank.
 import DistractorAssassin from './screens/distractor-assassin.jsx';
+import ThreeAmChart from './screens/three-am-chart.jsx';
+import ShiftSurvival from './screens/shift-survival.jsx';
 // NEW-06 — Tie-Breaker: two reasonable actions, pick the priority.
 import TieBreaker from './screens/tie-breaker.jsx';
 // NEW-09 — IBQ: data-driven hotspot "tap the structure" diagrams (uploadable).
@@ -1848,6 +1851,10 @@ function decideBackAction({ screen, overlayOpen, selfGuarded }) {
 
 export default function App() {
   const [data, setData] = useState(null);
+  // Content quality gate (UPGRADE 2 / Layer 3): ids the admin has pulled from
+  // the served pool. Boot-loaded from the public `qgate:hidden` key; held in
+  // state purely so `allQuestions` recomputes once the gate resolves.
+  const [hiddenQ, setHiddenQ] = useState([]);
   const [profile, setProfile] = useState(null);
   const [legacyData, setLegacyData] = useState(null);
   // GUEST MODE (Phase A): local-only signal driving the sign-in nudges.
@@ -2217,7 +2224,7 @@ export default function App() {
   }, []);
 
   const allQuestions = useMemo(() => {
-    if (!data) return SEED_QUESTIONS;
+    if (!data) return filterHidden(SEED_QUESTIONS);
     // Filter out imported questions belonging to banks the user has paused.
     // The questions stay in customQuestions (so history + bookmarks survive
     // a re-enable) — they're just excluded from the active pool.
@@ -2226,8 +2233,11 @@ export default function App() {
       if (!q.sourceBank) return true;          // user's own additions
       return !disabled[q.sourceBank];          // imported but bank is enabled
     });
-    return [...SEED_QUESTIONS, ...activeCustom];
-  }, [data]);
+    // Content quality gate: drop any question an admin has pulled (≥N reader
+    // flags). Same "exclude from the active pool" pattern as paused banks;
+    // history/bookmarks that reference a pulled id simply won't resolve.
+    return filterHidden([...SEED_QUESTIONS, ...activeCustom]);
+  }, [data, hiddenQ]);
 
   // F-A — Study Methods: real, read-only progress signals for the method
   // rows (never fabricated). Cheap: one pass over history + a due-count.
@@ -3098,6 +3108,10 @@ export default function App() {
   // boot — a single public read; falls back to hardcoded defaults if absent.
   useEffect(() => { loadGameConfig(); }, []);
 
+  // Content quality gate — read the public hidden-question list once at boot
+  // (one tiny anon read). Drives the filterHidden() in allQuestions above.
+  useEffect(() => { loadQuestionGate().then(ids => { if (ids && ids.length) setHiddenQ(ids); }); }, []);
+
   const TEST_COIN_GRANT_ID = 'gamification-test-100k-v1';
   const coinGrantRef = useRef(false);
   useEffect(() => {
@@ -3135,6 +3149,10 @@ export default function App() {
   // game so the XP wiring lives here, not duplicated across 7 call sites.
   const handleGameComplete = useCallback((coins) => {
     const gained = Math.max(0, Math.floor(coins || 0));
+    // UPGRADE 1 feedback valve — record which game just completed + coins earned
+    // (the active screen IS the game). Paired with screen-visit opens in the
+    // admin Engagement view to show which games are actually played.
+    try { trackGameComplete(navRef.current && navRef.current.screen, gained); } catch (e) {}
     // Complete the game off the ref so we know the level-up result synchronously
     // (this also counts the game + XP toward today's daily quests).
     const res = completeGamePure(levelupRef.current, gained, todayStr());
@@ -3238,7 +3256,20 @@ export default function App() {
       const cur = (prev && prev.demographics) || {};
       const next = { ...cur, ...patch };
       if (typeof next.customTargetPercentile !== 'number') next.customTargetPercentile = DEFAULT_TARGET_PERCENTILE;
-      return { ...prev, demographics: next };
+      const out = { ...prev, demographics: next };
+      // Duty Roster — choosing a study window seeds the daily-reminder TIME (and
+      // a window label) so the existing local nudge — and, once the user opts in
+      // from Settings, the push — fire in their window. We do NOT enable
+      // reminders here: no permission prompt during onboarding; only the
+      // time preference is seeded. A user's later explicit time edit still wins.
+      if (patch.studyWindow && STUDY_WINDOW_TIME[patch.studyWindow]) {
+        const dr = (prev && prev.preferences && prev.preferences.dailyReminder) || {};
+        out.preferences = {
+          ...(prev.preferences || {}),
+          dailyReminder: { ...dr, time: STUDY_WINDOW_TIME[patch.studyWindow], window: patch.studyWindow },
+        };
+      }
+      return out;
     });
   }, []);
 
@@ -3586,6 +3617,8 @@ export default function App() {
       const merged = {
         enabled: typeof enabled === 'boolean' ? enabled : (cur.enabled || false),
         time: patch.time || cur.time || '20:00',
+        // Preserve the Duty Roster window label across toggles/time edits.
+        window: patch.window !== undefined ? patch.window : (cur.window || null),
         lastNotified: cur.lastNotified || null
       };
       effTime = merged.time; // capture freshest time for the push subscription
@@ -4531,6 +4564,18 @@ export default function App() {
           existing bank's wrong{} rationales — no new content). */}
       {nav.screen === 'distractor-assassin' && (
         <DistractorAssassin allQuestions={allQuestions} onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
+      )}
+
+      {/* Strategy Task 3.2 — The 3 AM Chart: chill block-placement puzzle. The
+          Brain-Rot Lifeline pulls a real bank question (allQuestions). */}
+      {nav.screen === 'three-am-chart' && (
+        <ThreeAmChart allQuestions={allQuestions} onBack={goHome} onComplete={handleGameComplete} />
+      )}
+
+      {/* Strategy Task 3.3 — Shift Survival: high-stress twin of the 3 AM Chart
+          (move timer, complication clots, antidote rows, combo math crisis). */}
+      {nav.screen === 'shift-survival' && (
+        <ShiftSurvival onBack={goHome} onComplete={handleGameComplete} />
       )}
 
       {/* NEW-06 — Tie-Breaker: which action comes first. */}

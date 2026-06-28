@@ -30,6 +30,7 @@ import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
+import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
 import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
 import { loadEngagement } from '../lib/analytics.js';
@@ -44,6 +45,14 @@ import { topicName } from '../lib/topics.js';
 // #24 — bank demand vs supply uses the exam-weightage distribution.
 import { examTopicWeightage } from '../lib/weightage.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
+
+// UPGRADE 1 feedback valve — nice labels for the game ids recorded by analytics
+// (keyed by the game's completion screen id; prettyScreen() is the fallback).
+const GAME_LABELS = {
+  'skill-drill': 'Clinical Skill Drill', 'icu-monitor': 'ICU Monitor', 'crash-cart': 'Crash Cart',
+  'sorter': 'The Sorter', 'ibq': 'Spot the Structure', 'distractor-assassin': 'Distractor Assassin',
+  'tie-breaker': 'Tie-Breaker', 'three-am-chart': 'The 3 AM Chart', 'shift-survival': 'Shift Survival',
+};
 
 function AdminPanel({
   profile, banks, banksLoading,
@@ -118,6 +127,28 @@ function AdminPanel({
   const [userSort, setUserSort] = useState('active'); // 'active' | 'joined' | 'name'
   const [fbFilter, setFbFilter] = useState('open');   // 'all' | 'open' | 'resolved'
   const [peekId, setPeekId] = useState(null);          // reported question being viewed
+
+  // Content quality gate (UPGRADE 2 / Layer 3) — questions the admin has pulled
+  // from the served pool. Loaded from the public `qgate:hidden` key on mount.
+  const [hiddenQ, setHiddenQ] = useState([]);
+  const [gateBusy, setGateBusy] = useState('');        // questionId currently saving
+  const [gateErr, setGateErr] = useState('');
+  useEffect(() => { loadQuestionGate().then(ids => setHiddenQ(ids || [])); }, []);
+
+  const togglePull = useCallback(async (qid, pull) => {
+    setGateErr(''); setGateBusy(qid);
+    const next = pull
+      ? Array.from(new Set([...hiddenQ, qid]))
+      : hiddenQ.filter(x => x !== qid);
+    try {
+      const saved = await saveHiddenIds(next);
+      setHiddenQ(saved);
+    } catch (e) {
+      setGateErr('Could not save. Deploy the updated kv-write function (supabase functions deploy kv-write), then retry.');
+    } finally {
+      setGateBusy('');
+    }
+  }, [hiddenQ]);
 
   // P8 — Helpfulness Insights
   const [helpful, setHelpful] = useState([]);
@@ -802,6 +833,16 @@ function AdminPanel({
       { id: 'resolved', label: 'Resolved', count: resolvedCount },
       { id: 'all',      label: 'All',      count: feedback.length }
     ];
+    // Content quality gate: questions grouped by distinct-reporter count, plus
+    // any currently-hidden ids whose reports have since been cleared (so the
+    // admin can still restore them).
+    const flagged = aggregateFlaggedQuestions(feedback, { threshold: FLAG_THRESHOLD });
+    const flaggedIds = new Set(flagged.map(f => f.questionId));
+    const hiddenOnly = hiddenQ.filter(id => !flaggedIds.has(id));
+    const gateRows = [
+      ...flagged.map(f => ({ ...f, hidden: hiddenQ.includes(f.questionId) })),
+      ...hiddenOnly.map(id => ({ questionId: id, count: 0, autoFlag: false, hidden: true, samples: [] })),
+    ];
     return (
       <>
       <div className="anim-fadeup">
@@ -816,6 +857,59 @@ function AdminPanel({
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             Reports and suggestions from users, newest first. Tap a <span style={{ color: T.primary, fontWeight: 600 }}>Q:</span> chip to view the exact question. Set a status or reply — the user sees it in "My feedback". Resolved items (Fixed / Won't fix / Thanks) move to their own filter.
           </div>
+
+          {/* Content quality gate — questions reported by multiple readers.
+              "Pull from tests" hides a question from every user's pool until
+              restored (it stops appearing in any quiz/drill immediately). */}
+          {gateRows.length > 0 && (
+            <Card className="p-3.5 mb-4" style={{ border: `1px solid ${T.border}` }}>
+              <div className="flex items-center gap-2 mb-1">
+                <Flag size={15} style={{ color: T.accent }} />
+                <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>Question quality gate</div>
+              </div>
+              <div className="text-[11px] leading-relaxed mb-3" style={{ color: T.muted }}>
+                Questions readers reported, by number of distinct reporters. Anything reported by {FLAG_THRESHOLD}+ readers is an <span style={{ color: T.error, fontWeight: 600 }}>auto-flag</span> candidate. Pulling a question removes it from every user's tests until you restore it.
+              </div>
+              {gateErr && (
+                <div className="text-[11px] leading-relaxed mb-2 px-2.5 py-2 rounded-lg"
+                     style={{ background: T.error + '12', color: T.error, border: `1px solid ${T.error}33` }}>
+                  {gateErr}
+                </div>
+              )}
+              <div className="space-y-2">
+                {gateRows.map(row => {
+                  const busy = gateBusy === row.questionId;
+                  return (
+                    <div key={row.questionId} className="flex items-center gap-2 px-2.5 py-2 rounded-xl"
+                         style={{ background: row.hidden ? T.surfaceWarm : T.surface, border: `1px solid ${row.hidden ? T.accent + '40' : T.borderSoft}` }}>
+                      <div className="min-w-0 flex-1">
+                        <button onClick={() => setPeekId(row.questionId)}
+                                className="no-tap-highlight font-mono text-[11px] truncate block text-left active:opacity-70"
+                                style={{ color: T.primary }}>{row.questionId}</button>
+                        <div className="flex flex-wrap items-center gap-1 mt-1">
+                          {row.count > 0 && (
+                            <Pill bg={row.autoFlag ? T.error + '18' : T.surfaceWarm} color={row.autoFlag ? T.error : T.muted}>
+                              {row.count} {row.count === 1 ? 'reporter' : 'reporters'}
+                            </Pill>
+                          )}
+                          {row.autoFlag && <Pill bg={T.error + '18'} color={T.error}>Auto-flag</Pill>}
+                          {row.hidden && <Pill bg={T.accent + '18'} color={T.accent}>Hidden</Pill>}
+                        </div>
+                      </div>
+                      <button onClick={() => togglePull(row.questionId, !row.hidden)} disabled={busy}
+                              className="no-tap-highlight flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold active:scale-95 disabled:opacity-50"
+                              style={row.hidden
+                                ? { background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }
+                                : { background: T.error, color: '#FFF' }}>
+                        {busy ? <RefreshCw size={13} className="animate-spin" /> : (row.hidden ? <Check size={13} /> : <EyeOff size={13} />)}
+                        {row.hidden ? 'Restore' : 'Pull'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          )}
 
           {/* Triage filter */}
           {!feedbackLoading && feedback.length > 0 && (
@@ -1403,6 +1497,39 @@ function AdminPanel({
                 </div>
               </Card>
               <div className="text-[11px] mt-3 px-1" style={{ color: T.muted }}>{eng.totalScreenViews.toLocaleString()} screen views from {eng.totalUsers} tracked {eng.totalUsers === 1 ? 'user' : 'users'}.</div>
+
+              {/* UPGRADE 1 — the gamification feedback valve: which games are
+                  actually played (completions vs opens) vs quietly ignored. */}
+              {eng.games && eng.games.length > 0 && (
+                <>
+                  <div className="text-xs uppercase tracking-wider font-semibold mt-6 mb-1.5 px-1" style={{ color: T.muted }}>Games — played vs ignored</div>
+                  <div className="text-[11px] leading-relaxed mb-2 px-1" style={{ color: T.muted }}>
+                    Completions out of opens, per game. A low rate — or near-zero opens — means a game isn't landing; tune or drop it before building more.
+                  </div>
+                  <Card className="p-3.5">
+                    <div className="space-y-3">
+                      {eng.games.map(g => {
+                        const pct = Math.round(g.completionRate * 100);
+                        const tone = g.opens === 0 ? T.muted : pct >= 50 ? T.success : pct >= 20 ? T.accent : T.error;
+                        return (
+                          <div key={g.id}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium truncate" style={{ color: T.ink }}>{GAME_LABELS[g.id] || prettyScreen(g.id)}</span>
+                              <span className="text-[11px] tabular-nums ml-2 flex-shrink-0" style={{ color: T.muted }}>
+                                {g.plays}/{g.opens} · {pct}%
+                              </span>
+                            </div>
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
+                              <div className="h-full rounded-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, background: tone }} />
+                            </div>
+                            {g.coins > 0 && <div className="text-[10px] mt-0.5" style={{ color: T.muted }}>{g.coins.toLocaleString()} coins earned here</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                </>
+              )}
             </>
           )}
         </div>

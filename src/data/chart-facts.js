@@ -1,0 +1,47 @@
+// =====================================================================
+// src/data/chart-facts.js — one-line high-yield facts flashed when a row/column
+// clears in "The 3 AM Chart" (Strategy Task 3.2). FACTS ONLY (antidotes,
+// normal ranges, classic associations) — facts aren't copyrightable, and these
+// are deliberately generic so nothing is lifted from any book. Keep them short
+// enough to read in the ~1.6s clear banner.
+// =====================================================================
+export const CHART_FACTS = [
+  'Heparin antidote → Protamine sulfate.',
+  'Warfarin antidote → Vitamin K.',
+  'Paracetamol overdose → N-acetylcysteine.',
+  'Opioid overdose → Naloxone.',
+  'Benzodiazepine overdose → Flumazenil.',
+  'Organophosphate poisoning → Atropine + Pralidoxime.',
+  'Iron overdose → Deferoxamine.',
+  'Magnesium toxicity → Calcium gluconate.',
+  'Digoxin toxicity → Digoxin immune Fab.',
+  'Cyanide poisoning → Hydroxocobalamin.',
+  'Normal adult heart rate: 60–100 bpm.',
+  'Normal respiratory rate: 12–20 / min.',
+  'Normal adult temperature: ~37 °C (98.6 °F).',
+  'Normal SpO₂: 95–100%.',
+  'Normal serum potassium: 3.5–5.0 mmol/L.',
+  'Normal serum sodium: 135–145 mmol/L.',
+  'Normal fasting glucose: 70–100 mg/dL.',
+  'Adult normal Hb (male): ~13–17 g/dL.',
+  'Normal platelet count: 150,000–450,000 /µL.',
+  'Apgar is scored at 1 and 5 minutes.',
+  'CPR ratio (adult, 1–2 rescuers): 30:2.',
+  'Chest compressions: at least 100–120 / min.',
+  'Airway is first in the ABC priority sequence.',
+  'Insulin is stored in the fridge (2–8 °C) before use.',
+  'Potassium is NEVER given as an IV push.',
+  'Maslow: physiological needs before psychosocial.',
+  'Assess before you intervene — the ADPIE rule.',
+  'Z-track technique prevents IM medication leakage.',
+  'Trendelenburg position: head down, feet up.',
+  'Semi-Fowler’s is roughly a 30–45° head-up tilt.',
+  'Frothy pink sputum → pulmonary edema.',
+  'Bronze/“machinery” murmur hints at PDA.',
+  'Barlow & Ortolani screen for hip dysplasia.',
+  'Kernig & Brudzinski signs suggest meningitis.',
+  'Macewen’s/“cracked-pot” sign → raised ICP in infants.',
+  'Rovsing’s sign points to appendicitis.',
+  'Cullen’s sign (peri-umbilical bruising) → pancreatitis.',
+  'WBC normal range: 4,000–11,000 /µL.',
+];

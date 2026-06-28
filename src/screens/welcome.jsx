@@ -19,7 +19,7 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle, Lock } from 'lucide-react';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle, Lock, Bell } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
@@ -30,6 +30,7 @@ import { KEYS } from '../lib/keys.js';
 import {
   GENDER_OPTIONS, QUALIFICATION_OPTIONS, EMPLOYMENT_OPTIONS,
   QUALIFICATION_UNLOCK, EMPLOYMENT_UNLOCK, normalizeDemographics,
+  STUDY_WINDOW_OPTIONS, STUDY_WINDOW_UNLOCK,
   sanitizeIkigai, IKIGAI_MAX,
 } from '../lib/demographics.js';
 
@@ -58,7 +59,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // demographic screens before the "what's inside" tour. Replays from Settings
   // skip straight to the tour (no re-collecting data).
   const STEP_ORDER = firstRun
-    ? ['pitch', 'library', 'gender', 'qualification', 'employment', 'ikigai', 'tour', 'tips']
+    ? ['pitch', 'library', 'gender', 'qualification', 'employment', 'window', 'ikigai', 'tour', 'tips']
     : ['tour', 'tips'];
 
   // Each row is a launchable section. `helpKey` maps to its help.json entry so
@@ -252,7 +253,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- NEW-02 demographic screens (gender / qualification / employment) ----
   // All optional: tapping a choice saves + advances; "Skip this one" advances
   // without saving; "Skip tour" exits (fill it in later in Settings → Profile).
-  if (step === 'gender' || step === 'qualification' || step === 'employment') {
+  if (step === 'gender' || step === 'qualification' || step === 'employment' || step === 'window') {
     const cfg = {
       gender: { icon: Users, color: T.primary, kicker: 'A quick calibration',
         title: 'Where do you stand?',
@@ -266,13 +267,21 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         title: 'How does prep fit your day?',
         trust: 'We adapt your dashboard — a working nurse can’t sit a 3-hour mock on a Tuesday afternoon.',
         field: 'employment', kind: 'employment', options: EMPLOYMENT_OPTIONS },
+      // Duty Roster — the Day-1 "when do you study?" commitment. Seeds the daily
+      // reminder time so the nudge lands in the user's own window.
+      window: { icon: Bell, color: T.sec.mock || T.primary, kicker: 'Your rhythm',
+        title: 'When do you study best?',
+        trust: 'We’ll time your daily nudge to this window — a reminder that lands when you’re actually free beats one you ignore. Change it anytime.',
+        field: 'studyWindow', kind: 'window', options: STUDY_WINDOW_OPTIONS, unlockIcon: Bell },
     }[step];
     const Icon = cfg.icon;
+    const UnlockIcon = cfg.unlockIcon || Headphones;
     const current = demo[cfg.field];
     const pick = (id) => {
       if (onSaveDemographics) onSaveDemographics({ [cfg.field]: id });
       const unlock = cfg.kind === 'qualification' ? QUALIFICATION_UNLOCK[id]
-                   : cfg.kind === 'employment' ? EMPLOYMENT_UNLOCK[id] : null;
+                   : cfg.kind === 'employment' ? EMPLOYMENT_UNLOCK[id]
+                   : cfg.kind === 'window' ? STUDY_WINDOW_UNLOCK[id] : null;
       if (unlock) setPendingUnlock(unlock);
       else nextStep();
     };
@@ -314,7 +323,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         {pendingUnlock ? (
           <div className="anim-fadeup">
             <div className="rounded-2xl p-4 mb-3 flex items-start gap-3" style={{ background: cfg.color + '12', border: `1px solid ${cfg.color}33` }}>
-              <Headphones size={18} className="flex-shrink-0 mt-0.5" style={{ color: cfg.color }} />
+              <UnlockIcon size={18} className="flex-shrink-0 mt-0.5" style={{ color: cfg.color }} />
               <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{pendingUnlock}</div>
             </div>
             <Button onClick={() => { setPendingUnlock(null); nextStep(); }} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Continue</Button>

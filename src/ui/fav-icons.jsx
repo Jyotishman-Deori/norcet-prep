@@ -8,7 +8,7 @@
 import React from 'react';
 import {
   Activity, BarChart3, Bookmark, BookOpen, Compass, Crosshair, FileText, FlaskConical,
-  Flag, GraduationCap, HelpCircle, Layers, ListOrdered, MapPin, Recycle, Scale,
+  Flag, GraduationCap, HeartPulse, HelpCircle, Layers, ListOrdered, MapPin, Moon, Recycle, Scale,
   ScanSearch, ScrollText, Sigma, Syringe, Target, Timer, Trophy, Zap,
 } from 'lucide-react';
 
@@ -20,7 +20,7 @@ const ICONS = {
   book: BookOpen, file: FileText, compass: Compass,
   // new interactive drill modes
   listordered: ListOrdered, activity: Activity, recycle: Recycle,
-  scan: ScanSearch, crosshair: Crosshair, scale: Scale,
+  scan: ScanSearch, crosshair: Crosshair, scale: Scale, moon: Moon, heartpulse: HeartPulse,
 };
 
 export function FavIcon({ name, size = 18, color = '#FFF' }) {

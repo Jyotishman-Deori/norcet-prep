@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
-  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target,
+  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -40,6 +40,8 @@ const GAMES = [
   { screen: 'ibq',                 label: 'Spot the Structure',   sub: 'Tap it on the diagram',icon: ScanSearch,  grad: ['#0891B2', '#0B4F66'] },
   { screen: 'distractor-assassin', label: 'Distractor Assassin',  sub: 'Eliminate the wrong',  icon: Crosshair,   grad: ['#9F1239', '#6B0F2A'] },
   { screen: 'tie-breaker',         label: 'Tie-Breaker',          sub: 'Which comes first',    icon: Scale,       grad: ['#4338CA', '#312E81'] },
+  { screen: 'three-am-chart',      label: 'The 3 AM Chart',       sub: 'Chill block puzzle',   icon: Moon,        grad: ['#B45309', '#78350F'] },
+  { screen: 'shift-survival',      label: 'Shift Survival',       sub: 'High-stress mode',     icon: HeartPulse,  grad: ['#B91C1C', '#450A0A'] },
 ];
 
 // Circular XP ring. Pure SVG (zero-asset), animates the sweep on mount.

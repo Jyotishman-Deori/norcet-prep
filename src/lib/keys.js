@@ -46,6 +46,11 @@ export const KEYS = {
 
   // -- Shared / cross-device (private blobs, but visible across devices) --
   ANNOUNCEMENT:  'announcement:current',
+  // Content quality gate — a single PUBLIC list of question ids the admin has
+  // pulled from the served pool (crowdsourced auto-flag, UPGRADE 2 / Layer 3).
+  // No PII (ids only); world-readable so every client filters at boot. Writes
+  // are admin-only (broker matrix: `qgate:` mirrors `announcement:`).
+  QUESTION_GATE: 'qgate:hidden',
   PROFILE_INDEX: 'profile_index',       // legacy: monolithic list — read-only fallback
 
   // -- Per-id builders --

@@ -781,7 +781,10 @@ export const DEFAULT_DATA = {
     // P3 — daily study reminder. enabled only ever true when Notification
     // permission is granted. lastNotified (YYYY-MM-DD) stops a repeat nudge
     // the same day. Absent → reminders off (no migration needed).
-    dailyReminder: { enabled: false, time: '20:00', lastNotified: null }
+    // `window` (Duty Roster) — 'morning' | 'afternoon' | 'night' | null. Set
+    // when the user picks a study window in onboarding; it seeds `time` so the
+    // nudge fires in that window. Absent → no window chosen.
+    dailyReminder: { enabled: false, time: '20:00', window: null, lastNotified: null }
   },
   // Dates the user opened the Revision sheet, each with a snapshot of that
   // day's revision set so they can jump back and re-revise. One entry per day.

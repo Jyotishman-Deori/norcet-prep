@@ -21,8 +21,9 @@
 //   bank: / feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
-//   announcement: / faq:
-//        -> admins only
+//   announcement: / faq: / qgate:
+//        -> admins only  (qgate: = the content quality gate's hidden-id list,
+//           crowdsourced auto-flag; world-readable but admin-write-only)
 //   anything else -> DENIED (fail closed)
 //
 // BUG-04 — analytics:user: and errlog: were added here. Both were written as
@@ -234,7 +235,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // 3) Admin-only keys.
-    if (key.startsWith("announcement:") || key.startsWith("faq:")) {
+    if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:")) {
       if (!admin) return json({ error: "Forbidden: admin only" }, 403);
       // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).
       const rl = await rateHit("admin-write", session.id, 20, 60 * 60);
