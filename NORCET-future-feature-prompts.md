@@ -9096,3 +9096,51 @@ IMPACT/SAFETY: build GREEN. Frontend degrades safe (hides a button). The server
   main = frontend prod; the Supabase Edge Function is a SEPARATE prod
   surface — a change touching both needs BOTH a main push and a function
   deploy.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ADMIN-APP SEPARATION — Phase A+B (standalone admin app scaffolded)
+# ─────────────────────────────────────────────────────────────────────
+
+GOAL (user): separate the admin panel into its OWN app the admin uses to upload
+  & update all content. Chosen architecture: ONE repo, TWO entry points → TWO
+  Vercel projects, ONE shared Supabase backend. The admin app shares src/lib but
+  NEVER imports App.jsx (and vice-versa) so neither bundle pulls in the other.
+
+DONE (additive only — student app 100% untouched; both builds GREEN):
+  • admin.html + src/admin-main.jsx + src/AdminApp.jsx — standalone admin app.
+    Boots storage → restores session → requires LOGIN (reuses AuthScreen) →
+    verifies admin server-side (checkServerAdmin vs admin_profile_ids, fail-
+    closed) → renders AdminPanel + BankEditor (upload/edit question sets) +
+    Library (browse → edit). Own minimal ErrorBoundary + Splash + NotAuthorized.
+    Light/dark theme wired; data stub so Library's context reads don't crash.
+  • src/lib/admin-ops.js — shared admin logic extracted (auth/status:
+    verifyAdminPassphrase/checkServerAdmin/adminWriteShared/load+saveAdminStatus;
+    announcements: load/save/clear + history; users: adminListUsers/
+    adminDeleteProfile). VERBATIM from App.jsx, lib-only deps. App.jsx still has
+    its own copies for now — deduped in Phase C when student is stripped.
+  • vite.config.js — function form; `vite build --mode admin` → input admin.html,
+    outDir dist-admin, NO PWA. Default build (student) unchanged.
+  • package.json — build:admin / dev:admin / preview:admin. .gitignore += dist-admin.
+
+BUILDS: student GREEN (same 33 precache entries, bundle byte-identical — proof
+  the admin files are inert for students). admin GREEN → dist-admin ~213KB gzip
+  (admin chunk 137 + admin-panel 62 + icons 8 + css 6), contains ZERO student
+  App.jsx code. Shipped to dev+main (2f36a28) — safe, student build ignores it.
+
+REMAINING:
+  • Phase C — strip admin code from the STUDENT build: point App.jsx at
+    admin-ops.js (dedup), and remove the in-student admin-panel route + bank
+    upload editor so the student bundle ships zero admin code. INVASIVE (edits
+    the live App.jsx) — do as one careful surgery; verify student build after.
+  • Phase D — deploy the admin app: NEW Vercel project on the SAME repo, build
+    command `npm run build:admin`, output dir `dist-admin`, + a subdomain
+    (e.g. admin.nurseholic.in) DNS record. Same Supabase env vars
+    (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY). Needs the user's Vercel access.
+  • Browser test: log into the admin app as an admin → confirm AdminPanel +
+    bank upload/edit work end-to-end (build proves compile, not runtime).
+
+FILES: ADDED admin.html · src/admin-main.jsx · src/AdminApp.jsx · src/lib/admin-ops.js
+       MODIFIED vite.config.js · package.json · .gitignore
+IMPACT/SAFETY: purely additive; student production unaffected. Admin app not yet
+  deployed (no 2nd Vercel project). dev+main.
