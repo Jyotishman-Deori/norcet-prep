@@ -16,13 +16,19 @@ function buildStamp() {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+// Two apps, one config: `vite build --mode admin` builds the STANDALONE ADMIN
+// app (admin.html → dist-admin, no PWA); the default build is the student app
+// (index.html → dist). They share all of src/lib but ship as separate bundles.
+export default defineConfig(({ mode }) => {
+  const ADMIN = mode === 'admin';
+  return {
   define: {
     __APP_VERSION__: JSON.stringify(buildStamp()),
   },
   plugins: [
     react(),
-    VitePWA({
+    // The admin tool isn't an installable/offline PWA — skip the service worker.
+    ...(ADMIN ? [] : [VitePWA({
       // Auto-update strategy: a new SW is fetched in the background, and our
       // main.jsx triggers a reload when the new build is ready and the tab is
       // hidden / next becomes hidden. No update prompt UI to bolt on.
@@ -91,13 +97,15 @@ export default defineConfig({
       // Dev-mode SW makes testing offline behaviour easier without a full
       // production build. Production behaviour is unaffected.
       devOptions: { enabled: false }
-    })
+    })]),
   ],
   build: {
     target: 'es2019',
     sourcemap: false,
     chunkSizeWarningLimit: 1024,
+    outDir: ADMIN ? 'dist-admin' : 'dist',
     rollupOptions: {
+      input: ADMIN ? 'admin.html' : undefined,
       output: {
         // Pull the big third-party libs out of the main app chunk. Smaller
         // entry chunk = faster first paint and less invalidation when only
@@ -117,4 +125,5 @@ export default defineConfig({
       }
     }
   }
+  };
 });
