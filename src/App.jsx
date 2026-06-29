@@ -1034,56 +1034,9 @@ function unseenFeedbackReplies(myList, seenMap) {
   );
 }
 
-// =====================================================================
-// ADMIN — USER OVERVIEW  (privacy-preserving)
-//   - Reads ONLY the lightweight shared directory (id/displayName/createdAt/
-//     lastActive). It NEVER opens a user's profile blob, so it cannot expose
-//     passwords, answers, history, or any private study data — by construction.
-// =====================================================================
-async function adminListUsers() {
-  const list = await loadProfileIndex();
-  return list
-    .map(p => ({
-      id: p.id,
-      displayName: p.displayName || p.id,
-      createdAt: p.createdAt || null,
-      lastActive: p.lastActive || null
-    }))
-    .sort((a, b) => (b.lastActive || 0) - (a.lastActive || 0));
-}
-
-// Remove a profile entirely: deletes the private blob, the directory entry,
-// the per-user feedback index, AND any feedback they submitted. Cascading the
-// feedback delete avoids leaving "orphaned" reports referring to a name that
-// no longer exists in the user list.
-async function adminDeleteProfile(id) {
-  if (!id) return;
-  // 1) Their private blob + lightweight metadata
-  try { await safeStorage.delete(KEYS.profile(id), true); } catch (e) {}
-  try { await safeStorage.delete(KEYS.profileMeta(id), true); } catch (e) {}
-  // 1a) STAGE 1 — their protected credential row, so the name can be reused.
-  try { await deleteCredentials(id); } catch (e) {}
-  // 1b) P1 — local cache + pending-sync flag (only matters if the admin
-  //     is operating on their OWN device's cache; harmless no-op otherwise).
-  try { await safeStorage.delete(KEYS.userdata(id), false); } catch (e) {}
-  try { await clearPendingSync(id); } catch (e) {}
-  // 2) Their per-user feedback index pointer
-  try { await safeStorage.delete(KEYS.myFeedback(id), true); } catch (e) {}
-  // 3) Every feedback report they authored
-  try {
-    const all = await listFeedback();
-    const theirs = all.filter(f => f && f.profileId === id);
-    await Promise.all(theirs.map(f => deleteFeedback(f.id)));
-  } catch (e) {}
-  // 4) Every bank they uploaded (otherwise it lingers in shared storage with
-  //    a dangling ownerId). canSeeBank handles missing owners, but we should
-  //    not leave orphaned shared data behind.
-  try {
-    const allBanks = await listBanks();
-    const theirs = allBanks.filter(b => b && b.ownerId === id);
-    await Promise.all(theirs.map(b => deleteBank(b.id)));
-  } catch (e) {}
-}
+// [admin-app separation] adminListUsers and adminDeleteProfile removed — they
+// are only used by the admin panel, which now lives in the standalone admin app
+// (src/AdminApp.jsx + src/lib/admin-ops.js). Canonical copies live there.
 
 // =====================================================================
 // ANNOUNCEMENTS — a single current notice, shared with every user
@@ -1110,200 +1063,16 @@ async function loadAnnouncement() {
   return null;
 }
 
-// #12 — announcement HISTORY (shared, admin-write key 'announcement:history'
-// — same announcement:* RLS prefix). Newest first, capped at 30.
-const ANN_HISTORY_KEY = 'announcement:history';
-async function loadAnnouncementHistory() {
-  try {
-    const r = await safeStorage.get(ANN_HISTORY_KEY, true);
-    const v = r && r.value ? JSON.parse(r.value) : [];
-    return Array.isArray(v) ? v.filter(a => a && a.id && a.text) : [];
-  } catch (e) { return []; }
-}
+// [admin-app separation] ANN_HISTORY_KEY, loadAnnouncementHistory,
+// saveAnnouncement, deleteAnnouncementHistoryItem, clearAnnouncementHistory,
+// clearAnnouncement removed — all announcement writes are admin-only and live
+// in the standalone admin app. loadAnnouncement (read) is kept below.
 
-// A4→Stage 2: announcement WRITES are admin-only and go through the kv-write
-// broker (which authorizes them by the admin's session token, server-side).
-// `loadAnnouncement` (read) stays on safeStorage — reads are open to everyone.
-// The `adminProfileId` argument is retained for call-site compatibility but the
-// real check is the token; a DevTools-patched isAdmin buys nothing.
-async function saveAnnouncement(text, level, adminProfileId, expiresDays = null) {
-  // Two urgency levels:
-  //  - 'info'      → calm teal card; default for routine notices.
-  //  - 'important' → terracotta with an alert icon; for time-sensitive items
-  //                  (schedule changes, exam reminders) so users notice.
-  // #12 — optional auto-expiry (1/3/7/30 days, or null = until cleared) so a
-  // notice never lingers as a permanent fixture; every post is appended to
-  // the shared history for the admin to audit/delete later.
-  const lv = level === 'important' ? 'important' : 'info';
-  const days = Number(expiresDays);
-  const entry = {
-    id: `ann-${Date.now()}`, text: String(text || '').trim(), level: lv, ts: Date.now(),
-    expiresAt: Number.isFinite(days) && days > 0 ? Date.now() + days * 86400000 : null,
-  };
-  await adminWriteShared(KEYS.ANNOUNCEMENT, JSON.stringify(entry), adminProfileId);
-  try {
-    const hist = await loadAnnouncementHistory();
-    await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify([entry, ...hist].slice(0, 30)), adminProfileId);
-  } catch (e) { /* history is best-effort */ }
-  return entry;
-}
-
-async function deleteAnnouncementHistoryItem(id, adminProfileId) {
-  const hist = await loadAnnouncementHistory();
-  await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify(hist.filter(a => a.id !== id)), adminProfileId);
-}
-
-async function clearAnnouncementHistory(adminProfileId) {
-  await adminWriteShared(ANN_HISTORY_KEY, JSON.stringify([]), adminProfileId);
-}
-
-async function clearAnnouncement(adminProfileId) {
-  // The shared-DELETE broker is rejected server-side even for admins (only the
-  // upsert/write path is authorized), so a real delete always failed ("server
-  // rejected the write"). Instead OVERWRITE the key with an inactive tombstone
-  // via the SAME write path posting uses: empty text makes loadAnnouncement()
-  // return null, so the notice stops showing for everyone immediately — and the
-  // record is preserved, not destroyed (the full text also stays in history).
-  await adminWriteShared(KEYS.ANNOUNCEMENT, JSON.stringify({
-    id: `ann-cleared-${Date.now()}`, text: '', level: 'info',
-    ts: Date.now(), expiresAt: null, cleared: true,
-  }), adminProfileId);
-}
-
-// =====================================================================
-// ADMIN UNLOCK  (Pipeline step 6 / A4 — server-side trust boundary)
-//   Before A4: passphrase was the entire gate. Hash + salt are baked
-//   into the JS bundle and the check happened client-side; any user
-//   could patch `isAdmin = true` in DevTools and then write to
-//   `announcement:current` directly against PostgREST because the
-//   kv_shared write policy was open-anon. Security theatre.
-//
-//   After A4: passphrase is a UX gate only (so a casual tap doesn't
-//   pop the unlock UI). The REAL check is server-side:
-//     1) `checkServerAdmin(profileId)` reads the `admin_profile_ids`
-//        table on Supabase — anon-readable, service-role-writable.
-//     2) Admin-only writes (announcement create/clear) go via
-//        `adminWriteShared` / `adminDeleteShared`, which POST/DELETE
-//        directly to PostgREST with an `x-profile-id` header. The
-//        kv_shared RLS policy reads that header and only permits the
-//        write if the profile id is in `admin_profile_ids`.
-//   Local `KEYS.ADMIN_STATUS` is now a UX cache so admin stays
-//   unlocked between reloads without re-typing — boot re-verifies
-//   against the server (see the useEffect in App) and silently
-//   downgrades on failure. Offline: stays admin from cache; next
-//   online boot re-verifies.
-//
-//   To CHANGE the admin passphrase: it is NOT in the frontend anymore. Rotate
-//   the Supabase secret instead:  supabase secrets set ADMIN_PASSPHRASE="new"
-//   (the `admin-manage` Edge Function verifies it server-side). Note: rotating
-//   the passphrase does not add or remove anyone's admin power — that's the
-//   `admin_profile_ids` allow-list, managed via the in-app panel / Edge Function.
-// =====================================================================
-
-// Server-side passphrase check: POSTs the typed passphrase to the admin-manage
-// Edge Function (action "verify"), which compares it to the ADMIN_PASSPHRASE
-// secret and returns { ok }. No passphrase or hash lives in the frontend.
-// Throws on network/config failure so the caller can show an "offline" message
-// rather than a false "wrong passphrase".
-async function verifyAdminPassphrase(passphrase) {
-  if (!passphrase) return false;
-  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) {
-    throw new Error('admin verify unavailable');
-  }
-  const r = await fetch(`${SUPABASE_URL_FOR_ADMIN}/functions/v1/admin-manage`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ action: 'verify', passphrase }),
-  });
-  if (!r.ok) throw new Error(`verify failed: ${r.status}`);
-  const j = await r.json();
-  return !!(j && j.ok === true);
-}
-
-// A4: Supabase config. Vite injects these at build time from .env / Vercel
-// env vars. If your env-var names differ, change the two strings below — they
-// are the ONLY references in App.jsx. Reads return `undefined` if unset.
-const SUPABASE_URL_FOR_ADMIN = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_SUPABASE_URL : undefined;
-const SUPABASE_ANON_KEY_FOR_ADMIN = (typeof import.meta !== 'undefined' && import.meta.env)
-  ? import.meta.env.VITE_SUPABASE_ANON_KEY : undefined;
-
-// A4: Returns true iff `profileId` appears in the Supabase `admin_profile_ids`
-// table. Never throws — any network / parse / config failure resolves to false
-// (fail-closed: a broken admin check should reject, not grant).
-async function checkServerAdmin(profileId, uid) {
-  if (!profileId && !uid) return false;
-  if (!SUPABASE_URL_FOR_ADMIN || !SUPABASE_ANON_KEY_FOR_ADMIN) return false;
-  try {
-    // Match EITHER the (name-derived) slug id OR the permanent uid, so existing
-    // slug-based allow-list rows keep working while you migrate to uids, and a
-    // renamed admin (whose slug changed) stays admin via their uid.
-    const ids = [profileId, uid].filter(Boolean).map(encodeURIComponent);
-    const url = `${SUPABASE_URL_FOR_ADMIN}/rest/v1/admin_profile_ids`
-      + `?profile_id=in.(${ids.join(',')})&select=profile_id`;
-    const r = await fetch(url, {
-      method: 'GET',
-      headers: {
-        'apikey': SUPABASE_ANON_KEY_FOR_ADMIN,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY_FOR_ADMIN}`,
-        'Accept': 'application/json',
-      },
-    });
-    if (!r.ok) return false;
-    const rows = await r.json();
-    return Array.isArray(rows) && rows.length > 0;
-  } catch (e) {
-    return false;
-  }
-}
-
-// A4: Direct PostgREST upsert for admin-only keys (currently: announcement:*).
-// Bypasses safeStorage so we can attach the `x-profile-id` header that the new
-// RLS policy on kv_shared inspects. Throws on non-2xx so the caller can show
-// a real error to the user (the safeStorage helpers swallow failures, which
-// would be wrong here — a silent failure would corrupt the admin's mental
-// model of what they just did).
-// A4→Stage 2: admin-only writes (announcement:*) now go through the SAME
-// write broker as everything else (kv-write), which authorizes them by the
-// admin's session token against `admin_profile_ids` server-side. The old
-// `x-profile-id` header path is gone (it was never actually enforced by any
-// RLS policy, and the header was spoofable). The broker throws on failure, so
-// these still surface real errors to the admin instead of swallowing them.
-// `adminProfileId` is retained in the signature for call-site compatibility
-// but is no longer used — identity comes from the token.
-async function adminWriteShared(key, valueJson, adminProfileId) {
-  await safeStorage.setSharedStrict(key, valueJson);
-}
-
-async function adminDeleteShared(key, adminProfileId) {
-  await safeStorage.delSharedStrict(key);
-}
-
-// A4: ADMIN_STATUS local cache is a UX shortcut so admin stays unlocked
-// across reloads. Truthfulness is verified server-side by the boot re-verify
-// effect; this read can be stale until that runs.
-async function loadAdminStatus() {
-  try {
-    const result = await safeStorage.get(KEYS.ADMIN_STATUS);
-    if (result && result.value) {
-      const parsed = JSON.parse(result.value);
-      return parsed && parsed.unlocked === true;
-    }
-  } catch (e) { /* not unlocked */ }
-  return false;
-}
-
-async function saveAdminStatus(unlocked) {
-  if (unlocked) {
-    await safeStorage.set(KEYS.ADMIN_STATUS, JSON.stringify({ unlocked: true, ts: Date.now() }));
-  } else {
-    try { await safeStorage.delete(KEYS.ADMIN_STATUS); } catch (e) {}
-  }
-}
+// [admin-app separation] verifyAdminPassphrase, SUPABASE_URL_FOR_ADMIN,
+// SUPABASE_ANON_KEY_FOR_ADMIN, checkServerAdmin, adminWriteShared,
+// adminDeleteShared, loadAdminStatus, saveAdminStatus removed — these are
+// admin-only and live in the standalone admin app (src/lib/admin-ops.js).
+// The student app never sets isAdmin=true; no admin surface exists here.
 
 // =====================================================================
 // QUESTION BANK LIBRARY
@@ -1831,7 +1600,7 @@ function quizTypeLabel(mode) {
 // Screens that run their OWN popstate back-guard (the Quiz / Advanced-test
 // confirm-exit dialogs push+intercept their own history entry). The global
 // handler must NOT also act on these, or back would be handled twice.
-const NAV_SELF_GUARDED_SCREENS = new Set(['quiz', 'advanced-test', 'paper-test', 'admin-panel']);
+const NAV_SELF_GUARDED_SCREENS = new Set(['quiz', 'advanced-test', 'paper-test']);
 // Screens that are "roots": pressing back here exits the app (default OS
 // behaviour) rather than navigating in-app.
 const NAV_ROOT_SCREENS = new Set(['home']);
@@ -4615,7 +4384,7 @@ export default function App() {
                    onRefresh={refreshBanks}
                    onOpen={handleOpenBank}
                    onCreateNew={() => setNav({ screen: 'bank-editor' })}
-                   onBack={() => nav.adminReturn ? setNav({ screen: 'admin-panel' }) : goHome()} />
+                   onBack={goHome} />
         );
       })()}
 
@@ -4651,7 +4420,7 @@ export default function App() {
       {nav.screen === 'bank-editor' && isAdmin && (
         <BankEditor existingBank={nav.bank || null} profile={profile}
                     onSave={handleSaveBank}
-                    onBack={() => setNav(nav.bank ? { screen: 'bank-detail', bankId: nav.bank.id, bank: nav.bank } : (nav.adminReturn ? { screen: 'admin-panel' } : { screen: 'library' }))} />
+                    onBack={() => setNav(nav.bank ? { screen: 'bank-detail', bankId: nav.bank.id, bank: nav.bank } : { screen: 'library' })} />
       )}
 
       {nav.screen === 'reference' && (

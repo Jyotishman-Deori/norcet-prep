@@ -9220,3 +9220,38 @@ FILES: ADDED scripts/post-admin-build.mjs · MODIFIED package.json (build:admin
   rename + deploy:admin script). Vercel: project norcet-admin (static), SSO off,
   domain admin.nurseholic.in pending DNS.
 IMPACT/SAFETY: student app untouched. Admin app live on its own project/origin.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# CLEANUP — dead admin source removed from the student app (post-separation)
+# ─────────────────────────────────────────────────────────────────────
+
+CONTEXT: after the admin-app separation (Phases A–D), the student app still had
+  the now-unreferenced admin source in it (tree-shaken from the bundle but
+  cluttering the source). Ran a small multi-subagent pass to remove it cleanly.
+
+DONE (multi-agent: frontend-engineer edited, security-auditor audited,
+  code-reviewer gated — all GREEN; PASS to ship):
+  • src/App.jsx — deleted the dead module fns adminListUsers, adminDeleteProfile,
+    saveAnnouncement, loadAnnouncementHistory, deleteAnnouncementHistoryItem,
+    clearAnnouncementHistory, clearAnnouncement, verifyAdminPassphrase,
+    checkServerAdmin, adminWriteShared, adminDeleteShared, loadAdminStatus,
+    saveAdminStatus + the ANN_HISTORY_KEY / SUPABASE_*_FOR_ADMIN consts; removed
+    'admin-panel' from NAV_SELF_GUARDED_SCREENS; collapsed the dead nav.adminReturn
+    ternaries. KEPT loadAnnouncement (student banner still reads it). admin-ops.js
+    (the admin app's canonical copies) untouched.
+  • src/screens/settings.jsx — removed the leftover admin state hooks + cooldown
+    effect + registerAdminFail + the onUnlockAdmin/onLockAdmin/onOpenAdminPanel
+    props + now-unused Eye/EyeOff imports (kept Lock/Check/RefreshCw — still used).
+  • docs/security/findings.md — refreshed security register (SEC-001..011).
+    Code-inspectable controls all sound. ⚠️ SEC-008 owner-action: a comment in
+    supabase/functions/admin-manage/index.ts:13 documents ADMIN_PASSPHRASE=
+    "norcet-boss-2026" — confirm the LIVE passphrase is NOT that literal; rotate +
+    scrub if it is. Also confirm SESSION_SIGNING_SECRET (same across 3 fns),
+    CRON_SECRET (unauth POST→401), kv_shared RLS deployed-state.
+
+VERIFY: code-reviewer PASS — student build GREEN (31 precache, NO admin-panel
+  chunk), admin build GREEN (admin-panel chunk in dist-admin). No dangling refs.
+  Pure dead-code removal; no student behavior change. Admin app NOT affected (no
+  shared lib touched) — no admin redeploy needed.
+FILES: MODIFIED src/App.jsx · src/screens/settings.jsx · ADDED docs/security/findings.md

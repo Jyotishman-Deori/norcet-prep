@@ -8,7 +8,7 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Copy, Download, Edit3, Eye, EyeOff,
+  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Copy, Download, Edit3,
   Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
   Shield, Sigma, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
@@ -31,7 +31,7 @@ import {
 } from '../lib/notes.js';
 import { useBackHandler } from '../lib/back-handler.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onUnlockAdmin, onLockAdmin, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenAdminPanel, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile, isAdmin } = useProfile();
@@ -67,6 +67,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     setCribOn(next);
     setCribSheetEnabled(next);
   };
+  // [admin-app separation] adminInput, adminShow, adminError, adminBusy,
+  // showAdminForm, adminFailCount, adminCooldown state hooks removed — the
+  // Settings admin section is gone; admin lives in the standalone admin app.
   const [importMsg, setImportMsg] = useState(null);
   // BUG-06 — copy-to-clipboard feedback for the account ID card.
   const [idCopied, setIdCopied] = useState(false);
@@ -86,40 +89,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // F-B — pull-to-refresh sound preference (local pref, not in `data`).
   const [soundOn, setSoundOn] = useState(true);
   useEffect(() => { let on = true; loadSoundEnabled().then(v => { if (on) setSoundOn(v); }); return () => { on = false; }; }, []);
-  const [adminInput, setAdminInput] = useState('');
-  const [adminShow, setAdminShow] = useState(false);
-  const [adminError, setAdminError] = useState(null);
-  const [adminBusy, setAdminBusy] = useState(false);
-  const [showAdminForm, setShowAdminForm] = useState(false);
-  // Session 4, Item 3 — brute-force throttle on the unlock passphrase.
-  const [adminFailCount, setAdminFailCount] = useState(0);
-  const [adminCooldown, setAdminCooldown] = useState(0); // seconds remaining
-  useEffect(() => {
-    if (adminCooldown <= 0) return;
-    const t = setInterval(() => {
-      setAdminCooldown(c => {
-        if (c <= 1) { clearInterval(t); return 0; }
-        return c - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [adminCooldown]);
-  // Record a wrong-passphrase attempt; lock out for 30s after 3 misses.
-  // ('not-authorized' = correct passphrase but wrong profile/offline — that
-  // is NOT a brute-force signal, so it does not count toward the cooldown.)
-  const registerAdminFail = () => {
-    const fails = adminFailCount + 1;
-    setAdminFailCount(fails);
-    if (fails >= 3) {
-      setAdminError('Too many attempts — wait 30 seconds');
-      setAdminCooldown(30);
-      setAdminFailCount(0);
-    } else {
-      setAdminError(`Incorrect passphrase (${3 - fails} attempt${3 - fails === 1 ? '' : 's'} left)`);
-    }
-    setAdminBusy(false);
-  };
-
   // P3 — daily reminder local UI state. `drPerm` reflects the latest known
   // Notification permission so we can show a "blocked" hint without storing it.
   const reminder = (data.preferences && data.preferences.dailyReminder) || { enabled: false, time: '20:00' };
