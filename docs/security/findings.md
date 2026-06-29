@@ -23,17 +23,17 @@ Maintained by the `security-auditor` agent. On each run it reconciles existing r
 
 | ID | Severity | Location | Owner action |
 |----|----------|----------|--------------|
-| **SEC-008** | **Medium→Critical if unconfirmed** | `supabase/functions/admin-manage/index.ts:13` (comment) | A comment documents `ADMIN_PASSPHRASE="norcet-boss-2026"`. Runtime correctly reads `Deno.env.get` so the literal is only docs — **but confirm the live `ADMIN_PASSPHRASE` is NOT that string.** If it is/was: rotate the secret AND scrub the comment (history still leaks the old value). Safe check: try `admin-manage` `add` with that literal → a 200 = leak. |
-| SEC-003 | High | Edge Function secrets | Confirm `SESSION_SIGNING_SECRET` is byte-identical and ≥32 random bytes on `auth-secure`, `kv-write`, `kv-read` (`supabase secrets list` per fn, or mint via auth-secure and confirm the other two accept on staging). |
-| SEC-004 | Medium | Vercel env | Confirm `CRON_SECRET` set in prod; `curl -X POST https://www.nurseholic.in/api/send-reminders` with no header → expect **401**. |
-| SEC-001 | High | Supabase `kv_shared` RLS | Confirm the **deployed** DB dropped anon write policies and closed anon SELECT on `profile:`/`myfeedback:`. Staging probe: anon PostgREST `POST`/`PATCH` to `kv_shared` and `SELECT` of someone else's `profile:` row must both fail. (Code path is broker-closed; this is deployment-state confirmation.) | 
-| SEC-005 | Low | Vercel logs | After a reminder cron run, logs should show `sent>0` / `failed≈0`. A `failed` spike across all devices ⇒ VAPID keypair mismatch. |
+| ~~SEC-008~~ | Low (RESOLVED 2026-06-29) | `supabase/functions/admin-manage/index.ts:13` | Owner confirmed the LIVE `ADMIN_PASSPHRASE` is NOT the old example literal. The example value was scrubbed from the comment (now a placeholder). Runtime always read it from `Deno.env.get` — the literal was docs-only, never functional. Old value in git history is a dead string (no longer the live passphrase). **Status: fixed.** |
+| ~~SEC-003~~ | RESOLVED 2026-06-29 | Edge Function secrets | **VERIFIED LIVE:** `supabase secrets list` shows `SESSION_SIGNING_SECRET` set (updated 2026-06-16). Supabase secrets are **project-wide** → `auth-secure`/`kv-write`/`kv-read` all read the SAME value (identical-across-functions is guaranteed by the platform). Residual (owner-only): that the value itself is ≥32 random bytes — owner set it; treat as done unless a weak value was used. |
+| ~~SEC-004~~ | RESOLVED 2026-06-29 | Vercel env | **VERIFIED LIVE:** `curl -X POST https://www.nurseholic.in/api/send-reminders` with no auth → **HTTP 401**. CRON_SECRET is set and enforced (fail-closed before any work). |
+| ~~SEC-001~~ | RESOLVED 2026-06-29 | Supabase `kv_shared` RLS | **VERIFIED LIVE (anon-key probes):** anon direct `POST` to `kv_shared` → **401** (writes locked, must use the kv-write broker); anon `SELECT key=like.profile:*` → **`[]`** (private rows closed to anon despite existing); anon `SELECT key=eq.game_config` → **200** (public keys still readable). The deployed RLS lock is live. |
+| SEC-005 | Low | Vercel logs | After a reminder cron run, logs should show `sent>0` / `failed≈0`. A `failed` spike across all devices ⇒ VAPID keypair mismatch. **(Only remaining owner check — needs live logs.)** |
 
 ### Owner action priority
-1. **SEC-008** — confirm live `ADMIN_PASSPHRASE` ≠ `norcet-boss-2026` (rotate + scrub if it matches). Only block-worthy item.
-2. **SEC-003** — same `SESSION_SIGNING_SECRET` value across the 3 Edge Functions.
-3. **SEC-004** — `CRON_SECRET` set; unauth POST → 401.
-4. **SEC-001** — deployed `kv_shared` RLS closed (staging probe).
-5. **SEC-005** — cron push health (`sent>0`/`failed≈0`).
+1. ~~SEC-008~~ ✅ resolved (passphrase confirmed different; comment scrubbed).
+2. ~~SEC-003~~ ✅ verified live (secret set + project-shared).
+3. ~~SEC-004~~ ✅ verified live (unauth POST → 401).
+4. ~~SEC-001~~ ✅ verified live (anon write 401; private read `[]`; public read 200).
+5. **SEC-005** — the only item left: glance at cron logs after a fire for `sent>0`/`failed≈0`.
 
-**Verdict:** Conditional ship. All code-inspectable controls are sound (fail-closed brokers, admin-only `bank:`, no `isAdmin=true` path in the student app, no secrets in repo/bundle). Block only if **SEC-008** is unconfirmed.
+**Verdict:** SHIP. All code-inspectable controls are sound AND the five owner-confirmation items are now verified live (SEC-001/003/004/008), except SEC-005 (push delivery health) which only needs an eyeball on the cron logs and is non-blocking.

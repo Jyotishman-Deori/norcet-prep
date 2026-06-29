@@ -10,7 +10,7 @@
 // DEPLOY:
 //   supabase functions deploy admin-manage --no-verify-jwt
 // SET THE SECRET (this is the passphrase users type in the app):
-//   supabase secrets set ADMIN_PASSPHRASE="norcet-boss-2026"
+//   supabase secrets set ADMIN_PASSPHRASE="<your-strong-passphrase>"   # never commit the real value
 // (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
 // =====================================================================
 
