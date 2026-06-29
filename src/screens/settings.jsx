@@ -696,6 +696,25 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               </Card>
             )}
 
+            {/* New content alerts — on by default; lets a user keep daily
+                reminders but mute the "new question set" push. */}
+            {reminderOn && (
+              <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
+                    onClick={() => onSetDailyReminder({ contentPush: reminder.contentPush === false })}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="font-medium" style={{ color: T.ink }}>New content alerts</div>
+                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                      {reminder.contentPush === false ? 'Off — no pings about new question sets' : 'A ping when the team adds a new question set'}
+                    </div>
+                  </div>
+                  <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0" style={{ background: reminder.contentPush !== false ? T.success : T.border }}>
+                    <div className="w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: reminder.contentPush !== false ? 'translateX(20px)' : 'translateX(0)' }} />
+                  </div>
+                </div>
+              </Card>
+            )}
+
             {/* Blocked-permission hint */}
             {!reminderOn && drPerm === 'denied' && (
               <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}30` }}>

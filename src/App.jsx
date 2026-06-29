@@ -865,7 +865,7 @@ function urlBase64ToUint8Array(base64String) {
   return out;
 }
 
-async function subscribeToPush(reminderTime) {
+async function subscribeToPush(reminderTime, contentPush = true) {
   try {
     if (!VAPID_PUBLIC_KEY) return null;
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') return null;
@@ -884,7 +884,7 @@ async function subscribeToPush(reminderTime) {
     const res = await fetch('/api/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ subscription: sub, reminderTime: reminderTime || '20:00' }),
+      body: JSON.stringify({ subscription: sub, reminderTime: reminderTime || '20:00', contentPush: contentPush !== false }),
     });
     if (!res.ok) return null;
     const { id, token } = await res.json();
@@ -3296,6 +3296,8 @@ export default function App() {
       }
     }
     let effTime = patch.time || '20:00';
+    let effContentPush = true;
+    let effEnabled = false;
     setData(prev => {
       const cur = (prev.preferences && prev.preferences.dailyReminder) || {};
       const merged = {
@@ -3303,15 +3305,22 @@ export default function App() {
         time: patch.time || cur.time || '20:00',
         // Preserve the Duty Roster window label across toggles/time edits.
         window: patch.window !== undefined ? patch.window : (cur.window || null),
+        // New-content push opt-out — default ON; a missing flag reads as on.
+        contentPush: patch.contentPush !== undefined ? patch.contentPush : (cur.contentPush !== false),
         lastNotified: cur.lastNotified || null
       };
       effTime = merged.time; // capture freshest time for the push subscription
+      effContentPush = merged.contentPush;
+      effEnabled = merged.enabled;
       return { ...prev, preferences: { ...(prev.preferences || {}), dailyReminder: merged } };
     });
     // Session 5 — when reminders are on + permission granted, (re)register the
     // Web Push subscription so the cron can reach this device in the background.
-    // No-ops entirely when VAPID isn't configured (subscribeToPush guards that).
-    if (enabled === true && grant === 'granted') { subscribeToPush(effTime); }
+    // Also re-register on a content-alert toggle so the opt-out reaches the KV
+    // record (which is what the broadcast endpoint filters on). No-ops entirely
+    // when VAPID isn't configured (subscribeToPush guards that).
+    const reSubscribe = (enabled === true) || (patch.contentPush !== undefined && effEnabled);
+    if (reSubscribe && grant === 'granted') { subscribeToPush(effTime, effContentPush); }
     return grant;
   }, []);
 

@@ -56,14 +56,22 @@ export default async function handler(req, res) {
     if (!validSubscription(subscription)) return res.status(400).json({ error: 'Invalid subscription' });
     const time = validReminderTime(reminderTime) ? reminderTime : '08:00';
     const id = Buffer.from(subscription.endpoint).toString('base64').slice(-32);
+    // Merge over any existing record so a re-subscribe (a time change, or a
+    // content-alert toggle) preserves lastActive/createdAt and the content-push
+    // opt-out. `contentPush` defaults ON; only an explicit `false` opts out.
+    const existing = await kv.get(`sub:${id}`);
+    const contentPush = (typeof req.body.contentPush === 'boolean')
+      ? req.body.contentPush
+      : (existing && typeof existing.contentPush === 'boolean' ? existing.contentPush : true);
     // Store the OBJECT directly. @vercel/kv (Upstash) serialises on set and
     // deserialises on get, so JSON.stringify-ing here + JSON.parse-ing on read
     // double-encodes and breaks the readers (active.js / send-reminders.js).
     await kv.set(`sub:${id}`, {
       subscription,
       reminderTime: time,
-      lastActive: null,
-      createdAt: Date.now()
+      contentPush,
+      lastActive: existing && existing.lastActive ? existing.lastActive : null,
+      createdAt: existing && existing.createdAt ? existing.createdAt : Date.now()
     });
     res.status(200).json({ ok: true, id });
   } catch (e) {

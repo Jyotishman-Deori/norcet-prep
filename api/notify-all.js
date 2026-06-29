@@ -64,11 +64,12 @@ export default async function handler(req, res) {
   let keys = [];
   try { keys = await kv.keys('sub:*'); } catch (e) { return res.status(500).json({ error: 'kv scan failed' }); }
 
-  let sent = 0, failed = 0;
+  let sent = 0, failed = 0, skipped = 0;
   async function processOne(key) {
     try {
       const record = await kv.get(key); // @vercel/kv returns the deserialised object
       if (!record || !record.subscription) return;
+      if (record.contentPush === false) { skipped++; return; } // user opted out of content pushes
       await webpush.sendNotification(record.subscription, msg);
       sent++;
     } catch (e) {
@@ -80,5 +81,5 @@ export default async function handler(req, res) {
     await Promise.all(keys.slice(i, i + CONCURRENCY).map(processOne));
   }
 
-  return res.status(200).json({ sent, failed, total: keys.length });
+  return res.status(200).json({ sent, failed, skipped, total: keys.length });
 }

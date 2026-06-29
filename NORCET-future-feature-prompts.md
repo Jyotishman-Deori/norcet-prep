@@ -9297,3 +9297,19 @@ DEPLOY: push main (Vercel builds api/notify-all with the new env) FIRST, then
 FILES: ADDED api/notify-all.js · MODIFIED supabase/functions/kv-write/index.ts
 IMPACT/SAFETY: additive; reminder cron untouched; push is best-effort and never
   blocks a bank write. No new cron, no paid plan, no AI.
+
+── FOLLOW-UP: per-user opt-out for "new content" pushes ──────────────
+  Adds a "New content alerts" toggle (Settings → under Daily reminders, shown
+  when reminders are on; default ON). Lets a user keep daily reminders but mute
+  the content-publish push.
+  • api/subscribe.js — stores `contentPush` on the sub:* record (default ON),
+    now MERGES over the existing record so a re-subscribe preserves lastActive/
+    createdAt + the opt-out.
+  • api/notify-all.js — skips records with contentPush===false (counts skipped).
+  • src/App.jsx — subscribeToPush(reminderTime, contentPush); setDailyReminder
+    merges contentPush + re-registers the sub on a content-alert toggle (so the
+    flag reaches KV) as well as on enable.
+  • src/screens/settings.jsx — the toggle card.
+  Student build GREEN (31 precache). api ships via the main push; no Supabase/
+  admin redeploy. Reminders unaffected (separate opt-in). Default ON so existing
+  subs (no flag) still receive content pushes.
