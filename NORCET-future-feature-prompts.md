@@ -9255,3 +9255,45 @@ VERIFY: code-reviewer PASS — student build GREEN (31 precache, NO admin-panel
   Pure dead-code removal; no student behavior change. Admin app NOT affected (no
   shared lib touched) — no admin redeploy needed.
 FILES: MODIFIED src/App.jsx · src/screens/settings.jsx · ADDED docs/security/findings.md
+
+
+# ─────────────────────────────────────────────────────────────────────
+# FEATURE — "New content" web push (event-driven; strategy Phase 4.2, reimagined)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY: user wanted "publish content in admin → users notified." Better than the
+  strategy's SCHEDULED Sunday content-push cron: event-driven, fires on the
+  actual publish, and needs NO cron (sidesteps the Vercel Hobby 2-cron cap).
+
+KEY FINDING (Explore): the IN-APP half already exists — admin publishes a public
+  bank → publishedAt stamped → syncImportedBanks() surfaces a Home "What's new"
+  card + an inbox "New content available" entry on next open. The only gap was a
+  WEB PUSH for when the app is CLOSED.
+
+DESIGN: backend-only (no frontend change). The publish already flows through the
+  kv-write broker (admin-gated), so the push is triggered THERE — no new admin
+  UI, no second auth system, and no need to put SESSION_SIGNING_SECRET in Vercel
+  (its value isn't readable, so the client-token-auth option was dropped).
+
+DONE:
+  • api/notify-all.js (NEW, Vercel serverless) — broadcasts ONE push payload to
+    every `sub:*` in Vercel KV; auto-prunes dead subs (404/410). Auth = a single
+    server-to-server bearer `NOTIFY_SECRET` (fail-closed; 401 without it; never
+    in any client bundle). tag:'norcet-content' (distinct from reminders' daily).
+    Reuses the existing VAPID + KV env already present for send-reminders.
+  • supabase/functions/kv-write/index.ts — in the `bank:` admin branch, when a
+    bank BECOMES public (brand-new public, or private→public; pure version bumps
+    are NOT pushed — in-app What's-new covers updates), fire contentNotify():
+    POST api/notify-all with NOTIFY_SECRET + a body built from the bank
+    (name + question count). Rate-capped 4/hr per admin (rateHit). Runs via
+    EdgeRuntime.waitUntil so it never delays/fails the bank write.
+  • Secrets: generated NOTIFY_SECRET; set in Supabase (kv-write) + Vercel student
+    project (notify-all). NOTIFY_URL defaults to https://www.nurseholic.in/api/notify-all.
+
+DEPLOY: push main (Vercel builds api/notify-all with the new env) FIRST, then
+  `supabase functions deploy kv-write`. Verify: unauth POST /api/notify-all → 401.
+  Full end-to-end (publish a bank as admin → closed-app device buzzes) is a
+  browser/device test for the owner. No frontend/admin redeploy needed.
+FILES: ADDED api/notify-all.js · MODIFIED supabase/functions/kv-write/index.ts
+IMPACT/SAFETY: additive; reminder cron untouched; push is best-effort and never
+  blocks a bank write. No new cron, no paid plan, no AI.

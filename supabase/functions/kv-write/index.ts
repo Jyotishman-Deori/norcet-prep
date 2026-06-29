@@ -40,6 +40,21 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
+// Content-notification relay → api/notify-all.js (student Vercel project). When an
+// admin publishes a NEW public bank, we fire a Web Push broadcast. Server-to-server
+// only; NOTIFY_SECRET is shared with that endpoint and never ships in a client.
+const NOTIFY_URL = Deno.env.get("NOTIFY_URL") ?? "https://www.nurseholic.in/api/notify-all";
+const NOTIFY_SECRET = Deno.env.get("NOTIFY_SECRET") ?? "";
+async function contentNotify(title: string, bodyText: string): Promise<void> {
+  if (!NOTIFY_SECRET) return;
+  try {
+    await fetch(NOTIFY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${NOTIFY_SECRET}` },
+      body: JSON.stringify({ title, body: bodyText, url: "/library" }),
+    });
+  } catch (_) { /* a push failure must never affect the bank write */ }
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -268,7 +283,40 @@ Deno.serve(async (req: Request) => {
     // here (unlike announcement:/faq:) so an admin can bulk-seed in one session.
     if (key.startsWith("bank:")) {
       if (!admin) return json({ error: "Forbidden: admin only" }, 403);
-      return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
+      if (op === "del") return await deleteRow(key);
+      // Detect a bank BECOMING public (brand-new public bank, or private→public)
+      // so users get a "new content" push. Best-effort; never blocks the write.
+      // (Pure version bumps on an already-public bank are intentionally NOT pushed
+      // — the in-app "What's new" surface already covers updates without a buzz.)
+      let notify: { title: string; body: string } | null = null;
+      try {
+        // deno-lint-ignore no-explicit-any
+        const incoming: any = JSON.parse(String(body.value ?? "{}"));
+        if (incoming && incoming.visibility !== "private") {
+          const prev = await getRow(key); // null if brand new
+          const becamePublic = !prev || prev.visibility === "private";
+          if (becamePublic) {
+            // Light cap so rapid re-publishes can't spam every device.
+            const rl = await rateHit("content-notify", session.id, 4, 60 * 60);
+            if (rl.allowed) {
+              const n = Array.isArray(incoming.questions) ? incoming.questions.length : 0;
+              notify = {
+                title: "New on NORCET Prep",
+                body: `${String(incoming.name || "A new question set")} — ${n} question${n === 1 ? "" : "s"} added. Open the Library.`,
+              };
+            }
+          }
+        }
+      } catch (_) { /* notify is best-effort */ }
+      const resp = await writeRow(key, String(body.value ?? ""));
+      if (notify) {
+        const p = contentNotify(notify.title, notify.body);
+        // deno-lint-ignore no-explicit-any
+        const er = (globalThis as any).EdgeRuntime;
+        if (er && typeof er.waitUntil === "function") er.waitUntil(p);
+        // else: runs best-effort (un-awaited) — never delays/fails the write.
+      }
+      return resp;
     }
 
     // 6) Other user-created content: create = any logged-in; edit/delete = owner
