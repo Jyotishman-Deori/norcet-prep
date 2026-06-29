@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
+import TurnstileWidget, { isTurnstileEnabled } from '../ui/turnstile.jsx';
 import { fontStyles } from '../lib/font-styles.js';
 import { KEYS } from '../lib/keys.js';
 import * as kvStorage from '../storage';
@@ -54,6 +55,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
   const [importExisting, setImportExisting] = useState(!!legacyData);
   const [error, setError] = useState(null);
   const [working, setWorking] = useState(false);
+  // Cloudflare Turnstile (CAPTCHA) — guards register/verify/reset. The token is
+  // single-use; we reset the widget whenever we move between auth flows or after
+  // a failed attempt. When no site key is configured the widget renders nothing
+  // and isTurnstileEnabled() is false, so submit is never gated on it.
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const turnstileRef = useRef(null);
   // Forgot-password recovery flow lives inline (no separate screen). It is now
   // TWO steps: 'identify' (enter name → look up the recovery factor) then
   // 'verify' (answer the question, or DOB for legacy, + set a new password).
@@ -118,6 +125,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
 
   const todayISO = new Date().toISOString().slice(0, 10);
 
+  // Single-use Turnstile token: reset the widget + clear the token. Called when
+  // we move between flows or after a failed attempt so a consumed/expired token
+  // is never re-submitted.
+  const resetCaptcha = () => {
+    try { if (turnstileRef.current) turnstileRef.current.reset(); } catch (e) {}
+    setCaptchaToken(null);
+  };
+
   // Enter / leave the recovery flow with a clean slate each time.
   const enterRecovery = () => {
     setRecovering(true);
@@ -130,6 +145,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
     setPassword('');
     setError(null);
     setRecoverySuccess(false);
+    resetCaptcha();
   };
   const leaveRecovery = () => {
     setRecovering(false);
@@ -140,6 +156,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
     setDob('');
     setNewPassword('');
     setError(null);
+    resetCaptcha();
   };
 
   const handleSubmit = async () => {
@@ -178,9 +195,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
       setWorking(true);
       try {
         if (recoveryMethod === 'dob') {
-          await recoverPasswordWithDob(displayName, dob, newPassword);
+          await recoverPasswordWithDob(displayName, dob, newPassword, captchaToken);
         } else {
-          await recoverPasswordWithAnswer(displayName, securityAnswer, newPassword);
+          await recoverPasswordWithAnswer(displayName, securityAnswer, newPassword, captchaToken);
         }
         // Don't auto-log them in — make them log in with the new password so
         // they confirm it works and remember it.
@@ -190,6 +207,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
         setMode('login');
       } catch (e) {
         setError(e.message || 'Recovery failed');
+        resetCaptcha();
       } finally {
         setWorking(false);
       }
@@ -213,18 +231,20 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
           securityQuestion,
           securityAnswer,
           email,
-          importData: (importExisting && legacyData) ? legacyData : undefined
+          importData: (importExisting && legacyData) ? legacyData : undefined,
+          captchaToken
         });
         // One-time migration: after first profile creation on this device,
         // wipe legacy data so subsequent profiles on the same device don't see it.
         if (legacyData) await clearLegacyData();
       } else {
-        profile = await authenticateProfile(displayName, password);
+        profile = await authenticateProfile(displayName, password, captchaToken);
       }
       await saveSession({ profileId: profile.id });
       onAuthed(profile);
     } catch (e) {
       setError(e.message || 'Something went wrong');
+      resetCaptcha();
       setWorking(false);
     }
   };
@@ -233,9 +253,16 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
   const inRecoveryVerify = recovering && recoveryStep === 'verify';
   const inRecoveryIdentify = recovering && recoveryStep === 'identify';
 
+  // Turnstile guards the server-hitting actions (register/verify/reset), i.e.
+  // create, login, and the recovery VERIFY step — but NOT the recovery IDENTIFY
+  // step (that only asks which recovery factor the account uses). When a site
+  // key is configured we require a token before enabling submit.
+  const captchaRequired = isTurnstileEnabled() && (!recovering || recoveryStep === 'verify');
+
   // Submit button label/icon/disabled adapt to mode + recovery step.
   const submitDisabled = working
     || !displayName.trim()
+    || (captchaRequired && !captchaToken)
     || (inRecoveryIdentify ? false
         : inRecoveryVerify ? (!newPassword || (recoveryMethod === 'dob' ? !dob : !securityAnswer.trim()))
         : mode === 'create' ? (!password || !securityQuestion || !securityAnswer.trim())
@@ -628,6 +655,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
               <div>{error}</div>
             </div>
           </Card>
+        )}
+
+        {/* Cloudflare Turnstile — shown for the server-hitting auth actions
+            (create / login / recovery-verify). Renders nothing when no site key
+            is configured (VITE_TURNSTILE_SITE_KEY). */}
+        {captchaRequired && (
+          <TurnstileWidget ref={turnstileRef} onToken={setCaptchaToken} action="auth" />
         )}
 
         <Button onClick={handleSubmit}

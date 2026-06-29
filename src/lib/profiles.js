@@ -462,7 +462,7 @@ export function normalizeDob(dob) {
   return s;
 }
 
-export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData }) {
+export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData, captchaToken }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
@@ -509,8 +509,14 @@ export async function createProfile({ displayName, password, securityQuestion, s
     fingerprint: fingerprint || undefined,
     ref: (pending && pending.ref) ? pending.ref : undefined,
     via: (pending && pending.via) ? pending.via : undefined,
+    // Cloudflare Turnstile token — verified server-side (only enforced when the
+    // function has TURNSTILE_SECRET_KEY set; otherwise ignored).
+    captchaToken: captchaToken || undefined,
   });
   if (!reg || reg.ok !== true) {
+    if (reg && reg.reason === 'captcha') {
+      throw new Error("Please complete the 'I'm human' check and try again");
+    }
     if (reg && reg.reason === 'exists') {
       throw new Error('That display name is already taken — pick another, or log in instead');
     }
@@ -563,14 +569,17 @@ export async function createProfile({ displayName, password, securityQuestion, s
   return profile;
 }
 
-export async function authenticateProfile(displayName, password) {
+export async function authenticateProfile(displayName, password, captchaToken) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Enter your display name');
   // STAGE 1: password check happens server-side. The function returns ok:false
   // for BOTH "no such account" and "wrong password" — one generic message, so
   // we no longer leak which display names exist (fixes the enumeration finding).
-  const res = await callAuthFn('verify', { id, password });
+  const res = await callAuthFn('verify', { id, password, captchaToken: captchaToken || undefined });
   if (!res || res.ok !== true) {
+    if (res && res.reason === 'captcha') {
+      throw new Error("Please complete the 'I'm human' check and try again");
+    }
     throw new Error('Display name or password is incorrect');
   }
   // STAGE 2: activate + persist the session token so shared writes are authorized.
@@ -586,14 +595,17 @@ export async function authenticateProfile(displayName, password) {
 // DOB-gated recovery. The DOB check now runs server-side against
 // profile_secrets; the client only sends name + DOB + new password.
 // (DOB is a weak recovery factor — a known C-2 item to harden later.)
-export async function recoverPasswordWithDob(displayName, dob, newPassword) {
+export async function recoverPasswordWithDob(displayName, dob, newPassword, captchaToken) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Enter your display name');
   const normDob = normalizeDob(dob);
   if (!normDob) throw new Error('Pick a valid date of birth');
   if (!newPassword || newPassword.length < 8) throw new Error('New password must be at least 8 characters');
-  const res = await callAuthFn('reset', { id, dob: normDob, newPassword });
+  const res = await callAuthFn('reset', { id, dob: normDob, newPassword, captchaToken: captchaToken || undefined });
   if (!res || res.ok !== true) {
+    if (res && res.reason === 'captcha') {
+      throw new Error("Please complete the 'I'm human' check and try again");
+    }
     if (res && res.reason === 'no-dob') {
       throw new Error("This profile doesn't have a date of birth on file, so password recovery isn't available. Create a new profile.");
     }
@@ -631,13 +643,14 @@ export async function getRecoveryQuestion(displayName) {
 
 // issues_new #3: security-question password reset. Verifies the answer
 // (case-insensitively, server-side) before allowing the new password.
-export async function recoverPasswordWithAnswer(displayName, answer, newPassword) {
+export async function recoverPasswordWithAnswer(displayName, answer, newPassword, captchaToken) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Enter your display name');
   if (!answer || !String(answer).trim()) throw new Error('Type the answer to your security question');
   if (!newPassword || newPassword.length < 8) throw new Error('New password must be at least 8 characters');
-  const res = await callAuthFn('reset', { id, securityAnswer: String(answer), newPassword });
+  const res = await callAuthFn('reset', { id, securityAnswer: String(answer), newPassword, captchaToken: captchaToken || undefined });
   if (!res || res.ok !== true) {
+    if (res && res.reason === 'captcha') throw new Error("Please complete the 'I'm human' check and try again");
     if (res && res.reason === 'no-account') throw new Error('No profile with that name');
     if (res && res.reason === 'weak-password') throw new Error('New password must be at least 8 characters');
     if (res && res.reason === 'no-recovery') {

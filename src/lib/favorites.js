@@ -27,9 +27,7 @@
 import { safeStorage } from './safe-storage.js';
 import { KEY_PREFIXES } from './keys.js';
 import { GUEST_ID } from './profiles.js';
-
-const FAVSEC_PREFIX = 'favsec:';
-const FAVORDER_PREFIX = 'favorder:';
+import { trackUmami } from './umami.js';
 
 // id = App nav screen id (tap → onNavigate({ screen: id })).
 // icon = key into ui/fav-icons.jsx; hue = fixed accent for the premium card
@@ -95,30 +93,6 @@ async function persist(profileId, favs) {
   try { window.dispatchEvent(new CustomEvent('norcet:favs', { detail: favs })); } catch (e) {}
 }
 
-// ---- shared admin mirrors (fire-and-forget, never block the UI) --------
-async function readIdList(key) {
-  try {
-    const r = await safeStorage.get(key, true);
-    if (r && r.value) { const a = JSON.parse(r.value); if (Array.isArray(a)) return a; }
-  } catch (e) {}
-  return [];
-}
-
-async function mirrorSection(sectionId, profileId, on) {
-  if (isGuest(profileId)) return;
-  try {
-    let ids = await readIdList(FAVSEC_PREFIX + sectionId);
-    ids = ids.filter(id => id !== profileId);
-    if (on) ids.push(profileId);
-    await safeStorage.set(FAVSEC_PREFIX + sectionId, JSON.stringify(ids), true);
-  } catch (e) {}
-}
-
-async function mirrorOrder(profileId, order) {
-  if (isGuest(profileId)) return;
-  try { await safeStorage.set(FAVORDER_PREFIX + profileId, JSON.stringify(order), true); } catch (e) {}
-}
-
 // ---- mutations (all return the fresh record) ----------------------------
 export async function toggleFav(profileId, sectionId) {
   if (!byId[sectionId]) return { favs: await loadFavs(profileId), added: false };
@@ -126,8 +100,9 @@ export async function toggleFav(profileId, sectionId) {
   const had = favs.order.includes(sectionId);
   favs.order = had ? favs.order.filter(id => id !== sectionId) : [...favs.order, sectionId];
   await persist(profileId, favs);
-  mirrorSection(sectionId, profileId, !had);
-  mirrorOrder(profileId, favs.order);
+  // Section popularity → Umami (admin reads it there). Count adds only, and
+  // exclude guests to mirror the old insight's "members only" scope.
+  if (!had && !isGuest(profileId)) trackUmami('favourite', { section: sectionId });
   return { favs, added: !had };
 }
 
@@ -135,7 +110,6 @@ export async function setFavOrder(profileId, order) {
   const favs = await loadFavs(profileId);
   favs.order = (order || []).filter(id => byId[id]);
   await persist(profileId, favs);
-  mirrorOrder(profileId, favs.order);
   return favs;
 }
 
@@ -144,8 +118,6 @@ export async function removeFav(profileId, sectionId) {
   if (!favs.order.includes(sectionId)) return favs;
   favs.order = favs.order.filter(id => id !== sectionId);
   await persist(profileId, favs);
-  mirrorSection(sectionId, profileId, false);
-  mirrorOrder(profileId, favs.order);
   return favs;
 }
 
@@ -154,45 +126,4 @@ export async function setFavEnabled(profileId, on) {
   favs.enabled = !!on;
   await persist(profileId, favs);
   return favs;
-}
-
-// ---- admin insights ------------------------------------------------------
-// One row per registry section (zero-heart sections included on purpose —
-// "not attracting users" is exactly the signal the admin asked for):
-//   { id, label, hearts, avgRank (1-based | null), top3 (times ranked #1-#3) }
-// Plus { users } = number of profiles with at least one favourite.
-export async function loadFavInsights() {
-  let secKeys = [], orderKeys = [];
-  try { const r = await safeStorage.list(FAVSEC_PREFIX, true); secKeys = (r && r.keys) ? r.keys : []; } catch (e) {}
-  try { const r = await safeStorage.list(FAVORDER_PREFIX, true); orderKeys = (r && r.keys) ? r.keys : []; } catch (e) {}
-
-  const hearts = {};
-  await Promise.all(secKeys.map(async k => {
-    const id = k.slice(FAVSEC_PREFIX.length);
-    if (!byId[id]) return;
-    hearts[id] = (await readIdList(k)).length;
-  }));
-
-  const rankSum = {}, rankN = {}, top3 = {};
-  let users = 0;
-  await Promise.all(orderKeys.map(async k => {
-    const order = await readIdList(k);
-    if (!Array.isArray(order) || order.length === 0) return;
-    users += 1;
-    order.forEach((id, i) => {
-      if (!byId[id]) return;
-      rankSum[id] = (rankSum[id] || 0) + (i + 1);
-      rankN[id] = (rankN[id] || 0) + 1;
-      if (i < 3) top3[id] = (top3[id] || 0) + 1;
-    });
-  }));
-
-  const rows = FAV_SECTIONS.map(s => ({
-    id: s.id, label: s.label, hue: s.hue, icon: s.icon,
-    hearts: hearts[s.id] || 0,
-    avgRank: rankN[s.id] ? (rankSum[s.id] / rankN[s.id]) : null,
-    top3: top3[s.id] || 0,
-  })).sort((a, b) => b.hearts - a.hearts || (a.avgRank || 99) - (b.avgRank || 99));
-
-  return { rows, users };
 }

@@ -5,9 +5,13 @@ import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 import { installGlobalErrorCapture } from './lib/errorlog.js';
 import { captureReferralFromUrl } from './lib/referral.js';
+import { initUmami } from './lib/umami.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
+// Umami Cloud (free) pageview analytics — a no-op unless VITE_UMAMI_WEBSITE_ID
+// is configured, so it costs nothing for local/dev or an unconfigured deploy.
+initUmami();
 // Phase-1 referrals — if this load arrived via a referral link (?ref=&via=),
 // capture the attribution LOCALLY now (before any render) and clean the params
 // out of the address bar. createProfile() reads this back at signup. Purely

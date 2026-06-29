@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Activity, AlertCircle, AlertTriangle, Check, CheckSquare, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  AlertCircle, AlertTriangle, Check, CheckSquare, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -33,26 +33,13 @@ import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
 import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
-import { loadEngagement } from '../lib/analytics.js';
-// FAV — Favourites insights: hearts + average priority rank per section.
-import { loadFavInsights } from '../lib/favorites.js';
 import { loadReferralGraph, CHANNEL_LABEL } from '../lib/referral-admin.js';
 import { loadSignupAnomalies } from '../lib/referral-stats.js';
-import { FavIcon } from '../ui/fav-icons.jsx';
-import { Heart } from 'lucide-react';
 import { fmtWhen } from '../lib/format.js';
 import { topicName } from '../lib/topics.js';
 // #24 — bank demand vs supply uses the exam-weightage distribution.
 import { examTopicWeightage } from '../lib/weightage.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
-
-// UPGRADE 1 feedback valve — nice labels for the game ids recorded by analytics
-// (keyed by the game's completion screen id; prettyScreen() is the fallback).
-const GAME_LABELS = {
-  'skill-drill': 'Clinical Skill Drill', 'icu-monitor': 'ICU Monitor', 'crash-cart': 'Crash Cart',
-  'sorter': 'The Sorter', 'ibq': 'Spot the Structure', 'distractor-assassin': 'Distractor Assassin',
-  'tie-breaker': 'Tie-Breaker', 'three-am-chart': 'The 3 AM Chart', 'shift-survival': 'Shift Survival',
-};
 
 function AdminPanel({
   profile, banks, banksLoading,
@@ -166,24 +153,12 @@ function AdminPanel({
     setHelpfulLoading(false);
   }, [allQuestions]);
 
-  // FAV — Favourites insights
-  const [favIns, setFavIns] = useState({ rows: [], users: 0 });
-  const [favInsLoading, setFavInsLoading] = useState(true);
   // #29 — crash reports
   const [errs, setErrs] = useState([]);
   const [errsLoading, setErrsLoading] = useState(true);
   const [errFilter, setErrFilter] = useState('open'); // 'open' | 'resolved' | 'all'
   const [errOpen, setErrOpen] = useState(null);        // expanded signature
   const [errDelConfirm, setErrDelConfirm] = useState(null);
-  // #28 — engagement analytics (aggregate)
-  const [eng, setEng] = useState(null);
-  const [engLoading, setEngLoading] = useState(true);
-  const refreshFavIns = useCallback(async () => {
-    setFavInsLoading(true);
-    try { setFavIns(await loadFavInsights()); } catch (e) {}
-    setFavInsLoading(false);
-  }, []);
-
   // #29 — crash reports loader + actions
   const refreshErrs = useCallback(async () => {
     setErrsLoading(true);
@@ -198,12 +173,6 @@ function AdminPanel({
     setErrs(prev => prev.filter(e => e.sig !== sig));
     setErrDelConfirm(null);
     await deleteErrorGroup(sig);
-  }, []);
-
-  const refreshEng = useCallback(async () => {
-    setEngLoading(true);
-    try { setEng(await loadEngagement()); } catch (e) { setEng(null); }
-    setEngLoading(false);
   }, []);
 
   // #24 — bank demand vs supply (computed, no telemetry). Supply = questions in
@@ -527,75 +496,6 @@ function AdminPanel({
                   </Card>
                 );
               })}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  // FAV — Favourites insights: which sections users love (hearts), how they
-  // rank them (avg priority), and which aren't attracting anyone (0 hearts,
-  // shown dimmed on purpose — that's the "needs work" signal).
-  if (view === 'favourites') {
-    const maxHearts = Math.max(1, ...favIns.rows.map(r => r.hearts));
-    return (
-      <div className="anim-fadeup">
-        <TopBar title="Favourites insights" onBack={backToDash}
-                right={
-                  <button onClick={refreshFavIns} disabled={favInsLoading} aria-label="Refresh"
-                          className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">
-                    <RefreshCw size={18} style={{ color: T.muted }} className={favInsLoading ? 'animate-spin' : ''} />
-                  </button>
-                } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
-          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            Which sections users heart, and where they place them in their priority order.
-            High hearts + low avg rank = a hit feature worth doubling down on.
-            Zero hearts (dimmed) = a section that isn't attracting users — candidates for improvement or better discovery.
-            Guests are excluded; counts reflect CURRENT hearts (un-hearting removes it).
-          </div>
-          <Card className="p-3 mb-3" style={{ background: '#E0245E10', border: '1px solid #E0245E30' }}>
-            <div className="text-[13px]" style={{ color: T.ink }}>
-              <span className="font-semibold" style={{ color: '#E0245E' }}>{favIns.users}</span> user{favIns.users === 1 ? '' : 's'} with at least one favourite
-            </div>
-          </Card>
-          {favInsLoading ? (
-            <div className="text-center text-sm py-10" style={{ color: T.muted }}>Loading…</div>
-          ) : favIns.users === 0 ? (
-            <AdminEmpty icon={Heart} accent="#E0245E"
-              title="No favourites yet"
-              what="A popularity board for your sections — how many users heart each one, and how high they rank it in their priority order. It tells you which features to double down on and which need better discovery."
-              when="It populates the first time a member hearts a section (the ♥ on a section card). Guests are never counted."
-              collecting />
-          ) : (
-            <div className="space-y-2">
-              {favIns.rows.map(r => (
-                <Card key={r.id} className="p-3.5" style={{ opacity: r.hearts === 0 ? 0.55 : 1 }}>
-                  <div className="flex items-center gap-2.5 mb-2">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                         style={{ background: r.hue + '20' }}>
-                      <FavIcon name={r.icon} size={15} color={r.hue} />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-medium truncate" style={{ color: T.ink }}>{r.label}</div>
-                      <div className="text-[11px]" style={{ color: T.muted }}>
-                        {r.hearts === 0
-                          ? 'No hearts yet — not attracting users'
-                          : <>avg priority <span className="font-semibold" style={{ color: T.inkSoft }}>#{r.avgRank ? r.avgRank.toFixed(1) : '—'}</span>{r.top3 > 0 ? <> · in a top-3 for {r.top3}</> : null}</>}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 flex-shrink-0">
-                      <Heart size={12} fill={r.hearts > 0 ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
-                      <span className="text-sm font-semibold tabular-nums" style={{ color: r.hearts > 0 ? T.ink : T.muted }}>{r.hearts}</span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 rounded-full" style={{ background: T.borderSoft }}>
-                    <div className="h-1.5 rounded-full transition-all duration-500"
-                         style={{ background: r.hue, width: `${Math.round((r.hearts / maxHearts) * 100)}%` }} />
-                  </div>
-                </Card>
-              ))}
             </div>
           )}
         </div>
@@ -1433,122 +1333,6 @@ function AdminPanel({
     );
   }
 
-  // =================== DETAIL VIEW: ENGAGEMENT (#28) ===================
-  if (view === 'engagement') {
-    const prettyScreen = (id) => String(id || '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-    const Stat = ({ label, value, tone }) => (
-      <div className="rounded-2xl p-3.5" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
-        <div className="text-2xl font-display font-semibold tabular-nums" style={{ color: tone || T.ink }}>{value}</div>
-        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{label}</div>
-      </div>
-    );
-    const maxScreen = eng && eng.topScreens.length ? eng.topScreens[0].count : 1;
-    // UPGRADE 1 feedback valve — join opens (screen visits) with completions for
-    // EVERY known game, so a game opened-but-never-finished shows at 0% (the
-    // strongest "ignored" signal) rather than vanishing. Hide games never opened.
-    const gameRows = !eng ? [] : Object.keys(GAME_LABELS)
-      .map(id => {
-        const opens = (eng.screenViews && eng.screenViews[id]) || 0;
-        const gs = (eng.gameStats && eng.gameStats[id]) || { plays: 0, coins: 0 };
-        const plays = gs.plays || 0;
-        return { id, opens, plays, coins: gs.coins || 0, completionRate: opens ? plays / opens : 0 };
-      })
-      .filter(g => g.opens > 0 || g.plays > 0)
-      .sort((a, b) => b.opens - a.opens || b.plays - a.plays);
-    return (
-      <div className="anim-fadeup">
-        <TopBar title="Engagement" onBack={backToDash} feedback={{ screen: 'Admin · Engagement' }}
-                right={
-                  <button onClick={refreshEng} disabled={engLoading} aria-label="Refresh"
-                          className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5 disabled:opacity-50">
-                    <RefreshCw size={18} style={{ color: T.muted }} className={engLoading ? 'animate-spin' : ''} />
-                  </button>
-                } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
-          <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            Aggregated usage across everyone — members and guests. No individual's activity is shown.
-          </div>
-          {engLoading ? (
-            <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
-          ) : !eng || eng.totalUsers === 0 ? (
-            <AdminEmpty icon={Activity} accent={T.primary}
-              title="No usage data yet"
-              what="Active users, sessions and most-visited screens — an at-a-glance pulse of how the app is being used (members and guests, never an individual)."
-              when="It fills in the next time members open and use the app. Brand-new projects start empty."
-              collecting />
-          ) : (
-            <>
-              <div className="grid grid-cols-2 gap-2.5 mb-2.5">
-                <Stat label="Active today" value={eng.activeToday} tone={T.primary} />
-                <Stat label="Active this week" value={eng.activeWeek} tone={T.primary} />
-                <Stat label="Members" value={eng.members} />
-                <Stat label="Guests" value={eng.guests} />
-                <Stat label="Total sessions" value={eng.sessions} />
-                <Stat label="Avg sessions / user" value={eng.avgSessions.toFixed(1)} />
-              </div>
-              {eng.newWeek > 0 && (
-                <Card className="p-3 mb-4" style={{ background: T.success + '12', border: `1px solid ${T.success}33` }}>
-                  <div className="text-sm font-medium" style={{ color: T.success }}>+{eng.newWeek} new {eng.newWeek === 1 ? 'user' : 'users'} this week</div>
-                </Card>
-              )}
-
-              <div className="text-xs uppercase tracking-wider font-semibold mt-5 mb-2 px-1" style={{ color: T.muted }}>Most-visited screens</div>
-              <Card className="p-3.5">
-                <div className="space-y-2.5">
-                  {eng.topScreens.map(s => (
-                    <div key={s.id}>
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-medium truncate" style={{ color: T.ink }}>{prettyScreen(s.id)}</span>
-                        <span className="text-[11px] tabular-nums ml-2 flex-shrink-0" style={{ color: T.muted }}>{s.count}</span>
-                      </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
-                        <div className="h-full rounded-full" style={{ width: `${Math.max(4, Math.round((s.count / maxScreen) * 100))}%`, background: T.primary }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-              <div className="text-[11px] mt-3 px-1" style={{ color: T.muted }}>{eng.totalScreenViews.toLocaleString()} screen views from {eng.totalUsers} tracked {eng.totalUsers === 1 ? 'user' : 'users'}.</div>
-
-              {/* UPGRADE 1 — the gamification feedback valve: which games are
-                  actually played (completions vs opens) vs quietly ignored. */}
-              {gameRows.length > 0 && (
-                <>
-                  <div className="text-xs uppercase tracking-wider font-semibold mt-6 mb-1.5 px-1" style={{ color: T.muted }}>Games — played vs ignored</div>
-                  <div className="text-[11px] leading-relaxed mb-2 px-1" style={{ color: T.muted }}>
-                    Completions out of opens, per game. A low rate — or opens with no completions — means a game isn't landing; tune or drop it before building more.
-                  </div>
-                  <Card className="p-3.5">
-                    <div className="space-y-3">
-                      {gameRows.map(g => {
-                        const pct = Math.round(g.completionRate * 100);
-                        const tone = g.opens === 0 ? T.muted : pct >= 50 ? T.success : pct >= 20 ? T.accent : T.error;
-                        return (
-                          <div key={g.id}>
-                            <div className="flex items-center justify-between mb-1">
-                              <span className="text-xs font-medium truncate" style={{ color: T.ink }}>{GAME_LABELS[g.id] || prettyScreen(g.id)}</span>
-                              <span className="text-[11px] tabular-nums ml-2 flex-shrink-0" style={{ color: T.muted }}>
-                                {g.plays}/{g.opens} · {pct}%
-                              </span>
-                            </div>
-                            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: T.surfaceWarm }}>
-                              <div className="h-full rounded-full" style={{ width: `${Math.max(3, Math.min(100, pct))}%`, background: tone }} />
-                            </div>
-                            {g.coins > 0 && <div className="text-[10px] mt-0.5" style={{ color: T.muted }}>{g.coins.toLocaleString()} coins earned here</div>}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </Card>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // =================== DETAIL VIEW: MANAGE ADMINS ===================
   if (view === 'manageAdmins') {
     return <AdminManager onBack={backToDash} />;
@@ -1650,24 +1434,6 @@ function AdminPanel({
             hint="Explanation ratings"
             onClick={() => { setView('helpfulness'); refreshHelpful(); }}
             signal={<Lightbulb size={18} style={{ color: T.muted }} />} />
-
-          {/* FAV — Favourites insights: section popularity + priority ranks */}
-          <AdminTile
-            icon={<Heart size={22} style={{ color: '#E0245E' }} />}
-            accent={'#E0245E'}
-            label="Favourites"
-            hint="Section popularity"
-            onClick={() => { setView('favourites'); refreshFavIns(); }}
-            signal={<Heart size={18} style={{ color: T.muted }} />} />
-
-          {/* #28 — Engagement: aggregate usage (members + guests) */}
-          <AdminTile
-            icon={<Activity size={22} style={{ color: T.sec.advanced }} />}
-            accent={T.sec.advanced}
-            label="Engagement"
-            hint="Usage & active users"
-            onClick={() => { setView('engagement'); refreshEng(); }}
-            signal={<Activity size={18} style={{ color: T.muted }} />} />
 
           {/* #24 — Bank health: per-topic supply vs exam demand */}
           <AdminTile

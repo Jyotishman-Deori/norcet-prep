@@ -57,7 +57,7 @@ import {
 import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/quick-practice.js';
 import { examTopicWeightage } from './lib/weightage.js';
 import { captureError, setErrorContext } from './lib/errorlog.js';
-import { initAnalytics, trackScreen, trackGameComplete } from './lib/analytics.js';
+import { trackUmami } from './lib/umami.js';
 // BUG-01 — unified back-button interception for screens with internal sub-views.
 import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
@@ -2076,18 +2076,10 @@ export default function App() {
   const navRef = useRef(nav);
   navRef.current = nav;
   // #29 — keep the error logger's context pointed at the current screen so
-  // captured crashes record where they happened. #28 — count the screen view.
+  // captured crashes record where they happened.
   useEffect(() => {
     setErrorContext({ screen: nav.screen });
-    trackScreen(nav.screen);
   }, [nav.screen]);
-  // #28 — begin engagement tracking once the active identity is known. Handles
-  // both logged-in profiles and guests (a stable local guest id is used so
-  // their repeat visits aggregate). Fire-and-forget; never blocks the app.
-  useEffect(() => {
-    if (!profile) return;
-    initAnalytics(profile.id, isGuestProfile(profile));
-  }, [profile && profile.id]);
   // B2 — keep the current profile's "repeat unattempted" pool in a ref so the
   // synchronous selector in startQuiz can read it without awaiting storage.
   const repeatPoolRef = useRef([]);
@@ -2919,10 +2911,9 @@ export default function App() {
   // game so the XP wiring lives here, not duplicated across 7 call sites.
   const handleGameComplete = useCallback((coins) => {
     const gained = Math.max(0, Math.floor(coins || 0));
-    // UPGRADE 1 feedback valve — record which game just completed + coins earned
-    // (the active screen IS the game). Paired with screen-visit opens in the
-    // admin Engagement view to show which games are actually played.
-    try { trackGameComplete(navRef.current && navRef.current.screen, gained); } catch (e) {}
+    // Record which game just completed + coins earned (the active screen IS the
+    // game) as a Umami custom event — the admin reads game popularity there now.
+    trackUmami('game-complete', { game: (navRef.current && navRef.current.screen) || 'unknown', coins: gained });
     // Complete the game off the ref so we know the level-up result synchronously
     // (this also counts the game + XP toward today's daily quests).
     const res = completeGamePure(levelupRef.current, gained, todayStr());

@@ -34,6 +34,12 @@ const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 // The kv-write broker MUST use the exact same secret to verify tokens.
 const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
 const TOKEN_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
+// Cloudflare Turnstile secret. CAPTCHA is enforced on register/verify/reset
+// ONLY when this is set; until then the check fail-opens (so deploying this
+// code never locks anyone out — enforcement is switched on by setting the
+// secret). Set it with:
+//   supabase secrets set TURNSTILE_SECRET_KEY="<secret from the Turnstile dashboard>"
+const TURNSTILE_SECRET = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -205,6 +211,36 @@ function tooMany(retryAfter: number): Response {
   );
 }
 
+// ---- CAPTCHA: Cloudflare Turnstile server-side verification ----------
+// Returns true when the challenge is satisfied. Policy:
+//   • secret unset            → true  (CAPTCHA not enforced yet — fail-open)
+//   • token missing/empty     → false (the whole point: a bot that sends no
+//                                      token must be rejected)
+//   • Cloudflare says success → true
+//   • Cloudflare says !success → false
+//   • transport/HTTP error    → true  (fail-open, like rateHit: a Cloudflare
+//                                      outage must not lock out real users)
+async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET) return true;       // enforcement off
+  if (!token) return false;                 // no token → reject
+  try {
+    const form = new URLSearchParams();
+    form.set("secret", TURNSTILE_SECRET);
+    form.set("response", token);
+    if (ip && ip !== "unknown") form.set("remoteip", ip);
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    });
+    if (!r.ok) return true;                  // transport problem → fail-open
+    const data = await r.json();
+    return !!(data && data.success);
+  } catch {
+    return true;                            // network error → fail-open
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -240,6 +276,20 @@ Deno.serve(async (req: Request) => {
       rl = await rateHit("update-email", id, 5, 60 * 60);     // 5 / hour per id
     }
     if (rl && !rl.allowed) return tooMany(rl.retryAfter);
+  }
+
+  // -------------------------------------------------------------
+  // CAPTCHA — Cloudflare Turnstile guards the PUBLIC auth surfaces
+  // (register / verify / reset). Enforced only when TURNSTILE_SECRET_KEY is
+  // set; otherwise verifyTurnstile() fail-opens, so this code is safe to
+  // deploy before enforcement is switched on. Logged-in-only actions
+  // (change-password / set-security-question / update-email / rename /
+  // delete / recovery-question) are NOT gated — they already require a
+  // session/password, so a CAPTCHA there adds friction with no anti-bot win.
+  // -------------------------------------------------------------
+  if (action === "register" || action === "verify" || action === "reset") {
+    const ok = await verifyTurnstile(String(payload.captchaToken ?? ""), clientIp(req));
+    if (!ok) return json({ ok: false, reason: "captcha" });
   }
 
   try {

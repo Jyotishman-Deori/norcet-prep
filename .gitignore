@@ -12,3 +12,5 @@ dev-dist
 
 .vercel
 .env*
+# ...but DO track the committed template (it holds only placeholders, no secrets).
+!.env.example

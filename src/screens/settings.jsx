@@ -34,7 +34,7 @@ import { useBackHandler } from '../lib/back-handler.js';
 function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
-  const { profile, isAdmin } = useProfile();
+  const { profile } = useProfile();
   // #21/#29 — per-device UI prefs (hydrated at App boot; re-read here so a
   // fresh Settings mount always reflects storage truth).
   const [gestures, setGestures] = useState(() => getSidebarGestures());
@@ -270,9 +270,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
       )}
-      {/* BUG-06 — Account ID. Shown here so anyone can copy their id and send
-          it to the owner to be granted admin access (the owner adds it in
-          Admin → Manage admins). The owner sees their own id here too. */}
+      {/* BUG-06 — Account ID. Shown here so a user can copy their durable id
+          (useful for support / account identification). */}
       {accountId && (
         <Card className="p-4 mb-3">
           <div className="flex items-center gap-3">
@@ -290,9 +289,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
                     aria-label="Copy account ID">
               {idCopied ? <Check size={14} /> : <Copy size={14} />}{idCopied ? 'Copied' : 'Copy'}
             </button>
-          </div>
-          <div className="text-[11px] leading-relaxed mt-2.5" style={{ color: T.muted }}>
-            Share this with the app owner to be made an admin. {isAdmin ? "You're an admin — manage others in Admin → Manage admins." : ''}
           </div>
         </Card>
       )}
