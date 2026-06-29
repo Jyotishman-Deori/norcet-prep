@@ -7,9 +7,10 @@
     "dev": "vite",
     "dev:admin": "vite --open /admin.html",
     "build": "vite build",
-    "build:admin": "vite build --mode admin",
+    "build:admin": "vite build --mode admin && node scripts/post-admin-build.mjs",
     "preview": "vite preview",
     "preview:admin": "vite preview --outDir dist-admin",
+    "deploy:admin": "npm run build:admin && npx vercel --cwd dist-admin deploy --prod --yes",
     "deploy:check": "vite build && vite preview --host"
   },
   "dependencies": {

@@ -9178,3 +9178,45 @@ IMPACT/SAFETY: student bundle ships zero admin code (admin panel + handlers gone
 REMAINING: Phase D — deploy the admin app (2nd Vercel project on this repo:
   build `npm run build:admin`, output `dist-admin`, env VITE_SUPABASE_*, +
   admin subdomain). Needs the user's Vercel access.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ADMIN-APP SEPARATION — Phase D (admin app DEPLOYED & LIVE)
+# ─────────────────────────────────────────────────────────────────────
+
+DONE — the standalone admin app is live in its own Vercel project:
+  • New Vercel project `norcet-admin` (separate from `norcet-prep`/student),
+    deployed as a STATIC build of dist-admin via the authenticated Vercel CLI.
+    LIVE at https://norcet-admin.vercel.app (HTTP 200).
+  • WHY static (not Git-connected): both projects share one repo, and
+    vercel.json has the reminder CRONS + /api + SPA rewrite. A 2nd Git-connected
+    project would DOUBLE-RUN the crons (double reminders; Hobby cron cap). So the
+    admin app deploys as a standalone static SPA (it only talks to Supabase — no
+    functions/crons needed). Redeploy with `npm run deploy:admin`
+    (= build:admin + vercel --cwd dist-admin deploy --prod). NOTE: this is the
+    one surface that is NOT auto-deploy-on-push — admin code changes need a manual
+    `npm run deploy:admin`.
+  • Build entry fix: Vite emits the entry as admin.html; added
+    scripts/post-admin-build.mjs to rename dist-admin/admin.html -> index.html so
+    Vercel serves it at `/`. Wired into build:admin.
+  • Deployment Protection (Vercel SSO) was ON by default on the new project and
+    redirected every visitor to a Vercel login (would block admins from the app's
+    OWN auth). DISABLED via the Vercel API (PATCH ssoProtection:null) → app now
+    publicly reachable; access is gated by the app's AuthScreen + admin_profile_ids.
+  • Domain admin.nurseholic.in ADDED to the project.
+
+⏳ ONE MANUAL STEP LEFT (needs the user's DNS provider — nurseholic.in uses
+   THIRD-PARTY nameservers dns1/dns2.registrar-servers.com, i.e. Namecheap, so
+   Vercel can't write its DNS): add this record at the registrar —
+     A   admin   76.76.21.21
+   (same pattern as the working www record). Vercel auto-verifies + issues TLS.
+   Until then, use https://norcet-admin.vercel.app.
+
+RUNTIME TEST STILL ADVISED: log into https://norcet-admin.vercel.app as an admin
+  → confirm AuthScreen → admin check → AdminPanel + a bank upload work (build
+  proves compile/serve; login flow not yet exercised end-to-end).
+
+FILES: ADDED scripts/post-admin-build.mjs · MODIFIED package.json (build:admin
+  rename + deploy:admin script). Vercel: project norcet-admin (static), SSO off,
+  domain admin.nurseholic.in pending DNS.
+IMPACT/SAFETY: student app untouched. Admin app live on its own project/origin.
