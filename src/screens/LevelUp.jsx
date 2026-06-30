@@ -7,7 +7,7 @@
 // Reads progression from data.levelup, coins from data.economy, streak from
 // data.stats — all in the synced blob. [A7] theme via useTheme().
 // =====================================================================
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
   ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
@@ -24,6 +24,9 @@ import { frameDef, FRAME_IDS } from '../lib/cosmetics.js';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
+import TrendingBadge from '../ui/trending-badge.jsx';
+import { recordInteraction, loadDailyCounts } from '../lib/trending-store.js';
+import { rankTrending } from '../lib/trending.js';
 
 const TIER_ICONS = {
   badge: Badge, clipboard: ClipboardList, stethoscope: Stethoscope,
@@ -81,6 +84,29 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
   const streak = (data && data.stats && data.stats.streakCurrent) || 0;
   const atMax = prog.level >= MAX_LEVEL;
   const quests = questState(data && data.levelup, todayStr());
+
+  // TRENDING — surface which games (incl. the Knowledge Map) are surging across
+  // users. Counts come from the shared free-tier counters; scoring is pure.
+  const [trendingIds, setTrendingIds] = useState(() => new Set());
+  useEffect(() => {
+    let alive = true;
+    const ids = [...GAMES.map(g => g.screen), 'knowledge-map'];
+    loadDailyCounts('game', ids, 7)
+      .then(counts => {
+        if (!alive) return;
+        const ranked = rankTrending(ids.map(id => ({ id })), counts, { topN: 2 });
+        setTrendingIds(new Set(ranked.filter(r => r.isTrending).map(r => r.id)));
+      })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
+  // Record this user's interaction (fire-and-forget), then open the screen.
+  const open = (screen) => {
+    const uid = profile && profile.uid;
+    if (uid) recordInteraction('game', screen, uid);
+    onNavigate({ screen });
+  };
 
   return (
     <div className="anim-fadeup">
@@ -202,7 +228,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
 
         {/* KNOWLEDGE MAP — the "world map" of Level Up, featured full-width */}
         <Tip title="Knowledge Map" text="Your whole syllabus as a constellation — topics light up as you discover, practise and master them.">
-        <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'knowledge-map' })}
+        <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => open('knowledge-map')}
               onContextMenu={(e) => e.preventDefault()}
               style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 6px 18px rgba(7,10,20,0.40)' }}>
           <div className="flex items-center gap-3">
@@ -211,7 +237,10 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
               <Network size={20} color="#FFD27A" />
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#EAF0FF' }}>Knowledge Map</div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <div className="font-display text-base font-semibold" style={{ color: '#EAF0FF' }}>Knowledge Map</div>
+                {trendingIds.has('knowledge-map') && <TrendingBadge />}
+              </div>
               <div className="text-xs" style={{ color: 'rgba(234,240,255,0.62)' }}>Your syllabus as a living constellation</div>
             </div>
             <ChevronRight size={20} style={{ color: 'rgba(234,240,255,0.55)' }} className="flex-shrink-0" />
@@ -229,7 +258,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
             const Icon = g.icon;
             return (
               <Tip key={g.screen} title={g.label} text={`${g.sub} · earn XP and coins`}>
-              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full" onClick={() => onNavigate({ screen: g.screen })}
+              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full" onClick={() => open(g.screen)}
                     onContextMenu={(e) => e.preventDefault()}
                     style={{ background: `linear-gradient(135deg, ${g.grad[0]}, ${g.grad[1]})`, border: 'none', boxShadow: `0 6px 18px ${g.grad[1]}4D` }}>
                 <div className="flex items-center gap-3">
@@ -237,7 +266,10 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
                     <Icon size={20} color="#FFF" />
                   </div>
                   <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
-                    <div className="font-display text-base font-semibold leading-tight">{g.label}</div>
+                    <div className="flex items-center gap-1.5">
+                      <div className="font-display text-base font-semibold leading-tight">{g.label}</div>
+                      {trendingIds.has(g.screen) && <TrendingBadge />}
+                    </div>
                     <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{g.sub}</div>
                   </div>
                   {/* heart + chevron grouped at the right, vertically centred */}

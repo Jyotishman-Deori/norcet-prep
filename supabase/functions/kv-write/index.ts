@@ -15,9 +15,10 @@
 //   profile: / profilemeta: / myfeedback: / leaderboard: / favorder: /
 //   analytics:user:
 //        -> only if token.id === the key's <id> suffix  (or caller is admin)
-//   helpful: / notHelpful: / favsec: / errlog:
+//   helpful: / notHelpful: / favsec: / errlog: / trend:
 //        -> any logged-in user may SET; DELETE denied for the counters,
-//           and errlog: DELETE is admin-only (admin clears crash groups)
+//           and errlog:/trend: DELETE is admin-only (admin clears/prunes).
+//           trend: = "trending" interaction counters (size + rate capped).
 //   feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
@@ -275,6 +276,24 @@ Deno.serve(async (req: Request) => {
         return await deleteRow(key);
       }
       return await writeRow(key, String(body.value ?? ""));
+    }
+
+    // 4c) Trending counters (free-tier "trending" engine). One rolling blob per
+    // item: `trend:<kind>:<id>` -> { d: { 'YYYY-MM-DD': [uid, ...] } }. Any
+    // logged-in user may SET (record their own interaction); DELETE is admin-only
+    // (pruning). The client dedupes uids per day, so a single user can add at
+    // most +1 per item/day — the spec's "unique-user filtering", enforced by data
+    // shape. A value-size cap + a generous per-user rate cap blunt brute spam.
+    if (key.startsWith("trend:")) {
+      if (op === "del") {
+        if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+        return await deleteRow(key);
+      }
+      const val = String(body.value ?? "");
+      if (val.length > 20000) return json({ error: "Forbidden: trend payload too large" }, 413);
+      const rl = await rateHit("trend-write", session.id, 120, 60 * 60);
+      if (!rl.allowed) return tooMany(rl.retryAfter);
+      return await writeRow(key, val);
     }
 
     // 5) Question banks: ADMIN ONLY. Restructured so only admins upload / edit /

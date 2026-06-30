@@ -17,6 +17,9 @@ import {
   replyToCommunityQuestion, deleteCommunityQuestion, faqAnswerVoteId, faqReplyVoteId,
 } from '../lib/faq.js';
 import { GUEST_ID } from '../lib/profiles.js';
+import TrendingBadge from '../ui/trending-badge.jsx';
+import { recordInteraction, loadDailyCounts } from '../lib/trending-store.js';
+import { rankTrending } from '../lib/trending.js';
 
 function relTime(ts) {
   const d = Math.floor((Date.now() - ts) / 86400000);
@@ -26,10 +29,14 @@ function relTime(ts) {
   return `${Math.floor(d / 30)}mo ago`;
 }
 
+const NEW_FAQ_MS = 7 * 86400000; // a FAQ added within 7 days shows a "New" badge
+const isNewFaq = (f) => !!(f && f.createdAt) && (Date.now() - f.createdAt) < NEW_FAQ_MS;
+
 function FAQScreen({ onBack, isAdmin = false, profile }) {
   const { theme: T } = useTheme();
   const profileId = (profile && profile.id) || GUEST_ID;
   const profileName = (profile && profile.displayName) || 'Student';
+  const uid = (profile && profile.uid) || null;
   const isGuest = !profile || profileId === GUEST_ID || profileId === '__guest__';
 
   const [faqs, setFaqs] = useState(null); // null = loading
@@ -41,12 +48,27 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
 
   useEffect(() => { let a = true; listFaqs().then(f => { if (a) setFaqs(f); }).catch(() => { if (a) setFaqs([]); }); return () => { a = false; }; }, []);
 
+  // TRENDING — which FAQs are surging right now (shared free-tier counters, pure
+  // scoring). Recomputed whenever the FAQ list changes.
+  const [trendingFaqIds, setTrendingFaqIds] = useState(() => new Set());
+  useEffect(() => {
+    if (!faqs || faqs.length === 0) { setTrendingFaqIds(new Set()); return; }
+    let alive = true;
+    loadDailyCounts('faq', faqs.map(f => f.id), 7).then(counts => {
+      if (!alive) return;
+      const ranked = rankTrending(faqs.map(f => ({ id: f.id })), counts, { topN: 3 });
+      setTrendingFaqIds(new Set(ranked.filter(r => r.isTrending).map(r => r.id)));
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [faqs]);
+
   const categories = ['All', ...faqCategories(faqs || [])];
   const visible = (faqs || []).filter(f => cat === 'All' || f.category === cat);
 
   const openFaq = async (id) => {
     if (openId === id) { setOpenId(null); return; }
     setOpenId(id);
+    if (uid) recordInteraction('faq', id, uid); // fire-and-forget trending signal
     if (!threads[id]) {
       setThreads(t => ({ ...t, [id]: { loading: true, items: [] } }));
       try { const items = await listCommunityQuestions(id); setThreads(t => ({ ...t, [id]: { loading: false, items } })); }
@@ -130,7 +152,12 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
                       <MessageCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />
                       <div className="flex-1 min-w-0">
                         <div className="font-display text-[15px] font-semibold leading-snug" style={{ color: T.ink }}>{f.question}</div>
-                        {!isOpen && <div className="text-[10px] uppercase tracking-wider font-semibold mt-1" style={{ color: T.muted }}>{f.category}</div>}
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          {trendingFaqIds.has(f.id)
+                            ? <TrendingBadge />
+                            : isNewFaq(f) && <TrendingBadge variant="new" />}
+                          {!isOpen && <span className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{f.category}</span>}
+                        </div>
                       </div>
                       <ChevronDown size={18} className="flex-shrink-0 transition-transform" style={{ color: T.muted, transform: isOpen ? 'rotate(180deg)' : 'none' }} />
                     </button>

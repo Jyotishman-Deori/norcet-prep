@@ -72,6 +72,11 @@ export const KEYS = {
   // #28 — stable local id for an anonymous guest so their repeat visits
   // aggregate (per device, local only).
   ANALYTICS_LOCAL_ID: 'norcet:analytics-localid:v1',
+  // TRENDING — free-tier "trending" engine. One rolling blob per item holds the
+  // unique uids that interacted per day: `trend:<kind>:<id>` -> { d: { day: [uid] } }.
+  // <kind> ∈ 'game' | 'faq'. World-readable; any logged-in user may SET (broker),
+  // DELETE is admin-only. See lib/trending-store.js + lib/trending.js.
+  trend:         (kind, id)  => `trend:${kind}:${id}`,
 
   // -- Forward-compat for PROMPT 1 (cloud sync). Not yet used by any
   //    call site. P1 will switch from KEYS.USERDATA to KEYS.userdata(id)
@@ -142,4 +147,6 @@ export const KEY_PREFIXES = {
   // #28 — per-user engagement summaries (shared, admin-readable). Aggregated
   // in the admin Engagement view.
   ANALYTICS_USER: 'analytics:user:',
+  // TRENDING — interaction counters for the free-tier "trending" engine.
+  TREND: 'trend:',
 };
