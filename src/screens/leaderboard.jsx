@@ -1,16 +1,15 @@
 // =====================================================================
-// src/screens/leaderboard.jsx — Leaderboard screen (A1 slice 16)
-// UX pass + Knowledge-Map tie-in:
-//   • New "Mastery" board ranks by mastered topics (same math as the map), so
-//     users see where their constellation stands against everyone else.
-//   • A pinned "your standing" card (rank + metric, or how to qualify).
-//   • Top-3 podium with rising/shimmer micro-interactions; staggered row
-//     entrance; a soft glow on the current user's row.
-// Props unchanged (profileId, isGuest, onGuestSignIn, onBack, attemptedCount,
-// onStartQuiz) + optional myMastered for the empty/your-standing copy.
+// src/screens/leaderboard.jsx — Leaderboard screen.
+// TWO boards via a top toggle:
+//   • Study — Growth (weekly effort+accuracy+improvement, anti-elitism, default),
+//     Mastery (all-time), Streak, Accuracy, Flashpoint.
+//   • Games — This Week (weekly capped XP, anti-grind), Level (all-time tier).
+// All ranking math is precomputed per-user in lib/leaderboard.js and stored on
+// the user's row; this screen only sorts + renders. Podium / your-standing /
+// rows are metric-generic (driven by metricOf), so they're reused across tabs.
 // =====================================================================
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight, Zap } from 'lucide-react';
+import { RefreshCw, Trophy, Crown, Flame, Target, CalendarDays, Sparkles, ChevronRight, Zap, TrendingUp, Gamepad2 } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
@@ -20,16 +19,50 @@ import FramedAvatar from '../ui/framed-avatar.jsx';
 import { normalizeLevelup } from '../lib/levelup.js';
 import { loadLeaderboard } from '../lib/leaderboard.js';
 
+const STUDY_TABS = [
+  { id: 'growth',     label: 'Growth',     icon: TrendingUp },
+  { id: 'mastery',    label: 'Mastery',    icon: Crown },
+  { id: 'streak',     label: 'Streak',     icon: Flame },
+  { id: 'accuracy',   label: 'Accuracy',   icon: Target },
+  { id: 'flashpoint', label: 'Flashpoint', icon: Zap },
+];
+const GAMES_TABS = [
+  { id: 'games-week',  label: 'This Week', icon: CalendarDays },
+  { id: 'games-level', label: 'Level',     icon: Gamepad2 },
+];
+const DEFAULT_TAB = { study: 'growth', games: 'games-week' };
+
+const NOTE = {
+  growth:        'Answer some questions this week to join the Growth board.',
+  mastery:       'Master your first topic in the Knowledge Map to claim a spot here.',
+  streak:        'Start a streak — study today to appear here.',
+  accuracy:      'Answer at least 50 questions to qualify for the accuracy board.',
+  flashpoint:    'Play a test in Flashpoint pace to score points and rank here.',
+  'games-week':  'Play a clinical game this week to rank on weekly XP.',
+  'games-level': 'Play Level Up games to earn XP and climb the levels.',
+};
+const EMPTY = {
+  growth:        { title: 'Your name belongs on this board', text: 'Study this week to join the Growth board — it rewards effort and improvement, not just raw totals, and resets every Monday.' },
+  mastery:       { title: 'Light up your first constellation', text: 'Master a topic in the Knowledge Map to appear here and compare your progress with other aspirants.' },
+  streak:        { title: 'Start your streak', text: 'Study today to start a streak and appear on this board.' },
+  accuracy:      { title: 'Earn your accuracy rank', text: 'Answer at least 50 questions to qualify for the accuracy board.' },
+  flashpoint:    { title: 'Ignite the Flashpoint board', text: 'Finish a test in Flashpoint pace — half the time, double the points — to claim your spot here.' },
+  'games-week':  { title: 'Play to rank this week', text: 'Finish a clinical game in Level Up to score weekly XP. Daily-capped and reset every Monday, so it rewards play — not grinding.' },
+  'games-level': { title: 'Climb the levels', text: 'Earn XP in Level Up games to raise your level and tier, and rank on the all-time Level board.' },
+};
+
 function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, attemptedCount = 0, onStartQuiz, myMastered = 0 }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const myFrame = normalizeLevelup(data && data.levelup).frame;
-  // Two boards: Normal (week/mastery/streak/accuracy) and Flashpoint (its own
-  // 2×-points ranking). `tab === 'flashpoint'` selects the Flashpoint board.
-  const [tab, setTab] = useState('week'); // 'week' | 'mastery' | 'streak' | 'accuracy' | 'flashpoint'
-  const isFlash = tab === 'flashpoint';
+  const [board, setBoard] = useState('study'); // 'study' | 'games'
+  const [tab, setTab] = useState('growth');
   const [entries, setEntries] = useState(null); // null = loading
   const [offline, setOffline] = useState(false);
+
+  const isGames = board === 'games';
+  const subTabs = isGames ? GAMES_TABS : STUDY_TABS;
+  const switchBoard = (b) => { setBoard(b); setTab(DEFAULT_TAB[b]); };
 
   const load = useCallback(async () => {
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -43,55 +76,66 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
 
   const ranked = useMemo(() => {
     const list = entries || [];
-    if (tab === 'flashpoint') {
-      return list.filter(e => (e.flashpointPoints || 0) > 0)
-                 .sort((a, b) => (b.flashpointPoints || 0) - (a.flashpointPoints || 0) || (b.totalAnswered || 0) - (a.totalAnswered || 0));
+    const byTotal = (a, b) => (b.totalAnswered || 0) - (a.totalAnswered || 0);
+    switch (tab) {
+      case 'flashpoint':
+        return list.filter(e => (e.flashpointPoints || 0) > 0)
+                   .sort((a, b) => (b.flashpointPoints || 0) - (a.flashpointPoints || 0) || byTotal(a, b));
+      case 'mastery':
+        return list.filter(e => (e.masteredTopics || 0) > 0)
+                   .sort((a, b) => (b.masteredTopics || 0) - (a.masteredTopics || 0) || byTotal(a, b));
+      case 'streak':
+        return list.filter(e => (e.currentStreak || 0) > 0)
+                   .sort((a, b) => (b.currentStreak || 0) - (a.currentStreak || 0) || byTotal(a, b));
+      case 'accuracy':
+        return list.filter(e => (e.totalAnswered || 0) >= 50)
+                   .map(e => ({ ...e, acc: e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0 }))
+                   .sort((a, b) => b.acc - a.acc || byTotal(a, b));
+      case 'games-week':
+        return list.filter(e => (e.weekXp || 0) > 0)
+                   .sort((a, b) => (b.weekXp || 0) - (a.weekXp || 0) || (b.level || 0) - (a.level || 0));
+      case 'games-level':
+        return list.filter(e => (e.level || 0) > 1 || (e.xp || 0) > 0)
+                   .sort((a, b) => (b.level || 0) - (a.level || 0) || (b.xp || 0) - (a.xp || 0));
+      case 'growth':
+      default:
+        return list.filter(e => (e.growthScore || 0) > 0)
+                   .sort((a, b) => (b.growthScore || 0) - (a.growthScore || 0) || (b.weeklyAnswered || 0) - (a.weeklyAnswered || 0));
     }
-    if (tab === 'mastery') {
-      return list.filter(e => (e.masteredTopics || 0) > 0)
-                 .sort((a, b) => (b.masteredTopics || 0) - (a.masteredTopics || 0) || (b.totalAnswered || 0) - (a.totalAnswered || 0));
-    }
-    if (tab === 'streak') {
-      return list.filter(e => (e.currentStreak || 0) > 0)
-                 .sort((a, b) => (b.currentStreak || 0) - (a.currentStreak || 0) || (b.totalAnswered || 0) - (a.totalAnswered || 0));
-    }
-    if (tab === 'accuracy') {
-      return list.filter(e => (e.totalAnswered || 0) >= 50)
-                 .map(e => ({ ...e, acc: e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0 }))
-                 .sort((a, b) => b.acc - a.acc || (b.totalAnswered || 0) - (a.totalAnswered || 0));
-    }
-    return list.filter(e => (e.weeklyAnswered || 0) > 0)
-               .sort((a, b) => (b.weeklyAnswered || 0) - (a.weeklyAnswered || 0));
   }, [entries, tab]);
 
-  const tabs = [
-    { id: 'week',     label: 'This Week', icon: CalendarDays },
-    { id: 'mastery',  label: 'Mastery',   icon: Crown },
-    { id: 'streak',   label: 'Streak',    icon: Flame },
-    { id: 'accuracy', label: 'Accuracy',  icon: Target },
-  ];
   const metricOf = (e) => {
-    if (tab === 'flashpoint') return `${(e.flashpointPoints || 0).toLocaleString()} pts`;
-    if (tab === 'mastery') return `${e.masteredTopics || 0} \u2605`;
-    if (tab === 'streak') return `${e.currentStreak || 0}d`;
-    if (tab === 'accuracy') return `${Math.round((e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0) * 100)}%`;
-    return `${e.weeklyAnswered || 0} Q`;
+    switch (tab) {
+      case 'flashpoint':  return `${(e.flashpointPoints || 0).toLocaleString()} pts`;
+      case 'mastery':     return `${e.masteredTopics || 0} ★`;
+      case 'streak':      return `${e.currentStreak || 0}d`;
+      case 'accuracy':    return `${Math.round((e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0) * 100)}%`;
+      case 'games-week':  return `${(e.weekXp || 0).toLocaleString()} XP`;
+      case 'games-level': return `Lvl ${e.level || 1}`;
+      case 'growth':
+      default:            return `${(e.growthScore || 0).toLocaleString()}`;
+    }
   };
+
+  const contextLine = {
+    growth:        <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>weekly growth</span> — effort, accuracy, and improvement vs your own recent baseline. Resets every Monday, so it never locks.</>,
+    flashpoint:    <>Ranked by lifetime <span style={{ color: T.ink, fontWeight: 600 }}>Flashpoint points</span> — correct answers in Flashpoint pace score 2×.</>,
+    mastery:       <>Ranked by topics mastered in your <span style={{ color: T.ink, fontWeight: 600 }}>Knowledge Map</span> — see how your constellation compares.</>,
+    'games-week':  <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>XP earned this week</span> — daily-capped and reset every Monday, so it rewards play, not grinding.</>,
+    'games-level': <>Ranked by all-time <span style={{ color: T.ink, fontWeight: 600 }}>level</span> across the Level Up games.</>,
+  }[tab];
+  const contextIcon = tab === 'flashpoint' ? <Zap size={12} style={{ color: '#F59E0B' }} />
+    : tab === 'mastery' ? <Sparkles size={12} style={{ color: T.accent }} />
+    : isGames ? <Gamepad2 size={12} style={{ color: T.primary }} />
+    : <TrendingUp size={12} style={{ color: T.primary }} />;
+
   const medal = (i) => i === 0 ? '#D4AF37' : i === 1 ? '#A8B0B8' : i === 2 ? '#B87333' : null;
   const myRank = ranked.findIndex(e => e.id === profileId);
-  const notRankedNote = tab === 'flashpoint'
-    ? 'Play a test in Flashpoint pace to score points and rank here.'
-    : tab === 'mastery'
-    ? 'Master your first topic in the Knowledge Map to claim a spot here.'
-    : tab === 'accuracy'
-      ? 'Answer at least 50 questions to qualify for the accuracy board.'
-      : tab === 'streak'
-        ? 'Start a streak \u2014 study today to appear here.'
-        : 'Answer some questions this week to join the board.';
+  const notRankedNote = NOTE[tab] || NOTE.growth;
+  const empty = EMPTY[tab] || EMPTY.growth;
 
   const top3 = ranked.slice(0, 3);
   const rest = ranked.slice(3);
-  // Podium display order: 2nd, 1st, 3rd (1st centre + tallest).
   const podiumOrder = top3.length === 3 ? [top3[1], top3[0], top3[2]] : top3;
   const podiumHeights = top3.length === 3 ? [64, 86, 50] : top3.map(() => 70);
 
@@ -122,55 +166,45 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
           </Card>
         )}
 
-        {/* Board switch — Normal vs the separate Flashpoint board. */}
+        {/* Board switch — Study vs Games. */}
         <div className="grid grid-cols-2 gap-1.5 mb-3 p-1 rounded-2xl" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
           {[
-            { id: 'normal', label: 'Normal', tint: T.primary },
-            { id: 'flashpoint', label: 'Flashpoint', tint: '#F59E0B' },
+            { id: 'study', label: 'Study', icon: Trophy, tint: T.primary },
+            { id: 'games', label: 'Games', icon: Gamepad2, tint: '#7C3AED' },
           ].map(b => {
-            const on = b.id === 'flashpoint' ? isFlash : !isFlash;
+            const on = board === b.id;
+            const Icon = b.icon;
             return (
-              <button key={b.id} onClick={() => setTab(b.id === 'flashpoint' ? 'flashpoint' : 'week')}
+              <button key={b.id} onClick={() => switchBoard(b.id)}
                       className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-sm font-semibold active:scale-[0.98] transition-colors"
                       style={{ background: on ? b.tint : 'transparent', color: on ? '#FFF' : T.inkSoft }}>
-                {b.id === 'flashpoint' && <Zap size={14} fill={on ? '#FFF' : 'none'} />}{b.label}
+                <Icon size={14} /> {b.label}
               </button>
             );
           })}
         </div>
 
-        {/* Normal sub-tabs — hidden on the Flashpoint board. */}
-        {!isFlash && (
-          <div className="flex gap-2 mb-4 overflow-x-auto -mx-1 px-1 pb-0.5" style={{ scrollbarWidth: 'none' }}>
-            {tabs.map(t => {
-              const active = tab === t.id;
-              const Icon = t.icon;
-              return (
-                <button key={t.id} onClick={() => setTab(t.id)}
-                        className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 active:scale-95"
-                        style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
-                                 border: `1.5px solid ${active ? T.primary : T.border}`,
-                                 transition: 'background .2s, color .2s, border-color .2s' }}>
-                  <Icon size={14} /> {t.label}
-                </button>
-              );
-            })}
-          </div>
-        )}
+        {/* Sub-tabs for the active board. */}
+        <div className="flex gap-2 mb-4 overflow-x-auto -mx-1 px-1 pb-0.5" style={{ scrollbarWidth: 'none' }}>
+          {subTabs.map(t => {
+            const active = tab === t.id;
+            const Icon = t.icon;
+            return (
+              <button key={t.id} onClick={() => setTab(t.id)}
+                      className="no-tap-highlight flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold whitespace-nowrap flex-shrink-0 active:scale-95"
+                      style={{ background: active ? T.primary : T.surface, color: active ? '#FFF' : T.inkSoft,
+                               border: `1.5px solid ${active ? T.primary : T.border}`,
+                               transition: 'background .2s, color .2s, border-color .2s' }}>
+                <Icon size={14} /> {t.label}
+              </button>
+            );
+          })}
+        </div>
 
-        {/* Flashpoint context line. */}
-        {isFlash && !offline && entries !== null && (
+        {/* Context line for the active tab. */}
+        {contextLine && !offline && entries !== null && (
           <div className="text-[12px] leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            <Zap size={12} className="inline -mt-0.5 mr-1" style={{ color: '#F59E0B' }} />
-            Ranked by lifetime <span style={{ color: T.ink, fontWeight: 600 }}>Flashpoint points</span> — correct answers in Flashpoint pace score 2×.
-          </div>
-        )}
-
-        {/* Mastery context line — ties the board to the Knowledge Map. */}
-        {tab === 'mastery' && !offline && entries !== null && (
-          <div className="text-[12px] leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            <Sparkles size={12} className="inline -mt-0.5 mr-1" style={{ color: T.accent }} />
-            Ranked by topics mastered in your <span style={{ color: T.ink, fontWeight: 600 }}>Knowledge Map</span> {'\u2014'} see how your constellation compares.
+            <span className="inline -mt-0.5 mr-1">{contextIcon}</span>{contextLine}
           </div>
         )}
 
@@ -187,17 +221,14 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
           </div>
         ) : ranked.length === 0 ? (
           <EmptyState
-            icon={isFlash ? Zap : tab === 'mastery' ? Crown : Trophy}
-            title={isFlash ? 'Ignite the Flashpoint board' : tab === 'mastery' ? 'Light up your first constellation' : 'Your name belongs on this board'}
-            text={isFlash
-              ? 'Finish a test in Flashpoint pace — half the time, double the points — to claim your spot here.'
-              : tab === 'mastery'
-              ? 'Master a topic in the Knowledge Map to appear here and compare your progress with other aspirants.'
-              : 'Complete 10 questions to appear on the leaderboard and see how you rank against other NORCET aspirants.'}
-            progress={isFlash ? undefined : tab === 'mastery' ? `${myMastered} topic${myMastered === 1 ? '' : 's'} mastered so far` : `${Math.min(attemptedCount, 10)} / 10 questions completed`}
-            actionLabel={onStartQuiz ? (isFlash ? 'Start a test' : 'Start Practising') : undefined}
+            icon={tab === 'flashpoint' ? Zap : tab === 'mastery' ? Crown : isGames ? Gamepad2 : Trophy}
+            title={empty.title}
+            text={empty.text}
+            progress={tab === 'mastery' ? `${myMastered} topic${myMastered === 1 ? '' : 's'} mastered so far`
+              : tab === 'growth' ? `${Math.min(attemptedCount, 10)} / 10 questions completed` : undefined}
+            actionLabel={onStartQuiz ? (isGames ? 'Open Level Up' : 'Start Practising') : undefined}
             onAction={onStartQuiz}
-            kmNote={!isFlash} />
+            kmNote={tab === 'mastery'} />
         ) : (
           <>
             {/* Your standing — pinned summary. */}
@@ -212,7 +243,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
                     <div className="text-[11px] uppercase tracking-wide font-semibold" style={{ color: T.muted }}>Your standing</div>
                     <div className="text-sm font-semibold" style={{ color: T.ink }}>
                       {myRank >= 0
-                        ? <>Rank #{myRank + 1} of {ranked.length}{' \u00b7 '}<span style={{ color: T.primary }}>{metricOf(ranked[myRank])}</span></>
+                        ? <>Rank #{myRank + 1} of {ranked.length}{' · '}<span style={{ color: T.primary }}>{metricOf(ranked[myRank])}</span></>
                         : <span style={{ color: T.inkSoft, fontWeight: 500 }}>{notRankedNote}</span>}
                     </div>
                   </div>

@@ -7,29 +7,22 @@
 // computeLeaderboardEntry stay module-internal.
 // =====================================================================
 import { safeStorage } from './safe-storage.js';
-import { todayStr } from './utils.js';
+import { todayStr, weekStartStr } from './utils.js';
 import { attemptStats } from './compact.js';
 import { masteryTally } from './kmap.js';
 import { countsInNursingStats } from '../data/seed.js';
+import { weeklyGrowth } from './leaderboard-score.js';
+import { normalizeLevelup, progress } from './levelup.js';
 
 const LEADERBOARD_PREFIX = 'leaderboard:';
 const leaderboardKey = (pid) => LEADERBOARD_PREFIX + pid;
 
-// Most recent Monday as a UTC YYYY-MM-DD, matching how dailyHistory dates are
-// stored (new Date().toISOString().slice(0,10)). weeklyAnswered counts from
-// here, so it auto-resets every Monday — no stored counter, no reset job.
-function weekStartStr(now = new Date()) {
-  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-  const back = (d.getUTCDay() + 6) % 7; // days since Monday (0=Sun..6=Sat)
-  d.setUTCDate(d.getUTCDate() - back);
-  return d.toISOString().slice(0, 10);
-}
-
 function computeLeaderboardEntry(profile, data, allQuestions) {
   const s = (data && data.stats) || {};
   const daily = Array.isArray(s.dailyHistory) ? s.dailyHistory : [];
-  const wk = weekStartStr();
-  const weeklyAnswered = daily.reduce((sum, d) => (d && d.date >= wk ? sum + (d.attempted || 0) : sum), 0);
+  // Study "Growth" — effort + accuracy + improvement vs the user's own recent
+  // baseline, weekly (lib/leaderboard-score.js). Auto-resets every UTC-Monday.
+  const growth = weeklyGrowth(daily);
   // Knowledge-Map mastery (mastered sub-topics) — same math the map uses, so a
   // user's board rank matches their constellation. GK/Aptitude follow the
   // user's stats preference. Falls back to 0 when the question pool isn't given.
@@ -41,16 +34,30 @@ function computeLeaderboardEntry(profile, data, allQuestions) {
         (t) => countsInNursingStats(t, includeGk)).mastered;
     }
   } catch (e) { masteredTopics = 0; }
+  // Games — weekly capped XP + all-time level. weekXp only counts when it
+  // belongs to the CURRENT week (normalizeLevelup doesn't auto-roll the window).
+  const lu = normalizeLevelup(data && data.levelup);
+  const weekXp = lu.weekStart === weekStartStr() ? (lu.weekXp || 0) : 0;
   return {
     id: profile.id,
     displayName: profile.displayName || profile.id,
     totalAnswered: s.totalAttempted || 0,
     totalCorrect: s.totalCorrect || 0,
     currentStreak: s.streakCurrent || 0,
-    weeklyAnswered,
+    weeklyAnswered: growth.weeklyAnswered,
+    weeklyCorrect: growth.weeklyCorrect,
+    weeklyAccuracy: growth.weeklyAccuracy,
+    growthScore: growth.growthScore,
     masteredTopics,
     // Flashpoint — lifetime 2× points; ranks the Flashpoint board.
     flashpointPoints: s.flashpointPoints || 0,
+    // Gamified board fields.
+    xp: lu.xp,
+    level: progress(lu.xp).level,
+    weekXp,
+    // Cohort-ready seam: one global cohort now; a future assigner can stamp
+    // leagues once weekly-actives grow, and the board filters by cohort.
+    cohort: 'global',
     lastActiveDate: s.lastStudiedDate || todayStr(),
     ts: Date.now()
   };
@@ -60,7 +67,9 @@ function computeLeaderboardEntry(profile, data, allQuestions) {
 export async function saveLeaderboardEntry(profile, data, allQuestions) {
   if (!profile || !profile.id) return;
   const entry = computeLeaderboardEntry(profile, data, allQuestions);
-  if ((entry.totalAnswered || 0) <= 0) return; // don't board a user with no activity
+  // Board a user with study OR game activity (so games-only players still appear
+  // on the Games board).
+  if ((entry.totalAnswered || 0) <= 0 && (entry.xp || 0) <= 0) return;
   try { await safeStorage.set(leaderboardKey(profile.id), JSON.stringify(entry), true); } catch (e) {}
 }
 

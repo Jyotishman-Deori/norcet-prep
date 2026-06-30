@@ -17,6 +17,7 @@
 
 import { FRAME_IDS, normalizeFrame, unownedFrames } from './cosmetics.js';
 import { getConfig } from './game-config.js';
+import { weekStartStr } from './utils.js';
 
 export const MAX_LEVEL = 100;
 
@@ -75,12 +76,15 @@ export function nextTier(level) {
 }
 
 export function normalizeLevelup(l) {
-  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, questClaims: [], crates: 0, cosmetics: [], frame: 'none' };
+  const o = { xp: 0, dailyDate: '', dailyXp: 0, dailyGames: 0, weekStart: '', weekXp: 0, questClaims: [], crates: 0, cosmetics: [], frame: 'none' };
   if (l && typeof l === 'object') {
     if (Number.isFinite(l.xp)) o.xp = Math.max(0, Math.floor(l.xp));
     if (typeof l.dailyDate === 'string') o.dailyDate = l.dailyDate;
     if (Number.isFinite(l.dailyXp)) o.dailyXp = Math.max(0, Math.floor(l.dailyXp));
     if (Number.isFinite(l.dailyGames)) o.dailyGames = Math.max(0, Math.floor(l.dailyGames));
+    // Weekly XP accumulator (Games board "this week" — daily-capped + weekly reset).
+    if (typeof l.weekStart === 'string') o.weekStart = l.weekStart;
+    if (Number.isFinite(l.weekXp)) o.weekXp = Math.max(0, Math.floor(l.weekXp));
     if (Array.isArray(l.questClaims)) o.questClaims = l.questClaims.filter(x => typeof x === 'string');
     if (Number.isFinite(l.crates)) o.crates = Math.max(0, Math.floor(l.crates));
     if (Array.isArray(l.cosmetics)) o.cosmetics = l.cosmetics.filter(x => FRAME_IDS.includes(x));
@@ -98,21 +102,26 @@ export function equipFrame(l, frameId) {
   return o;
 }
 
-// Roll the daily fields over when the local date changes (cap, games, claims).
-function rolloverDaily(o, today) {
-  if (o.dailyDate === today) return o;
-  return { ...o, dailyDate: today, dailyXp: 0, dailyGames: 0, questClaims: [] };
+// Roll the daily fields over when the local date changes (cap, games, claims),
+// and the weekly XP accumulator over when the UTC-Monday week changes — so the
+// Games board's "this week" resets on the SAME boundary as the study board.
+function rolloverWindows(o, today) {
+  let next = o;
+  if (next.dailyDate !== today) next = { ...next, dailyDate: today, dailyXp: 0, dailyGames: 0, questClaims: [] };
+  const wk = weekStartStr(new Date(`${today}T00:00:00Z`));
+  if (next.weekStart !== wk) next = { ...next, weekStart: wk, weekXp: 0 };
+  return next;
 }
 
 // A gamified drill finished: roll over, count the game, award XP (daily-capped),
 // and report any level-up so the caller can celebrate. `today` = 'YYYY-MM-DD'.
 export function completeGame(l, xpAmount, today) {
-  let o = rolloverDaily(normalizeLevelup(l), today);
+  let o = rolloverWindows(normalizeLevelup(l), today);
   const before = progress(o.xp).level;
   const amt = Math.max(0, Math.floor(xpAmount || 0));
   const room = Math.max(0, getConfig().xp.dailyCap - o.dailyXp);
   const granted = Math.min(amt, room);
-  o = { ...o, xp: o.xp + granted, dailyXp: o.dailyXp + granted, dailyGames: o.dailyGames + 1 };
+  o = { ...o, xp: o.xp + granted, dailyXp: o.dailyXp + granted, weekXp: o.weekXp + granted, dailyGames: o.dailyGames + 1 };
   const after = progress(o.xp).level;
   return { levelup: o, awarded: granted, leveledUp: after > before, fromLevel: before, toLevel: after };
 }
@@ -148,7 +157,7 @@ export function dailyQuestIds(today) {
 
 // Today's quests with live progress / claimed flags.
 export function questState(l, today) {
-  const o = rolloverDaily(normalizeLevelup(l), today);
+  const o = rolloverWindows(normalizeLevelup(l), today);
   return dailyQuestIds(today).map(id => {
     const q = questDef(id);
     const current = q.metric === 'games' ? o.dailyGames : o.dailyXp;
@@ -165,14 +174,14 @@ export function questState(l, today) {
 // Claim a completed, unclaimed quest → bonus XP (uncapped), mark it claimed.
 // Reports any level-up so the caller can celebrate.
 export function claimQuest(l, questId, today) {
-  let o = rolloverDaily(normalizeLevelup(l), today);
+  let o = rolloverWindows(normalizeLevelup(l), today);
   const lvl = progress(o.xp).level;
   const q = questDef(questId);
   const current = q ? (q.metric === 'games' ? o.dailyGames : o.dailyXp) : 0;
   if (!q || !dailyQuestIds(today).includes(questId) || current < q.goal || o.questClaims.includes(questId)) {
     return { levelup: o, claimed: false, leveledUp: false, fromLevel: lvl, toLevel: lvl };
   }
-  o = { ...o, xp: o.xp + q.xp, questClaims: [...o.questClaims, questId] };
+  o = { ...o, xp: o.xp + q.xp, weekXp: o.weekXp + q.xp, questClaims: [...o.questClaims, questId] };
   // Capstone: claiming the LAST of the day's 3 quests earns a Supply Crate.
   let crateEarned = false;
   if (dailyQuestIds(today).every(id => o.questClaims.includes(id))) {
@@ -202,7 +211,7 @@ export function rollCrate(rng = Math.random) {
 // Open one crate: decrement, roll a reward. Bonus XP (top tier) is uncapped and
 // applied here; the Coins live in economy, so the caller applies reward.coins.
 export function openCrate(l, today, rng = Math.random) {
-  let o = rolloverDaily(normalizeLevelup(l), today);
+  let o = rolloverWindows(normalizeLevelup(l), today);
   if ((o.crates || 0) <= 0) return { levelup: o, opened: false, reward: null, leveledUp: false };
   const rand = () => (typeof rng === 'function' ? rng() : Math.random());
   const tier = rollCrate(rng);
@@ -216,13 +225,13 @@ export function openCrate(l, today, rng = Math.random) {
       o = { ...o, cosmetics: [...o.cosmetics, frame] };
     }
   }
-  o = { ...o, crates: o.crates - 1, xp: o.xp + (tier.xp || 0) };
+  o = { ...o, crates: o.crates - 1, xp: o.xp + (tier.xp || 0), weekXp: o.weekXp + (tier.xp || 0) };
   const after = progress(o.xp).level;
   return { levelup: o, opened: true, reward: { ...tier, frame }, leveledUp: after > before, fromLevel: before, toLevel: after };
 }
 
 // How much of today's cap is left (for a subtle "rested" hint in the hub).
 export function dailyRemaining(l, today) {
-  const o = rolloverDaily(normalizeLevelup(l), today);
+  const o = rolloverWindows(normalizeLevelup(l), today);
   return Math.max(0, getConfig().xp.dailyCap - o.dailyXp);
 }

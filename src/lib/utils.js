@@ -8,6 +8,16 @@
 
 export const todayStr = () => new Date().toISOString().slice(0, 10);
 
+// Most recent Monday as a UTC YYYY-MM-DD (matches dailyHistory date keys, which
+// are new Date().toISOString().slice(0,10)). Shared by the weekly leaderboard
+// window AND the weekly XP accumulator so both reset on the SAME boundary.
+export function weekStartStr(now = new Date()) {
+  const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+  const back = (d.getUTCDay() + 6) % 7; // days since Monday (0=Sun..6=Sat)
+  d.setUTCDate(d.getUTCDate() - back);
+  return d.toISOString().slice(0, 10);
+}
+
 export function spacedRepetitionNext(lastResult, reviewCount) {
   if (!lastResult || lastResult === 'wrong') return 1;            // 1 day
   const intervals = [1, 3, 7, 14, 30, 60];

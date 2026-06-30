@@ -3393,11 +3393,15 @@ export default function App() {
   // as a dep, so an unrelated data change doesn't trigger an extra write.
   const lbTotal = data && data.stats && data.stats.totalAttempted;
   const lbStreak = data && data.stats && data.stats.streakCurrent;
+  // Games also move the row (weekly XP / level for the Games board), so finishing
+  // a game must re-upsert too — and a games-only player (no questions answered)
+  // should still board.
+  const lbXp = data && data.levelup && data.levelup.xp;
   useEffect(() => {
-    if (!profile || isGuestProfile(profile) || !lbTotal) return;
+    if (!profile || isGuestProfile(profile) || (!lbTotal && !lbXp)) return;
     saveLeaderboardEntry(profile, data, allQuestions);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile, lbTotal, lbStreak]);
+  }, [profile, lbTotal, lbStreak, lbXp]);
 
   // ===== My feedback (replies the admin sent back) =====
   const refreshMyReports = useCallback(async () => {
