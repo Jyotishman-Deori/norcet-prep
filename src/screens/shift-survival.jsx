@@ -5,15 +5,24 @@
 // stall, antidote-gated CONDITION rows, a combo "crisis" clinical-math question
 // (10s), and a "Patient Expired" malpractice review on death. Harder → pays
 // double (1 line = 10 coins). Hooks the existing economy via onComplete(coins).
+//
+// Interaction: pointer-DRAG with a live valid/invalid shadow preview (the piece
+// floats above the thumb). Same cozy juice as the 3 AM Chart — squash-on-drop,
+// a particle puff + ascending pentatonic chime + Combo banner on clears, light
+// haptics — all gated by prefers-reduced-motion (lib/juice.js) and the sound
+// toggle (lib/sound.js). Grid math stays in the pure lib/survival-engine.js.
 // =====================================================================
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Pill, Syringe, Bone, AlertTriangle, ArrowLeft, Coins, Skull, HeartPulse, Brain, Activity } from 'lucide-react';
 import { Card, Button } from '../ui/primitives.jsx';
+import ComboBurst from '../ui/combo-burst.jsx';
 import { MATH_QUESTIONS } from '../data/shift-survival.js';
 import {
   SIZE, at, canPlace, placeCells, anyMove,
   newSurvivalTray, clearLinesSurvival, spawnComplication, pickCondition, pickConditionRow, conditionById,
 } from '../lib/survival-engine.js';
+import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
+import { playPlaceTick, playClearChime } from '../lib/sound.js';
 
 const COINS_PER_LINE = 10;          // spec: harder → double Game A's 5
 const MATH_BONUS = 50;
@@ -30,7 +39,6 @@ const D = {
 };
 const ICON_OF = { pill: Pill, syringe: Syringe, bone: Bone, alert: AlertTriangle };
 const rnd = (n) => Math.floor(Math.random() * n);
-const vibrate = (n) => { try { if (navigator.vibrate) navigator.vibrate(n); } catch (e) {} };
 const activeIdsOf = (cbr) => Object.values(cbr);
 
 // Shuffle a math question's options so the answer isn't always in the same slot
@@ -41,7 +49,8 @@ function shuffledMath(base) {
   return { q: base.q, options: arr.map(x => x.text), correct: arr.findIndex(x => x.correct) };
 }
 
-function PieceMini({ piece }) {
+// Mini render of a piece's bounding box. `cell` = px per cell, `gap` = px gap.
+function PieceMini({ piece, cell = 16, gap = 3 }) {
   let maxR = 0, maxC = 0;
   piece.cells.forEach(([r, c]) => { if (r > maxR) maxR = r; if (c > maxC) maxC = c; });
   const filled = new Set(piece.cells.map(([r, c]) => `${r}:${c}`));
@@ -52,14 +61,14 @@ function PieceMini({ piece }) {
     for (let c = 0; c <= maxC; c++) {
       const on = filled.has(`${r}:${c}`);
       cells.push(
-        <div key={c} className="rounded-[4px] flex items-center justify-center" style={{ width: 16, height: 16, background: on ? piece.color : 'transparent' }}>
-          {on && <Icon size={9} color="#FFFFFFDD" />}
+        <div key={c} className="rounded-[4px] flex items-center justify-center" style={{ width: cell, height: cell, background: on ? piece.color : 'transparent' }}>
+          {on && <Icon size={Math.round(cell * 0.56)} color="#FFFFFFDD" />}
         </div>
       );
     }
-    rows.push(<div key={r} className="flex gap-[3px]">{cells}</div>);
+    rows.push(<div key={r} className="flex" style={{ gap }}>{cells}</div>);
   }
-  return <div className="flex flex-col gap-[3px]">{rows}</div>;
+  return <div className="flex flex-col" style={{ gap }}>{rows}</div>;
 }
 
 // A linear shrink bar (move timer / math timer). Re-mount via `runKey` to restart.
@@ -83,7 +92,6 @@ function ShiftSurvival({ onBack, onComplete }) {
     return (id != null && row != null) ? { [row]: id } : {};
   });
   const [tray, setTray] = useState(() => newSurvivalTray(activeIdsOf({})));
-  const [sel, setSel] = useState(null);
   const [coins, setCoins] = useState(0);
   const [moveKey, setMoveKey] = useState(0);
   const [math, setMath] = useState(null);            // { q, options, correct }
@@ -91,13 +99,33 @@ function ShiftSurvival({ onBack, onComplete }) {
   const [failed, setFailed] = useState([]);          // malpractice review
   const [phase, setPhase] = useState('play');        // play | dead
 
+  // Drag + juice state.
+  const [drag, setDrag] = useState(null);            // { index, piece, cellSize, x, y } | null
+  const [preview, setPreview] = useState(null);      // { cells:[{r,c}], valid } | null
+  const [placed, setPlaced] = useState(null);        // { idx:[i], key } — squash trigger
+  const [bursts, setBursts] = useState([]);          // particle divs
+  const [comboFlash, setComboFlash] = useState(null);
+
   const gridRef = useRef(grid); gridRef.current = grid;
   const trayRef = useRef(tray); trayRef.current = tray;
   const condRef = useRef(conditionByRow); condRef.current = conditionByRow;
   const phaseRef = useRef(phase); phaseRef.current = phase;
   const mathRef = useRef(math); mathRef.current = math;
+  const boardRef = useRef(null);
+  const dragInfo = useRef(null);
+  const lastPt = useRef({ x: 0, y: 0 });
+  const rafRef = useRef(0);
+  const comboRef = useRef(0);
+  const placedTimer = useRef(null);
+  const comboTimer = useRef(null);
+  const doPlaceRef = useRef(null);
 
-  const die = () => { vibrate(60); setPhase('dead'); };
+  useEffect(() => () => {
+    [placedTimer, comboTimer].forEach(t => t.current && clearTimeout(t.current));
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+  }, []);
+
+  const die = () => { haptic(60); setPhase('dead'); };
 
   // Re-top conditions toward 2 active, dropping `resolved` rows first.
   const reconcileConditions = (gridAfter, resolved) => {
@@ -127,7 +155,7 @@ function ShiftSurvival({ onBack, onComplete }) {
       if (cleared > 0) setCoins(x => x + cleared * COINS_PER_LINE);
       reconcileConditions(afterClear, resolved);
       setGrid(afterClear);
-      vibrate(22);
+      haptic(22);
       setMoveKey(k => k + 1);
       afterBoardChange(afterClear, trayRef.current);
     }, MOVE_SECONDS * 1000);
@@ -142,25 +170,140 @@ function ShiftSurvival({ onBack, onComplete }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mathKey, math, phase]);
 
-  const placePiece = (r, c) => {
-    if (phase !== 'play' || math || sel == null) return;
-    const piece = tray[sel];
-    if (!piece) return;
-    if (!canPlace(grid, piece.cells, r, c)) { vibrate(16); return; }
+  // Spawn a small, capped particle puff at each cell that just cleared. Reads
+  // positions from the CURRENT DOM (before setGrid commits).
+  const spawnBurst = (filled, afterClear) => {
+    const gridEl = boardRef.current;
+    if (!gridEl) return;
+    const parts = [];
+    let count = 0;
+    for (let i = 0; i < filled.length && count < 48; i++) {
+      if (filled[i] && !afterClear[i]) {
+        const el = gridEl.querySelector(`[data-i="${i}"]`);
+        if (!el) continue;
+        const rect = el.getBoundingClientRect();
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        const color = filled[i].color;
+        for (let k = 0; k < 4 && count < 48; k++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = 10 + Math.random() * 18;
+          parts.push({
+            id: `${Date.now()}-${i}-${k}-${Math.random().toString(36).slice(2, 6)}`,
+            x: cx, y: cy, dx: Math.cos(ang) * dist, dy: Math.sin(ang) * dist - 6, color,
+          });
+          count++;
+        }
+      }
+    }
+    if (!parts.length) return;
+    setBursts(b => [...b, ...parts]);
+    const ids = new Set(parts.map(p => p.id));
+    setTimeout(() => setBursts(b => b.filter(p => !ids.has(p.id))), 700);
+  };
+
+  // Commit a placement at (r,c) + fire the juice + the existing survival logic.
+  const doPlace = (index, piece, r, c) => {
+    const reduced = prefersReducedMotion();
     const fill = { icon: piece.icon, color: piece.color, ...(piece.antidote ? { antidote: piece.antidote } : {}) };
-    const placed = placeCells(grid, piece.cells, r, c, fill);
-    const { grid: afterClear, cleared, resolved } = clearLinesSurvival(placed, conditionByRow);
-    let nextTray = tray.slice(); nextTray[sel] = null;
-    if (nextTray.every(p => !p)) nextTray = newSurvivalTray(activeIdsOf(conditionByRow));
-    const nextCond = reconcileConditions(afterClear, resolved);
-    setGrid(afterClear); setTray(nextTray); setSel(null);
-    if (cleared > 0) { setCoins(x => x + cleared * COINS_PER_LINE); vibrate(14); } else vibrate(6);
+    const placedGrid = placeCells(gridRef.current, piece.cells, r, c, fill);
+    const { grid: afterClear, cleared, resolved } = clearLinesSurvival(placedGrid, condRef.current);
+    if (cleared > 0 && !reduced) spawnBurst(placedGrid, afterClear);
+
+    let nextTray = trayRef.current.slice(); nextTray[index] = null;
+    if (nextTray.every(p => !p)) nextTray = newSurvivalTray(activeIdsOf(condRef.current));
+    reconcileConditions(afterClear, resolved);
+    setGrid(afterClear); setTray(nextTray);
+
+    const placedIdx = piece.cells.map(([dr, dc]) => at(r + dr, c + dc));
+    setPlaced({ idx: placedIdx, key: Date.now() });
+    if (placedTimer.current) clearTimeout(placedTimer.current);
+    placedTimer.current = setTimeout(() => setPlaced(null), 280);
+
+    if (!reduced) playPlaceTick();
+    haptic(HAPTIC.PLACE);
     setMoveKey(k => k + 1);
-    if (cleared >= COMBO_TRIGGER) {
-      setMath(shuffledMath(MATH_QUESTIONS[rnd(MATH_QUESTIONS.length)])); setMathKey(k => k + 1);
+
+    if (cleared > 0) {
+      setCoins(x => x + cleared * COINS_PER_LINE);
+      const nextCombo = comboRef.current + 1; comboRef.current = nextCombo;
+      if (!reduced) playClearChime(nextCombo - 1, cleared);
+      haptic(cleared > 1 || nextCombo >= 3 ? HAPTIC.COMBO : HAPTIC.CLEAR);
+      if (cleared >= COMBO_TRIGGER) {
+        // The crisis modal is the payoff for a multi-line clear — no banner.
+        setMath(shuffledMath(MATH_QUESTIONS[rnd(MATH_QUESTIONS.length)])); setMathKey(k => k + 1);
+      } else {
+        if (nextCombo >= 2) {
+          setComboFlash({ label: 'Combo', tone: D.amber, combo: nextCombo, key: Date.now() });
+          if (comboTimer.current) clearTimeout(comboTimer.current);
+          comboTimer.current = setTimeout(() => setComboFlash(null), 1300);
+        }
+        afterBoardChange(afterClear, nextTray);
+      }
     } else {
+      comboRef.current = 0;
       afterBoardChange(afterClear, nextTray);
     }
+  };
+  doPlaceRef.current = doPlace;
+
+  // ── Pointer drag: pick up a tray piece, preview the landing, drop ──
+  const LIFT_CELLS = 2.2;
+  const cellUnder = useCallback((x, y, cellSize) => {
+    const el = document.elementFromPoint(x, y - cellSize * LIFT_CELLS);
+    const cellEl = el && el.closest ? el.closest('[data-r]') : null;
+    if (!cellEl) return null;
+    return { r: +cellEl.getAttribute('data-r'), c: +cellEl.getAttribute('data-c') };
+  }, []);
+
+  const onMove = useCallback((e) => {
+    lastPt.current = { x: e.clientX, y: e.clientY };
+    if (rafRef.current) return;
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0;
+      const d = dragInfo.current;
+      if (!d) return;
+      const { x, y } = lastPt.current;
+      setDrag(prev => (prev ? { ...prev, x, y } : prev));
+      const anchor = cellUnder(x, y, d.cellSize);
+      if (!anchor) { setPreview(null); return; }
+      const valid = canPlace(gridRef.current, d.piece.cells, anchor.r, anchor.c);
+      setPreview({ cells: d.piece.cells.map(([dr, dc]) => ({ r: anchor.r + dr, c: anchor.c + dc })), valid });
+    });
+  }, [cellUnder]);
+
+  const onUp = useCallback(() => {
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+    if (rafRef.current) { cancelAnimationFrame(rafRef.current); rafRef.current = 0; }
+    const d = dragInfo.current;
+    dragInfo.current = null;
+    const { x, y } = lastPt.current;
+    setDrag(null);
+    setPreview(null);
+    if (!d) return;
+    const anchor = cellUnder(x, y, d.cellSize);
+    if (anchor && canPlace(gridRef.current, d.piece.cells, anchor.r, anchor.c)) {
+      doPlaceRef.current(d.index, d.piece, anchor.r, anchor.c);
+    } else {
+      haptic(HAPTIC.INVALID);
+    }
+  }, [onMove, cellUnder]);
+
+  const startDrag = (e, index, piece) => {
+    if (phase !== 'play' || math || !piece) return;
+    const cellEl = boardRef.current && boardRef.current.querySelector('[data-r]');
+    const cellSize = cellEl ? cellEl.getBoundingClientRect().width : 36;
+    dragInfo.current = { index, piece, cellSize };
+    lastPt.current = { x: e.clientX, y: e.clientY };
+    setDrag({ index, piece, cellSize, x: e.clientX, y: e.clientY });
+    const anchor = cellUnder(e.clientX, e.clientY, cellSize);
+    if (anchor) setPreview({ cells: piece.cells.map(([dr, dc]) => ({ r: anchor.r + dr, c: anchor.c + dc })), valid: canPlace(grid, piece.cells, anchor.r, anchor.c) });
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+    e.preventDefault();
   };
 
   function resolveMath(optIndex, viaTimeout) {
@@ -168,10 +311,10 @@ function ShiftSurvival({ onBack, onComplete }) {
     if (!q) return;
     const correct = !viaTimeout && optIndex === q.correct;
     setMath(null);
-    if (correct) { setCoins(x => x + MATH_BONUS); vibrate(12); }
+    if (correct) { setCoins(x => x + MATH_BONUS); haptic(12); }
     else {
       setFailed(f => [...f, { q: q.q, answer: q.options[q.correct], timeout: !!viaTimeout }]);
-      vibrate(30);
+      haptic(30);
       const res = spawnComplication(gridRef.current);
       if (res.ok) {
         const { grid: g2, cleared, resolved } = clearLinesSurvival(res.grid, condRef.current);
@@ -184,7 +327,15 @@ function ShiftSurvival({ onBack, onComplete }) {
     setTimeout(() => { if (phaseRef.current === 'play') afterBoardChange(gridRef.current, trayRef.current); }, 60);
   }
 
-  const styleTag = <style>{`@keyframes survShrink{from{width:100%}to{width:0%}}@keyframes survPulse{0%,100%{box-shadow:0 0 0 1px ${D.redDeep},0 0 0 0 ${D.red}00}50%{box-shadow:0 0 0 1px ${D.red},0 0 22px 2px ${D.red}55}}`}</style>;
+  const styleTag = <style>{`
+@keyframes survShrink{from{width:100%}to{width:0%}}
+@keyframes survPulse{0%,100%{box-shadow:0 0 0 1px ${D.redDeep},0 0 0 0 ${D.red}00}50%{box-shadow:0 0 0 1px ${D.red},0 0 22px 2px ${D.red}55}}
+@keyframes cellPlace{0%{transform:scale(.86)}60%{transform:scale(1.06)}100%{transform:scale(1)}}
+.cell-place{animation:cellPlace .26s cubic-bezier(.34,1.56,.64,1)}
+@keyframes cozyParticle{0%{transform:translate(-50%,-50%) scale(1);opacity:.9}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(.4);opacity:0}}
+.cozy-particle{position:fixed;width:6px;height:6px;border-radius:9999px;pointer-events:none;will-change:transform,opacity;z-index:55;animation:cozyParticle .65s ease-out forwards}
+@media (prefers-reduced-motion: reduce){.cell-place{animation:none}.cozy-particle{display:none}}
+`}</style>;
 
   // ── PATIENT EXPIRED ──
   if (phase === 'dead') {
@@ -270,35 +421,44 @@ function ShiftSurvival({ onBack, onComplete }) {
 
         {/* grid */}
         <div className="mx-auto" style={{ maxWidth: 360 }}>
-          <div className="grid gap-1 p-1.5 rounded-2xl" style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))`, background: D.panel, animation: 'survPulse 2.4s ease-in-out infinite' }}>
+          <div ref={boardRef} className="grid gap-1 p-1.5 rounded-2xl" style={{ gridTemplateColumns: `repeat(${SIZE}, minmax(0, 1fr))`, background: D.panel, animation: 'survPulse 2.4s ease-in-out infinite' }}>
             {grid.map((cell, i) => {
               const r = Math.floor(i / SIZE), c = i % SIZE;
               const isCondRow = conditionByRow[r] != null;
               const Icon = cell ? (ICON_OF[cell.icon] || Pill) : null;
+              const isPrev = preview && preview.cells.some(p => p.r === r && p.c === c);
+              const ghost = isPrev ? (preview.valid ? D.teal : D.red) : null;
+              const justPlaced = placed && placed.idx.includes(i);
+              let style;
+              if (cell) {
+                style = { background: cell.color, boxShadow: ghost ? `inset 0 0 0 2px ${ghost}` : (cell.antidote ? `0 0 6px ${D.teal}` : 'inset 0 -2px 0 rgba(0,0,0,0.25)') };
+              } else if (ghost) {
+                style = { background: ghost + '33', border: `1px solid ${ghost}` };
+              } else {
+                style = { background: isCondRow ? D.redDeep + '33' : D.slot, border: `1px solid ${isCondRow ? D.red + '44' : D.slotBorder}` };
+              }
               return (
-                <button key={i} onClick={() => placePiece(r, c)}
-                        className="no-tap-highlight aspect-square rounded-[6px] flex items-center justify-center active:scale-95 transition-transform"
-                        style={cell
-                          ? { background: cell.color, boxShadow: cell.antidote ? `0 0 6px ${D.teal}` : 'inset 0 -2px 0 rgba(0,0,0,0.25)' }
-                          : { background: isCondRow ? D.redDeep + '33' : D.slot, border: `1px solid ${isCondRow ? D.red + '44' : D.slotBorder}` }}>
+                <div key={i} data-r={r} data-c={c} data-i={i}
+                     className={`aspect-square rounded-[6px] flex items-center justify-center${justPlaced ? ' cell-place' : ''}`}
+                     style={style}>
                   {Icon && <Icon size={14} color="#FFFFFFE0" />}
-                </button>
+                </div>
               );
             })}
           </div>
         </div>
 
         {/* tray */}
-        <div className="text-[10px] uppercase tracking-widest font-semibold mt-5 mb-2 text-center" style={{ color: D.muted }}>Supplies</div>
+        <div className="text-[10px] uppercase tracking-widest font-semibold mt-5 mb-2 text-center" style={{ color: D.muted }}>Supplies · drag to place</div>
         <div className="flex items-start justify-center gap-3">
           {tray.map((piece, i) => {
-            const active = sel === i;
+            const dragging = drag && drag.index === i;
             const cond = piece && piece.antidote ? conditionById(piece.antidote) : null;
             return (
               <div key={piece ? piece.key : `e${i}`} className="flex flex-col items-center gap-1">
-                <button disabled={!piece} onClick={() => setSel(active ? null : i)}
+                <button disabled={!piece} onPointerDown={(e) => startDrag(e, i, piece)}
                         className="no-tap-highlight flex items-center justify-center rounded-2xl transition active:scale-95"
-                        style={{ width: 90, height: 78, background: active ? D.teal + '14' : D.panel, border: `1.5px solid ${active ? D.teal : D.slotBorder}`, opacity: piece ? 1 : 0.4 }}>
+                        style={{ width: 90, height: 78, touchAction: 'none', background: D.panel, border: `1.5px solid ${D.slotBorder}`, opacity: piece ? (dragging ? 0.35 : 1) : 0.4 }}>
                   {piece ? <PieceMini piece={piece} /> : <AlertTriangle size={15} color={D.muted} />}
                 </button>
                 {cond && <span className="text-[10px] font-bold px-1.5 py-0.5 rounded" style={{ background: D.teal + '22', color: D.teal }}>{cond.short}</span>}
@@ -308,11 +468,32 @@ function ShiftSurvival({ onBack, onComplete }) {
         </div>
       </div>
 
+      {/* floating dragged piece — follows the pointer, lifted above the thumb */}
+      {drag && drag.piece && (
+        <div className="fixed z-[58] pointer-events-none"
+             style={{
+               left: drag.x, top: drag.y - drag.cellSize * LIFT_CELLS,
+               transform: 'translate(-50%, -50%)',
+               filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.5))',
+             }}>
+          <PieceMini piece={drag.piece} cell={drag.cellSize} gap={4} />
+        </div>
+      )}
+
+      {/* particle puffs (cleared cells) */}
+      {bursts.map(p => (
+        <div key={p.id} className="cozy-particle"
+             style={{ left: p.x, top: p.y, background: p.color, '--dx': `${p.dx}px`, '--dy': `${p.dy}px` }} />
+      ))}
+
+      {/* combo banner (reuses the shared kinetic-typography component) */}
+      <ComboBurst flash={comboFlash} />
+
       {/* fixed footer */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: D.bg + 'F2', borderTop: `1px solid ${D.slotBorder}` }}>
         <div className="max-w-md mx-auto flex items-center gap-3">
           <div className="text-[11px] leading-tight flex-1" style={{ color: D.muted }}>
-            {sel == null ? 'Pick a supply, then place it. Don’t stall — clots spawn.' : 'Tap a square. Drop antidotes on their condition row.'}
+            Drag a supply onto the board. Don’t stall — clots spawn. Drop antidotes on their condition row.
           </div>
           <Button variant="ghost" onClick={die} className="flex-shrink-0">End shift</Button>
         </div>
