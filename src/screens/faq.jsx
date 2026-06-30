@@ -18,7 +18,7 @@ import {
 } from '../lib/faq.js';
 import { GUEST_ID } from '../lib/profiles.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
-import { recordInteraction, loadDailyCounts } from '../lib/trending-store.js';
+import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
 import { rankTrending } from '../lib/trending.js';
 
 function relTime(ts) {
@@ -54,9 +54,10 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
   useEffect(() => {
     if (!faqs || faqs.length === 0) { setTrendingFaqIds(new Set()); return; }
     let alive = true;
-    loadDailyCounts('faq', faqs.map(f => f.id), 7).then(counts => {
+    // FAQs are surge-only (no "completion" concept) → completable:false.
+    loadTrendStats('faq', faqs.map(f => f.id), 7).then(stats => {
       if (!alive) return;
-      const ranked = rankTrending(faqs.map(f => ({ id: f.id })), counts, { topN: 3 });
+      const ranked = rankTrending(faqs.map(f => ({ id: f.id, completable: false })), stats, { topN: 3 });
       setTrendingFaqIds(new Set(ranked.filter(r => r.isTrending).map(r => r.id)));
     }).catch(() => {});
     return () => { alive = false; };

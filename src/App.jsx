@@ -58,6 +58,7 @@ import { selectQuickPracticeQuestions, selectBalancedQuestions } from './lib/qui
 import { examTopicWeightage } from './lib/weightage.js';
 import { captureError, setErrorContext } from './lib/errorlog.js';
 import { trackUmami } from './lib/umami.js';
+import { recordInteraction } from './lib/trending-store.js';
 // BUG-01 — unified back-button interception for screens with internal sub-views.
 import { runTopBackHandler } from './lib/back-handler.js';
 // NEW-02 — onboarding demographics default (UR / Open-Merit percentile).
@@ -2859,6 +2860,10 @@ export default function App() {
   // setData commit lands. Same pattern as economyRef above.
   const levelupRef = useRef(null);
   levelupRef.current = data && data.levelup;
+  // Active profile in a ref so handleGameComplete can tag the trending
+  // completion signal with the durable uid without re-memoizing the callback.
+  const profileRef = useRef(null);
+  profileRef.current = profile;
   const [levelUpCelebration, setLevelUpCelebration] = useState(null);
 
   // ⚠️ TEMPORARY TEST GRANT — one-time +100,000 Coins per profile so testers
@@ -2914,6 +2919,11 @@ export default function App() {
     // Record which game just completed + coins earned (the active screen IS the
     // game) as a Umami custom event — the admin reads game popularity there now.
     trackUmami('game-complete', { game: (navRef.current && navRef.current.screen) || 'unknown', coins: gained });
+    // TRENDING — a COMPLETE is the quality signal (opens that convert). Tagged
+    // with the durable uid so one user counts once/day. Fire-and-forget.
+    const _gid = navRef.current && navRef.current.screen;
+    const _uid = profileRef.current && profileRef.current.uid;
+    if (_gid && _uid) recordInteraction('game', _gid, _uid, 'complete');
     // Complete the game off the ref so we know the level-up result synchronously
     // (this also counts the game + XP toward today's daily quests).
     const res = completeGamePure(levelupRef.current, gained, todayStr());

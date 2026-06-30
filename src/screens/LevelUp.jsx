@@ -25,7 +25,7 @@ import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
-import { recordInteraction, loadDailyCounts } from '../lib/trending-store.js';
+import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
 import { rankTrending } from '../lib/trending.js';
 
 const TIER_ICONS = {
@@ -90,11 +90,16 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
   const [trendingIds, setTrendingIds] = useState(() => new Set());
   useEffect(() => {
     let alive = true;
-    const ids = [...GAMES.map(g => g.screen), 'knowledge-map'];
-    loadDailyCounts('game', ids, 7)
-      .then(counts => {
+    // Games are "completable" (opens→completes is the quality signal); the
+    // Knowledge Map has no completion, so it's surge-only (quality neutral).
+    const items = [
+      ...GAMES.map(g => ({ id: g.screen, completable: true })),
+      { id: 'knowledge-map', completable: false },
+    ];
+    loadTrendStats('game', items.map(i => i.id), 7)
+      .then(stats => {
         if (!alive) return;
-        const ranked = rankTrending(ids.map(id => ({ id })), counts, { topN: 2 });
+        const ranked = rankTrending(items, stats, { topN: 2 });
         setTrendingIds(new Set(ranked.filter(r => r.isTrending).map(r => r.id)));
       })
       .catch(() => {});
