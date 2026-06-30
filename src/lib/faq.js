@@ -18,6 +18,20 @@ import { KEYS, KEY_PREFIXES } from './keys.js';
 export const newFaqId = () => `faq-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 export const newFaqQId = () => `q-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+// Predefined categories the admin picks from (plus a free-text "Other…" in the
+// manager). Keeps category labels consistent across FAQs so the user-side
+// category chips stay tidy. 'General' is the default.
+export const FAQ_CATEGORIES = [
+  'General',
+  'Account & sign-in',
+  'Practice & tests',
+  'Mock tests & scoring',
+  'Content & banks',
+  'Streaks & gamification',
+  'Notifications',
+  'Technical / bugs',
+];
+
 // Vote-id helpers (so the screen and admin counts agree).
 export const faqAnswerVoteId = (faqId) => `faq:${faqId}`;
 export const faqReplyVoteId = (questionId) => `faqr:${questionId}`;
@@ -42,8 +56,17 @@ export async function listFaqs() {
     try { const r = await safeStorage.get(k, true); if (r && r.value) return JSON.parse(r.value); } catch (e) {}
     return null;
   }));
-  // Sort by explicit order, then newest first as a tie-break.
-  return items.filter(Boolean).sort((a, b) => (a.order ?? 1e9) - (b.order ?? 1e9) || (b.createdAt || 0) - (a.createdAt || 0));
+  // Stack order: newest FAQ first (most visible). An explicit numeric `order`
+  // still pins a FAQ above the stack (legacy/optional) — but it's no longer
+  // authored in the manager, so normal FAQs fall back to createdAt-desc.
+  return items.filter(Boolean).sort((a, b) => {
+    const ao = typeof a.order === 'number' ? a.order : null;
+    const bo = typeof b.order === 'number' ? b.order : null;
+    if (ao !== null && bo !== null && ao !== bo) return ao - bo;
+    if (ao !== null && bo === null) return -1;
+    if (ao === null && bo !== null) return 1;
+    return (b.createdAt || 0) - (a.createdAt || 0); // newest first
+  });
 }
 
 export async function createFaq({ question, answer, category, order }) {
@@ -52,7 +75,9 @@ export async function createFaq({ question, answer, category, order }) {
     question: (question || '').trim(),
     answer: (answer || '').trim(),
     category: (category || 'General').trim() || 'General',
-    order: typeof order === 'number' ? order : Date.now(),
+    // No default order — FAQs stack newest-first (see listFaqs). `order` is only
+    // stored when an explicit numeric pin is passed (legacy/optional).
+    ...(typeof order === 'number' ? { order } : {}),
     createdAt: Date.now(),
     updatedAt: Date.now(),
   };

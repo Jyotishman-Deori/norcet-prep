@@ -1,18 +1,23 @@
 // =====================================================================
 // src/ui/admin-faq-manager.jsx  (Feature F-F, admin side)
 // FAQ authoring for admins: create / edit / delete FAQs (question, answer,
-// category, order). A sub-screen of AdminPanel, mirroring AdminManager.
+// category). A sub-screen of AdminPanel, mirroring AdminManager.
 // Community-question replies happen inline on the FAQ screen itself (admin
 // controls there), so this is purely the FAQ content CRUD.
+//
+// Category is a predefined dropdown + "Other…" (custom). Ordering is a stack —
+// newest FAQ appears first for students (lib/faq.js#listFaqs), so there is no
+// manual "order" field. Every successful save shows a confirmation banner.
 // =====================================================================
 import React, { useState, useEffect } from 'react';
-import { Plus, Edit3, Trash2, Save, X, MessageCircle } from 'lucide-react';
+import { Plus, Edit3, Trash2, Save, Check, MessageCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
 import AdminEmpty from './admin-empty.jsx';
-import { listFaqs, createFaq, updateFaq, deleteFaq } from '../lib/faq.js';
+import { listFaqs, createFaq, updateFaq, deleteFaq, FAQ_CATEGORIES } from '../lib/faq.js';
 
-const blank = { id: null, question: '', answer: '', category: '', order: '' };
+const blank = { id: null, question: '', answer: '', category: 'General' };
+const OTHER = '__other__';
 
 export default function AdminFaqManager({ onBack }) {
   const { theme: T } = useTheme();
@@ -24,12 +29,15 @@ export default function AdminFaqManager({ onBack }) {
   // now use the strict broker path (faq.js), so a rejection (stale token,
   // rate-limit, offline, not-an-admin) THROWS — and the admin sees why.
   const [err, setErr] = useState(null);
+  // Confirm-on-save: the editor used to just close, leaving the admin unsure it
+  // worked. A success banner removes the doubt.
+  const [okMsg, setOkMsg] = useState(null);
 
   const refresh = () => listFaqs().then(setFaqs).catch(() => setFaqs([]));
   useEffect(() => { refresh(); }, []);
 
-  const startNew = () => { setErr(null); setForm({ ...blank }); };
-  const startEdit = (f) => { setErr(null); setForm({ id: f.id, question: f.question, answer: f.answer, category: f.category || '', order: typeof f.order === 'number' ? String(f.order) : '' }); };
+  const startNew = () => { setErr(null); setOkMsg(null); setForm({ ...blank }); };
+  const startEdit = (f) => { setErr(null); setOkMsg(null); setForm({ id: f.id, question: f.question, answer: f.answer, category: f.category || 'General' }); };
 
   const canSave = form && form.question.trim() && form.answer.trim();
 
@@ -46,12 +54,14 @@ export default function AdminFaqManager({ onBack }) {
     setBusy(true);
     setErr(null);
     try {
-      const order = form.order.trim() === '' ? undefined : Number(form.order);
+      const category = form.category.trim() || 'General';
       if (form.id) {
         const existing = (faqs || []).find(x => x.id === form.id);
-        await updateFaq(existing, { question: form.question.trim(), answer: form.answer.trim(), category: (form.category.trim() || 'General'), ...(order != null && !isNaN(order) ? { order } : {}) });
+        await updateFaq(existing, { question: form.question.trim(), answer: form.answer.trim(), category });
+        setOkMsg('FAQ updated — changes are live for students.');
       } else {
-        await createFaq({ question: form.question, answer: form.answer, category: form.category, ...(order != null && !isNaN(order) ? { order } : {}) });
+        await createFaq({ question: form.question, answer: form.answer, category });
+        setOkMsg('FAQ published — it’s live at the top of the FAQ screen.');
       }
       setForm(null);
       await refresh();
@@ -63,7 +73,7 @@ export default function AdminFaqManager({ onBack }) {
   const remove = async (id) => {
     setBusy(true);
     setErr(null);
-    try { await deleteFaq(id); setConfirmDel(null); await refresh(); }
+    try { await deleteFaq(id); setConfirmDel(null); setOkMsg('FAQ deleted.'); await refresh(); }
     catch (e) { setErr(failText(e)); }
     finally { setBusy(false); }
   };
@@ -72,6 +82,7 @@ export default function AdminFaqManager({ onBack }) {
 
   // ---- Form view ----
   if (form) {
+    const isPreset = FAQ_CATEGORIES.includes(form.category);
     return (
       <div className="anim-fadeup">
         <TopBar title={form.id ? 'Edit FAQ' : 'New FAQ'} onBack={() => setForm(null)} />
@@ -86,19 +97,20 @@ export default function AdminFaqManager({ onBack }) {
             <textarea value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} rows={6}
                       className="w-full mt-1 text-sm rounded-xl px-3 py-2 resize-none outline-none" style={input} placeholder="Write the answer. Line breaks are preserved." />
           </div>
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Category</label>
-              <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                     className="w-full mt-1 text-sm rounded-xl px-3 py-2 outline-none" style={input} placeholder="General" />
-            </div>
-            <div className="w-24">
-              <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Order</label>
-              <input value={form.order} onChange={e => setForm(f => ({ ...f, order: e.target.value.replace(/[^0-9]/g, '') }))}
-                     inputMode="numeric" className="w-full mt-1 text-sm rounded-xl px-3 py-2 outline-none" style={input} placeholder="auto" />
-            </div>
+          <div>
+            <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Category</label>
+            <select value={isPreset ? form.category : OTHER}
+                    onChange={e => { const v = e.target.value; setForm(f => ({ ...f, category: v === OTHER ? '' : v })); }}
+                    className="w-full mt-1 text-sm rounded-xl px-3 py-2 outline-none" style={input}>
+              {FAQ_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value={OTHER}>Other…</option>
+            </select>
+            {!isPreset && (
+              <input value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} autoFocus
+                     className="w-full mt-2 text-sm rounded-xl px-3 py-2 outline-none" style={input} placeholder="Type a custom category" />
+            )}
           </div>
-          <div className="text-[11px]" style={{ color: T.muted }}>Lower order numbers appear first. Leave blank to add at the end.</div>
+          <div className="text-[11px]" style={{ color: T.muted }}>New FAQs appear at the top of the FAQ screen for students.</div>
           {err && (
             <div className="text-xs rounded-xl px-3 py-2.5" style={{ background: T.errorSoft, border: `1px solid ${T.error}40`, color: T.error }}>{err}</div>
           )}
@@ -121,6 +133,14 @@ export default function AdminFaqManager({ onBack }) {
           <Plus size={18} /> Add a FAQ
         </button>
 
+        {okMsg && (
+          <div className="text-xs rounded-xl px-3 py-2.5 mb-3 flex items-start gap-2" style={{ background: T.successSoft, border: `1px solid ${T.success}40`, color: T.inkSoft }}>
+            <Check size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
+            <span className="flex-1">{okMsg}</span>
+            <button onClick={() => setOkMsg(null)} className="no-tap-highlight p-0.5 -m-0.5 leading-none" style={{ color: T.muted }} aria-label="Dismiss">✕</button>
+          </div>
+        )}
+
         {err && (
           <div className="text-xs rounded-xl px-3 py-2.5 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40`, color: T.error }}>{err}</div>
         )}
@@ -130,7 +150,7 @@ export default function AdminFaqManager({ onBack }) {
         ) : faqs.length === 0 ? (
           <AdminEmpty icon={MessageCircle} accent={T.primary}
             title="No FAQs yet"
-            what="The questions and answers shown on the public FAQ screen. You author them here; lower order numbers appear first."
+            what="The questions and answers shown on the public FAQ screen. You author them here; the newest appears first for students."
             when="Tap “Add a FAQ” above — it appears instantly in the FAQ screen for everyone." />
         ) : (
           <div className="space-y-2.5">
@@ -141,7 +161,6 @@ export default function AdminFaqManager({ onBack }) {
                     <div className="font-display text-sm font-semibold leading-snug" style={{ color: T.ink }}>{f.question}</div>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: T.primary + '18', color: T.primary }}>{f.category || 'General'}</span>
-                      <span className="text-[10px]" style={{ color: T.muted }}>order {typeof f.order === 'number' ? f.order : '—'}</span>
                     </div>
                     <div className="text-xs mt-1.5 line-clamp-2" style={{ color: T.muted }}>{f.answer}</div>
                   </div>
