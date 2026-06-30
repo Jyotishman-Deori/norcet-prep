@@ -9,6 +9,7 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { getConfig } from '../lib/game-config.js';
+import { haptic, HAPTIC } from '../lib/juice.js';
 
 // Combo milestones (consecutive correct answers) are LIVE-TUNABLE via the
 // game_config row (lib/game-config.js).
@@ -39,7 +40,8 @@ export function useCombo() {
       const tier = (getConfig().comboTiers || []).find(t => t.at === n);
       if (tier) {
         setFlash({ label: tier.label, tone: tier.tone, combo: n, key: Date.now() });
-        try { if (navigator.vibrate) navigator.vibrate([8, 24, 10]); } catch (e) {}
+        haptic(HAPTIC.COMBO); // reduced-motion-gated + feature-detected
+
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setFlash(null), 1300);
       }

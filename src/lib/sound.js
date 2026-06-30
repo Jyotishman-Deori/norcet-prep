@@ -82,3 +82,56 @@ export function playTapSound() {
     osc.start(now); osc.stop(now + 0.1);
   } catch (e) {}
 }
+
+// ── 3 AM Chart (juice) — cozy place / line-clear cues ────────────────────────
+// Same gate (isSoundEnabled) + shared AudioContext (getCtx, gesture-resumed) as
+// above; zero asset files. Callers must ALSO skip these under reduced-motion
+// (chimes are motion-class feedback) — see lib/juice.prefersReducedMotion().
+
+// A soft, short "tick" the instant a piece lands. Low + quiet so rapid drops
+// never get noisy on the deliberately chill board.
+export function playPlaceTick() {
+  if (!_soundEnabled) return;
+  try {
+    const c = getCtx();
+    if (!c) return;
+    const now = c.currentTime;
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(392, now); // G4 — soft, low
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.03, now + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + 0.07);
+    osc.connect(g); g.connect(c.destination);
+    osc.start(now); osc.stop(now + 0.09);
+  } catch (e) {}
+}
+
+// Ascending MAJOR-PENTATONIC chime for line clears. `step` (combo index, 0-based)
+// walks UP the scale so consecutive clears feel like a rising melody; a multi-line
+// clear (`lines` > 1) layers a soft higher note. Pure osc.frequency — no files,
+// no playbackRate hack.
+const PENTATONIC = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51]; // C5 D5 E5 G5 A5 C6 D6 E6
+export function playClearChime(step = 0, lines = 1) {
+  if (!_soundEnabled) return;
+  try {
+    const c = getCtx();
+    if (!c) return;
+    const now = c.currentTime;
+    const idx = Math.min(Math.max(0, step | 0), PENTATONIC.length - 1);
+    const note = (freq, t0, peak, dur) => {
+      const osc = c.createOscillator();
+      const g = c.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + t0);
+      g.gain.setValueAtTime(0.0001, now + t0);
+      g.gain.exponentialRampToValueAtTime(peak, now + t0 + 0.012);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + t0 + dur);
+      osc.connect(g); g.connect(c.destination);
+      osc.start(now + t0); osc.stop(now + t0 + dur + 0.02);
+    };
+    note(PENTATONIC[idx], 0, 0.07, 0.22);
+    if (lines > 1) note(PENTATONIC[Math.min(idx + 2, PENTATONIC.length - 1)], 0.06, 0.05, 0.26);
+  } catch (e) {}
+}
