@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "preview:admin": "vite preview --outDir dist-admin",
     "deploy:admin": "npm run build:admin && npx vercel --cwd dist-admin deploy --prod --yes",
-    "deploy:check": "vite build && vite preview --host"
+    "deploy:check": "vite build && vite preview --host",
+    "generate:content": "node scripts/generate.js"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",
@@ -23,8 +24,11 @@
     "web-push": "^3.6.7"
   },
   "devDependencies": {
+    "@google/genai": "^2.10.0",
+    "@supabase/supabase-js": "^2.108.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "dotenv": "^17.4.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "vite": "^6.0.3",

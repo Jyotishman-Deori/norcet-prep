@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   AlertCircle, AlertTriangle, Check, CheckSquare, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown
+  RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
@@ -29,6 +29,7 @@ import AdminFaqManager from '../ui/admin-faq-manager.jsx';
 import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
+import ContentReview from './content-review.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
@@ -1342,6 +1343,10 @@ function AdminPanel({
     return <AdminFaqManager onBack={backToDash} />;
   }
 
+  if (view === 'content-review') {
+    return <ContentReview onBack={backToDash} profile={profile} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -1463,6 +1468,15 @@ function AdminPanel({
             hint="Add / remove admins"
             onClick={() => setView('manageAdmins')}
             signal={<ShieldCheck size={18} style={{ color: T.muted }} />} />
+
+          {/* AI content pipeline — review/approve drafted questions from questions_staging */}
+          <AdminTile
+            icon={<Sparkles size={22} style={{ color: T.primary }} />}
+            accent={T.primary}
+            label="Content Review"
+            hint="Approve AI-drafted questions"
+            onClick={() => setView('content-review')}
+            signal={<Sparkles size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile

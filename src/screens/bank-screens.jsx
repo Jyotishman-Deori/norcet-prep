@@ -11,10 +11,10 @@
 // data/setData context — isAdmin/isOwner (BankDetail) and profile (BankEditor)
 // stay PROPS. No fgOnDark, no fontStyles. Two render sites in App (the
 // 'bank-detail' and 'bank-editor' routes) are UNCHANGED.
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   AlertCircle, AlertTriangle, Check, X, Download, Edit3, Eye, EyeOff,
-  Layers, Plus, RefreshCw, Save, Trash2
+  Layers, Plus, RefreshCw, Save, Trash2, Upload
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
@@ -317,6 +317,30 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     }
   };
 
+  // Upload a .json/.csv file from phone, tablet or laptop, then validate it just
+  // like a paste. Format is inferred from the extension; the existing
+  // Append/Replace flow below the preview takes over from there.
+  const fileRef = useRef(null);
+  const onFile = async (e) => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = ''; // allow re-picking the same file
+    if (!file) return;
+    setError(null);
+    setLastAdded(null);
+    const fmt = /\.csv$/i.test(file.name) ? 'csv' : 'json';
+    try {
+      const content = await file.text();
+      setFormat(fmt);
+      setText(content);
+      const result = processQuestionInput(content, fmt, 'bank');
+      if (result.parseError) setPreview({ valid: [], invalid: [], message: result.parseError });
+      else setPreview({ valid: result.valid, invalid: result.invalid });
+    } catch (err) {
+      setPreview(null);
+      setError('Could not read that file: ' + (err.message || String(err)));
+    }
+  };
+
   // Replace: blow away current and use only the parsed valid set (no duplicates by definition).
   const doReplace = () => {
     if (!preview || preview.valid.length === 0) return;
@@ -559,6 +583,16 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
             </div>
           </Card>
         )}
+
+        {/* Upload a file straight from phone, tablet or laptop — validated like a paste */}
+        <input ref={fileRef} type="file" accept=".json,.csv,application/json,text/csv"
+               onChange={onFile} className="hidden" />
+        <button onClick={() => fileRef.current && fileRef.current.click()}
+                className="no-tap-highlight w-full flex items-center justify-center gap-2 py-3 mb-2 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
+                style={{ background: T.primary + '12', color: T.primary, border: `1.5px dashed ${T.primary}66` }}>
+          <Upload size={16} /> Upload a .json or .csv file
+        </button>
+        <div className="text-[11px] text-center mb-3" style={{ color: T.muted }}>or paste below</div>
 
         <div className="grid grid-cols-2 gap-2 mb-3 p-1 rounded-xl" style={{ background: T.surfaceWarm }}>
           {['json', 'csv'].map(f => (
