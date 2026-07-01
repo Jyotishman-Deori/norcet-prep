@@ -26,6 +26,7 @@ import { ComparisonToggle } from '../ui/comparison-cards.jsx';
 import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
 import StudyProfileCard from './study-profile-card.jsx';
+import { CompanionRenameCard } from './companion-rename-modal.jsx';
 import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
@@ -335,6 +336,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
         </Card>
       </div>
+      {/* Study companion — rename the note feature's pet name (password-gated
+          for accounts inside the modal; guests rename freely). Visible to all. */}
+      {profile && <CompanionRenameCard profile={profile} />}
       {/* NEW-02 — Study profile (optional, editable any time). Anything skipped
           during onboarding can be set here, like the optional recovery email. */}
       {profile && <StudyProfileCard demographics={data.demographics} onSave={onSetDemographics} />}

@@ -216,6 +216,20 @@ import FeedbackHost from './screens/feedback-modal.jsx';
 import HelpHost from './screens/help-modal.jsx';
 // #7 — app-root confirmation dialog host (un-bookmark caution, etc.).
 import ConfirmHost from './ui/confirm-host.jsx';
+// AI Learning Notes — app-root note popup host + draggable floating button.
+import NoteHost from './screens/note-taking-modal.jsx';
+import NoteFab from './ui/note-fab.jsx';
+// Study-companion rename modal (opened from the note popup pencil + Settings).
+import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
+// Screens where the floating note button must NOT overlay content — immersive
+// mini-games (centered z-50 modals the z-100 FAB would cover) and formal timed
+// tests (full-screen answer UI + answer integrity). The TopBar note chip and
+// the popup itself are unchanged; only the overlay FAB is hidden on these.
+const NOTE_FAB_HIDDEN = new Set([
+  'advanced-test', 'paper-test',
+  'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
+  'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq',
+]);
 // [A1 slice 40] rename-profile host extracted.
 import RenameProfileHost from './screens/rename-profile-host.jsx';
 // [A1 slice 45] ReportedQuestionModal no longer referenced by App — rendered only inside the extracted AdminPanel.
@@ -3965,6 +3979,13 @@ export default function App() {
 
       {/* TIP — global tooltip bubble (hold on mobile / hover on desktop). */}
       <TipHost />
+
+      {/* AI Learning Notes — app-root popup host (opened from the TopBar note
+          button or the floating button) + the draggable floating button that
+          overlays every screen. Both open the same popup via requestNote(). */}
+      <NoteHost />
+      <CompanionRenameHost />
+      {!NOTE_FAB_HIDDEN.has(nav.screen) && <NoteFab />}
 
       {nav.screen === 'home' && (
         <Home whatsNew={whatsNew} onDismissWhatsNew={dismissWhatsNew}

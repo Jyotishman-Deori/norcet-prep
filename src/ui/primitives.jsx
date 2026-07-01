@@ -15,7 +15,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { isPYQ, pyqLabel } from '../lib/pyq.js';
-import { ArrowLeft, HelpCircle, AlertCircle, History, Flame } from 'lucide-react';
+import { ArrowLeft, HelpCircle, AlertCircle, History, Flame, NotebookPen } from 'lucide-react';
 import { conceptCount, highYieldTier } from '../lib/high-yield.js';
 // FAV — TopBar heart (lazy circular-safe: fav-heart imports app-context only).
 import FavHeart from './fav-heart.jsx';
@@ -43,6 +43,13 @@ export function registerSupportOpener(fn) { _openSupport = fn; }
 let _openConfirm = null;
 export function requestConfirm(opts) { if (_openConfirm) _openConfirm(opts || {}); }
 export function registerConfirmOpener(fn) { _openConfirm = fn; }
+
+// AI Learning Notes — the note-taking popup is a single app-root host
+// (NoteHost) opened imperatively from the TopBar note button AND the draggable
+// floating button (note-fab.jsx), so both entry points share one modal.
+let _openNote = null;
+export function requestNote(ctx) { if (_openNote) _openNote(ctx || {}); }
+export function registerNoteOpener(fn) { _openNote = fn; }
 
 function Pill({ children, color, bg, className = '' }) {
   const { theme: T } = useTheme();
@@ -193,6 +200,10 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
               nothing for ids outside lib/favorites.js). */}
           {favId && <FavHeart favId={favId} />}
           {right}
+          {/* AI Learning Notes — fixed access point on every screen that uses
+              TopBar. The draggable floating button (note-fab.jsx) covers the
+              few custom-header screens (e.g. Home) that don't render TopBar. */}
+          <NoteButton />
           {feedback && !feedback.noHelp && <HelpButton screen={feedback.screen} />}
           {feedback && (
             <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
@@ -211,6 +222,24 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
           comfortably below the bar regardless of its own top padding. */}
       <div aria-hidden="true" style={{ height: 'calc(64px + env(safe-area-inset-top, 0px))' }} />
     </>
+  );
+}
+
+// AI Learning Notes — icon-only circular chip (keeps the crowded action row
+// compact on mobile alongside the labelled Help/Report pills). Opens the shared
+// note popup via the request channel above. 36px meets the 44px guidance with
+// its surrounding tap padding; labelled by aria + Tip for accessibility.
+function NoteButton() {
+  const { theme: T } = useTheme();
+  return (
+    <Tip text="Jot quick study notes, then copy them into an AI to learn more">
+      <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} requestNote(); }}
+              aria-label="Open study notes"
+              className="no-tap-highlight flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
+              style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+        <NotebookPen size={16} style={{ color: T.primary }} />
+      </button>
+    </Tip>
   );
 }
 

@@ -12,7 +12,8 @@
     "preview:admin": "vite preview --outDir dist-admin",
     "deploy:admin": "npm run build:admin && npx vercel --cwd dist-admin deploy --prod --yes",
     "deploy:check": "vite build && vite preview --host",
-    "generate:content": "node scripts/generate.js"
+    "generate:content": "node scripts/generate.js",
+    "test": "node scripts/run-tests.mjs"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",

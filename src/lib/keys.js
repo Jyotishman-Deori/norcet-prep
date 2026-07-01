@@ -84,6 +84,17 @@ export const KEYS = {
   userdata:      (profileId) => `userdata:${profileId}`,
   // #6 — local-only N-day revision plan (shared:false). Per profile.
   studyPlan:     (profileId) => `studyplan:${profileId}`,
+  // AI LEARNING NOTES — local-only (shared:false), per profile. A slim blob of
+  // up to 10 bulleted study notes the user copies into an external AI. Never
+  // synced to the server; disclosed to the user in the note popup.
+  notes:         (profileId) => `notes:v1:${profileId}`,
+  // AI Notes feedback row — local-only 'up'/'down' vote on wanting in-app AI chat.
+  notesAiVote:   (profileId) => `notesaivote:v1:${profileId}`,
+  // Study-companion name (the user's pet name for the note feature) — local, per
+  // profile. Drives the popup title + greeting. ADD-only; never wiped by Clear.
+  notesName:     (profileId) => `notesname:v1:${profileId}`,
+  // "Auto-save on close" preference for the notebook — local, per profile.
+  notesAutoSave: (profileId) => `notesautosave:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet
@@ -149,4 +160,6 @@ export const KEY_PREFIXES = {
   ANALYTICS_USER: 'analytics:user:',
   // TRENDING — interaction counters for the free-tier "trending" engine.
   TREND: 'trend:',
+  // AI LEARNING NOTES — local-only bulleted study notes, per profile.
+  NOTES: 'notes:',
 };

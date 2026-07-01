@@ -271,6 +271,43 @@ export const fontStyles = `
 @keyframes sheetUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 .sheet-up { animation: sheetUp 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── AI Learning Notes — NamingView entrance: staggered warm fade-up for the
+   icon, headline, and body copy so the first-run moment feels considered and
+   personal, not instant. Each element settles from a small Y offset with a
+   spring curve; delays are baked into the class so JSX stays clean.
+   transform:none endings avoid the containing-block side-effect (see fadeUp). */
+@keyframes namingEnter {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+.naming-icon-enter     { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.04s both; }
+.naming-headline-enter { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
+.naming-body-enter     { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.17s both; }
+
+/* ── AI Learning Notes — Store/Copy "morph to checkmark" confirmation. ─────
+   note-pop: a two-phase spring — compress then overshoot — so the morph feels
+   physically committed.
+   note-confirm-glow: a simultaneous opacity-fade ring that widens outward from
+   the button surface, communicating "action landed". Implemented as a
+   box-shadow pulse layered in the same keyframe (no extra DOM node needed).
+   Both run together via the .note-pop class; the glow is additive and
+   invisible on buttons that already have a coloured box-shadow. */
+@keyframes notePop {
+  0%   { transform: scale(0.92); box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
+  38%  { transform: scale(1.10); box-shadow: 0 0 0 5px rgba(255,255,255,0.18); }
+  68%  { transform: scale(0.98); box-shadow: 0 0 0 8px rgba(255,255,255,0.06); }
+  100% { transform: scale(1);    box-shadow: 0 0 0 0 rgba(255,255,255,0.0); }
+}
+.note-pop { animation: notePop 0.38s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* ── AI Learning Notes FAB — resting pulse ring: a very subtle slow glow that
+   draws the eye without being distracting. Suppressed during a drag (JS sets
+   dragging class). Removed entirely when reduced-motion is preferred. */
+@keyframes noteFabPulse {
+  0%, 100% { box-shadow: 0 4px 18px rgba(0,0,0,0.22), 0 0 0 0 rgba(255,255,255,0.0); }
+  50%       { box-shadow: 0 6px 22px rgba(0,0,0,0.28), 0 0 0 5px rgba(255,255,255,0.1); }
+}
+.note-fab-pulse { animation: noteFabPulse 3s ease-in-out infinite; }
+
 /* ── FAV — Favourites strip header heart: a gentle double-beat every 3s. */
 @keyframes favBeat {
   0%, 24%, 100% { transform: scale(1); }
@@ -376,7 +413,8 @@ export const fontStyles = `
   .drawer-item-in, .drawer-glow,
   .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap,
   .qbtn-label, .qbtn-ready,
-  .drill-card-in, .test-enter { animation: none !important; }
+  .drill-card-in, .test-enter, .note-pop, .note-fab-pulse,
+  .naming-icon-enter, .naming-headline-enter, .naming-body-enter { animation: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
 }
 
