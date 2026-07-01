@@ -95,6 +95,9 @@ export const KEYS = {
   notesName:     (profileId) => `notesname:v1:${profileId}`,
   // "Auto-save on close" preference for the notebook — local, per profile.
   notesAutoSave: (profileId) => `notesautosave:v1:${profileId}`,
+  // Show the draggable floating note button? — local, per profile. Default OFF;
+  // the fixed top-bar note icon is always available and cannot be disabled.
+  notesShowFab:  (profileId) => `notesshowfab:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet

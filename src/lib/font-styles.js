@@ -308,6 +308,59 @@ export const fontStyles = `
 }
 .note-fab-pulse { animation: noteFabPulse 3s ease-in-out infinite; }
 
+/* ── AI Learning Notes — notebook micro-interactions (owner's premium spec). ──
+   All spring on cubic-bezier(.34,1.56,.64,1). Each is opted out of below in the
+   reduced-motion block; JS-driven motion is additionally gated by prefersReduced.
+
+   note-press: a physical press-scale used on tappable rows/buttons where the
+   Tailwind active:scale utility isn't enough (it fires on :active). */
+.note-press { transition: transform 140ms cubic-bezier(0.34,1.56,0.64,1); }
+.note-press:active { transform: scale(0.96); }
+/* Notebook editor — hide the textarea scrollbar (scroll still works) so a
+   classic desktop scrollbar can't shrink the wrap width relative to the
+   BulletGutter mirror behind it. */
+.note-ta-nosb { scrollbar-width: none; }
+.note-ta-nosb::-webkit-scrollbar { display: none; }
+/* mini-settings panel spring-expand from the top-right, like a menu unfurling. */
+@keyframes noteMenuIn {
+  0%   { opacity: 0; transform: translateY(-6px) scale(0.94); }
+  100% { opacity: 1; transform: none; }
+}
+.note-menu-in { animation: noteMenuIn 0.24s cubic-bezier(0.34,1.56,0.64,1) both; transform-origin: top right; }
+/* feedback row -> casual reply swap: the reply springs in as the survey leaves. */
+@keyframes noteReplyIn {
+  0%   { opacity: 0; transform: translateY(6px) scale(0.97); }
+  100% { opacity: 1; transform: none; }
+}
+.note-reply-in { animation: noteReplyIn 0.34s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* selected-state confirm: a chip/button lands its "selected" fill with a spring. */
+@keyframes noteSelectPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+.note-select-pop { animation: noteSelectPop 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* "Recommended" apply pulse: a single expanding ring the moment defaults apply. */
+@keyframes noteRecoPulse {
+  0%   { box-shadow: 0 0 0 0 var(--reco-glow, rgba(0,0,0,0.18)); }
+  100% { box-shadow: 0 0 0 10px rgba(0,0,0,0); }
+}
+.note-reco-pulse { animation: noteRecoPulse 0.55s ease-out both; }
+/* reverse-counter tick: a tiny spring bump each time the "N left" number changes. */
+@keyframes noteCountTick {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.note-count-tick { animation: noteCountTick 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* bullet-appear: the gutter dot for a freshly-added line pops into view. */
+@keyframes noteBulletIn {
+  0%   { opacity: 0; transform: scale(0.2); }
+  60%  { opacity: 1; transform: scale(1.25); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.note-bullet-in { animation: noteBulletIn 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 /* ── FAV — Favourites strip header heart: a gentle double-beat every 3s. */
 @keyframes favBeat {
   0%, 24%, 100% { transform: scale(1); }
@@ -414,7 +467,11 @@ export const fontStyles = `
   .fav-tile-in, .fav-jiggle, .fav-tile-out, .quote-swap,
   .qbtn-label, .qbtn-ready,
   .drill-card-in, .test-enter, .note-pop, .note-fab-pulse,
-  .naming-icon-enter, .naming-headline-enter, .naming-body-enter { animation: none !important; }
+  .naming-icon-enter, .naming-headline-enter, .naming-body-enter,
+  .note-menu-in, .note-reply-in, .note-select-pop, .note-reco-pulse,
+  .note-count-tick, .note-bullet-in { animation: none !important; }
+  .note-press { transition: none !important; }
+  .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
 }
 

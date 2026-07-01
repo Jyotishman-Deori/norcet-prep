@@ -115,3 +115,25 @@ export async function saveNotesAutoSave(profileId, on) {
     await safeStorage.set(KEYS.notesAutoSave(profileId), on ? 'true' : 'false', false);
   } catch (e) {}
 }
+
+// ---------------------------------------------------------------------
+// SHOW-FLOATING-BUTTON preference — local, per profile. Default OFF (the fixed
+// top-bar note icon is always available). Toggled from the notebook mini-menu.
+// ---------------------------------------------------------------------
+export const NOTEFAB_PREF_EVENT = 'notefab-pref';   // window event App listens for
+
+export async function loadShowFab(profileId) {
+  try {
+    const r = await safeStorage.get(KEYS.notesShowFab(profileId), false);
+    if (r && r.value != null) return r.value === 'true' || r.value === true;
+  } catch (e) {}
+  return false;
+}
+
+export async function saveShowFab(profileId, on) {
+  try {
+    await safeStorage.set(KEYS.notesShowFab(profileId), on ? 'true' : 'false', false);
+  } catch (e) {}
+  // Notify the app root so the floating button mounts/unmounts immediately.
+  try { window.dispatchEvent(new CustomEvent(NOTEFAB_PREF_EVENT, { detail: { on: !!on } })); } catch (e) {}
+}

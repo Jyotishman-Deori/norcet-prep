@@ -26,8 +26,7 @@ import { requestNote } from './primitives.jsx';
 
 const SIZE = 54;          // button diameter (px) — 54px gives ≥44px hit area with comfort
 const MARGIN = 12;        // gap kept from every safe-area edge
-const TAP_MOVE = 6;       // px of movement under which a pointer-up counts as a tap
-const TAP_MS = 300;       // and within this many ms
+const TAP_MOVE = 10;      // px of movement under which a release counts as a tap (not a drag)
 const POS_KEY = 'norcet:notefab-pos:v1';
 
 function readInsets() {
@@ -92,7 +91,11 @@ export default function NoteFab() {
   const [pos, setPos] = useState(null);          // null until measured on mount
   const [dragging, setDragging] = useState(false);
   const elRef = useRef(null);
-  const drag = useRef(null);                      // { startX, startY, ox, oy, moved, t0 }
+  const drag = useRef(null);                      // { startX, startY, ox, oy, moved, b }
+  // Records how the last gesture was classified by the pointer handlers, so the
+  // onClick fallback only fires when pointer events did NOT run (glitchy Android
+  // WebViews sometimes drop pointerup) and never double-fires after a real drag.
+  const gestureRef = useRef(null);                // null | 'tap' | 'drag'
   const reduced = useRef(
     typeof window !== 'undefined' && window.matchMedia &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -117,11 +120,12 @@ export default function NoteFab() {
 
   const onPointerDown = (e) => {
     if (!pos) return;
+    gestureRef.current = null;
     const el = elRef.current;
     try { el.setPointerCapture(e.pointerId); } catch (er) {}
     // Cache the bounds once per drag — insets don't change mid-drag, and
     // measuring them on every pointermove (a DOM probe) would cause jank.
-    drag.current = { startX: e.clientX, startY: e.clientY, ox: pos.x, oy: pos.y, moved: 0, t0: Date.now(), b: bounds() };
+    drag.current = { startX: e.clientX, startY: e.clientY, ox: pos.x, oy: pos.y, moved: 0, b: bounds() };
     setDragging(true);
   };
 
@@ -143,18 +147,57 @@ export default function NoteFab() {
     drag.current = null;
     setDragging(false);
     if (!d) return;
-    const isTap = d.moved < TAP_MOVE && (Date.now() - d.t0) < TAP_MS;
-    if (isTap) {
+    // Classify by DISTANCE only — a press-and-release that didn't move is a tap,
+    // however long it was held. (The old <300ms gate misread deliberate taps as
+    // zero-distance drags, so the button "did nothing".)
+    if (d.moved < TAP_MOVE) {
+      gestureRef.current = 'tap';
       try { if (navigator.vibrate) navigator.vibrate(6); } catch (er) {}
       requestNote();
       return;
     }
+    gestureRef.current = 'drag';
     // Snap to the nearer horizontal edge; keep the (clamped) vertical position.
     const x = (d.nx ?? d.ox), y = (d.ny ?? d.oy);
     const snapX = (x + SIZE / 2) < (window.innerWidth / 2) ? d.b.minX : d.b.maxX;
     const next = { x: snapX, y: clamp(y, d.b.minY, d.b.maxY) };
     setPos(next);
     savePos(next);
+  };
+
+  // OS stole the pointer mid-gesture (notification shade, incoming call…).
+  // A cancelled gesture must NEVER count as a tap — settle the button back
+  // without opening the popup. Marking it 'drag' also stops any stray click
+  // that follows from firing the fallback below.
+  const onPointerCancel = () => {
+    const d = drag.current;
+    drag.current = null;
+    setDragging(false);
+    gestureRef.current = 'drag';
+    if (!d) return;
+    if (d.moved >= TAP_MOVE) {
+      const x = (d.nx ?? d.ox), y = (d.ny ?? d.oy);
+      const snapX = (x + SIZE / 2) < (window.innerWidth / 2) ? d.b.minX : d.b.maxX;
+      const next = { x: snapX, y: clamp(y, d.b.minY, d.b.maxY) };
+      setPos(next);
+      savePos(next);
+    } else {
+      setPos({ x: d.ox, y: d.oy });   // barely moved — restore where it was
+    }
+  };
+
+  // Fallback: some Android WebViews drop pointerup on a fixed, pointer-captured
+  // element. A <button> still synthesises a click on tap — honour it ONLY when
+  // the pointer handlers didn't already classify the gesture (so we never
+  // double-open after a tap, and never open after a drag). Also clear any
+  // stale drag state the dropped pointerup left behind.
+  const onClick = () => {
+    if (gestureRef.current == null) {
+      drag.current = null;
+      setDragging(false);
+      requestNote();
+    }
+    gestureRef.current = null;
   };
 
   if (!pos) return null;
@@ -173,7 +216,8 @@ export default function NoteFab() {
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
-      onPointerCancel={onPointerUp}
+      onPointerCancel={onPointerCancel}
+      onClick={onClick}
       aria-label="Open study notes"
       className={fabClass}
       style={{

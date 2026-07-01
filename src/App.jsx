@@ -174,7 +174,6 @@ import TieBreaker from './screens/tie-breaker.jsx';
 // NEW-09 — IBQ: data-driven hotspot "tap the structure" diagrams (uploadable).
 import Ibq from './screens/ibq.jsx';
 // Drill Packs — import/manage/author portable content for the drills.
-import DrillPacks from './screens/drill-packs.jsx';
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
 // [A1 slice 31] RevisionSheet (+PRINT_STYLES) extracted (data+allQuestions->useData).
@@ -219,6 +218,7 @@ import ConfirmHost from './ui/confirm-host.jsx';
 // AI Learning Notes — app-root note popup host + draggable floating button.
 import NoteHost from './screens/note-taking-modal.jsx';
 import NoteFab from './ui/note-fab.jsx';
+import { loadShowFab, NOTEFAB_PREF_EVENT } from './lib/notes-store.js';
 // Study-companion rename modal (opened from the note popup pencil + Settings).
 import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
 // Screens where the floating note button must NOT overlay content — immersive
@@ -1653,6 +1653,18 @@ export default function App() {
   const [pendingMerge, setPendingMerge] = useState(null);
   const mergeResolveBusyRef = useRef(false);
   const [nav, setNav] = useState({ screen: 'home' });
+  // Draggable floating note button visibility (per-profile pref, default OFF —
+  // the fixed top-bar note icon is always available). Loaded when the profile
+  // changes and updated live when the notebook mini-menu toggles it.
+  const [showFab, setShowFab] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    const pid = (profile && (profile.uid || profile.id)) || 'guest';
+    loadShowFab(pid).then((on) => { if (alive) setShowFab(on); }).catch(() => {});
+    const onPref = (e) => setShowFab(!!(e && e.detail && e.detail.on));
+    window.addEventListener(NOTEFAB_PREF_EVENT, onPref);
+    return () => { alive = false; window.removeEventListener(NOTEFAB_PREF_EVENT, onPref); };
+  }, [profile]);
   // Phase 3 — a pending batch invite (?batch=) captured at boot; the join
   // confirmation modal shows once the user is logged in (guests sign up first).
   const [pendingBatchId, setPendingBatchId] = useState(null);
@@ -2996,20 +3008,9 @@ export default function App() {
     return true;
   }, []);
 
-  // Drill Packs — install (replace by id), enable/disable, remove. Lives in the
-  // synced blob so packs carry across devices; merged into each drill's pool.
-  const installDrillPack = useCallback((pack) => {
-    setData(prev => {
-      const list = (prev && prev.drillPacks) || [];
-      return { ...prev, drillPacks: [...list.filter(p => p.id !== pack.id), pack] };
-    });
-  }, []);
-  const setDrillPackEnabled = useCallback((id, enabled) => {
-    setData(prev => ({ ...prev, drillPacks: ((prev && prev.drillPacks) || []).map(p => p.id === id ? { ...p, enabled } : p) }));
-  }, []);
-  const removeDrillPack = useCallback((id) => {
-    setData(prev => ({ ...prev, drillPacks: ((prev && prev.drillPacks) || []).filter(p => p.id !== id) }));
-  }, []);
+  // Drill Packs are now admin-authored only — the student-facing import/manage
+  // screen was removed. The drill GAMES still merge any existing data.drillPacks
+  // (usually empty) with their built-in seed content via lib/drill-packs.js.
 
   // NEW-03 / Flashpoint — set the global Pace (persisted). Switching to The
   // Pulse or Flashpoint for the first time shows that mode's one-time entry note.
@@ -3985,7 +3986,7 @@ export default function App() {
           overlays every screen. Both open the same popup via requestNote(). */}
       <NoteHost />
       <CompanionRenameHost />
-      {!NOTE_FAB_HIDDEN.has(nav.screen) && <NoteFab />}
+      {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && <NoteFab />}
 
       {nav.screen === 'home' && (
         <Home whatsNew={whatsNew} onDismissWhatsNew={dismissWhatsNew}
@@ -4291,10 +4292,6 @@ export default function App() {
       )}
 
       {/* Drill Packs — import / manage / author portable drill content. */}
-      {nav.screen === 'drill-packs' && (
-        <DrillPacks data={data} onBack={goHome}
-                    onInstall={installDrillPack} onToggle={setDrillPackEnabled} onRemove={removeDrillPack} />
-      )}
 
       {nav.screen === 'advanced-setup' && (
         <AdvancedTestSetup allQuestions={allQuestions}

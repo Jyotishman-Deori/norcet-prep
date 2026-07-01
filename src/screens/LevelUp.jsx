@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
-  ListOrdered, Network, Package, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
+  ListOrdered, Network, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -341,16 +341,6 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
             })}
           </div>
         </Card>
-
-        {/* Drill Packs — import / manage extra content for the games (moved here
-            from Drill Tests, since the games it feeds now live in Level Up). */}
-        <button onClick={() => onNavigate({ screen: 'drill-packs' })}
-                className="no-tap-highlight w-full flex items-center gap-2.5 mt-5 px-3 py-2.5 rounded-xl active:scale-[0.99] transition"
-                style={{ background: T.surfaceWarm, border: `1px dashed ${T.border}` }}>
-          <Package size={15} style={{ color: T.muted }} />
-          <span className="text-[12.5px] font-medium" style={{ color: T.inkSoft }}>Drill Packs — import &amp; manage extra content</span>
-          <ChevronRight size={16} style={{ color: T.muted }} className="ml-auto" />
-        </button>
 
       </PageContainer>
 

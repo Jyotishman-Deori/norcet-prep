@@ -61,6 +61,10 @@ export default function PullToRefresh({ onRefresh, disabled = false }) {
     const onStart = (e) => {
       if (disabledRef.current || refreshingRef.current) { st.current.armed = false; return; }
       if (!e.touches || e.touches.length !== 1) { st.current.armed = false; return; }
+      // Any open modal/popup (note popup, picker, confirm, rename, feedback,
+      // help…) sets aria-modal — never arm pull-to-refresh underneath it, so
+      // scrolling inside a popup can't trigger an unwanted refresh gesture.
+      if (typeof document !== 'undefined' && document.querySelector('[aria-modal="true"]')) { st.current.armed = false; return; }
       const t = e.touches[0];
       if (t.target && t.target.closest && t.target.closest('[data-no-ptr]')) { st.current.armed = false; return; }
       st.current.startY = t.clientY;

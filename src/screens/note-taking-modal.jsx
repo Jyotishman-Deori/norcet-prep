@@ -21,7 +21,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   X, Check, Copy, Save, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown,
-  Info, Sparkles, Pencil, BookOpen, Trash2, Wand2,
+  Info, Sparkles, Pencil, BookOpen, Trash2, Wand2, SlidersHorizontal,
+  Pin, Sparkle,
 } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -35,6 +36,7 @@ import {
 import {
   loadNotes, saveNotes, clearNotes, loadAiInterest, saveAiInterest,
   loadCompanionName, saveCompanionName, loadNotesAutoSave, saveNotesAutoSave,
+  loadShowFab, saveShowFab,
 } from '../lib/notes-store.js';
 import {
   NAME_MAX, SUGGESTIONS, sanitizeName, pickSuggestion, greetingFor, GUIDE, personalize,
@@ -124,6 +126,9 @@ function NoteModal({ onClose }) {
   const [confirmingExit, setConfirmingExit] = useState(false);
   const [notice, setNotice] = useState('');
   const [vote, setVote] = useState(null);                // 'up' | 'down' | null
+  const [voteReply, setVoteReply] = useState(null);      // session-only casual reply after a fresh vote
+  const [menuOpen, setMenuOpen] = useState(false);       // mini-settings panel
+  const [showFab, setShowFab] = useState(false);         // floating-button pref (seeded from storage)
 
   const wide = useRef(isWideScreen()).current;
   const reduced = useRef(prefersReduced()).current;
@@ -137,15 +142,17 @@ function NoteModal({ onClose }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      const [b, nm, as, v] = await Promise.all([
+      const [b, nm, as, v, fab] = await Promise.all([
         loadNotes(profileId),
         loadCompanionName(profileId),
         loadNotesAutoSave(profileId),
         loadAiInterest(profileId),
+        loadShowFab(profileId),
       ]);
       if (!alive) return;
       if (b.length) { setText(b.join('\n')); setSavedBullets(b); }
       setAutoSave(as);
+      setShowFab(!!fab);
       if (v) { setVote(v); sentVoteRef.current = v; } // seed: don't re-send the stored vote
       if (nm) {
         setName(nm);
@@ -270,6 +277,15 @@ function NoteModal({ onClose }) {
     saveNotesAutoSave(profileId, next);
   };
 
+  // Floating-button pref — persists AND live-mounts/unmounts the FAB via the
+  // window event the app root listens for (saveShowFab dispatches it).
+  const onToggleFab = () => {
+    const next = !showFab;
+    setShowFab(next);
+    buzz(6);
+    saveShowFab(profileId, next);
+  };
+
   const doClear = async () => {
     await clearNotes(profileId);
     setText('');
@@ -282,6 +298,9 @@ function NoteModal({ onClose }) {
   const castVote = (v) => {
     if (v === vote) return;
     setVote(v);
+    // Warm casual reply for the rest of THIS session; on the next open `vote`
+    // is non-null so neither the survey nor this reply renders.
+    setVoteReply(v === 'up' ? 'Noted — thanks, friend! 🙌' : 'Fair enough — noted! 👍');
     buzz(8);
     saveAiInterest(profileId, v);
     // Only emit the shared signal when the vote actually CHANGED from the last
@@ -365,19 +384,25 @@ function NoteModal({ onClose }) {
 
         {view === 'picker' && (
           <PickerView
-            T={T} dIdx={dIdx} levelId={levelId} strategyId={strategyId}
+            T={T} reduced={reduced} dIdx={dIdx} levelId={levelId} strategyId={strategyId}
             strategies={strategies}
             onDesignation={onDesignationChange}
             onLevel={setLevelId} onStrategy={setStrategyId}
+            onApplyRecommended={() => {
+              onDesignationChange(DEFAULT_DESIGNATION_INDEX);
+              setLevelId(DEFAULT_LEVEL_ID);
+              setStrategyId(DEFAULT_STRATEGY_ID);
+              buzz(8);
+            }}
             onBack={() => setView('notes')} onConfirm={confirmPicker} />
         )}
 
         {view === 'notes' && (
           <NotesView
-            T={T} name={name} greeting={greeting}
+            T={T} reduced={reduced} name={name} greeting={greeting}
             text={text} setText={setText} onTextKeyDown={onTextKeyDown}
-            editing={editing} onEdit={() => setEditing(true)}
-            rawCount={rawCount} overCap={overCap}
+            editing={editing} setEditing={setEditing}
+            bulletCount={bullets.length} overCap={overCap}
             mode={mode} setDirect={() => setMode('direct')} enterEffective={enterEffective}
             effectiveReady={effectiveReady}
             designation={DESIGNATIONS[dIdx]} level={LEVELS.find((l) => l.id === levelId)}
@@ -386,11 +411,14 @@ function NoteModal({ onClose }) {
             canCopy={canCopy} copyState={copyState} storeState={storeState}
             doCopy={doCopy} doStore={doStore} pop={pop}
             manualCopy={manualCopy} dismissManual={() => setManualCopy('')}
-            vote={vote} castVote={castVote}
+            vote={vote} voteReply={voteReply} castVote={castVote}
             autoSave={autoSave} onToggleAutoSave={onToggleAutoSave}
+            showFab={showFab} onToggleFab={onToggleFab}
+            menuOpen={menuOpen} setMenuOpen={setMenuOpen}
             hasStored={savedBullets.length > 0}
             onClearRequest={() => setClearing(true)}
             onRename={onRename} onGuide={() => setView('guide')}
+            onSetupPrompt={() => { setMode('effective'); setView('picker'); }}
             onClose={attemptClose} />
         )}
 
@@ -610,8 +638,6 @@ function GuideView({ T, name, onBack }) {
           </div>
           <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>How it works &amp; what to know</div>
         </div>
-        {/* BookOpen accent — visible reminder this is the guide */}
-        <BookOpen size={17} style={{ color: T.primary, opacity: 0.7, flexShrink: 0 }} aria-hidden="true" />
       </div>
 
       <div className="px-5 pt-4 pb-5 overflow-y-auto overscroll-contain flex-1 min-h-0"
@@ -646,24 +672,44 @@ function GuideView({ T, name, onBack }) {
 }
 
 // =====================================================================
-// NOTES VIEW — title(name)+greeting, edit-gated textarea, mode toggle,
-// auto-save toggle, feedback row, Edit/Store + Copy footer.
+// NOTES VIEW — title(name)+greeting, mini-settings gear, bullet-gutter
+// textarea, mode toggle, feedback row (once), Store + Copy footer.
 // =====================================================================
 function NotesView({
-  T, name, greeting, text, setText, onTextKeyDown,
-  editing, onEdit, rawCount, overCap,
+  T, reduced, name, greeting, text, setText, onTextKeyDown,
+  editing, setEditing, bulletCount, overCap,
   mode, setDirect, enterEffective, effectiveReady,
   designation, level, strategy, editOptions,
   canCopy, copyState, storeState, doCopy, doStore, pop,
-  manualCopy, dismissManual, vote, castVote,
-  autoSave, onToggleAutoSave, hasStored, onClearRequest,
-  onRename, onGuide, onClose,
+  manualCopy, dismissManual, vote, voteReply, castVote,
+  autoSave, onToggleAutoSave, showFab, onToggleFab,
+  menuOpen, setMenuOpen,
+  hasStored, onClearRequest,
+  onRename, onGuide, onSetupPrompt, onClose,
 }) {
-  const shownCount = Math.min(rawCount, MAX_BULLETS);
+  const leftBullets = Math.max(0, MAX_BULLETS - bulletCount);
+  const atCap = leftBullets === 0;
+  const menuRef = useRef(null);
+  const gearRef = useRef(null);
+
+  // Dismiss the mini-settings panel by tapping anywhere else in the modal.
+  // The gear button is EXCLUDED: this capture-phase listener fires before the
+  // gear's own onClick, and closing here would make the click's toggle re-open
+  // the menu — turning the gear into a one-way "open" switch.
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+    const onDocPointer = (e) => {
+      if (gearRef.current && gearRef.current.contains(e.target)) return;
+      if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+    };
+    document.addEventListener('pointerdown', onDocPointer, true);
+    return () => document.removeEventListener('pointerdown', onDocPointer, true);
+  }, [menuOpen, setMenuOpen]);
+
   return (
     <>
-      {/* header — companion name (title) + greeting; pencil rename, guide, close */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
+      {/* header — companion name (title) + greeting; pencil rename, gear, close */}
+      <div className="relative flex items-center justify-between px-4 pt-4 pb-3 flex-shrink-0"
            style={{ borderBottom: `1px solid ${T.borderSoft}` }}>
         {/* left: icon + name + greeting */}
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -694,12 +740,13 @@ function NotesView({
             )}
           </div>
         </div>
-        {/* right: guide + close — each 44×44 */}
+        {/* right: mini-settings gear + close — each 44×44 */}
         <div className="flex items-center gap-0 flex-shrink-0 ml-1">
-          <button onClick={onGuide} aria-label="Open the guide"
-                  className="no-tap-highlight flex items-center justify-center rounded-xl active:bg-black/8 transition-colors"
-                  style={{ width: 44, height: 44 }}>
-            <BookOpen size={17} style={{ color: T.muted }} aria-hidden="true" />
+          <button ref={gearRef} onClick={() => setMenuOpen((v) => !v)} aria-label="Notebook settings"
+                  aria-haspopup="true" aria-expanded={menuOpen}
+                  className={"no-tap-highlight flex items-center justify-center rounded-xl active:bg-black/8 transition-colors" + (reduced ? '' : ' note-press')}
+                  style={{ width: 44, height: 44, background: menuOpen ? T.surfaceWarm : 'transparent' }}>
+            <SlidersHorizontal size={17} style={{ color: menuOpen ? T.primary : T.muted }} aria-hidden="true" />
           </button>
           <button onClick={onClose} aria-label="Close notes"
                   className="no-tap-highlight flex items-center justify-center rounded-xl active:bg-black/8 transition-colors"
@@ -707,6 +754,50 @@ function NotesView({
             <X size={18} style={{ color: T.muted }} aria-hidden="true" />
           </button>
         </div>
+
+        {/* mini-settings panel — spring-expands from the gear; tap outside (via
+            the pointerdown listener above) or a row action dismisses it. */}
+        {menuOpen && (
+          <div ref={menuRef}
+               className={"absolute right-4 top-[calc(100%+6px)] z-20 w-[260px] rounded-2xl overflow-hidden" + (reduced ? '' : ' note-menu-in')}
+               style={{
+                 background: T.surface,
+                 border: `1px solid ${T.border}`,
+                 boxShadow: '0 18px 44px rgba(0,0,0,0.28), 0 4px 14px rgba(0,0,0,0.14)',
+               }}
+               role="menu" aria-label="Notebook settings">
+            <SettingsRow T={T} reduced={reduced} icon={<Pencil size={15} />} label="Edit"
+                         sublabel={editing ? 'On — the notebook is editable' : 'Off — read-only until you turn this on'}
+                         type="switch" on={editing}
+                         onClick={() => { setEditing(!editing); setMenuOpen(false); }} />
+            <SettingsRow T={T} reduced={reduced} icon={<Save size={15} />} label="Auto-save on close"
+                         sublabel={autoSave ? 'On — saves automatically when you close' : 'Off — use the Store button to save'}
+                         type="switch" on={autoSave}
+                         onClick={onToggleAutoSave} />
+            <SettingsRow T={T} reduced={reduced} icon={<Sparkles size={15} />} label="Set up AI study prompt"
+                         sublabel="Designation, level & strategy"
+                         type="nav"
+                         onClick={() => { setMenuOpen(false); onSetupPrompt(); }} />
+            <SettingsRow T={T} reduced={reduced} icon={<BookOpen size={15} />} label="Guide"
+                         sublabel="How it works & what to know"
+                         type="nav"
+                         onClick={() => { setMenuOpen(false); onGuide(); }} />
+            <SettingsRow T={T} reduced={reduced} icon={<Sparkle size={15} />} label="Floating button"
+                         sublabel={showFab ? 'On — a draggable shortcut floats on screen' : 'Off — open notes from the top bar only'}
+                         type="switch" on={showFab}
+                         onClick={onToggleFab} />
+            {/* informational row — not interactive, explains the fixed icon can't be hidden */}
+            <div className="flex items-center gap-2.5 px-3.5 py-3" role="note" aria-label="Fixed button is always on">
+              <Pin size={15} style={{ color: T.muted, flexShrink: 0 }} aria-hidden="true" />
+              <div className="min-w-0 text-left">
+                <div className="text-xs font-medium" style={{ color: T.muted }}>Fixed button — always on</div>
+                <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted, opacity: 0.85 }}>
+                  The top-bar note icon can&apos;t be turned off
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* scrollable body */}
@@ -723,44 +814,60 @@ function NotesView({
           <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
             Your notes &middot; one per line
           </div>
-          <div className="text-xs font-semibold px-1.5 py-0.5 rounded-md tabular-nums"
+          <div key={leftBullets}
+               className={"text-xs font-semibold px-1.5 py-0.5 rounded-md tabular-nums" + (reduced ? '' : ' note-count-tick')}
                style={{
-                 color: overCap ? T.accent : (shownCount >= MAX_BULLETS - 1 ? T.inkSoft : T.muted),
-                 background: overCap ? T.accent + '15' : 'transparent',
+                 color: atCap ? T.accent : (leftBullets <= 1 ? T.inkSoft : T.muted),
+                 background: atCap ? T.accent + '15' : 'transparent',
                }}
                aria-live="polite" aria-atomic="true"
-               aria-label={`${shownCount} of ${MAX_BULLETS} notes`}>
-            {shownCount}/{MAX_BULLETS}
+               aria-label={atCap ? 'All 10 notes used' : `${leftBullets} of ${MAX_BULLETS} notes left`}>
+            {atCap ? 'All 10 used' : `${leftBullets} left`}
           </div>
         </div>
 
-        {/* edit-gated textarea: read-only until the user taps Edit.
+        {/* edit-gated textarea: read-only until the user turns Edit on (Settings).
             VIEW mode:  muted surface, dashed border, lock-cursor — clearly "not interactive".
-            EDIT mode:  white/bg surface, solid border, highlights on focus — clearly active. */}
-        <div className="relative">
+            EDIT mode:  white/bg surface, solid border, highlights on focus — clearly active.
+            A bullet gutter sits behind the textarea, one "•" per line, synced on
+            input AND scroll — the real <textarea> stays fully interactive so
+            paste/IME/every character still works exactly as before. */}
+        {/* The box FILL lives on this wrapper (not the textarea) so the
+            BulletGutter mirror behind the transparent textarea stays visible. */}
+        <div className="relative rounded-xl"
+             style={{ background: editing ? T.bg : T.surfaceWarm, transition: 'background 180ms' }}>
+          <BulletGutter T={T} reduced={reduced} text={text} editing={editing} />
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={onTextKeyDown}
+            onScroll={(e) => syncGutterScroll(e.currentTarget)}
             readOnly={!editing}
             data-autofocus={editing ? true : undefined}
             aria-label="Your study notes, one per line, up to 10"
             aria-readonly={!editing}
-            aria-describedby={overCap ? 'notes-overcap-msg' : undefined}
+            aria-describedby={overCap ? 'notes-overcap-msg' : 'notes-bullet-hint'}
             placeholder={editing
-              ? "• Type or paste a topic, word, or question\n• One note per line\n• Up to 10 notes"
-              : (text ? '' : 'No notes yet — tap Edit to start.')}
+              ? "Type or paste a topic, word, or question\nOne note per line\nUp to 10 notes"
+              : (text ? '' : 'No notes yet — turn on Edit in settings to start.')}
             rows={7}
-            className="w-full rounded-xl px-3.5 py-3 text-sm resize-none leading-relaxed"
+            className="note-ta-nosb relative w-full rounded-xl pr-3.5 py-3 text-sm resize-none leading-relaxed"
             style={{
-              background: editing ? T.bg : T.surfaceWarm,
+              background: 'transparent',   // fill is on the wrapper — keeps the gutter visible
               border: editing
                 ? `1.5px solid ${overCap ? T.accent : T.border}`
                 : `1.5px dashed ${T.border}`,
               color: editing ? T.ink : T.inkSoft,
               whiteSpace: 'pre-wrap',
+              // Parity with the BulletGutter mirror: identical wrap rule, and the
+              // scrollbar is hidden (scroll still works) so a classic desktop
+              // scrollbar can't shrink the wrap width relative to the mirror.
+              overflowWrap: 'break-word',
+              scrollbarWidth: 'none',
               outline: 'none',
               cursor: editing ? 'text' : 'default',
+              paddingLeft: BULLET_GUTTER_WIDTH,
+              lineHeight: BULLET_LINE_HEIGHT + 'px',
               transition: 'background 180ms, border-color 180ms, color 180ms',
             }}
             onFocus={(e) => {
@@ -793,6 +900,15 @@ function NotesView({
             Only the first {MAX_BULLETS} notes will be used.
           </div>
         )}
+        {atCap && (
+          <div className="text-xs mt-1.5 px-1 flex items-center gap-1" style={{ color: T.accent }}>
+            <span aria-hidden="true">&#x26A0;</span>
+            All 10 used — remove one to add more.
+          </div>
+        )}
+        <div id="notes-bullet-hint" className="text-[11px] mt-1.5 px-1" style={{ color: T.muted }}>
+          Fewer, sharper notes get the best results.
+        </div>
 
         {/* clear / start-fresh — only when editing and there is something stored */}
         {editing && hasStored && (
@@ -812,9 +928,9 @@ function NotesView({
           <div className="flex-1 h-px" style={{ background: T.borderSoft }} aria-hidden="true" />
         </div>
         <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Copy mode">
-          <ModeChip T={T} active={mode === 'direct'} onClick={setDirect}
+          <ModeChip T={T} reduced={reduced} active={mode === 'direct'} onClick={setDirect}
                     title="Direct" subtitle="Notes exactly as written" icon={<Copy size={15} />} />
-          <ModeChip T={T} active={mode === 'effective'} onClick={enterEffective}
+          <ModeChip T={T} reduced={reduced} active={mode === 'effective'} onClick={enterEffective}
                     title="Effective" subtitle="Wrapped in an AI study prompt" icon={<Sparkles size={15} />} />
         </div>
 
@@ -863,72 +979,46 @@ function NotesView({
           </div>
         )}
 
-        {/* auto-save toggle */}
-        <button onClick={onToggleAutoSave} role="switch" aria-checked={autoSave}
-                className="no-tap-highlight w-full mt-4 flex items-center justify-between gap-3 px-3.5 py-3.5 rounded-xl active:scale-[0.99] transition"
-                style={{
-                  background: autoSave ? T.success + '0C' : T.surfaceWarm,
-                  border: `1px solid ${autoSave ? T.success + '40' : T.borderSoft}`,
-                  transition: 'background 220ms, border-color 220ms',
-                }}
-                aria-label="Auto-save on close">
-          <div className="min-w-0 text-left">
-            <div className="text-sm font-medium" style={{ color: T.ink }}>Auto-save on close</div>
-            <div className="text-xs mt-0.5 leading-snug" style={{ color: T.muted }}>
-              {autoSave ? 'On — notes save automatically when you close' : 'Off — use the Store button to save'}
+        {/* feedback row (spec Section 12) — shows ONCE (until voted). After a
+            fresh vote it spring-swaps to a casual reply for the rest of THIS
+            session; on the next open `vote` is already set so nothing renders. */}
+        {vote === null ? (
+          <div className="mt-4 mb-2 flex items-center justify-between gap-3 px-3.5 py-3.5 rounded-xl"
+               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}
+               role="group" aria-label="AI interest survey">
+            <div className="text-xs leading-snug flex-1" style={{ color: T.inkSoft }}>
+              Would you like to <strong style={{ color: T.ink }}>chat with an AI inside this app</strong> in the future?
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label="Vote">
+              <VoteButton T={T} active={false} onClick={() => castVote('up')}
+                          icon={<ThumbsUp size={16} aria-hidden="true" />} label="Yes, I'd like in-app AI chat" tone="up" />
+              <VoteButton T={T} active={false} onClick={() => castVote('down')}
+                          icon={<ThumbsDown size={16} aria-hidden="true" />} label="Not interested in in-app AI chat" tone="down" />
             </div>
           </div>
-          {/* pill track */}
-          <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0 no-transition"
-               style={{ background: autoSave ? T.success : T.border, transition: 'background 220ms' }}>
-            <div className="w-5 h-5 rounded-full bg-white no-transition"
-                 style={{
-                   transform: autoSave ? 'translateX(20px)' : 'translateX(0)',
-                   transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)',
-                   boxShadow: '0 1px 4px rgba(0,0,0,0.22)',
-                 }} />
+        ) : voteReply && (
+          <div className={"mt-4 mb-2 flex items-center gap-2.5 px-3.5 py-3.5 rounded-xl" + (reduced ? '' : ' note-reply-in')}
+               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}
+               role="status" aria-live="polite">
+            <span className="text-sm leading-snug" style={{ color: T.inkSoft }}>{voteReply}</span>
           </div>
-        </button>
-
-        {/* feedback row (spec Section 12) */}
-        <div className="mt-4 mb-2 flex items-center justify-between gap-3 px-3.5 py-3.5 rounded-xl"
-             style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}
-             role="group" aria-label="AI interest survey">
-          <div className="text-xs leading-snug flex-1" style={{ color: T.inkSoft }}>
-            Would you like to <strong style={{ color: T.ink }}>chat with an AI inside this app</strong> in the future?
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0" role="group" aria-label="Vote">
-            <VoteButton T={T} active={vote === 'up'} onClick={() => castVote('up')}
-                        icon={<ThumbsUp size={16} aria-hidden="true" />} label="Yes, I'd like in-app AI chat" tone="up" />
-            <VoteButton T={T} active={vote === 'down'} onClick={() => castVote('down')}
-                        icon={<ThumbsDown size={16} aria-hidden="true" />} label="Not interested in in-app AI chat" tone="down" />
-          </div>
-        </div>
+        )}
       </div>
 
-      {/* pinned footer — Edit (view mode) or Store (edit mode) + Copy */}
+      {/* pinned footer — Store + Copy (Edit now lives in the mini-settings menu) */}
       <div className="flex gap-2.5 px-5 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
-        {editing ? (
-          <button onClick={doStore}
-                  className={"no-tap-highlight flex-[1.35] inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-transform" + pop(storeState)}
-                  style={{
-                    background: storeState === 'done' ? T.success : T.primary,
-                    color: '#FFF',
-                    boxShadow: `0 4px 16px ${(storeState === 'done' ? T.success : T.primary)}55`,
-                    minHeight: 48,
-                  }}
-                  aria-label="Store notes on this device">
-            {storeState === 'done' ? <Check size={16} aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
-            {storeState === 'done' ? 'Stored' : 'Store'}
-          </button>
-        ) : (
-          <button onClick={onEdit}
-                  className="no-tap-highlight flex-[1.35] inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
-                  style={{ background: T.primary, color: '#FFF', boxShadow: `0 4px 16px ${T.primary}55`, minHeight: 48 }}
-                  aria-label="Edit your notes">
-            <Pencil size={16} aria-hidden="true" /> Edit
-          </button>
-        )}
+        <button onClick={doStore}
+                className={"no-tap-highlight flex-[1.35] inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-transform" + pop(storeState)}
+                style={{
+                  background: storeState === 'done' ? T.success : T.primary,
+                  color: '#FFF',
+                  boxShadow: `0 4px 16px ${(storeState === 'done' ? T.success : T.primary)}55`,
+                  minHeight: 48,
+                }}
+                aria-label="Store notes on this device">
+          {storeState === 'done' ? <Check size={16} aria-hidden="true" /> : <Save size={16} aria-hidden="true" />}
+          {storeState === 'done' ? 'Stored' : 'Store'}
+        </button>
         <button onClick={doCopy} disabled={!canCopy}
                 className={"no-tap-highlight flex-1 inline-flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition-transform disabled:opacity-35 disabled:cursor-not-allowed" + pop(copyState)}
                 style={{
@@ -946,24 +1036,123 @@ function NotesView({
   );
 }
 
-function ModeChip({ T, active, onClick, title, subtitle, icon }) {
+// Compact settings row — used inside the mini-settings panel. Two flavours:
+// 'switch' (a togglable pref, pill track) and 'nav' (navigates to another
+// view). Full-width, 44px+ tall, single tap target, ARIA role matches type.
+function SettingsRow({ T, reduced, icon, label, sublabel, type, on, onClick }) {
+  return (
+    <button onClick={onClick}
+            role={type === 'switch' ? 'switch' : 'menuitem'}
+            aria-checked={type === 'switch' ? !!on : undefined}
+            aria-label={label}
+            className={"no-tap-highlight w-full flex items-center gap-2.5 px-3.5 py-3 text-left active:bg-black/5 transition-colors" + (reduced ? '' : ' note-press')}
+            style={{ minHeight: 44, borderBottom: `1px solid ${T.borderSoft}` }}>
+      <span style={{ color: T.muted, flexShrink: 0 }} aria-hidden="true">{icon}</span>
+      <div className="min-w-0 flex-1">
+        <div className="text-xs font-semibold" style={{ color: T.ink }}>{label}</div>
+        {sublabel && (
+          <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted }}>{sublabel}</div>
+        )}
+      </div>
+      {type === 'switch' ? (
+        <div className="w-9 h-5 rounded-full p-0.5 flex-shrink-0 no-transition"
+             style={{ background: on ? T.success : T.border, transition: 'background 220ms' }}
+             aria-hidden="true">
+          <div className="w-4 h-4 rounded-full bg-white no-transition"
+               style={{
+                 transform: on ? 'translateX(16px)' : 'translateX(0)',
+                 transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)',
+                 boxShadow: '0 1px 3px rgba(0,0,0,0.22)',
+               }} />
+        </div>
+      ) : (
+        <ChevronRight size={15} style={{ color: T.muted, flexShrink: 0 }} aria-hidden="true" />
+      )}
+    </button>
+  );
+}
+
+// ── Bullet-gutter overlay ───────────────────────────────────────────────────
+// A full MIRROR of the textarea's box: same border thickness (transparent),
+// padding, font size, line-height and wrap rules, with each logical line's
+// text rendered INVISIBLY. Soft-wrapped lines therefore occupy exactly the
+// same height as in the textarea, so every "•" pins to the FIRST visual row
+// of its line and never drifts, no matter how long a note wraps. Purely
+// visual (pointer-events: none); the real <textarea> stays the sole source of
+// truth for text/selection/paste/IME. Scroll-synced imperatively
+// (syncGutterScroll) — total heights match because the wrap points match.
+const BULLET_GUTTER_WIDTH = 30;   // px — matches the textarea's left padding
+const BULLET_LINE_HEIGHT = 22;    // px — must equal the textarea's line-height
+
+function BulletGutter({ T, reduced, text, editing }) {
+  const lines = (typeof text === 'string' ? text : '').split(/\r?\n/);
+  // Always show at least one bullet placeholder line so an empty notebook
+  // still reads as "line 1 is ready to type".
+  const rows = lines.length ? lines : [''];
+
+  return (
+    <div data-note-gutter="true" aria-hidden="true"
+         className="absolute inset-0 pointer-events-none select-none overflow-hidden text-sm"
+         style={{
+           // Mirror the textarea's box model exactly — its 1.5px border is
+           // reproduced transparently so the content column is identical and
+           // the invisible text wraps at the same points.
+           border: '1.5px solid transparent',
+           borderRadius: 12,
+           padding: `12px 14px 12px ${BULLET_GUTTER_WIDTH}px`,
+           lineHeight: BULLET_LINE_HEIGHT + 'px',
+           whiteSpace: 'pre-wrap',
+           overflowWrap: 'break-word',
+         }}>
+      {rows.map((line, i) => (
+        <div key={i} className={reduced ? '' : 'note-bullet-in'} style={{ position: 'relative' }}>
+          <span style={{
+            position: 'absolute', left: -BULLET_GUTTER_WIDTH, top: 0,
+            width: BULLET_GUTTER_WIDTH, textAlign: 'center',
+            fontSize: 13, lineHeight: BULLET_LINE_HEIGHT + 'px',
+            color: editing ? T.primary : T.muted,
+            opacity: line.trim() ? 1 : 0.28,
+          }}>&#8226;</span>
+          {/* invisible copy of the line — forces the identical soft-wrap height */}
+          <span style={{ visibility: 'hidden' }}>{line || ' '}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Imperative scroll-sync: the gutter is a sibling absolutely positioned behind
+// the textarea, so it needs its own scrollTop nudged to match on every scroll
+// event (a plain CSS solution can't reach across sibling elements).
+function syncGutterScroll(textareaEl) {
+  try {
+    const wrap = textareaEl.parentElement;
+    const gutter = wrap && wrap.querySelector('[data-note-gutter="true"]');
+    if (gutter) gutter.scrollTop = textareaEl.scrollTop;
+  } catch (e) {}
+}
+
+function ModeChip({ T, reduced, active, onClick, title, subtitle, icon }) {
   return (
     <button onClick={onClick} role="radio" aria-checked={active}
-            className="no-tap-highlight text-left px-3.5 py-3 rounded-xl active:scale-[0.98] transition"
+            className={"no-tap-highlight text-left px-3.5 py-3 rounded-xl active:scale-[0.98] transition" + (active && !reduced ? ' note-select-pop' : '')}
             style={{
-              background: active ? T.primary + '14' : T.bg,
+              background: active ? T.primary : T.bg,
               border: `1.5px solid ${active ? T.primary : T.border}`,
-              boxShadow: active ? `inset 0 1px 0 ${T.primary}20` : 'none',
+              boxShadow: active ? `0 2px 10px ${T.primary}35` : 'none',
               minHeight: 62,
             }}>
-      <div className="flex items-center gap-1.5 mb-1" style={{ color: active ? T.primary : T.inkSoft }}>
+      <div className="flex items-center gap-1.5 mb-1" style={{ color: active ? '#FFF' : T.inkSoft }}>
         <span aria-hidden="true">{icon}</span>
         <span className="text-sm font-semibold">{title}</span>
         {active && (
-          <span className="ml-auto w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: T.primary }} aria-hidden="true" />
+          <span className="ml-auto flex items-center justify-center rounded-full flex-shrink-0"
+                style={{ width: 16, height: 16, background: 'rgba(255,255,255,0.25)' }} aria-hidden="true">
+            <Check size={11} style={{ color: '#FFF' }} />
+          </span>
         )}
       </div>
-      <div className="text-xs leading-snug" style={{ color: active ? T.inkSoft : T.muted }}>{subtitle}</div>
+      <div className="text-xs leading-snug" style={{ color: active ? 'rgba(255,255,255,0.85)' : T.muted }}>{subtitle}</div>
     </button>
   );
 }
@@ -988,7 +1177,23 @@ function VoteButton({ T, active, onClick, icon, label, tone }) {
 // =====================================================================
 // PICKER VIEW — Designation / My Level / Strategy (spec Sections 8–10).
 // =====================================================================
-function PickerView({ T, dIdx, levelId, strategyId, strategies, onDesignation, onLevel, onStrategy, onBack, onConfirm }) {
+function PickerView({
+  T, reduced, dIdx, levelId, strategyId, strategies,
+  onDesignation, onLevel, onStrategy, onApplyRecommended, onBack, onConfirm,
+}) {
+  const [applied, setApplied] = useState(false);
+  const applyTimer = useRef(null);
+  useEffect(() => () => { if (applyTimer.current) clearTimeout(applyTimer.current); }, []);
+
+  const selectedStrategy = strategies.find((s) => s.id === strategyId) || strategies[0];
+
+  const handleApplyRecommended = () => {
+    onApplyRecommended();
+    setApplied(true);
+    if (applyTimer.current) clearTimeout(applyTimer.current);
+    applyTimer.current = setTimeout(() => setApplied(false), 900);
+  };
+
   return (
     <>
       <div className="flex items-center gap-3 px-4 pt-5 pb-3 flex-shrink-0">
@@ -1005,85 +1210,75 @@ function PickerView({ T, dIdx, levelId, strategyId, strategies, onDesignation, o
       </div>
 
       <div className="px-5 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-        <div className="flex items-start gap-2 px-3 py-2.5 mb-5 rounded-xl text-xs leading-relaxed"
-             style={{ background: T.surfaceWarm, borderLeft: `3px solid ${T.border}` }}
-             role="note">
-          <Info size={13} className="flex-shrink-0 mt-0.5" style={{ color: T.muted }} aria-hidden="true" />
-          <span style={{ color: T.muted }}>
-            Not sure? The <strong style={{ color: T.inkSoft }}>Recommended</strong> picks work for almost any topic.
-          </span>
-        </div>
-
-        <FieldLabel T={T}>Designation</FieldLabel>
+        <FieldLabel T={T}>Your desired mentor&apos;s domain</FieldLabel>
         <div className="relative mb-5">
           <select value={dIdx} onChange={(e) => onDesignation(Number(e.target.value))}
-                  aria-label="Your designation or role"
+                  aria-label="Your desired mentor's domain"
                   className="w-full appearance-none rounded-xl px-3.5 py-3 pr-9 text-sm"
                   style={{ background: T.bg, border: `1.5px solid ${T.border}`, color: T.ink, outline: 'none' }}>
             {DESIGNATIONS.map((d, i) => (
-              <option key={d.id} value={i}>
-                {d.title}{d.recommended ? '  ★ Recommended' : ''}
-              </option>
+              <option key={d.id} value={i}>{d.title}</option>
             ))}
           </select>
           <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none"
                         style={{ color: T.muted }} aria-hidden="true" />
         </div>
 
-        <FieldLabel T={T}>My Level</FieldLabel>
-        <div className="grid grid-cols-3 gap-2 mb-5" role="radiogroup" aria-label="Your current level">
+        <FieldLabel T={T}>Your current understanding of the topics</FieldLabel>
+        <div className="grid grid-cols-3 gap-2 mb-5" role="radiogroup" aria-label="Your current understanding of the topics">
           {LEVELS.map((l) => {
             const active = l.id === levelId;
             return (
               <button key={l.id} onClick={() => onLevel(l.id)} role="radio" aria-checked={active}
-                      className="no-tap-highlight py-3 rounded-xl text-sm font-medium active:scale-95 transition"
+                      className={"no-tap-highlight py-3 rounded-xl text-sm font-medium active:scale-95 transition inline-flex items-center justify-center gap-1.5" + (active && !reduced ? ' note-select-pop' : '')}
                       style={{
-                        background: active ? T.primary + '14' : T.bg,
+                        background: active ? T.primary : T.bg,
                         border: `1.5px solid ${active ? T.primary : T.border}`,
-                        color: active ? T.primary : T.inkSoft,
-                        boxShadow: active ? `inset 0 1px 0 ${T.primary}20` : 'none',
+                        color: active ? '#FFF' : T.inkSoft,
+                        boxShadow: active ? `0 2px 10px ${T.primary}35` : 'none',
                         minHeight: 44,
                       }}>
-                {l.label}{l.recommended ? ' ★' : ''}
+                {active && <Check size={13} aria-hidden="true" />}
+                {l.label}
               </button>
             );
           })}
         </div>
 
-        <FieldLabel T={T}>Strategy</FieldLabel>
-        <div className="flex flex-col gap-2.5 mb-3" role="radiogroup" aria-label="Learning strategy">
-          {strategies.map((s) => {
-            const active = s.id === strategyId;
-            return (
-              <button key={s.id} onClick={() => onStrategy(s.id)} role="radio" aria-checked={active}
-                      className="no-tap-highlight text-left px-3.5 py-3.5 rounded-xl active:scale-[0.99] transition"
-                      style={{
-                        background: active ? T.primary + '0E' : T.bg,
-                        border: `1.5px solid ${active ? T.primary + '55' : T.border}`,
-                        boxShadow: active ? `inset 3px 0 0 ${T.primary}` : 'none',
-                      }}>
-                <div className="flex items-start gap-2 mb-1">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold" style={{ color: active ? T.primary : T.ink }}>
-                      {s.name.replace(/"/g, '')}
-                    </span>
-                    <span className="text-xs ml-1.5" style={{ color: T.muted }}>&middot; {s.subtitle}</span>
-                  </div>
-                  {s.recommended && (
-                    <span className="flex-shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
-                          style={{ background: T.success + '1F', color: T.success }}>
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>{s.howItWorks}</div>
-              </button>
-            );
-          })}
+        <FieldLabel T={T}>How do you want to approach the topics</FieldLabel>
+        <div className="relative mb-2">
+          <select value={strategyId} onChange={(e) => onStrategy(e.target.value)}
+                  aria-label="How do you want to approach the topics"
+                  className="w-full appearance-none rounded-xl px-3.5 py-3 pr-9 text-sm"
+                  style={{ background: T.bg, border: `1.5px solid ${T.border}`, color: T.ink, outline: 'none' }}>
+            {strategies.map((s) => (
+              <option key={s.id} value={s.id}>{s.name.replace(/"/g, '')} &middot; {s.subtitle}</option>
+            ))}
+          </select>
+          <ChevronRight size={16} className="absolute right-3 top-1/2 -translate-y-1/2 rotate-90 pointer-events-none"
+                        style={{ color: T.muted }} aria-hidden="true" />
         </div>
+        {selectedStrategy && (
+          <div className="text-xs leading-snug mb-5 px-1" style={{ color: T.muted }}>
+            {selectedStrategy.howItWorks}
+          </div>
+        )}
       </div>
 
-      <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+      <div className="px-5 py-4 flex-shrink-0 flex flex-col gap-2.5" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+        <button onClick={handleApplyRecommended}
+                className={"no-tap-highlight w-full inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold active:scale-95 transition-transform" + (applied && !reduced ? ' note-reco-pulse' : '')}
+                style={{
+                  background: 'transparent',
+                  color: T.primary,
+                  border: `1.5px solid ${T.primary}45`,
+                  minHeight: 46,
+                  '--reco-glow': `${T.primary}30`,
+                }}
+                aria-label="Apply the recommended designation, level and strategy">
+          {applied ? <Check size={15} aria-hidden="true" /> : <Sparkles size={15} aria-hidden="true" />}
+          {applied ? 'Recommended applied' : 'Recommended'}
+        </button>
         <button onClick={onConfirm}
                 className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold active:scale-95 transition-transform"
                 style={{ background: T.primary, color: '#FFF', boxShadow: `0 4px 16px ${T.primary}55`, minHeight: 48 }}

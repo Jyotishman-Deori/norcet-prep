@@ -196,14 +196,14 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
           <div className="font-display text-lg lg:text-xl truncate" style={{ color: T.ink }}>{title}</div>
         </div>
         <div className="flex items-center gap-1.5">
+          {/* AI Learning Notes — FIRST (leftmost) action so it holds the same
+              slot on every screen regardless of which other actions are present.
+              Home has a custom header that renders <NoteButton/> too. */}
+          <NoteButton />
           {/* FAV — heart on favoritable sections (registry-gated; renders
               nothing for ids outside lib/favorites.js). */}
           {favId && <FavHeart favId={favId} />}
           {right}
-          {/* AI Learning Notes — fixed access point on every screen that uses
-              TopBar. The draggable floating button (note-fab.jsx) covers the
-              few custom-header screens (e.g. Home) that don't render TopBar. */}
-          <NoteButton />
           {feedback && !feedback.noHelp && <HelpButton screen={feedback.screen} />}
           {feedback && (
             <FeedbackButton screen={feedback.screen} questionId={feedback.questionId}
@@ -276,4 +276,4 @@ function HelpButton({ screen }) {
   );
 }
 
-export { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar };
+export { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar, NoteButton };

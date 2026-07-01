@@ -19,7 +19,7 @@ import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { progress as luProgress, tierFor as luTierFor, normalizeLevelup } from '../lib/levelup.js';
 import { pushNotification } from '../lib/notifications.js';
-import { Card, Button, requestConfirm } from '../ui/primitives.jsx';
+import { Card, Button, requestConfirm, NoteButton } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
 import FavStrip from '../ui/fav-strip.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
@@ -504,6 +504,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               </button>
             </Tip>
             <div className="flex items-center gap-1">
+              {/* AI Learning Notes — fixed access point on Home (custom header,
+                  not the shared TopBar). Same leftmost slot as elsewhere. */}
+              <NoteButton />
               {onOpenNotifications && (
                 <Tip title="Today" text="Your daily briefing — what's due for revision, reminders, fresh achievements and study insights.">
                 <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
