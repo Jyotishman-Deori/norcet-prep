@@ -346,6 +346,20 @@ function NoteModal({ onClose }) {
   const dialogRef = useFocusTrap(attemptClose);
   const pop = (state) => (state === 'done' && !reduced ? ' note-pop' : '');
 
+  // Ghost-click guard. Opening from the floating button fires on pointerup;
+  // the browser then dispatches its follow-up click at the SAME coordinates,
+  // hit-tested against the JUST-MOUNTED popup. Wherever the finger sat outside
+  // the panel's footprint, that ghost click landed on this backdrop and closed
+  // the popup within a frame ("the button only works inside a rectangle").
+  // Ignore backdrop clicks in the first moments after mount, and only honour
+  // clicks that genuinely target the backdrop itself.
+  const openedAtRef = useRef(Date.now());
+  const onBackdropClick = (e) => {
+    if (e.target !== e.currentTarget) return;
+    if (Date.now() - openedAtRef.current < 450) return;
+    attemptClose();
+  };
+
   // --- shared bits ---------------------------------------------------------
   const enterAnim = reduced ? '' : (wide ? ' anim-scalein' : ' sheet-up');
   const panelRadius = wide ? 'rounded-3xl' : 'rounded-t-3xl';
@@ -353,7 +367,7 @@ function NoteModal({ onClose }) {
   return (
     <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center sm:p-4"
          style={{ background: 'rgba(0,0,0,0.55)' }}
-         onClick={attemptClose}>
+         onClick={onBackdropClick}>
       <div onClick={(e) => e.stopPropagation()}
            ref={dialogRef} role="dialog" aria-modal="true" aria-label={name || 'Study notes'}
            className={`relative w-full sm:max-w-[600px] lg:max-w-[640px] flex flex-col overflow-hidden ${panelRadius}${enterAnim}`}

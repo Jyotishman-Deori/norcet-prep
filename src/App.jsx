@@ -205,6 +205,8 @@ import DoubtsScreen from './screens/doubts.jsx';
 const FAQScreen = lazy(() => import('./screens/faq.jsx'));
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
+// Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
+const PremiumScreen = lazy(() => import('./screens/premium.jsx'));
 // [A1 slice 36] CoverageMap extracted (data/allQuestions->useData).
 const CoverageMap = lazy(() => import('./screens/coverage-map.jsx'));
 // [A1 slice 37] support modal extracted (its QR encoder lives in ./lib/qr.js, used internally there).
@@ -4053,6 +4055,12 @@ export default function App() {
                          onDrill={(action, topic) => { if (action === 'topic') startQuiz({ mode: 'topic', topic, count: 10 }); }}
                          onOpenPapers={() => navigate({ screen: 'previous-papers' })}
                          onBack={goHome} />
+        </Suspense>
+      )}
+
+      {nav.screen === 'premium' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <PremiumScreen onBack={goHome} />
         </Suspense>
       )}
 

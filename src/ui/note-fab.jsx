@@ -26,7 +26,10 @@ import { requestNote } from './primitives.jsx';
 
 const SIZE = 54;          // button diameter (px) — 54px gives ≥44px hit area with comfort
 const MARGIN = 12;        // gap kept from every safe-area edge
-const TAP_MOVE = 10;      // px of movement under which a release counts as a tap (not a drag)
+// px of movement under which a release counts as a tap (not a drag). Real
+// fingers on tablets jitter well past 10px during a plain tap — 16px keeps
+// deliberate taps opening the popup while drags stay unmistakably drags.
+const TAP_MOVE = 16;
 const POS_KEY = 'norcet:notefab-pos:v1';
 
 function readInsets() {
@@ -52,7 +55,12 @@ function readInsets() {
 }
 
 function bounds() {
-  const w = window.innerWidth, h = window.innerHeight;
+  // visualViewport is the truly visible area on mobile (excludes the on-screen
+  // keyboard and collapsing browser chrome) — innerWidth/Height can overstate
+  // it and let the button rest somewhere unreachable.
+  const vv = window.visualViewport;
+  const w = (vv && vv.width) || window.innerWidth;
+  const h = (vv && vv.height) || window.innerHeight;
   const ins = readInsets();
   return {
     minX: ins.left + MARGIN,
@@ -152,6 +160,11 @@ export default function NoteFab() {
     // zero-distance drags, so the button "did nothing".)
     if (d.moved < TAP_MOVE) {
       gestureRef.current = 'tap';
+      // Undo any micro-jitter the move handler wrote to the node — React's
+      // style diff still believes the old left/top are applied and would skip
+      // rewriting them, so the drift would otherwise stick.
+      const el = elRef.current;
+      if (el) { el.style.left = d.ox + 'px'; el.style.top = d.oy + 'px'; }
       try { if (navigator.vibrate) navigator.vibrate(6); } catch (er) {}
       requestNote();
       return;
@@ -218,6 +231,11 @@ export default function NoteFab() {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
       onClick={onClick}
+      // Opt out of every window/document-level gesture (pull-to-refresh, the
+      // sidebar edge-swipe): a touch that starts on this button is ONLY ever a
+      // tap or a button drag — without this, dragging the button downward used
+      // to trigger a full pull-to-refresh mid-drag.
+      data-no-ptr
       aria-label="Open study notes"
       className={fabClass}
       style={{

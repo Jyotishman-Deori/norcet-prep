@@ -18,8 +18,9 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
+import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
 // DRAWER — soft tick on row taps (gated by the Settings sound toggle).
@@ -136,7 +137,13 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     // so vertical scrolling is unaffected.
     const onStart = (e) => {
       if (!getSidebarGestures().open) return;
+      // Popups own the screen: never begin an edge-swipe while ANY modal is up
+      // (same [aria-modal] rule as pull-to-refresh), and ignore touches that
+      // start on an opt-out surface like the floating note button — dragging
+      // it sideways used to drag the sidebar out underneath.
+      if (typeof document !== 'undefined' && document.querySelector('[aria-modal="true"]')) return;
       const t = e.touches && e.touches[0]; if (!t) return;
+      if (t.target && t.target.closest && t.target.closest('[data-no-ptr]')) return;
       dragRef.current = { mode: 'open', startX: t.clientX, startY: t.clientY, lastX: t.clientX, lastT: Date.now(), vx: 0, active: false };
     };
     const onMove = (e) => {
@@ -249,6 +256,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const tools = [
     { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Study plan', tip: 'Set your NORCET date and daily goal, and get a personalised day-by-day plan to exam day.', sub: 'Date, daily goal & day-by-day plan', action: () => go('study-plan', null, 'examdate') },
     { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
+    // Premium — a preview of upcoming plans/perks. Gated on the contract flag
+    // the same way the admin-only "Add question" row is conditionally spread;
+    // nothing in the app is gated, everything is free during the test phase.
+    ...(isPremiumEnabled() ? [{ key: 'premium', icon: Crown, color: '#D97706', label: 'Premium', badge: 'New', tip: 'See what Premium will include — everything is free during the test phase.', sub: 'Plans & perks preview', action: () => go('premium', null, 'premium') }] : []),
   ];
   // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as
   // every other section so spacing + sizing stay perfectly symmetric.)

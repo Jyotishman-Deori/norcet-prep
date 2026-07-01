@@ -432,6 +432,22 @@ export const fontStyles = `
 }
 .heart-spring { animation: heartSpring 0.34s cubic-bezier(0.33, 1, 0.68, 1) both; }
 
+/* ── PREMIUM — pricing/plans preview screen. Cards rise into place with a
+   staggered spring (delay baked per-index at the call site), and the selected
+   plan lands its filled state with a small confirming pop. All spring on
+   cubic-bezier(.34,1.56,.64,1); opted out in the reduced-motion block below. */
+@keyframes premiumCardIn {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+.premium-card-in { animation: premiumCardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes premiumSelectPop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+.premium-select-pop { animation: premiumSelectPop 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 /* ── press-safe — suppresses the native long-press callout / text selection
    on touch cards (the tap-and-hold visual glitch on home cards). */
 .press-safe, .press-safe * {
@@ -469,7 +485,8 @@ export const fontStyles = `
   .drill-card-in, .test-enter, .note-pop, .note-fab-pulse,
   .naming-icon-enter, .naming-headline-enter, .naming-body-enter,
   .note-menu-in, .note-reply-in, .note-select-pop, .note-reco-pulse,
-  .note-count-tick, .note-bullet-in { animation: none !important; }
+  .note-count-tick, .note-bullet-in,
+  .premium-card-in, .premium-select-pop { animation: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }

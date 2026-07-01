@@ -47,6 +47,19 @@ export const DEFAULTS = {
   // Cosmetic frame shop prices (Coins). Keys = frame ids from cosmetics.js.
   framePrices: { ember: 400, frost: 400, forest: 400, neon: 900, royal: 900, gold: 1800 },
 
+  // Premium / freemium placeholder (owner-approved 2026-07). Payments are NOT
+  // wired yet — the page is a preview; nothing in the app is gated on this.
+  // All knobs live-tunable via the game_config row like everything else.
+  premium: {
+    enabled: true,     // show the Premium page + drawer entry
+    testPhase: true,   // true = "everything free during testing" banner + placeholder CTA
+    adSlot: false,     // future rewarded-ad slot (hidden while false)
+    plans: [
+      { id: 'monthly', label: 'Monthly', priceInr: 149, per: 'month' },
+      { id: 'yearly',  label: 'Yearly',  priceInr: 999, per: 'year', save: 'Save 44%' },
+    ],
+  },
+
   // In-game combo banner milestones (consecutive correct answers).
   comboTiers: [
     { at: 3,  label: 'On a roll!',    tone: '#0CA678' },
