@@ -1,0 +1,66 @@
+-- ============================================================
+-- NORCET PREP — FIX: anon READ policy drifted to a stale allowlist
+--
+-- SYMPTOM (reported 2026-07-02): an admin publishes a FAQ, sees "saved,"
+-- but it never appears in the student app OR the admin's own FAQ list.
+--
+-- ROOT CAUSE (confirmed against the live DB): the production `anon_select`
+-- policy on kv_shared is a PREFIX ALLOWLIST that only lists the prefixes that
+-- existed when it was last edited. It was never committed to this repo (setup.sql
+-- still shows the original `USING (true)`), so every key prefix added since is
+-- silently UNREADABLE by the anon key — even though the row is written fine by
+-- the kv-write broker. The writes always succeeded; the READS were blocked.
+--
+-- Verified live: anon can read announcement:/bank:/leaderboard:/helpful:/
+-- notHelpful:/favsec:/favorder:/profilemeta: but returns ZERO rows for
+-- faq:, faqq:, trend:, qgate:, feedback:, analytics:user:, errlog: — all of
+-- which service-role confirms DO exist. Six+ features are affected:
+--   • FAQ screen + community Q&A       (faq:, faqq:)      ← the reported bug
+--   • Trending badges (Level Up + FAQ) (trend:)
+--   • Content quality gate             (qgate:hidden — read by EVERY client at
+--                                       boot; blocked => flagged questions are
+--                                       still served, gate silently OFF)
+--   • Admin Feedback inbox             (feedback:)
+--   • Admin Engagement view            (analytics:user:)
+--   • Admin Crash Reports              (errlog:)
+--
+-- THE CLIENT'S DESIGN INTENT (src/storage.js): only `profile:` and `myfeedback:`
+-- are private (served per-owner by the kv-read broker); EVERYTHING ELSE is read
+-- via the direct anon path — i.e. everything else is meant to be anon-readable.
+-- This restores exactly that: a DENYLIST of the two private prefixes.
+--
+-- ⚠ PRIVACY NOTE: this (re)exposes feedback:/analytics:user:/errlog: to anon
+-- reads. That was the ORIGINAL model (setup.sql `USING (true)`) and is how the
+-- client already reads them, and none contain credentials. If you'd rather keep
+-- those three admin-only, use the NARROW alternative at the bottom instead and
+-- we'll route the admin reads through the kv-read broker in a follow-up.
+--
+-- HOW TO APPLY: paste into Supabase → SQL Editor → Run. Reversible (the old
+-- policy is recreated at the bottom for rollback).
+-- ============================================================
+
+-- RECOMMENDED — restore the intended read model (matches src/storage.js
+-- PRIVATE_READ_PREFIXES exactly): anon may read everything EXCEPT profile:/myfeedback:.
+DROP POLICY IF EXISTS "anon_select" ON kv_shared;
+CREATE POLICY "anon_select" ON kv_shared FOR SELECT TO anon
+  USING ( key NOT LIKE 'profile:%' AND key NOT LIKE 'myfeedback:%' );
+
+-- Sanity check after running (expect faq:/trend:/qgate: to return rows now):
+--   SELECT key FROM kv_shared WHERE key LIKE 'faq:%';
+
+-- =====================================================================
+-- NARROW ALTERNATIVE (only if you want feedback:/analytics:/errlog: to stay
+-- non-public). Fixes the student-facing + quality-gate reads only; admin
+-- Feedback/Engagement/Crash views then need a separate broker-read change.
+--   DROP POLICY IF EXISTS "anon_select" ON kv_shared;
+--   CREATE POLICY "anon_select" ON kv_shared FOR SELECT TO anon USING (
+--     key LIKE 'announcement:%' OR key LIKE 'bank:%' OR key LIKE 'leaderboard:%'
+--     OR key LIKE 'helpful:%' OR key LIKE 'notHelpful:%' OR key LIKE 'favsec:%'
+--     OR key LIKE 'favorder:%' OR key LIKE 'profilemeta:%'
+--     OR key LIKE 'faq:%' OR key LIKE 'faqq:%' OR key LIKE 'trend:%' OR key LIKE 'qgate:%'
+--   );
+-- =====================================================================
+-- EMERGENCY ROLLBACK (re-create the original open-read policy):
+--   DROP POLICY IF EXISTS "anon_select" ON kv_shared;
+--   CREATE POLICY "anon_select" ON kv_shared FOR SELECT TO anon USING (true);
+-- =====================================================================

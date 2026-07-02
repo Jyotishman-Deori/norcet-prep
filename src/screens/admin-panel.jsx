@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  AlertCircle, AlertTriangle, Check, CheckSquare, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  AlertCircle, AlertTriangle, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -30,6 +30,7 @@ import AdminFeedbackCard from '../ui/admin-feedback-card.jsx';
 import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import ContentReview from './content-review.jsx';
+import AdminStorageCheck from '../ui/admin-storage-check.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
@@ -1347,6 +1348,10 @@ function AdminPanel({
     return <ContentReview onBack={backToDash} profile={profile} />;
   }
 
+  if (view === 'storage-check') {
+    return <AdminStorageCheck onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -1477,6 +1482,16 @@ function AdminPanel({
             hint="Approve AI-drafted questions"
             onClick={() => setView('content-review')}
             signal={<Sparkles size={18} style={{ color: T.muted }} />} />
+
+          {/* Storage self-test — verify admin content is readable by the app
+              (catches the RLS/broker "saved but invisible" class in one tap) */}
+          <AdminTile
+            icon={<Database size={22} style={{ color: T.sec.revision }} />}
+            accent={T.sec.revision}
+            label="Storage self-test"
+            hint="Verify content is readable"
+            onClick={() => setView('storage-check')}
+            signal={<Database size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile

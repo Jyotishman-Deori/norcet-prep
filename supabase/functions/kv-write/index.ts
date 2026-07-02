@@ -22,10 +22,12 @@
 //   feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
-//   bank: / announcement: / faq: / qgate:
+//   bank: / announcement: / faq: / qgate: / selftest:
 //        -> admins only  (bank: = question sets — RESTRUCTURED to admin-only
 //           uploads so answer keys stay trustworthy; qgate: = the content
-//           quality gate's hidden-id list; all world-readable, admin-write-only)
+//           quality gate's hidden-id list; selftest: = the admin panel's
+//           storage self-test canary — a never-rendered probe key; all
+//           world-readable, admin-write-only)
 //   anything else -> DENIED (fail closed)
 //
 // BUG-04 — analytics:user: and errlog: were added here. Both were written as
@@ -347,6 +349,17 @@ Deno.serve(async (req: Request) => {
       if (existing && !admin && !rowOwnedBy(existing, session)) {
         return json({ error: "Forbidden: not your content" }, 403);
       }
+      return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
+    }
+
+    // 6b) Storage self-test canary (admin panel → Storage self-test). A
+    // dedicated, NEVER-rendered prefix so the write→read→delete round-trip the
+    // admin runs can't pollute real content. Admin-only. Purpose: make the
+    // silent "admin writes, nobody can read" class VISIBLE — if a future RLS
+    // tightening drops to an allowlist and forgets new prefixes, the anon
+    // read-back of this canary fails and the admin sees it in one tap.
+    if (key.startsWith("selftest:")) {
+      if (!admin) return json({ error: "Forbidden: admin only" }, 403);
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
     }
 
