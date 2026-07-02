@@ -41,9 +41,17 @@
 // To add a scenario: copy the shape above, keep phases in the fixed 4-id
 // order, keep vitals arcs internally consistent with the pathophysiology,
 // and make every 'why' teach (the wrong options are where the learning is).
+//
+// The roster is split across reviewable content waves — the 6 flagship cases
+// below plus b1/b2/b3 (appendix + new NORCET cases), all merged into the one
+// WARD_BOSS_SCENARIOS export at the bottom. Scenario ids are unique across the
+// whole merged list (enforced by ward-boss-engine.test.js).
 // =====================================================================
+import { SCENARIOS_B1 } from './ward-boss-scenarios-b1.js';
+import { SCENARIOS_B2 } from './ward-boss-scenarios-b2.js';
+import { SCENARIOS_B3 } from './ward-boss-scenarios-b3.js';
 
-export const WARD_BOSS_SCENARIOS = [
+const FLAGSHIP_SCENARIOS = [
   // ---------------------------------------------------------------------
   // 1. SEPSIS
   // ---------------------------------------------------------------------
@@ -527,6 +535,15 @@ export const WARD_BOSS_SCENARIOS = [
     debriefLoss: 'Hyperkalemia kills silently through the heart\'s electrical system, often with muscle weakness as the only early warning. Losing him here does not mean you missed something obvious; it means you now carry the sequence for life: calcium protects, insulin and dextrose (plus salbutamol) shift, and dialysis removes — protect first, always.',
     examTip: 'NORCET tests this exact sequence and the key teaching point: calcium gluconate stabilises the myocardium but does NOT lower potassium; insulin+dextrose and nebulised salbutamol shift potassium intracellularly; dialysis is the only way to truly remove excess potassium from the body.',
   },
+];
+
+// The full roster: 6 flagship + waves b1/b2/b3 = 23 scenarios. Order groups by
+// wave; the picker regroups by `category` regardless of array order.
+export const WARD_BOSS_SCENARIOS = [
+  ...FLAGSHIP_SCENARIOS,
+  ...SCENARIOS_B1,
+  ...SCENARIOS_B2,
+  ...SCENARIOS_B3,
 ];
 
 export default WARD_BOSS_SCENARIOS;

@@ -373,6 +373,13 @@ async function part2() {
     assert.equal(err, null, `scenario failed validation: ${err}`);
   }
 
+  // Scenario ids must be unique across the whole merged list (they key the
+  // picker, personal bests, and trending) — waves are authored in separate
+  // files, so collisions are a real risk.
+  const ids = scenarios.map((s) => s.id);
+  assert.equal(new Set(ids).size, ids.length,
+    `duplicate scenario ids in the merged list: ${ids.filter((id, i) => ids.indexOf(id) !== i).join(', ')}`);
+
   // Cross-check every ecgId against the real ECG_RHYTHMS ids.
   const ecg = await import('../data/ecg-rhythms.js');
   const rhythms = ecg.ECG_RHYTHMS || ecg.default;
