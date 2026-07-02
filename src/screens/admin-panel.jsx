@@ -34,6 +34,7 @@ import AdminStorageCheck from '../ui/admin-storage-check.jsx';
 import AdminConfigEditor from '../ui/admin-config-editor.jsx';
 import AdminEngagement from '../ui/admin-engagement.jsx';
 import AdminPushComposer from '../ui/admin-push-composer.jsx';
+import AdminUserDetail from '../ui/admin-user-detail.jsx';
 import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
@@ -115,6 +116,8 @@ function AdminPanel({
   const [annMsg, setAnnMsg] = useState(null);
 
   const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
+  // Member detail panel (stats + coin tools) — the meta of the open user.
+  const [openUser, setOpenUser] = useState(null);
   // #27b — Users list search + sort.
   const [userSearch, setUserSearch] = useState('');
   const [userSort, setUserSort] = useState('active'); // 'active' | 'joined' | 'name'
@@ -872,6 +875,11 @@ function AdminPanel({
   }
 
   // =================== DETAIL VIEW: USERS ===================
+  // Member detail panel — opened by tapping a roster row.
+  if (view === 'users' && openUser) {
+    return <AdminUserDetail meta={openUser} selfId={profile && profile.id}
+                            onBack={() => { setOpenUser(null); refreshUsers(); }} />;
+  }
   if (view === 'users') {
     return (
       <div className="anim-fadeup">
@@ -885,7 +893,7 @@ function AdminPanel({
         <div className="max-w-md mx-auto px-4 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1 flex items-start gap-1.5" style={{ color: T.muted }}>
             <EyeOff size={13} className="flex-shrink-0 mt-0.5" />
-            <span>High-level only. Personal answers, progress, and passwords stay private — never shown here.</span>
+            <span>Tap a member for stats & coin tools. Personal answers and passwords stay private — never shown.</span>
           </div>
           {usersLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
@@ -934,19 +942,23 @@ function AdminPanel({
                 return (
                   <Card key={u.id} className="p-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-                           style={{ background: T.surfaceWarm }}>
-                        <User size={16} style={{ color: T.inkSoft }} />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
-                          <div className="font-medium text-sm truncate" style={{ color: T.ink }}>{u.displayName}</div>
-                          {isSelf && <Pill bg={T.primary + '18'} color={T.primary}>you</Pill>}
+                      {/* tappable body → member detail (stats + coin tools) */}
+                      <button onClick={() => setOpenUser(u)}
+                              className="no-tap-highlight flex items-center gap-3 min-w-0 flex-1 text-left active:scale-[0.99] transition">
+                        <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                             style={{ background: T.surfaceWarm }}>
+                          <User size={16} style={{ color: T.inkSoft }} />
                         </div>
-                        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
-                          Active {fmtWhen(u.lastActive)}{u.createdAt ? ` · joined ${fmtWhen(u.createdAt)}` : ''}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <div className="font-medium text-sm truncate" style={{ color: T.ink }}>{u.displayName}</div>
+                            {isSelf && <Pill bg={T.primary + '18'} color={T.primary}>you</Pill>}
+                          </div>
+                          <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
+                            Active {fmtWhen(u.lastActive)}{u.createdAt ? ` · joined ${fmtWhen(u.createdAt)}` : ''}
+                          </div>
                         </div>
-                      </div>
+                      </button>
                       {!isSelf && (
                         confirmDeleteUser === u.id ? (
                           <div className="flex items-center gap-1 flex-shrink-0">
