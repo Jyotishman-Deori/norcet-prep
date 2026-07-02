@@ -202,21 +202,24 @@ async function brokerWrite(op, key, value) {
 }
 
 // ---------------------------------------------------------------------
-// STAGE 3 (C-1 reads): private prefixes are no longer anon-SELECTable.
-// `profile:` and `myfeedback:` are served only to their owner by the
-// `kv-read` broker (service-role + the same session token). Everything
-// else (announcement/bank/favsec/favorder/helpful/notHelpful/leaderboard/
-// profilemeta) stays on the direct anon read path below — profilemeta is
-// display-name + timestamps that the profile switcher must read for all
-// users, and the rest is genuinely public content.
+// STAGE 3 (C-1 reads): non-public prefixes are not anon-SELECTable; they are
+// served ONLY by the `kv-read` broker (service-role + the same session token),
+// which authorizes each read:
+//   profile: / myfeedback: -> owner (or admin)
+//   feedback:              -> the row's author (or admin); admin lists all
+//   errlog: / analytics:   -> admin only
+// Everything else (announcement/bank/faq/faqq/qgate/trend/favsec/favorder/
+// helpful/notHelpful/leaderboard/profilemeta) stays on the direct anon read
+// path below — genuinely public content + the display-name/timestamps the
+// profile switcher needs for all users.
 // ---------------------------------------------------------------------
 const KV_READ_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/kv-read` : null;
-const PRIVATE_READ_PREFIXES = ['profile:', 'myfeedback:'];
+const BROKER_READ_PREFIXES = ['profile:', 'myfeedback:', 'feedback:', 'errlog:', 'analytics:'];
 function isPrivateReadKey(key) {
-  return typeof key === 'string' && PRIVATE_READ_PREFIXES.some(p => key.startsWith(p));
+  return typeof key === 'string' && BROKER_READ_PREFIXES.some(p => key.startsWith(p));
 }
 function isPrivateReadPrefix(prefix) {
-  return typeof prefix === 'string' && PRIVATE_READ_PREFIXES.some(p => prefix === p || prefix.startsWith(p));
+  return typeof prefix === 'string' && BROKER_READ_PREFIXES.some(p => prefix === p || prefix.startsWith(p));
 }
 
 async function brokerGet(key) {

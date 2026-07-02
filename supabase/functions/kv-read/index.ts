@@ -9,17 +9,21 @@
 // to their owner through this function, which holds the service-role key
 // and authorizes by the same signed session token kv-write uses.
 //
-// READS SERVED HERE (private, owner-scoped):
-//   profile:      -> only the owner (token.id === <id> suffix), or an admin
-//   myfeedback:   -> only the owner, or an admin
+// READS SERVED HERE (not anon-SELECTable — served by this broker only):
+//   profile:      -> owner (token.id === <id> suffix) or admin           [owner-scoped]
+//   myfeedback:   -> owner or admin                                       [owner-scoped]
+//   feedback:     -> the row's AUTHOR (value.profileId === caller) or admin.
+//                    LIST: admin = all; a student = only their own rows.   [owned-content]
+//   errlog:       -> ADMIN only (crash stacks — internal)                  [admin-only]
+//   analytics:    -> ADMIN only (engagement summaries)                     [admin-only]
 // READS THAT STAY ON THE DIRECT ANON PATH (still anon-SELECTable, by design):
-//   announcement:, bank:, favsec:, favorder:, helpful:, notHelpful:,
-//   leaderboard:, profilemeta:  (display-name + timestamps; the profile
-//   switcher must read everyone's — intentionally semi-public, no secrets)
+//   announcement:, bank:, faq:, faqq:, qgate:, trend:, favsec:, favorder:,
+//   helpful:, notHelpful:, leaderboard:, profilemeta:  (public content +
+//   display-name/timestamps the profile switcher needs — no secrets)
 //
-// Supports op:"get" (one key) and op:"list" (prefix -> keys), the two read
-// shapes storage.js needs. list is owner-scoped: a caller can only list
-// THEIR OWN private keys.
+// Supports op:"get" (one key) and op:"list" (prefix -> keys). Owner-scoped
+// prefixes list only the caller's own key; owned-content lists the caller's
+// own rows (or all, for an admin); admin-only lists everything (admin) or [].
 //
 // DEPLOY:
 //   supabase secrets set SESSION_SIGNING_SECRET="<same value as the others>"
@@ -89,12 +93,51 @@ async function isAdmin(s: Session): Promise<boolean> {
   return Array.isArray(rows) && rows.length > 0;
 }
 
-// Private prefixes this broker will serve (owner-scoped).
-const PRIVATE_PREFIXES = ["profile:", "myfeedback:"];
-function privatePrefixOf(key: string): string | null {
-  return PRIVATE_PREFIXES.find((p) => key.startsWith(p)) ?? null;
+// Prefix categories (see header). Order of checks: owner-scoped → owned-content
+// → admin-only → deny.
+const OWNER_SCOPED = ["profile:", "myfeedback:"];   // 1 row per user, keyed by id
+const OWNED_CONTENT = ["feedback:"];                // author-owned, admin-moderated
+const ADMIN_ONLY = ["errlog:", "analytics:"];       // internal, admin eyes only
+function prefixFrom(list: string[], s: string): string | null {
+  return list.find((p) => s.startsWith(p)) ?? null;
 }
 function suffix(key: string, prefix: string): string { return key.slice(prefix.length); }
+
+// Which author fields mark ownership of an owned-content row (mirror of kv-write).
+const OWNER_FIELDS = ["profileId", "ownerId", "ownerUid", "authorId", "authorUid", "uid"];
+function rowOwnedBy(row: Record<string, unknown> | null, s: Session): boolean {
+  if (!row) return false;
+  for (const f of OWNER_FIELDS) {
+    const v = row[f];
+    if (v != null && (String(v) === s.id || (s.uid && String(v) === s.uid))) return true;
+  }
+  return false;
+}
+
+// ---- service-role fetch helpers ----
+async function getValueResponse(key: string): Promise<Response> {
+  const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(key)}&select=value`;
+  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return json({ error: `read ${r.status}` }, 502);
+  const rows = await r.json();
+  return json({ value: Array.isArray(rows) && rows.length ? rows[0].value : null });
+}
+async function getRowParsed(key: string): Promise<Record<string, unknown> | null> {
+  const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(key)}&select=value`;
+  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return null;
+  const rows = await r.json();
+  if (!Array.isArray(rows) || !rows.length) return null;
+  try { return JSON.parse(String(rows[0].value)); } catch { return {}; }
+}
+async function listRows(prefix: string, withValue: boolean): Promise<{ key: string; value?: string }[]> {
+  const sel = withValue ? "key,value" : "key";
+  const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=like.${encodeURIComponent(prefix + "*")}&select=${sel}`;
+  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return [];
+  const rows = await r.json();
+  return Array.isArray(rows) ? rows : [];
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
@@ -110,32 +153,56 @@ Deno.serve(async (req: Request) => {
   try {
     const admin = await isAdmin(session);
 
-    // ---- GET one private key ----
+    // ---- GET one key ----
     if (body.op === "get") {
       const key = String(body.key ?? "");
-      const p = privatePrefixOf(key);
-      if (!p) return json({ error: "Forbidden: not a broker-served key" }, 403);
-      if (!admin && suffix(key, p) !== session.id) return json({ error: "Forbidden: not your row" }, 403);
-      const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(key)}&select=value`;
-      const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-      if (!r.ok) return json({ error: `read ${r.status}` }, 502);
-      const rows = await r.json();
-      return json({ value: Array.isArray(rows) && rows.length ? rows[0].value : null });
+      // owner-scoped: suffix match or admin
+      const os = prefixFrom(OWNER_SCOPED, key);
+      if (os) {
+        if (!admin && suffix(key, os) !== session.id) return json({ error: "Forbidden: not your row" }, 403);
+        return await getValueResponse(key);
+      }
+      // owned-content: admin, or the row's author
+      const oc = prefixFrom(OWNED_CONTENT, key);
+      if (oc) {
+        if (!admin && !rowOwnedBy(await getRowParsed(key), session)) return json({ error: "Forbidden: not your content" }, 403);
+        return await getValueResponse(key);
+      }
+      // admin-only
+      const ao = prefixFrom(ADMIN_ONLY, key);
+      if (ao) {
+        if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+        return await getValueResponse(key);
+      }
+      return json({ error: "Forbidden: not a broker-served key" }, 403);
     }
 
-    // ---- LIST owner's own private keys under a prefix ----
+    // ---- LIST keys under a prefix ----
     if (body.op === "list") {
-      const prefix = String(body.prefix ?? "");
-      const p = privatePrefixOf(prefix.endsWith(":") ? prefix : prefix + ":") ?? privatePrefixOf(prefix);
-      if (!p) return json({ error: "Forbidden: not a broker-served prefix" }, 403);
-      // Owner-scope: only THIS user's key under the prefix can exist for them.
-      // (profile:/myfeedback: are 1-row-per-user, keyed by id.)
-      const ownKey = `${p}${session.id}`;
-      const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(ownKey)}&select=key`;
-      const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-      if (!r.ok) return json({ error: `list ${r.status}` }, 502);
-      const rows = await r.json();
-      return json({ keys: (Array.isArray(rows) ? rows : []).map((x: { key: string }) => x.key) });
+      const raw = String(body.prefix ?? "");
+      const prefix = raw.endsWith(":") ? raw : raw + ":";
+      // owner-scoped: only THIS user's key exists for them (1 row per user).
+      const os = prefixFrom(OWNER_SCOPED, prefix);
+      if (os) {
+        const rows = await listRows(`${os}${session.id}`, false);
+        return json({ keys: rows.map((x) => x.key) });
+      }
+      // owned-content: admin sees all; a student sees only their own rows.
+      const oc = prefixFrom(OWNED_CONTENT, prefix);
+      if (oc) {
+        if (admin) return json({ keys: (await listRows(oc, false)).map((x) => x.key) });
+        const mine = (await listRows(oc, true)).filter((r) => {
+          try { return rowOwnedBy(JSON.parse(String(r.value ?? "{}")), session); } catch { return false; }
+        });
+        return json({ keys: mine.map((x) => x.key) });
+      }
+      // admin-only: everything for an admin, nothing for anyone else.
+      const ao = prefixFrom(ADMIN_ONLY, prefix);
+      if (ao) {
+        if (!admin) return json({ keys: [] });
+        return json({ keys: (await listRows(ao, false)).map((x) => x.key) });
+      }
+      return json({ error: "Forbidden: not a broker-served prefix" }, 403);
     }
 
     return json({ error: "Unknown op" }, 400);
