@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  AlertCircle, AlertTriangle, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  Activity, AlertCircle, AlertTriangle, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, SlidersHorizontal, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -32,6 +32,7 @@ import ReportedQuestionModal from './reported-question-modal.jsx';
 import ContentReview from './content-review.jsx';
 import AdminStorageCheck from '../ui/admin-storage-check.jsx';
 import AdminConfigEditor from '../ui/admin-config-editor.jsx';
+import AdminEngagement from '../ui/admin-engagement.jsx';
 import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
@@ -1357,6 +1358,10 @@ function AdminPanel({
     return <AdminConfigEditor onBack={backToDash} />;
   }
 
+  if (view === 'engagement') {
+    return <AdminEngagement onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -1506,6 +1511,15 @@ function AdminPanel({
             hint="Tune economy & prices"
             onClick={() => setView('config')}
             signal={<SlidersHorizontal size={18} style={{ color: T.muted }} />} />
+
+          {/* Engagement — actives, signup trend, recency mix, win-back list */}
+          <AdminTile
+            icon={<Activity size={22} style={{ color: T.success }} />}
+            accent={T.success}
+            label="Engagement"
+            hint="Actives & win-back list"
+            onClick={() => setView('engagement')}
+            signal={<Activity size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile

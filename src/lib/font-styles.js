@@ -629,7 +629,18 @@ export const fontStyles = `
 @keyframes whxTimerGlow { 0%,100% { opacity: 0.9; } 50% { opacity: 1; } }
 .whx-timer-glow { animation: whxTimerGlow 1.2s ease-in-out infinite; }
 
+/* Admin Engagement view — bars grow up, recency segments sweep in, KPIs pop.
+   Pure decoration: the numbers are always present; reduced motion shows the
+   final state instantly. */
+@keyframes engBarGrow { 0% { transform: scaleY(0); } 100% { transform: scaleY(1); } }
+.eng-bar { animation: engBarGrow 0.55s cubic-bezier(0.34,1.56,0.64,1) both; transform-origin: bottom; }
+@keyframes engSegGrow { 0% { transform: scaleX(0); } 100% { transform: scaleX(1); } }
+.eng-seg { animation: engSegGrow 0.6s cubic-bezier(0.22,1,0.36,1) both; transform-origin: left; }
+@keyframes engKpiIn { 0% { opacity: 0; transform: translateY(6px) scale(0.96); } 100% { opacity: 1; transform: none; } }
+.eng-kpi { animation: engKpiIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
+  .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
   .card-shimmer, .sheet-up, .fav-beat, .tip-in, .heart-spring,
