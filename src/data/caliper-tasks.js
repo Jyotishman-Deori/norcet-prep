@@ -66,9 +66,13 @@
 // the exact anatomical landmarks for the calipers — not just the interval
 // name. Task ids are unique across CALIPER_TASKS (enforced by
 // caliper-engine.js's validator once it exists).
+//
+// Split into reviewable content waves: the 10 core tasks below plus b1
+// (expansion), merged into the one CALIPER_TASKS export at the bottom.
 // =====================================================================
+import { CALIPER_TASKS_B1 } from './caliper-tasks-b1.js';
 
-export const CALIPER_TASKS = [
+const CORE_CALIPER_TASKS = [
   // ---------------------------------------------------------------------
   // 1. PR INTERVAL — normal
   // ---------------------------------------------------------------------
@@ -239,5 +243,8 @@ export const CALIPER_TASKS = [
     examTip: 'NORCET\'s hyperkalemia ECG ladder in order of severity: peaked/tented T waves, then a flattened P wave and prolonged PR, then a widening QRS, then a sine-wave pattern preceding arrest. The nurse\'s first drug at the bedside is IV calcium gluconate — it stabilises the cardiac membrane immediately but does NOT lower the potassium itself; insulin+dextrose and salbutamol shift potassium into cells, and dialysis is what actually removes it (same ladder as the Ward Boss "Missed Dialysis" case).',
   },
 ];
+
+// 10 core + 10 expansion = 20 tasks. The run shuffles/slices; order is cosmetic.
+export const CALIPER_TASKS = [...CORE_CALIPER_TASKS, ...CALIPER_TASKS_B1];
 
 export default CALIPER_TASKS;

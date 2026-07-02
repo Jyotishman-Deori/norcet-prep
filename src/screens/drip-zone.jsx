@@ -12,7 +12,7 @@
 // Drug data comes frozen from ../data/titration-drugs.js.
 //
 // Views (single file): intro → round → done.
-//   intro  — pitch + run length (5 / All 7) + PaceSelector + flashpoint note.
+//   intro  — pitch + run length (5 / All) + PaceSelector + flashpoint note.
 //   round  — dark bedside monitor (zone-colored), pump chamber, dose/weight
 //            sliders with the safe window marked, and the hold-to-win ring.
 //   done   — rounds won / total, total coins, the played drugs' exam tips.

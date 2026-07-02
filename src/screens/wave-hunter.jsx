@@ -12,7 +12,7 @@
 // truthSpan. Task data comes frozen from ../data/caliper-tasks.js.
 //
 // Views (single file): intro → task → done.
-//   intro — pitch + calibration primer + count (5 / All 10) + Pace + Start.
+//   intro — pitch + calibration primer + count (5 / All) + Pace + Start.
 //   task  — question card, the calibrated SVG strip with two draggable calipers,
 //           a live readout chip, a11y nudge controls, a zoom toggle, Check
 //           (one attempt) → correct (bloom + reveal) or wrong (ghost calipers +
@@ -96,11 +96,12 @@ export default function WaveHunter({ onBack, onComplete, onSetPace }) {
   const [run, setRun] = useState([]);               // the ordered task list for this run
   const [results, setResults] = useState([]);       // per-task { task, ok, measuredSec, truthSec, direction, coins }
 
-  // Kick off a run of `count` tasks. Tasks are authored easy→hard, so we KEEP
-  // their order (no shuffle) and take the first `count`.
+  // Kick off a run of `count` tasks. Shuffle then slice (like Drip Zone) so a
+  // partial run samples the WHOLE pool — otherwise a "5" run would always be
+  // the same first five and the rest of the library would never appear.
   const startRun = useCallback((count) => {
-    const list = CALIPER_TASKS.slice(0, Math.min(count, CALIPER_TASKS.length));
-    setRun(list);
+    const shuffled = [...CALIPER_TASKS].sort(() => Math.random() - 0.5);
+    setRun(shuffled.slice(0, Math.min(count, shuffled.length)));
     setResults([]);
     setRunKey((k) => k + 1);
     setView('task');

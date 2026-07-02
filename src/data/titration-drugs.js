@@ -53,9 +53,14 @@
 // 1-150 mL/hr) with the sanity script noted in the task summary before
 // shipping. Every 'rationale' should teach the titration principle, not just
 // restate the dose.
+//
+// The roster is split into reviewable content waves: the 7 core drugs below
+// plus b1 (expansion), merged into the one TITRATION_DRUGS export at the
+// bottom. Drug ids are unique across the merged list (titration-engine.test.js).
 // =====================================================================
+import { TITRATION_DRUGS_B1 } from './titration-drugs-b1.js';
 
-export const TITRATION_DRUGS = [
+const CORE_TITRATION_DRUGS = [
   // ---------------------------------------------------------------------
   // 1. NOREPINEPHRINE — septic shock, first-line vasopressor
   // ---------------------------------------------------------------------
@@ -305,5 +310,8 @@ export const TITRATION_DRUGS = [
     examTip: 'NORCET pairs nitroglycerin with two classic cautions: hold/avoid it in right-ventricular infarction (preload-dependent, so venodilation can cause profound hypotension) and in patients who have taken a PDE-5 inhibitor (e.g. sildenafil) within 24-48 hours, due to the risk of severe, refractory hypotension.',
   },
 ];
+
+// 7 core + 10 expansion = 17 drugs. The run shuffles/slices; order here is cosmetic.
+export const TITRATION_DRUGS = [...CORE_TITRATION_DRUGS, ...TITRATION_DRUGS_B1];
 
 export default TITRATION_DRUGS;
