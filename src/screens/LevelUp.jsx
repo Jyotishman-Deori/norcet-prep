@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
-  ListOrdered, Network, Recycle, Scale, ScanSearch, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
+  ListOrdered, Network, Recycle, Scale, ScanSearch, Siren, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -45,6 +45,9 @@ const GAMES = [
   { screen: 'tie-breaker',         label: 'Tie-Breaker',          sub: 'Which comes first',    icon: Scale,       grad: ['#4338CA', '#312E81'] },
   { screen: 'three-am-chart',      label: 'The 3 AM Chart',       sub: 'Chill block puzzle',   icon: Moon,        grad: ['#B45309', '#78350F'] },
   { screen: 'shift-survival',      label: 'Shift Survival',       sub: 'High-stress mode',     icon: HeartPulse,  grad: ['#B91C1C', '#450A0A'] },
+  // Clinical simulations — full multi-phase patient scenarios (group: 'sim'
+  // renders under its own section header below the drills grid).
+  { screen: 'ward-boss',           group: 'sim', label: 'Ward Boss', sub: 'Stabilise the crashing patient', icon: Siren, grad: ['#7F1D1D', '#450A0A'] },
 ];
 
 // Circular XP ring. Pure SVG (zero-asset), animates the sweep on mount.
@@ -259,7 +262,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
           <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-          {GAMES.map(g => {
+          {GAMES.filter(g => !g.group).map(g => {
             const Icon = g.icon;
             return (
               <Tip key={g.screen} title={g.label} text={`${g.sub} · earn XP and coins`}>
@@ -278,6 +281,43 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
                     <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{g.sub}</div>
                   </div>
                   {/* heart + chevron grouped at the right, vertically centred */}
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <FavHeart favId={g.screen} inline emptyColor="rgba(255,255,255,0.82)" />
+                    <ChevronRight size={18} color="rgba(255,255,255,0.8)" />
+                  </div>
+                </div>
+              </Card>
+              </Tip>
+            );
+          })}
+        </div>
+
+        {/* CLINICAL SIMULATIONS — full multi-phase patient scenarios (Ward
+            Boss and friends). Same card language, own section so the deeper
+            sims read as a step up from the quick drills above. */}
+        <div className="flex items-center gap-2 mt-6 mb-2.5">
+          <span className="text-[11px] font-bold uppercase tracking-[0.14em]" style={{ color: T.muted }}>Clinical simulations</span>
+          <span className="flex-1 h-px" style={{ background: T.borderSoft }} />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+          {GAMES.filter(g => g.group === 'sim').map(g => {
+            const Icon = g.icon;
+            return (
+              <Tip key={g.screen} title={g.label} text={`${g.sub} · earn XP and coins`}>
+              <Card className="p-4 cursor-pointer no-tap-highlight pressable press-safe h-full" onClick={() => open(g.screen)}
+                    onContextMenu={(e) => e.preventDefault()}
+                    style={{ background: `linear-gradient(135deg, ${g.grad[0]}, ${g.grad[1]})`, border: 'none', boxShadow: `0 6px 18px ${g.grad[1]}4D` }}>
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+                    <Icon size={20} color="#FFF" />
+                  </div>
+                  <div className="min-w-0 flex-1" style={{ color: '#FFF' }}>
+                    <div className="flex items-center gap-1.5">
+                      <div className="font-display text-base font-semibold leading-tight">{g.label}</div>
+                      {trendingIds.has(g.screen) && <TrendingBadge />}
+                    </div>
+                    <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{g.sub}</div>
+                  </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <FavHeart favId={g.screen} inline emptyColor="rgba(255,255,255,0.82)" />
                     <ChevronRight size={18} color="rgba(255,255,255,0.8)" />

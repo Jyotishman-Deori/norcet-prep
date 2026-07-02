@@ -173,6 +173,10 @@ import ShiftSurvival from './screens/shift-survival.jsx';
 import TieBreaker from './screens/tie-breaker.jsx';
 // NEW-09 — IBQ: data-driven hotspot "tap the structure" diagrams (uploadable).
 import Ibq from './screens/ibq.jsx';
+// Ward Boss — 4-phase escalating patient-deterioration simulation (flagship
+// clinical sim; pure FSM in lib/ward-boss-engine, scenarios in src/data).
+import WardBoss from './screens/ward-boss.jsx';
+import { recordBest as recordBestPure, bestsFor as bestsForPure } from './lib/game-bests.js';
 // Drill Packs — import/manage/author portable content for the drills.
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
@@ -230,7 +234,7 @@ import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
 const NOTE_FAB_HIDDEN = new Set([
   'advanced-test', 'paper-test',
   'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
-  'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq',
+  'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq', 'ward-boss',
 ]);
 // [A1 slice 40] rename-profile host extracted.
 import RenameProfileHost from './screens/rename-profile-host.jsx';
@@ -960,7 +964,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq', 'ward-boss',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -2964,6 +2968,12 @@ export default function App() {
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
   }, [goHomeDirect]);
 
+  // Per-scenario personal bests for the clinical sims (Ward Boss picker badges).
+  // Lives in the synced blob under data.gameBests; pure merge in lib/game-bests.
+  const recordGameBest = useCallback((gameId, itemId, result) => {
+    setData(prev => ({ ...prev, gameBests: recordBestPure(prev && prev.gameBests, gameId, itemId, result) }));
+  }, []);
+
   // Level Up — claim a completed daily quest → bonus XP (uncapped). May itself
   // trigger a level-up celebration.
   const claimDailyQuest = useCallback((questId) => {
@@ -4297,6 +4307,13 @@ export default function App() {
       {/* NEW-09 — IBQ: tap the structure on a data-driven diagram. */}
       {nav.screen === 'ibq' && (
         <Ibq onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
+      )}
+
+      {/* Ward Boss — 4-phase escalating patient simulation (clinical sims). */}
+      {nav.screen === 'ward-boss' && (
+        <WardBoss onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete}
+                  onRecordBest={recordGameBest}
+                  bests={bestsForPure(data && data.gameBests, 'ward-boss')} />
       )}
 
       {/* Drill Packs — import / manage / author portable drill content. */}

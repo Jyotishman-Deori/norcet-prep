@@ -475,6 +475,53 @@ export const fontStyles = `
   letter-spacing: 0;
 }
 
+/* ── WARD BOSS — flagship clinical-simulation game (ward-boss.jsx). Every
+   class below is a decorative motion layer; all are opted out in the
+   reduced-motion block. Spring curve = cubic-bezier(.34,1.56,.64,1). */
+/* Staggered case-file card entrance in the scenario picker (delay baked per
+   index at the call site). Rises + settles with a gentle overshoot. */
+@keyframes wbCardIn { 0% { opacity: 0; transform: translateY(16px) scale(0.97); } 100% { opacity: 1; transform: none; } }
+.wb-card-in { animation: wbCardIn 0.42s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Patient-handoff brief card spring entrance. */
+@keyframes wbBriefIn { 0% { opacity: 0; transform: translateY(22px) scale(0.94); } 100% { opacity: 1; transform: none; } }
+.wb-brief-in { animation: wbBriefIn 0.5s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Phase-transition banner sweep — the new phase label slides in from the left
+   with an overshoot as the FSM advances. */
+@keyframes wbBannerSweep { 0% { opacity: 0; transform: translateX(-18px); } 100% { opacity: 1; transform: none; } }
+.wb-banner-sweep { animation: wbBannerSweep 0.44s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Harm/neutral shake — a short horizontal wobble on a wrong tap. */
+@keyframes wbShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-6px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+.wb-shake { animation: wbShake 0.4s ease-in-out both; }
+/* Floating "+15" points chip — rises and fades on a key action. */
+@keyframes wbPointFloat { 0% { opacity: 0; transform: translate(-50%, 6px) scale(0.8); } 20% { opacity: 1; transform: translate(-50%, -2px) scale(1.05); } 100% { opacity: 0; transform: translate(-50%, -34px) scale(1); } }
+.wb-point-float { animation: wbPointFloat 1.15s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+/* Chart entry slide — the log note appears like a line being charted. */
+@keyframes wbChartIn { 0% { opacity: 0; transform: translateY(-4px); max-height: 0; } 100% { opacity: 1; transform: none; max-height: 240px; } }
+.wb-chart-in { animation: wbChartIn 0.4s ease-out both; }
+/* Stability-bar damage flash — the bar pulses red when it takes a hit. */
+@keyframes wbDamage { 0% { filter: brightness(1); } 30% { filter: brightness(1.9) saturate(1.4); } 100% { filter: brightness(1); } }
+.wb-damage { animation: wbDamage 0.45s ease-out both; }
+/* Chaos per-decision countdown bar — CSS shrink, restarted via key remount. */
+@keyframes wbShrink { from { width: 100%; } to { width: 0%; } }
+/* Soft-alarm banner — a slow amber pulse. */
+@keyframes wbPulseSoft { 0%,100% { box-shadow: 0 0 0 1px rgba(245,158,11,0.4); } 50% { box-shadow: 0 0 0 1px rgba(245,158,11,0.8), 0 0 18px 1px rgba(245,158,11,0.35); } }
+.wb-pulse-soft { animation: wbPulseSoft 2.2s ease-in-out infinite; }
+/* Loud-alarm frame — a faster red pulse around the monitor. */
+@keyframes wbPulseLoud { 0%,100% { box-shadow: 0 0 0 1px rgba(239,68,68,0.5), 0 0 0 0 rgba(239,68,68,0); } 50% { box-shadow: 0 0 0 2px rgba(239,68,68,0.95), 0 0 26px 3px rgba(239,68,68,0.5); } }
+.wb-pulse-loud { animation: wbPulseLoud 1.1s ease-in-out infinite; }
+/* Boss-entry flash — a single red vignette flash on entering the Final Boss. */
+@keyframes wbBossFlash { 0% { opacity: 0; } 12% { opacity: 0.9; } 40% { opacity: 0.35; } 100% { opacity: 0; } }
+.wb-boss-flash { animation: wbBossFlash 1.1s ease-out forwards; }
+/* Boss sustained vignette — a slow ominous breathing red frame. */
+@keyframes wbBossBreathe { 0%,100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+.wb-boss-breathe { animation: wbBossBreathe 2.4s ease-in-out infinite; }
+/* Boss correct step — a heavy satisfying pop on the step counter. */
+@keyframes wbStepPop { 0% { transform: scale(1); } 40% { transform: scale(1.25); } 100% { transform: scale(1); } }
+.wb-step-pop { animation: wbStepPop 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Win celebration icon — a gentle triumphant bloom (not over the top). */
+@keyframes wbWinBloom { 0% { opacity: 0; transform: scale(0.6); } 55% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+.wb-win-bloom { animation: wbWinBloom 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
@@ -486,7 +533,10 @@ export const fontStyles = `
   .naming-icon-enter, .naming-headline-enter, .naming-body-enter,
   .note-menu-in, .note-reply-in, .note-select-pop, .note-reco-pulse,
   .note-count-tick, .note-bullet-in,
-  .premium-card-in, .premium-select-pop { animation: none !important; }
+  .premium-card-in, .premium-select-pop,
+  .wb-card-in, .wb-brief-in, .wb-banner-sweep, .wb-shake,
+  .wb-point-float, .wb-chart-in, .wb-damage, .wb-pulse-soft, .wb-pulse-loud,
+  .wb-boss-flash, .wb-boss-breathe, .wb-step-pop, .wb-win-bloom { animation: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
