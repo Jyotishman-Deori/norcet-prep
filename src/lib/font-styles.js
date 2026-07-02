@@ -563,6 +563,43 @@ export const fontStyles = `
 @keyframes dzVitalTick { 0% { transform: scale(1); } 45% { transform: scale(1.06); } 100% { transform: scale(1); } }
 .dz-vital-tick { animation: dzVitalTick 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── WAVE HUNTER — ECG caliper measurement lab (ward-boss.jsx sibling). Every
+   class below is a decorative motion layer; all are opted out in the reduced-
+   motion block. The strip stays FUNCTIONAL under reduced motion (calipers drag,
+   readout updates, verdict reveals) — only these decorative layers are gated.
+   Spring curve = cubic-bezier(.34,1.56,.64,1). */
+/* Task card spring entrance as each measurement loads. */
+@keyframes whxTaskIn { 0% { opacity: 0; transform: translateY(18px) scale(0.96); } 100% { opacity: 1; transform: none; } }
+.whx-task-in { animation: whxTaskIn 0.44s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Intro pitch chip stagger (delay baked per index at the call site). */
+@keyframes whxChipIn { 0% { opacity: 0; transform: translateY(10px) scale(0.9); } 100% { opacity: 1; transform: none; } }
+.whx-chip-in { animation: whxChipIn 0.36s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Caliper grab — the handle pops when a caliper is picked up / selected. */
+@keyframes whxHandlePop { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1.12); } }
+.whx-handle-pop { animation: whxHandlePop 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Live readout chip — a tiny spring tick when the measured span changes. */
+@keyframes whxReadoutTick { 0% { transform: scale(1); } 42% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.whx-readout-tick { animation: whxReadoutTick 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Ghost calipers (shown on a wrong answer) fade + slide into their true spots. */
+@keyframes whxGhostIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+.whx-ghost-in { animation: whxGhostIn 0.5s ease-out both; }
+/* Success bloom — a green radial bloom expands from the strip on a correct read. */
+@keyframes whxBloom { 0% { opacity: 0; transform: scale(0.4); } 45% { opacity: 0.75; } 100% { opacity: 0; transform: scale(1.8); } }
+.whx-bloom { animation: whxBloom 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+/* Wrong read — the strip jolts once. */
+@keyframes whxShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+.whx-shake { animation: whxShake 0.42s ease-in-out both; }
+/* Reveal-card icon bloom (reuses the ward-boss/drip feel). */
+@keyframes whxResultBloom { 0% { opacity: 0; transform: scale(0.6); } 55% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+.whx-result-bloom { animation: whxResultBloom 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Done-view recap rows stagger up (delay baked per index at the call site). */
+@keyframes whxRecapIn { 0% { opacity: 0; transform: translateY(12px); } 100% { opacity: 1; transform: none; } }
+.whx-recap-in { animation: whxRecapIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Flashpoint timer bar — a soft glow while the clock runs (colour is not the
+   only signal; the numeric seconds carry it under reduced motion). */
+@keyframes whxTimerGlow { 0%,100% { opacity: 0.9; } 50% { opacity: 1; } }
+.whx-timer-glow { animation: whxTimerGlow 1.2s ease-in-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
@@ -580,7 +617,10 @@ export const fontStyles = `
   .wb-boss-flash, .wb-boss-breathe, .wb-step-pop, .wb-win-bloom,
   .dz-chip-in, .dz-round-in, .dz-alarm-pulse, .dz-drip, .dz-ripple,
   .dz-rate-tick, .dz-hold-pulse, .dz-win-bloom,
-  .dz-result-bloom, .dz-fail-shake, .dz-vital-tick { animation: none !important; }
+  .dz-result-bloom, .dz-fail-shake, .dz-vital-tick,
+  .whx-task-in, .whx-chip-in, .whx-handle-pop, .whx-readout-tick,
+  .whx-ghost-in, .whx-bloom, .whx-shake, .whx-result-bloom,
+  .whx-recap-in, .whx-timer-glow { animation: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }

@@ -180,6 +180,9 @@ import { recordBest as recordBestPure, bestsFor as bestsForPure } from './lib/ga
 // Drip Zone — closed-loop IV titration simulator (pure math in
 // lib/titration-engine, drugs in src/data/titration-drugs).
 import DripZone from './screens/drip-zone.jsx';
+// Wave Hunter — calibrated ECG caliper measurement lab (geometry in
+// lib/caliper-engine, tasks in src/data/caliper-tasks).
+import WaveHunter from './screens/wave-hunter.jsx';
 // Drill Packs — import/manage/author portable content for the drills.
 // [A1 slice 30] BookmarksScreen extracted (data+allQuestions->useData; useFgOnDark).
 import BookmarksScreen from './screens/bookmarks.jsx';
@@ -237,7 +240,7 @@ import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
 const NOTE_FAB_HIDDEN = new Set([
   'advanced-test', 'paper-test',
   'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
-  'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone',
+  'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
 ]);
 // [A1 slice 40] rename-profile host extracted.
 import RenameProfileHost from './screens/rename-profile-host.jsx';
@@ -967,7 +970,7 @@ function hydrateLoaded(rawData) {
 // pull-to-refresh would conflict or be harmful. PTR stays on everywhere else.
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
-  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone',
+  'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -4322,6 +4325,11 @@ export default function App() {
       {/* Drip Zone — closed-loop IV titration simulator (clinical sims). */}
       {nav.screen === 'drip-zone' && (
         <DripZone onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
+      )}
+
+      {/* Wave Hunter — ECG caliper measurement lab (clinical sims). */}
+      {nav.screen === 'wave-hunter' && (
+        <WaveHunter onBack={goHome} onSetPace={setPace} onComplete={handleGameComplete} />
       )}
 
       {/* Drill Packs — import / manage / author portable drill content. */}

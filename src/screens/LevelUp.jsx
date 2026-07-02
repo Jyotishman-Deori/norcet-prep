@@ -10,7 +10,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Activity, Badge, Check, ChevronRight, ClipboardList, Coins, Crosshair, Crown, Flame, Gift,
-  Droplets, ListOrdered, Network, Recycle, Scale, ScanSearch, Siren, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
+  Droplets, ListOrdered, Network, Recycle, Ruler, Scale, ScanSearch, Siren, Stethoscope, Syringe, Sparkles, Target, Moon, HeartPulse,
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -47,8 +47,9 @@ const GAMES = [
   { screen: 'shift-survival',      label: 'Shift Survival',       sub: 'High-stress mode',     icon: HeartPulse,  grad: ['#B91C1C', '#450A0A'] },
   // Clinical simulations — full multi-phase patient scenarios (group: 'sim'
   // renders under its own section header below the drills grid).
-  { screen: 'ward-boss',           group: 'sim', label: 'Ward Boss', sub: 'Stabilise the crashing patient', icon: Siren,    grad: ['#7F1D1D', '#450A0A'] },
-  { screen: 'drip-zone',           group: 'sim', label: 'Drip Zone', sub: 'Titrate into the window',        icon: Droplets, grad: ['#0369A1', '#0C3B5E'] },
+  { screen: 'ward-boss',           group: 'sim', label: 'Ward Boss',   sub: 'Stabilise the crashing patient', icon: Siren,    grad: ['#7F1D1D', '#450A0A'] },
+  { screen: 'drip-zone',           group: 'sim', label: 'Drip Zone',   sub: 'Titrate into the window',        icon: Droplets, grad: ['#0369A1', '#0C3B5E'] },
+  { screen: 'wave-hunter',         group: 'sim', label: 'Wave Hunter', sub: 'Measure the strip',              icon: Ruler,    grad: ['#065F46', '#06281E'] },
 ];
 
 // Circular XP ring. Pure SVG (zero-asset), animates the sweep on mount.
