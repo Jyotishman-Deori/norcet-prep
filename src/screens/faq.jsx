@@ -18,6 +18,7 @@ import {
 } from '../lib/faq.js';
 import { GUEST_ID } from '../lib/profiles.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
+import RichText from '../ui/rich-text.jsx';
 import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
 import { rankTrending } from '../lib/trending.js';
 
@@ -170,8 +171,8 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
                           <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '22' }}>
                             <Sparkles size={13} style={{ color: T.primary }} />
                           </div>
-                          <div className="rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap" style={{ background: T.surfaceWarm, color: T.ink }}>
-                            {f.answer}
+                          <div className="rounded-2xl rounded-tl-sm px-3.5 py-2.5" style={{ background: T.surfaceWarm, color: T.ink }}>
+                            <RichText text={f.answer} />
                           </div>
                         </div>
 
@@ -213,8 +214,8 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
                                           <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: T.success, color: '#FFF' }}>Admin</span>
                                           <span className="text-[10px]" style={{ color: T.muted }}>{relTime(q.repliedAt)}</span>
                                         </div>
-                                        <div className="rounded-2xl rounded-tl-sm px-3.5 py-2.5 text-sm leading-relaxed whitespace-pre-wrap" style={{ background: T.surfaceWarm, color: T.ink }}>
-                                          {q.reply}
+                                        <div className="rounded-2xl rounded-tl-sm px-3.5 py-2.5" style={{ background: T.surfaceWarm, color: T.ink }}>
+                                          <RichText text={q.reply} />
                                         </div>
                                         <div className="mt-1.5"><HelpfulBulb voteId={faqReplyVoteId(q.id)} profileId={profileId} isAdmin={isAdmin} compact /></div>
                                       </div>

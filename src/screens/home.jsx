@@ -19,6 +19,8 @@ import { todayStr } from '../lib/utils.js';
 import { getNextQuote } from '../lib/quotes.js';
 import { progress as luProgress, tierFor as luTierFor, normalizeLevelup } from '../lib/levelup.js';
 import { pushNotification } from '../lib/notifications.js';
+import RichText from '../ui/rich-text.jsx';
+import { toPlainText } from '../lib/rich-text.js';
 import { Card, Button, requestConfirm, NoteButton } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
 import FavStrip from '../ui/fav-strip.jsx';
@@ -341,7 +343,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     pushNotification({
       type: 'admin',
       title: announcement.level === 'important' ? 'Important announcement' : 'Announcement',
-      body: announcement.text.slice(0, 240),
+      body: toPlainText(announcement.text).slice(0, 240),
       action: null,
       dedupeMs: 7 * 24 * 60 * 60 * 1000,
     });
@@ -593,9 +595,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 <div className="text-xs font-semibold mb-0.5" style={{ color: annAccent }}>
                   {important ? 'Important' : 'Announcement'}
                 </div>
-                <div className="text-sm leading-snug whitespace-pre-wrap" style={{ color: T.inkSoft }}>
-                  {announcement.text}
-                </div>
+                <RichText text={announcement.text} className="text-sm" style={{ color: T.inkSoft }} />
               </div>
               <button onClick={() => onDismissAnnouncement(announcement.id)}
                       className="no-tap-highlight p-1 -m-1 flex-shrink-0" aria-label="Dismiss">

@@ -15,6 +15,8 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
 import AdminEmpty from './admin-empty.jsx';
 import { listFaqs, createFaq, updateFaq, deleteFaq, FAQ_CATEGORIES } from '../lib/faq.js';
+import { RichTextEditor } from './rich-text.jsx';
+import { toPlainText } from '../lib/rich-text.js';
 
 const blank = { id: null, question: '', answer: '', category: 'General' };
 const OTHER = '__other__';
@@ -94,8 +96,10 @@ export default function AdminFaqManager({ onBack }) {
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Answer</label>
-            <textarea value={form.answer} onChange={e => setForm(f => ({ ...f, answer: e.target.value }))} rows={6}
-                      className="w-full mt-1 text-sm rounded-xl px-3 py-2 resize-none outline-none" style={input} placeholder="Write the answer. Line breaks are preserved." />
+            <div className="mt-1">
+              <RichTextEditor value={form.answer} onChange={v => setForm(f => ({ ...f, answer: v }))} rows={6}
+                              placeholder="Write the answer, then format it with the toolbar — bold, headings, lists, links, highlight…" />
+            </div>
           </div>
           <div>
             <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Category</label>
@@ -162,7 +166,7 @@ export default function AdminFaqManager({ onBack }) {
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded" style={{ background: T.primary + '18', color: T.primary }}>{f.category || 'General'}</span>
                     </div>
-                    <div className="text-xs mt-1.5 line-clamp-2" style={{ color: T.muted }}>{f.answer}</div>
+                    <div className="text-xs mt-1.5 line-clamp-2" style={{ color: T.muted }}>{toPlainText(f.answer)}</div>
                   </div>
                   <div className="flex flex-col gap-1.5 flex-shrink-0">
                     <button onClick={() => startEdit(f)} className="no-tap-highlight p-2 rounded-lg active:scale-90 transition" style={{ background: T.surfaceWarm }} aria-label="Edit">

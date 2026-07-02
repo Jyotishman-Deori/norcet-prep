@@ -31,6 +31,7 @@ import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import ContentReview from './content-review.jsx';
 import AdminStorageCheck from '../ui/admin-storage-check.jsx';
+import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
@@ -998,7 +999,7 @@ function AdminPanel({
                     {liveImportant ? 'Important' : 'Info'}
                   </span>
                 </div>
-                <div className="text-sm whitespace-pre-wrap leading-relaxed" style={{ color: T.ink }}>{announcement.text}</div>
+                <RichText text={announcement.text} style={{ color: T.ink }} />
                 <div className="text-[10px] mt-1.5" style={{ color: T.muted }}>
                   Posted {fmtWhen(announcement.ts)}
                   {announcement.expiresAt
@@ -1007,11 +1008,10 @@ function AdminPanel({
                 </div>
               </div>
             )}
-            <textarea value={annText} onChange={e => { setAnnText(e.target.value); setAnnMsg(null); }}
-                      placeholder="e.g. New Pharmacology bank added — give it a try!" rows={3} maxLength={280}
-                      className="w-full rounded-xl px-3 py-3 mb-2 text-sm resize-none"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
-            <div className="text-[10px] mb-3 text-right" style={{ color: T.muted }}>{annText.length}/280</div>
+            <div className="mb-3">
+              <RichTextEditor value={annText} onChange={v => { setAnnText(v); setAnnMsg(null); }}
+                              placeholder="e.g. New Pharmacology bank added — give it a try!" rows={3} maxLength={280} />
+            </div>
 
             {/* Urgency level toggle */}
             <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: T.muted }}>Urgency</div>

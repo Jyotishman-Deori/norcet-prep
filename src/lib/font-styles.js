@@ -97,6 +97,35 @@ export const fontStyles = `
 /* Override: elements that must stay instant (timer digits, progress fills) */
 .no-transition, .no-transition * { transition: none !important; }
 
+/* ── Rich text — magazine-style output for admin-authored content (FAQ answers,
+   FAQ replies, announcements). Renders the safe HTML from src/lib/rich-text.js.
+   Themed via the --tokens so it fits every palette; static (no animation, so no
+   reduced-motion entry needed). Backward compatible: plain text → one <p>. */
+.rich { color: var(--ink); font-size: 0.9375rem; line-height: 1.65; overflow-wrap: anywhere; }
+.rich > :first-child { margin-top: 0; }
+.rich > :last-child { margin-bottom: 0; }
+.rich .rich-p { margin: 0 0 0.7em; }
+.rich .rich-h { font-family: 'Fraunces', Georgia, serif; font-weight: 700; line-height: 1.25; color: var(--ink); margin: 1.05em 0 0.4em; letter-spacing: -0.01em; }
+.rich .rich-h1 { font-size: 1.5em; }
+.rich .rich-h2 { font-size: 1.22em; }
+.rich .rich-h3 { font-size: 0.82em; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; font-family: inherit; margin-bottom: 0.3em; }
+.rich strong { font-weight: 700; color: var(--ink); }
+.rich em { font-style: italic; }
+.rich u { text-decoration-thickness: 2px; text-underline-offset: 2px; }
+.rich s { opacity: 0.6; }
+/* Highlight + code + quote backgrounds are theme-INDEPENDENT translucent tints so
+   they stay visible on any parent (the FAQ bubble is itself surface-warm). */
+.rich .rich-hl { background: rgba(250,204,21,0.5); color: #171717; padding: 0.04em 0.22em; border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+.rich .rich-code { font-family: ui-monospace, 'SFMono-Regular', Menlo, monospace; font-size: 0.86em; background: rgba(125,120,110,0.16); border: 1px solid rgba(125,120,110,0.28); border-radius: 5px; padding: 0.05em 0.38em; }
+.rich .rich-ul, .rich .rich-ol { margin: 0.15em 0 0.75em; padding-left: 1.4em; }
+.rich .rich-ul { list-style: disc; }
+.rich .rich-ol { list-style: decimal; }
+.rich .rich-ul li, .rich .rich-ol li { margin: 0.22em 0; padding-left: 0.15em; }
+.rich .rich-ul li::marker { color: var(--primary); }
+.rich .rich-ol li::marker { color: var(--primary); font-weight: 600; }
+.rich .rich-quote { margin: 0.2em 0 0.85em; padding: 0.5em 0.95em; border-left: 4px solid var(--primary); background: rgba(125,120,110,0.14); border-radius: 0 8px 8px 0; color: var(--ink-soft); font-style: italic; }
+.rich .rich-a { color: var(--primary); text-decoration: underline; text-underline-offset: 2px; font-weight: 600; overflow-wrap: anywhere; }
+
 /* ── Tap / press feedback — cards feel physically pressed ───────────────────
    Applied via the .pressable class. The scale snaps back on release via the
    short duration; the timing-function gives a springy feel. */
