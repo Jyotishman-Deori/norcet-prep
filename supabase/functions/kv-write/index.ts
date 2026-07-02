@@ -22,8 +22,9 @@
 //   feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
-//   bank: / announcement: / faq: / qgate: / selftest:
-//        -> admins only  (bank: = question sets — RESTRUCTURED to admin-only
+//   bank: / announcement: / faq: / qgate: / selftest: / game_config
+//        -> admins only  (game_config = the single live-tuning row edited from
+//           the admin Config editor; bank: = question sets — RESTRUCTURED to admin-only
 //           uploads so answer keys stay trustworthy; qgate: = the content
 //           quality gate's hidden-id list; selftest: = the admin panel's
 //           storage self-test canary — a never-rendered probe key; all
@@ -253,8 +254,9 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3) Admin-only keys.
-    if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:")) {
+    // 3) Admin-only keys. `game_config` is the single live-tuning row (XP curve,
+    // prices, quests, crate odds) edited from the admin panel's Config editor.
+    if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:") || key === "game_config") {
       if (!admin) return json({ error: "Forbidden: admin only" }, 403);
       // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).
       const rl = await rateHit("admin-write", session.id, 20, 60 * 60);

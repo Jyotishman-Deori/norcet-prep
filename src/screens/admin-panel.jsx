@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   AlertCircle, AlertTriangle, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, ShieldCheck, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
+  RefreshCw, Send, ShieldCheck, SlidersHorizontal, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
@@ -31,6 +31,7 @@ import AdminEmpty from '../ui/admin-empty.jsx';
 import ReportedQuestionModal from './reported-question-modal.jsx';
 import ContentReview from './content-review.jsx';
 import AdminStorageCheck from '../ui/admin-storage-check.jsx';
+import AdminConfigEditor from '../ui/admin-config-editor.jsx';
 import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
@@ -1352,6 +1353,10 @@ function AdminPanel({
     return <AdminStorageCheck onBack={backToDash} />;
   }
 
+  if (view === 'config') {
+    return <AdminConfigEditor onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -1492,6 +1497,15 @@ function AdminPanel({
             hint="Verify content is readable"
             onClick={() => setView('storage-check')}
             signal={<Database size={18} style={{ color: T.muted }} />} />
+
+          {/* Live config — tune XP curve, prices, quests, crate rewards with no redeploy */}
+          <AdminTile
+            icon={<SlidersHorizontal size={22} style={{ color: T.primary }} />}
+            accent={T.primary}
+            label="Live config"
+            hint="Tune economy & prices"
+            onClick={() => setView('config')}
+            signal={<SlidersHorizontal size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile

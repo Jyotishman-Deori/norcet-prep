@@ -15,8 +15,11 @@
 //
 // Engines (levelup.js, cosmetics.js, combo-burst.jsx) read these via getConfig()
 // at call time — never import the raw numbers.
+//
+// NOTE: storage.js is imported LAZILY inside loadGameConfig() (not at the top),
+// so pure consumers of DEFAULTS/getConfig (e.g. the admin Config editor + its
+// Node test) don't drag in the Vite-only storage module.
 // =====================================================================
-import { get as kvGet } from '../storage.js';
 
 export const DEFAULTS = {
   // XP curve: xpToNext(level) = round(coefficient * level^exponent * reqScale).
@@ -98,6 +101,7 @@ export function applyRemoteConfig(remote) {
 // to call early. Never throws; returns true if a remote override was applied.
 export async function loadGameConfig() {
   try {
+    const { get: kvGet } = await import('../storage.js');
     const r = await kvGet('game_config', true);
     if (r && r.value != null) {
       const remote = typeof r.value === 'string' ? JSON.parse(r.value) : r.value;
