@@ -12,13 +12,14 @@ import { BellRing, Send, Loader2, CheckCircle2, AlertTriangle } from 'lucide-rea
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
 import { getAuthToken } from '../storage.js';
+import { logAdminAction } from '../lib/admin-audit.js';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const TITLE_MAX = 80, BODY_MAX = 200;
 
-export default function AdminPushComposer({ onBack }) {
+export default function AdminPushComposer({ onBack, actorName }) {
   const { theme: T } = useTheme();
   const [title, setTitle] = useState('');
   const [text, setText] = useState('');
@@ -39,6 +40,7 @@ export default function AdminPushComposer({ onBack }) {
       });
       const j = await r.json().catch(() => ({}));
       if (!r.ok) { setResult({ error: j.error || `Failed (${r.status})` }); return; }
+      logAdminAction({ action: 'push.send', detail: { title: title.trim(), sent: j.sent ?? 0, total: j.total ?? 0 }, actorName });
       setResult(j);
       setTitle(''); setText('');
     } catch (e) {

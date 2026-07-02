@@ -66,6 +66,10 @@ export const KEYS = {
   // #29 — client error/crash groups (shared, admin-readable). One row per
   // error SIGNATURE so repeated crashes aggregate instead of flooding.
   errlog:        (sig)       => `errlog:${sig}`,
+  // ADMIN AUDIT LOG — one append-only row per privileged admin action. The
+  // broker stamps the verified actor + server time; admin-only read. Never
+  // updated (append-only); admin DELETE allowed for pruning.
+  adminlog:      (id)        => `adminlog:${id}`,
   // #28 — per-user engagement summary (shared, admin-readable, ONE key per
   // user so concurrent writes never clobber). Admin UI aggregates only.
   analyticsUser: (id)        => `analytics:user:${id}`,
@@ -161,6 +165,8 @@ export const KEY_PREFIXES = {
   // #28 — per-user engagement summaries (shared, admin-readable). Aggregated
   // in the admin Engagement view.
   ANALYTICS_USER: 'analytics:user:',
+  // ADMIN AUDIT LOG — append-only privileged-action log (admin-only read).
+  ADMINLOG: 'adminlog:',
   // TRENDING — interaction counters for the free-tier "trending" engine.
   TREND: 'trend:',
   // AI LEARNING NOTES — local-only bulleted study notes, per profile.

@@ -17,11 +17,12 @@ import AdminEmpty from './admin-empty.jsx';
 import { listFaqs, createFaq, updateFaq, deleteFaq, FAQ_CATEGORIES } from '../lib/faq.js';
 import { RichTextEditor } from './rich-text.jsx';
 import { toPlainText } from '../lib/rich-text.js';
+import { logAdminAction } from '../lib/admin-audit.js';
 
 const blank = { id: null, question: '', answer: '', category: 'General' };
 const OTHER = '__other__';
 
-export default function AdminFaqManager({ onBack }) {
+export default function AdminFaqManager({ onBack, actorName }) {
   const { theme: T } = useTheme();
   const [faqs, setFaqs] = useState(null);
   const [form, setForm] = useState(null); // null = list view; object = editing/creating
@@ -60,9 +61,11 @@ export default function AdminFaqManager({ onBack }) {
       if (form.id) {
         const existing = (faqs || []).find(x => x.id === form.id);
         await updateFaq(existing, { question: form.question.trim(), answer: form.answer.trim(), category });
+        logAdminAction({ action: 'faq.update', target: form.id, targetName: form.question.trim().slice(0, 60), actorName });
         setOkMsg('FAQ updated — changes are live for students.');
       } else {
         await createFaq({ question: form.question, answer: form.answer, category });
+        logAdminAction({ action: 'faq.create', targetName: form.question.trim().slice(0, 60), actorName });
         setOkMsg('FAQ published — it’s live at the top of the FAQ screen.');
       }
       setForm(null);
@@ -75,7 +78,7 @@ export default function AdminFaqManager({ onBack }) {
   const remove = async (id) => {
     setBusy(true);
     setErr(null);
-    try { await deleteFaq(id); setConfirmDel(null); setOkMsg('FAQ deleted.'); await refresh(); }
+    try { await deleteFaq(id); logAdminAction({ action: 'faq.delete', target: id, actorName }); setConfirmDel(null); setOkMsg('FAQ deleted.'); await refresh(); }
     catch (e) { setErr(failText(e)); }
     finally { setBusy(false); }
   };

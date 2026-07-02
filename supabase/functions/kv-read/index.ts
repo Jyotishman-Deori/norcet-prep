@@ -16,6 +16,7 @@
 //                    LIST: admin = all; a student = only their own rows.   [owned-content]
 //   errlog:       -> ADMIN only (crash stacks — internal)                  [admin-only]
 //   analytics:    -> ADMIN only (engagement summaries)                     [admin-only]
+//   adminlog:     -> ADMIN only (privileged-action audit log)              [admin-only]
 // READS THAT STAY ON THE DIRECT ANON PATH (still anon-SELECTable, by design):
 //   announcement:, bank:, faq:, faqq:, qgate:, trend:, favsec:, favorder:,
 //   helpful:, notHelpful:, leaderboard:, profilemeta:  (public content +
@@ -97,7 +98,7 @@ async function isAdmin(s: Session): Promise<boolean> {
 // → admin-only → deny.
 const OWNER_SCOPED = ["profile:", "myfeedback:"];   // 1 row per user, keyed by id
 const OWNED_CONTENT = ["feedback:"];                // author-owned, admin-moderated
-const ADMIN_ONLY = ["errlog:", "analytics:"];       // internal, admin eyes only
+const ADMIN_ONLY = ["errlog:", "analytics:", "adminlog:"]; // internal, admin eyes only
 function prefixFrom(list: string[], s: string): string | null {
   return list.find((p) => s.startsWith(p)) ?? null;
 }

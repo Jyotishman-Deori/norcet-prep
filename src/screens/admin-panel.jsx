@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Activity, AlertCircle, AlertTriangle, BellRing, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
-  RefreshCw, Send, ShieldCheck, SlidersHorizontal, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
+  RefreshCw, ScrollText, Send, ShieldCheck, SlidersHorizontal, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
@@ -35,8 +35,10 @@ import AdminConfigEditor from '../ui/admin-config-editor.jsx';
 import AdminEngagement from '../ui/admin-engagement.jsx';
 import AdminPushComposer from '../ui/admin-push-composer.jsx';
 import AdminUserDetail from '../ui/admin-user-detail.jsx';
+import AdminAuditLog from '../ui/admin-audit-log.jsx';
 import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
+import { logAdminAction } from '../lib/admin-audit.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
 import { loadHelpfulnessReport, clearHelpfulnessMany, clearAllHelpfulness } from '../lib/helpful-votes.js';
 import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/errorlog.js';
@@ -266,6 +268,7 @@ function AdminPanel({
     // Show a real failure message instead of optimistically claiming success.
     try {
       await onSaveAnnouncement(annText.trim(), annLevel, annExpiry === 'never' ? null : Number(annExpiry));
+      logAdminAction({ action: 'announcement.post', detail: { title: annText.trim().slice(0, 60), level: annLevel }, actorName: profile && profile.displayName });
       if (onLoadAnnHistory) setAnnHistory(await onLoadAnnHistory());
       setAnnMsg({ ok: true, text: 'Posted — all users will see it on their home screen.' });
     } catch (e) {
@@ -280,6 +283,7 @@ function AdminPanel({
     preserveTextRef.current = true;   // keep the editor text through announcement → null
     try {
       await onClearAnnouncement();
+      logAdminAction({ action: 'announcement.clear', actorName: profile && profile.displayName });
       setAnnMsg({ ok: true, text: 'Stopped — users no longer see it. The text is kept here so you can edit and re-post.' });
     } catch (e) {
       preserveTextRef.current = false;
@@ -300,7 +304,9 @@ function AdminPanel({
   };
 
   const deleteUser = async (id) => {
+    const victim = users.find(u => u.id === id);
     await onDeleteProfile(id);
+    logAdminAction({ action: 'user.delete', target: id, targetName: victim && victim.displayName, actorName: profile && profile.displayName });
     setUsers(prev => prev.filter(u => u.id !== id));
     setConfirmDeleteUser(null);
   };
@@ -877,7 +883,7 @@ function AdminPanel({
   // =================== DETAIL VIEW: USERS ===================
   // Member detail panel — opened by tapping a roster row.
   if (view === 'users' && openUser) {
-    return <AdminUserDetail meta={openUser} selfId={profile && profile.id}
+    return <AdminUserDetail meta={openUser} selfId={profile && profile.id} actorName={profile && profile.displayName}
                             onBack={() => { setOpenUser(null); refreshUsers(); }} />;
   }
   if (view === 'users') {
@@ -1356,7 +1362,7 @@ function AdminPanel({
   }
 
   if (view === 'faq') {
-    return <AdminFaqManager onBack={backToDash} />;
+    return <AdminFaqManager onBack={backToDash} actorName={profile && profile.displayName} />;
   }
 
   if (view === 'content-review') {
@@ -1368,7 +1374,7 @@ function AdminPanel({
   }
 
   if (view === 'config') {
-    return <AdminConfigEditor onBack={backToDash} />;
+    return <AdminConfigEditor onBack={backToDash} actorName={profile && profile.displayName} />;
   }
 
   if (view === 'engagement') {
@@ -1376,7 +1382,11 @@ function AdminPanel({
   }
 
   if (view === 'push') {
-    return <AdminPushComposer onBack={backToDash} />;
+    return <AdminPushComposer onBack={backToDash} actorName={profile && profile.displayName} />;
+  }
+
+  if (view === 'audit') {
+    return <AdminAuditLog onBack={backToDash} />;
   }
 
   // =================== DASHBOARD HOME (tiles only) ===================
@@ -1546,6 +1556,15 @@ function AdminPanel({
             hint="Notify every device"
             onClick={() => setView('push')}
             signal={<BellRing size={18} style={{ color: T.muted }} />} />
+
+          {/* Audit log — tamper-evident trail of every privileged admin action */}
+          <AdminTile
+            icon={<ScrollText size={22} style={{ color: T.inkSoft }} />}
+            accent={T.inkSoft}
+            label="Audit log"
+            hint="Who did what, when"
+            onClick={() => setView('audit')}
+            signal={<ScrollText size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile

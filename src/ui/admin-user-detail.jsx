@@ -16,6 +16,7 @@ import { Card, Button, TopBar } from './primitives.jsx';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 import { summarizeUser, applyCoinAdjust, applyResetProgress, COIN_PRESETS } from '../lib/admin-user-ops.js';
+import { logAdminAction } from '../lib/admin-audit.js';
 import { agoLabel } from '../lib/engagement.js';
 import { DEFAULT_DATA } from '../data/seed.js';
 
@@ -27,7 +28,7 @@ async function readBlob(id) {
   try { return JSON.parse(r.value); } catch (e) { return null; }
 }
 
-export default function AdminUserDetail({ meta, onBack, selfId }) {
+export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
   const { theme: T } = useTheme();
   const [blob, setBlob] = useState(undefined); // undefined=loading, null=missing
   const [busy, setBusy] = useState(false);
@@ -63,6 +64,7 @@ export default function AdminUserDetail({ meta, onBack, selfId }) {
       const fresh = (await readBlob(meta.id)) || { id: meta.id, displayName: meta.displayName };
       const { blob: next, before, after } = applyCoinAdjust(fresh, amount);
       await safeStorage.setSharedStrict(KEYS.profile(meta.id), JSON.stringify(next));
+      logAdminAction({ action: amount > 0 ? 'coins.grant' : 'coins.deduct', target: meta.id, targetName: meta.displayName, detail: { amount, before, after }, actorName });
       setBlob(next);
       setMsg({ ok: true, text: `Coins: ${before.toLocaleString()} → ${after.toLocaleString()} 🪙. They'll see it on their next app open.` });
       setAmount(null); setCustom('');
@@ -77,6 +79,7 @@ export default function AdminUserDetail({ meta, onBack, selfId }) {
       const fresh = (await readBlob(meta.id)) || { id: meta.id, displayName: meta.displayName };
       const next = applyResetProgress(fresh, clone(DEFAULT_DATA));
       await safeStorage.setSharedStrict(KEYS.profile(meta.id), JSON.stringify(next));
+      logAdminAction({ action: 'user.reset', target: meta.id, targetName: meta.displayName, actorName });
       setBlob(next);
       setResetArmed(false); setDangerOpen(false);
       setMsg({ ok: true, text: 'Progress reset — account, name and sign-in kept. Their device picks it up on next open.' });

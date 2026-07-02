@@ -214,7 +214,7 @@ async function brokerWrite(op, key, value) {
 // profile switcher needs for all users.
 // ---------------------------------------------------------------------
 const KV_READ_URL = SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/kv-read` : null;
-const BROKER_READ_PREFIXES = ['profile:', 'myfeedback:', 'feedback:', 'errlog:', 'analytics:'];
+const BROKER_READ_PREFIXES = ['profile:', 'myfeedback:', 'feedback:', 'errlog:', 'analytics:', 'adminlog:'];
 function isPrivateReadKey(key) {
   return typeof key === 'string' && BROKER_READ_PREFIXES.some(p => key.startsWith(p));
 }

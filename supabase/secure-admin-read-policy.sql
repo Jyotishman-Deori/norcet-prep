@@ -2,10 +2,10 @@
 -- NORCET PREP — Lock down feedback / crash / analytics reads (follow-up)
 --
 -- Extends the read-privacy model beyond profile:/myfeedback: so that
--- bug/question REPORTS, crash logs, and engagement rows are no longer
--- world-readable with the public anon key. After this runs, anon can read
--- every PUBLIC prefix but NOT these five:
---     profile:  myfeedback:  feedback:  errlog:  analytics:
+-- bug/question REPORTS, crash logs, engagement rows, and the admin audit log
+-- are no longer world-readable with the public anon key. After this runs, anon
+-- can read every PUBLIC prefix but NOT these six:
+--     profile:  myfeedback:  feedback:  errlog:  analytics:  adminlog:
 --
 -- This is a DENYLIST (not an allowlist) on purpose: any NEW public prefix
 -- added later stays readable automatically, so we don't repeat the
@@ -29,6 +29,7 @@ USING (
   AND key NOT LIKE 'feedback:%'
   AND key NOT LIKE 'errlog:%'
   AND key NOT LIKE 'analytics:%'
+  AND key NOT LIKE 'adminlog:%'
 );
 
 -- Verify after running (each should return 0 rows for the ANON key, but still

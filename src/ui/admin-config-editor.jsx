@@ -19,11 +19,12 @@ import {
   SECTIONS, sanitizeConfig, validateConfig, xpForLevel, changedFields,
   getAtPath, setAtPath,
 } from '../lib/game-config-edit.js';
+import { logAdminAction } from '../lib/admin-audit.js';
 
 const ICONS = { Gauge, Crown, Sparkles, Gift, Target };
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
-export default function AdminConfigEditor({ onBack }) {
+export default function AdminConfigEditor({ onBack, actorName }) {
   const { theme: T } = useTheme();
   const [baseline, setBaseline] = useState(null);
   const [cfg, setCfg] = useState(null);
@@ -64,6 +65,7 @@ export default function AdminConfigEditor({ onBack }) {
     try {
       const clean = sanitizeConfig(cfg);
       await safeStorage.setSharedStrict('game_config', JSON.stringify(clean));
+      logAdminAction({ action: 'config.save', detail: { changed: changed.slice() }, actorName });
       applyRemoteConfig(clean);
       setBaseline(clone(clean)); setCfg(clone(clean));
       setSaved(true);
@@ -79,6 +81,7 @@ export default function AdminConfigEditor({ onBack }) {
     setBusy(true); setErr(null);
     try {
       await safeStorage.delSharedStrict('game_config');
+      logAdminAction({ action: 'config.reset', actorName });
       const base = clone(DEFAULTS); applyRemoteConfig(null);
       setBaseline(base); setCfg(clone(base)); setConfirmReset(false); setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);

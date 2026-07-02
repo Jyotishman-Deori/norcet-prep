@@ -22,6 +22,9 @@
 //   feedback: / faqq:
 //        -> any logged-in user may CREATE; EDIT/DELETE only by the row's
 //           owner (any of several owner fields) or an admin
+//   adminlog:
+//        -> admins only; actor id/uid + server ts are STAMPED here (client
+//           can't forge who/when). Append-only; admin DELETE for pruning.
 //   bank: / announcement: / faq: / qgate: / selftest: / game_config
 //        -> admins only  (game_config = the single live-tuning row edited from
 //           the admin Config editor; bank: = question sets — RESTRUCTURED to admin-only
@@ -352,6 +355,23 @@ Deno.serve(async (req: Request) => {
         return json({ error: "Forbidden: not your content" }, 403);
       }
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
+    }
+
+    // 6a) Admin audit log — one append-only row per privileged admin action.
+    // Admin-only. We STAMP the verified actor (id/uid from the token) and the
+    // SERVER time into the value, overwriting anything the client sent — so the
+    // "who did it / when" is trustworthy and can't be forged, even by an admin
+    // claiming to be someone else. DELETE is admin-only (log pruning).
+    if (key.startsWith("adminlog:")) {
+      if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+      if (op === "del") return await deleteRow(key);
+      let entry: Record<string, unknown>;
+      try { entry = JSON.parse(String(body.value ?? "{}")); } catch { entry = {}; }
+      if (!entry || typeof entry !== "object") entry = {};
+      entry.actorId = session.id;
+      entry.actorUid = session.uid;
+      entry.ts = Date.now();
+      return await writeRow(key, JSON.stringify(entry));
     }
 
     // 6b) Storage self-test canary (admin panel → Storage self-test). A
