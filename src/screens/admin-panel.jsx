@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Activity, AlertCircle, AlertTriangle, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  Activity, AlertCircle, AlertTriangle, BellRing, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
   RefreshCw, Send, ShieldCheck, SlidersHorizontal, Square, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -33,6 +33,7 @@ import ContentReview from './content-review.jsx';
 import AdminStorageCheck from '../ui/admin-storage-check.jsx';
 import AdminConfigEditor from '../ui/admin-config-editor.jsx';
 import AdminEngagement from '../ui/admin-engagement.jsx';
+import AdminPushComposer from '../ui/admin-push-composer.jsx';
 import RichText, { RichTextEditor } from '../ui/rich-text.jsx';
 import { listFeedback, deleteFeedback, updateFeedback } from '../lib/feedback.js';
 import { aggregateFlaggedQuestions, saveHiddenIds, loadQuestionGate, FLAG_THRESHOLD } from '../lib/question-gate.js';
@@ -1362,6 +1363,10 @@ function AdminPanel({
     return <AdminEngagement onBack={backToDash} />;
   }
 
+  if (view === 'push') {
+    return <AdminPushComposer onBack={backToDash} />;
+  }
+
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
@@ -1520,6 +1525,15 @@ function AdminPanel({
             hint="Actives & win-back list"
             onClick={() => setView('engagement')}
             signal={<Activity size={18} style={{ color: T.muted }} />} />
+
+          {/* Push broadcast — on-demand Web Push to every subscribed device */}
+          <AdminTile
+            icon={<BellRing size={22} style={{ color: T.accent }} />}
+            accent={T.accent}
+            label="Push broadcast"
+            hint="Notify every device"
+            onClick={() => setView('push')}
+            signal={<BellRing size={18} style={{ color: T.muted }} />} />
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile
