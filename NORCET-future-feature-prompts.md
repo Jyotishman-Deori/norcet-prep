@@ -9313,3 +9313,94 @@ IMPACT/SAFETY: additive; reminder cron untouched; push is best-effort and never
   Student build GREEN (31 precache). api ships via the main push; no Supabase/
   admin redeploy. Reminders unaffected (separate opt-in). Default ON so existing
   subs (no flag) still receive content pushes.
+
+
+════════════════════════════════════════════════════════════════════
+FUTURE / DEFERRED — Role hierarchy: Admin > Co-Admin > Moderator > User
+(owner decision 2026-07-03: build this ONCE THE APP SCALES / real staff exist,
+ NOT now. ~12 testers + 1 owner today = premature. Captured here in full.)
+════════════════════════════════════════════════════════════════════
+
+GOAL: replace the current binary admin (all-or-nothing) with 4 staff tiers so
+the owner can delegate moderation without handing out full power.
+
+ROLES & POWERS (owner's intent):
+  • Admin (owner)  — everything; the ONLY one who can remove a Co-Admin and
+    transfer ownership. Single-admin model (Clash-of-Clans style): exactly one
+    Admin at a time.
+  • Co-Admin       — almost everything: announcements, live config, push, delete
+    users, engagement. CANNOT remove/other Co-Admins or the Admin.
+  • Moderator      — "community control" only: reply to feedback, author FAQs,
+    draft content (see integrity note below). No destructive/user powers.
+  • User           — the normal clients; no admin portal at all.
+
+OWNER'S SPEC (sound — adopt as-is):
+  • UI visibility matrix: never render a control the role can't use. Route guard
+    blocks the portal BEFORE load. User=none; Moderator=Community-Control tabs
+    (reports, user list read, basic logs); Co-Admin=most of the portal;
+    Admin=all incl. Danger Zone.
+  • Rank badges: Admin crimson-red; Co-Admin purple/dark-blue; Moderator
+    green/teal. Disabled/greyed controls when acting above your rank (e.g. a
+    Co-Admin sees Admin's Demote/Kick greyed out).
+  • Confirmation modal WITH A REASON on destructive staff actions; log the
+    reason so the owner can audit staff.
+  • Audit-log tab readable by Admin + Co-Admin ONLY.
+  • Promotion ceiling: you may promote only to ONE level BELOW your own
+    (Co-Admin can make a Moderator, NOT another Co-Admin).
+  • Self-action protection: block actor_id == target_id for destructive/demote.
+  • Last-Admin lockout: Admin cannot delete/leave/self-demote until ownership is
+    transferred. Transfer = ATOMIC txn (demote Admin↔promote Co-Admin; both or
+    neither).
+  • Session revocation on role change (see the freebie below — easier here).
+
+ARCHITECTURE ADAPTATIONS FOR *THIS* APP (the real work / what differs):
+  1. FREEBIE — instant revocation is basically free. Every broker (kv-write,
+     kv-read, push-broadcast) ALREADY re-checks the DB (admin_profile_ids) per
+     action. So keep ROLE OUT of the signed session token; have the brokers look
+     up the caller's CURRENT role from the DB each call → a demotion takes effect
+     on the very next action, no JWT-expiry problem. Only add-on: a lightweight
+     role re-check on admin-app focus/interval to drop the PORTAL VIEW instantly
+     (server already rejects the actions regardless).
+  2. SCHEMA — admin_profile_ids (binary) → add a `role` column, or an
+     admin_roles table { profile_id, role, granted_by, granted_at }. RLS +
+     admin-manage + all 3 brokers gate by role tier. isAdmin() → roleOf().
+  3. LOGIN MODEL — shift from the shared ADMIN_PASSPHRASE unlock to PER-ACCOUNT
+     staff roles (each staffer signs in as themselves; their profile carries a
+     role). This is the true prerequisite — it also makes the audit log's
+     server-stamped actorId attributable to a real person (already built).
+  4. CONTENT-INTEGRITY CONFLICT — CLAUDE.md deliberately restricts bank/question
+     UPLOADS to admin-only (answer keys stay trustworthy). Owner wants Moderators
+     to "upload questions/notes." RESOLVE by: Moderators DRAFT into the existing
+     content-staging review queue; only Admin/Co-Admin PUBLISH. Keeps integrity
+     AND lets mods help. (FAQ authoring + feedback replies are fine for Mods.)
+  5. "Financial metrics / integration keys" Admin-only tab = N/A today (no
+     payments — freemium is placeholder; keys are NEVER in the client bundle —
+     verified). The real "Danger Zone" = delete user / reset progress / live
+     config / ownership transfer.
+  6. PER-TOOL MIN-ROLE MAP (existing admin tools, 2026-07-03):
+       Moderator : feedback replies, FAQ manager, content DRAFTS, read reports/
+                   users, basic logs.
+       Co-Admin  : + announcements, Live config, Push broadcast, Engagement,
+                   Storage self-test, delete users, member coin tools?, promote
+                   up to Moderator, read Audit log.
+       Admin     : + remove Co-Admins, ownership transfer, everything.
+     (Owner to confirm whether Co-Admin gets coin-grant/reset — sensitive.)
+
+ALREADY IN PLACE (prereqs done — this rides on them):
+  • Fail-closed brokers w/ signed session token + admin_profile_ids re-check.
+  • Audit log (adminlog:) with SERVER-STAMPED actor id/uid + ts — just add a
+    `reason` field for destructive staff actions, and gate its tile to Admin/
+    Co-Admin.
+  • No secrets in bundle; separate admin build; server-side authz throughout.
+
+SUGGESTED BUILD ORDER (when resumed):
+  A. Schema + roleOf() + per-account staff login (replace passphrase-only).
+  B. Role-gate the 3 brokers + admin-manage (server truth) — do THIS before any
+     UI, per CLAUDE.md cosmetic-hiding rule.
+  C. UI: role-based route guard + visibility matrix + badges + disabled states.
+  D. Promotion ceiling + self-action + last-admin + atomic ownership transfer.
+  E. Reason-on-destructive + audit `reason` + audit tab role-gate.
+  F. Moderator content-draft flow via content-staging.
+
+DEPENDENCY: pairs naturally with the pre-launch per-account/MFA move and (free-
+tier) Cloudflare Access on admin.nurseholic.in once that domain is bought.
