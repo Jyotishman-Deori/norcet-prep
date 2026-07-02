@@ -522,6 +522,47 @@ export const fontStyles = `
 @keyframes wbWinBloom { 0% { opacity: 0; transform: scale(0.6); } 55% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
 .wb-win-bloom { animation: wbWinBloom 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── DRIP ZONE — closed-loop IV titration simulator (drip-zone.jsx). Every
+   class below is a decorative motion layer; all are opted out in the
+   reduced-motion block. Spring curve = cubic-bezier(.34,1.56,.64,1). The 500ms
+   sim loop itself stays FUNCTIONAL under reduced motion (numbers still update /
+   snap) — only these decorative layers are gated. */
+/* Intro drug-teaser chip stagger (delay baked per index at the call site). */
+@keyframes dzChipIn { 0% { opacity: 0; transform: translateY(10px) scale(0.9); } 100% { opacity: 1; transform: none; } }
+.dz-chip-in { animation: dzChipIn 0.36s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Round card spring entrance as each drug loads. */
+@keyframes dzRoundIn { 0% { opacity: 0; transform: translateY(18px) scale(0.96); } 100% { opacity: 1; transform: none; } }
+.dz-round-in { animation: dzRoundIn 0.44s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Over-titration alarm — a fast red pulse around the monitor frame (klaxon). */
+@keyframes dzAlarmPulse { 0%,100% { box-shadow: 0 0 0 1px rgba(239,68,68,0.55), 0 0 0 0 rgba(239,68,68,0); } 50% { box-shadow: 0 0 0 2px rgba(239,68,68,0.95), 0 0 26px 3px rgba(239,68,68,0.5); } }
+.dz-alarm-pulse { animation: dzAlarmPulse 0.9s ease-in-out infinite; }
+/* Falling drip inside the pump chamber — a droplet slides down and fades. The
+   duration is set inline (faster rate = shorter interval) so the drip visibly
+   speeds up with the pump rate. */
+@keyframes dzDrip { 0% { opacity: 0; transform: translateY(-4px) scale(0.7); } 15% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0.15; transform: translateY(30px) scale(0.85); } }
+.dz-drip { animation: dzDrip 1s linear infinite; }
+/* A small ripple in the drip-chamber reservoir each time a drop lands. */
+@keyframes dzRipple { 0% { transform: scaleX(0.6); opacity: 0.7; } 100% { transform: scaleX(1.3); opacity: 0; } }
+.dz-ripple { animation: dzRipple 1s ease-out infinite; }
+/* Pump mL/hr number tick — a tiny spring bump when the rate changes. */
+@keyframes dzRateTick { 0% { transform: scale(1); } 42% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.dz-rate-tick { animation: dzRateTick 0.34s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Hold-ring pulse — a gentle breathing glow while inside the therapeutic band. */
+@keyframes dzHoldPulse { 0%,100% { opacity: 0.85; } 50% { opacity: 1; } }
+.dz-hold-pulse { animation: dzHoldPulse 1.4s ease-in-out infinite; }
+/* Win bloom — a green radial bloom expands from the monitor on a held win. */
+@keyframes dzWinBloom { 0% { opacity: 0; transform: scale(0.4); } 45% { opacity: 0.75; } 100% { opacity: 0; transform: scale(1.8); } }
+.dz-win-bloom { animation: dzWinBloom 0.9s cubic-bezier(0.22,1,0.36,1) forwards; }
+/* Win-summary icon bloom (reuses the ward-boss feel). */
+@keyframes dzResultBloom { 0% { opacity: 0; transform: scale(0.6); } 55% { transform: scale(1.12); } 100% { opacity: 1; transform: scale(1); } }
+.dz-result-bloom { animation: dzResultBloom 0.6s cubic-bezier(0.34,1.56,0.64,1) both; }
+/* Fail shake — the monitor jolts once when the round is lost to a crisis. */
+@keyframes dzFailShake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-7px); } 40% { transform: translateX(6px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(3px); } }
+.dz-fail-shake { animation: dzFailShake 0.42s ease-in-out both; }
+/* Big vital number soft settle when it crosses into a new tens bucket. */
+@keyframes dzVitalTick { 0% { transform: scale(1); } 45% { transform: scale(1.06); } 100% { transform: scale(1); } }
+.dz-vital-tick { animation: dzVitalTick 0.3s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
   .timer-beat, .timer-beat-fast, .exit-snack-in, .exit-snack-bar,
@@ -536,7 +577,10 @@ export const fontStyles = `
   .premium-card-in, .premium-select-pop,
   .wb-card-in, .wb-brief-in, .wb-banner-sweep, .wb-shake,
   .wb-point-float, .wb-chart-in, .wb-damage, .wb-pulse-soft, .wb-pulse-loud,
-  .wb-boss-flash, .wb-boss-breathe, .wb-step-pop, .wb-win-bloom { animation: none !important; }
+  .wb-boss-flash, .wb-boss-breathe, .wb-step-pop, .wb-win-bloom,
+  .dz-chip-in, .dz-round-in, .dz-alarm-pulse, .dz-drip, .dz-ripple,
+  .dz-rate-tick, .dz-hold-pulse, .dz-win-bloom,
+  .dz-result-bloom, .dz-fail-shake, .dz-vital-tick { animation: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
