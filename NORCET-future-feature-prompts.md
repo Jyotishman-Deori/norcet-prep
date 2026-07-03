@@ -9591,3 +9591,48 @@ LAUNCH DECISIONS ADDED: (1) flip premium.gates.cribVault only with real
   protection is wanted more than multi-device convenience; (3) MAX tier
   coach features stay marketing copy until the owner sanctions a build.
   Gate: 23 test files + vite compile + admin build green.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# PUSH REACH FIX — one-switch Notifications + one-tap Home nudge
+# (2026-07-04, commit 11c20f6)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY: owner sent a broadcast → "Sent to 1 device" with 11 users. Diagnosis:
+  web push is per-device opt-in and the ONLY opt-in path was the
+  Daily-reminder toggle buried in Settings; iPhones in a Safari tab
+  cannot subscribe at all (iOS requires the installed PWA). Stack is
+  VAPID web-push: SW subscribe → api/subscribe.js → Vercel KV sub: rows →
+  push-broadcast Edge Fn → api/notify-all.js (web-push lib). No Firebase.
+
+OWNER SPEC: users must toggle only ONE thing in Settings; premium class.
+
+BUILT:
+  • lib/push-opt-in.js (+test) — detectPushSupport (ok / ios-install /
+    unsupported; catches iPadOS masquerading as MacIntel via touch
+    points) + pure nudge rules: ≥5 attempts (NUDGE_MIN_ATTEMPTS), never
+    shows against a denied permission, dismiss = 30-day snooze,
+    2 dismissals = permanently quiet. getPushEnv() Node-safe.
+  • ui/notification-nudge.jsx — Home card mounted above the spaced-
+    revision slot (needs onEnableNotifications prop from App =
+    setDailyReminder({enabled:true})). ONE tap runs the whole chain the
+    existing plumbing already had: OS permission prompt → PushManager
+    subscribe → KV registration → daily nudge + content pings. States:
+    enable → busy → success (springs in, auto-hides 3.2s) / blocked
+    (honest hint + auto-snooze) / ios-install (Share → Add to Home
+    Screen 2-step walkthrough instead of a dead button). Guests allowed
+    (api/subscribe.js is deliberately pre-login). Anims nnudge-in /
+    nnudge-bell / nnudge-done in the reduced-motion master block.
+  • Settings — section is now ONE master "Notifications" switch (was
+    "Daily reminders" + separate cards): subtitle states everything it
+    turns on; when ON, one card holds the fine-tuning (nudge time +
+    new-content alerts, which stay opt-out/default-ON so the master
+    switch alone is always enough). iOS Safari tabs get the install
+    walkthrough instead of the toggle. KEYS.notifNudge local record.
+
+NOT changed: server/brokers/KV schema (the existing setDailyReminder
+  already did permission + subscribe + contentPush in one call — the fix
+  is discoverability + support-awareness, not plumbing).
+FILES: ADDED lib/push-opt-in.js(+test) · ui/notification-nudge.jsx;
+  MODIFIED settings.jsx · home.jsx · App.jsx · keys.js · font-styles.js
+GATE: 24 test files + vite compile green. Deployed via main.
