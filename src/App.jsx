@@ -2276,6 +2276,16 @@ export default function App() {
     setNav({ screen: 'home' });
   }, []);
 
+  // #8 — like goHomeDirect but lands on the Level Up hub. Games live ONLY in
+  // Level Up, so finishing a game (and its level-up celebration) must return
+  // there, not Home. Clears the breadcrumb trail so a later back-press from the
+  // hub exit-guards normally.
+  const goLevelUpDirect = useCallback(() => {
+    navStackRef.current = [];
+    restoreNextScrollRef.current = true;
+    setNav({ screen: 'level-up' });
+  }, []);
+
   // P-NAV (Bug 2) — make the phone's hardware/gesture back button navigate
   // in-app instead of minimizing the PWA. The app navigates via React state
   // (setNav), which pushes no browser history, so the OS back has nothing to
@@ -2970,9 +2980,9 @@ export default function App() {
       if (gained > 0) next = { ...next, economy: addCoinsPure(next.economy, gained) };
       return { ...next, levelup: res.levelup };
     });
-    goHomeDirect();
+    goLevelUpDirect();
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
-  }, [goHomeDirect]);
+  }, [goLevelUpDirect]);
 
   // Per-scenario personal bests for the clinical sims (Ward Boss picker badges).
   // Lives in the synced blob under data.gameBests; pure merge in lib/game-bests.
