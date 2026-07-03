@@ -34,6 +34,8 @@ import { useBackHandler } from '../lib/back-handler.js';
 // Push reach fix — support-aware notifications master switch (iOS Safari tabs
 // get an install walkthrough instead of a dead toggle).
 import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
+// PWA install row — replays the captured native install sheet on tap.
+import { hasDeferredPrompt, promptInstall, isInstalledDevice } from '../lib/install-prompt.js';
 
 function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
@@ -101,6 +103,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // for the Add-to-Home-Screen walkthrough (a toggle that can't work is worse
   // than honest steps); 'unsupported' shows a quiet hint. Computed once.
   const [pushSupport] = useState(() => detectPushSupport(getPushEnv()));
+  // Install row — only when the native install sheet is genuinely available
+  // on this device right now (hidden once installed / after accepting).
+  const [canInstall, setCanInstall] = useState(
+    () => hasDeferredPrompt() && !isInstalledDevice(getPushEnv().standalone)
+  );
   // #16 — Legal pages render as a self-contained sub-view of Settings (no app
   // routing needed). Set to 'privacy' | 'terms' to open; back returns here.
   const [legalView, setLegalView] = useState(null);
@@ -767,6 +774,31 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
               <Card className="p-3 mb-3" style={{ background: T.surfaceWarm }}>
                 <div className="text-xs" style={{ color: T.muted }}>
                   This browser doesn't support notifications. Try installing the app to your home screen.
+                </div>
+              </Card>
+            )}
+
+            {/* Install the app — shown only when the REAL native install sheet
+                is available (captured beforeinstallprompt) and this device
+                isn't installed yet. iOS install steps live in the card above. */}
+            {canInstall && (
+              <Card className="p-4 mb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '20' }}>
+                      <Download size={18} style={{ color: T.primary }} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium" style={{ color: T.ink }}>Install the app</div>
+                      <div className="text-xs mt-0.5" style={{ color: T.muted }}>Full screen, works offline, one tap from your home screen</div>
+                    </div>
+                  </div>
+                  <Button size="sm" onClick={async () => {
+                    const outcome = await promptInstall();
+                    if (outcome === 'accepted') setCanInstall(false);
+                  }}>
+                    Install
+                  </Button>
                 </div>
               </Card>
             )}

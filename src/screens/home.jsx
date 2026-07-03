@@ -27,6 +27,9 @@ import FavStrip from '../ui/fav-strip.jsx';
 // Push-reach fix — one-tap notification opt-in card (renders null unless the
 // tested rules in lib/push-opt-in.js say this is the right moment).
 import NotificationNudge from '../ui/notification-nudge.jsx';
+// PWA install card — subordinate to the notification card by rule (one ask at
+// a time; lib/install-prompt.js), so mounting both never stacks two banners.
+import InstallNudge from '../ui/install-nudge.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
 import { Tip } from '../ui/tooltip.jsx';
 
@@ -874,6 +877,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         <NotificationNudge onEnable={onEnableNotifications}
                            reminderTime={(data.preferences && data.preferences.dailyReminder && data.preferences.dailyReminder.time) || '20:00'} />
       )}
+      {/* PWA install ask — only ever appears when the notification card is
+          quiet (already on / dismissed / ineligible) and the user has ≥10
+          attempts. Native one-tap sheet on Android/Chrome; iOS walkthrough. */}
+      <InstallNudge />
 
       {/* Spaced revision reminder. Three respects for the user:
             1. (?) icon explains what spaced revision is the first time they wonder.

@@ -108,6 +108,10 @@ export const KEYS = {
   // Notification opt-in nudge (Home card) — local, per profile:
   // { dismissedAt, dismissCount }. Show/snooze rules live in lib/push-opt-in.js.
   notifNudge:    (profileId) => `notifnudge:v1:${profileId}`,
+  // PWA install nudge (Home card) — same state shape/rules, distinct record
+  // (lib/install-prompt.js). The installed flag itself is device-level
+  // localStorage, not here.
+  installNudge:  (profileId) => `installnudge:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet
