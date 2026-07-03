@@ -28,7 +28,9 @@ export default function BackToTop({ threshold = 420, label = 'Top' }) {
             className="no-print fixed z-40 inline-flex items-center gap-1.5 rounded-full pl-3 pr-3.5 py-2.5 anim-fadeup active:scale-95 transition-transform"
             style={{
               right: 'calc(16px + env(safe-area-inset-right, 0px))',
-              bottom: 'calc(20px + env(safe-area-inset-bottom, 0px))',
+              /* --bnav-h is published by the bottom nav bar while it's mounted,
+                 so the FAB rides above it instead of colliding (0 elsewhere). */
+              bottom: 'calc(20px + env(safe-area-inset-bottom, 0px) + var(--bnav-h, 0px))',
               background: T.primary, color: '#FFF',
               boxShadow: `0 8px 24px ${T.primary}66`,
             }}>

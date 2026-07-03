@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Trophy, X } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
@@ -254,6 +254,9 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   ];
   // ---- Category 3 — Tools ----
   const tools = [
+    // Global search also lives on the bottom nav bar (mobile/tablet); this row
+    // keeps it reachable on desktop, where the bar is hidden.
+    { key: 'search',    icon: Search, color: T.primary, label: 'Search', tip: 'One search across practice questions, concept cards, lab values, dosage drills and FAQs.', sub: 'Find anything in the app', action: () => go('search', null, 'search') },
     { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Study plan', tip: 'Set your NORCET date and daily goal, and get a personalised day-by-day plan to exam day.', sub: 'Date, daily goal & day-by-day plan', action: () => go('study-plan', null, 'examdate') },
     { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
     // Premium — a preview of upcoming plans/perks. Gated on the contract flag

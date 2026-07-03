@@ -102,6 +102,9 @@ export const KEYS = {
   // Show the draggable floating note button? — local, per profile. Default OFF;
   // the fixed top-bar note icon is always available and cannot be disabled.
   notesShowFab:  (profileId) => `notesshowfab:v1:${profileId}`,
+  // GLOBAL SEARCH — recent queries (JSON array, newest first, capped at 8).
+  // Local-only (shared:false), per profile; powers the Search tab idle state.
+  searchRecent:  (profileId) => `searchrecent:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet

@@ -91,7 +91,7 @@ import { isPYQ } from './lib/pyq.js';
 // [A1 slice 45] topics.js no longer referenced by App — AdminPanel was App's last consumer of topicName/topicColor/topicIcon/getWeakTopics.
 import { useFocusTrap } from './lib/use-focus-trap.js';
 // [A1 slice 45] helpful-votes.js no longer referenced by App — loadHelpfulnessReport was used only by AdminPanel (now in admin-panel.jsx).
-import { requestHelp } from './ui/primitives.jsx';
+import { requestHelp, requestNote } from './ui/primitives.jsx';
 import MockSetup from './screens/MockSetup.jsx';
 import TopicSelect from './screens/TopicSelect.jsx';
 import QuickPracticeSetup from './screens/QuickPracticeSetup.jsx';
@@ -213,6 +213,8 @@ import { TipHost } from './ui/tooltip.jsx';
 import DoubtsScreen from './screens/doubts.jsx';
 // [F-F] FAQ section (user side).
 const FAQScreen = lazy(() => import('./screens/faq.jsx'));
+// GLOBAL SEARCH — the bottom-nav Search tab (lazy: not part of first paint).
+const SearchScreen = lazy(() => import('./screens/search.jsx'));
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
@@ -231,6 +233,10 @@ import ConfirmHost from './ui/confirm-host.jsx';
 import NoteHost from './screens/note-taking-modal.jsx';
 import NoteFab from './ui/note-fab.jsx';
 import { loadShowFab, NOTEFAB_PREF_EVENT } from './lib/notes-store.js';
+// BOTTOM NAV — the mobile/tablet tab bar (Home · Search · + · Favourites ·
+// Settings). Shown only on the tab-root screens in BOTTOM_NAV_SCREENS.
+import BottomNav, { BOTTOM_NAV_SCREENS } from './ui/bottom-nav.jsx';
+import { useBreakpoint } from './lib/responsive.js';
 // Study-companion rename modal (opened from the note popup pencil + Settings).
 import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
 // Screens where the floating note button must NOT overlay content — immersive
@@ -2286,6 +2292,19 @@ export default function App() {
     setNav({ screen: 'level-up' });
   }, []);
 
+  // BOTTOM NAV — visible on mobile/tablet widths, and only on the tab-root
+  // screens (never inside quizzes/tests/games/sub-screens). Tab presses are
+  // ROOT SWITCHES like goHomeDirect: clear the breadcrumb stack, so hardware
+  // back from any tab goes Home (then exit-guards) instead of replaying the
+  // tab-hopping trail. Each tab restores its own last scroll position.
+  const { isDesktop } = useBreakpoint();
+  const bottomNavVisible = !isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen);
+  const goTabDirect = useCallback((screen) => {
+    navStackRef.current = [];
+    restoreNextScrollRef.current = true;
+    setNav({ screen });
+  }, []);
+
   // P-NAV (Bug 2) — make the phone's hardware/gesture back button navigate
   // in-app instead of minimizing the PWA. The app navigates via React state
   // (setNav), which pushes no browser history, so the OS back has nothing to
@@ -4014,7 +4033,7 @@ export default function App() {
           overlays every screen. Both open the same popup via requestNote(). */}
       <NoteHost />
       <CompanionRenameHost />
-      {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && <NoteFab />}
+      {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && !bottomNavVisible && <NoteFab />}
 
       {nav.screen === 'home' && (
         <Home whatsNew={whatsNew} onDismissWhatsNew={dismissWhatsNew}
@@ -4507,7 +4526,7 @@ export default function App() {
       )}
 
       {nav.screen === 'reference' && (
-        <Reference onBack={goHome} />
+        <Reference onBack={goHome} initialQuery={nav.query || ''} />
       )}
 
       {/* 'dosage' is now the SETUP gate (keeps the favourites/drill key stable);
@@ -4616,6 +4635,26 @@ export default function App() {
                   onSetDemographics={setDemographics}
                   unseenReplyCount={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
                   onBack={goHome} />
+      )}
+
+      {/* GLOBAL SEARCH — the bottom-nav Search tab (drawer entry on desktop).
+          One keyword box across questions/reference/concepts/dosage/FAQ;
+          "Practice these N" rides the existing explicit-id quiz path. */}
+      {nav.screen === 'search' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <SearchScreen onBack={goHome} onNavigate={handleHomeNavigate}
+                      onStartPractice={(qIds) => startQuiz({ mode: 'wrong', qIds })}
+                      profileId={profile ? (profile.uid || profile.id) : 'guest'} />
+        </Suspense>
+      )}
+
+      {/* BOTTOM NAV — mobile/tablet tab bar. Rendered AFTER the active screen
+          so its in-flow spacer sits at the end of the page and content
+          scrolls clear of the fixed bar. Root-mounted (no transformed
+          ancestor), so position:fixed stays viewport-relative. */}
+      {bottomNavVisible && (
+        <BottomNav screen={nav.screen} onNavigate={goTabDirect}
+                   onOpenNote={() => requestNote()} />
       )}
     </div>
   );

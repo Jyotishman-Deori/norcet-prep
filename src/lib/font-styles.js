@@ -639,6 +639,31 @@ export const fontStyles = `
 @keyframes engKpiIn { 0% { opacity: 0; transform: translateY(6px) scale(0.96); } 100% { opacity: 1; transform: none; } }
 .eng-kpi { animation: engKpiIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── BOTTOM NAV (mobile/tablet tab bar) — one-time slide-up on mount, a spring
+   pop on the icon that just became active, and the Option-B indicator line
+   that glides between slots. Decorative only; reduced motion shows final
+   states instantly (block below). */
+@keyframes bnavIn {
+  0%   { opacity: 0; transform: translateY(100%); }
+  100% { opacity: 1; transform: none; }
+}
+.bnav-in { animation: bnavIn 0.38s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes bnavPop {
+  0%   { transform: scale(1); }
+  45%  { transform: scale(1.18); }
+  100% { transform: scale(1); }
+}
+.bnav-pop { animation: bnavPop 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+.bnav-indicator { transition: left 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* ── Global search — result rows rise in with a small stagger (delay baked
+   per-index at the call site, capped so long lists don't crawl). */
+@keyframes searchRowIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
+}
+.search-row-in { animation: searchRowIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -660,7 +685,9 @@ export const fontStyles = `
   .dz-result-bloom, .dz-fail-shake, .dz-vital-tick,
   .whx-task-in, .whx-chip-in, .whx-handle-pop, .whx-readout-tick,
   .whx-ghost-in, .whx-bloom, .whx-shake, .whx-result-bloom,
-  .whx-recap-in, .whx-timer-glow { animation: none !important; }
+  .whx-recap-in, .whx-timer-glow,
+  .bnav-in, .bnav-pop, .search-row-in { animation: none !important; }
+  .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }

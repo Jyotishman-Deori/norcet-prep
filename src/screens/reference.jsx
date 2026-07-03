@@ -27,10 +27,12 @@ const REFERENCE_CATEGORIES = [
   { id: 'conv',   name: 'Conversions',    icon: '🔄' }
 ];
 
-function Reference({ onBack }) {
+// `initialQuery` — optional deep-link from the global Search screen: lands
+// with the search box pre-filled so the user sees the same matches here.
+function Reference({ onBack, initialQuery }) {
   const { theme: T } = useTheme();
   const [cat, setCat] = useState('labs');
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery || '');
   // A2 — reference table loaded lazily from /public/data/reference.json.
   const { data: refData, loading, error, reload } = useContent('reference');
   const REFERENCE = refData || [];

@@ -9404,3 +9404,47 @@ SUGGESTED BUILD ORDER (when resumed):
 
 DEPENDENCY: pairs naturally with the pre-launch per-account/MFA move and (free-
 tier) Cloudflare Access on admin.nurseholic.in once that domain is bought.
+
+# ─────────────────────────────────────────────────────────────────────
+# FEATURE — Bottom navigation bar (mobile/tablet) + GLOBAL SEARCH  (2026-07-03, SHIPPED)
+# ─────────────────────────────────────────────────────────────────────
+Owner asked for a 5-slot bottom tab bar ("Option B": indicator line gliding above
+the active tab, raised round center "+") for mobile + tablet, iOS/Android PWA,
+premium micro-interactions. Slots: Home · Search · + (notes) · Favourites · Settings.
+
+WHAT SHIPPED (student app only; Vercel push, no Edge Function change):
+  • src/ui/bottom-nav.jsx — fixed z-40 frosted bar, safe-area padded, spring
+    indicator (left transition, .bnav-indicator), icon pop (.bnav-pop) + haptic
+    on tab change, re-tap active tab = scroll-to-top, raised 54px "+" opens the
+    EXISTING notes popup via requestNote() (NoteFab auto-hides on bar screens).
+    Shows ONLY on BOTTOM_NAV_SCREENS = home/search/favorites/settings AND
+    !isDesktop (useBreakpoint — first real consumer of lib/responsive.js).
+    Renders an in-flow spacer + publishes --bnav-h (back-to-top FAB offsets).
+  • GLOBAL SEARCH (new section): pure engine src/lib/search.js (+ test) — AND
+    tokens, title×3/body×1 + word-start weighting, grouped results; screen
+    src/screens/search.jsx (lazy chunk) searches questions + reference + concept
+    cards + dosage + FAQs, term highlighting, staggered rows, inline question
+    expand (options/answer/exp), "Practice these N" → startQuiz({mode:'wrong',
+    qIds}) (existing path), reference deep-link (Reference initialQuery prop),
+    recent searches (local key searchrecent:v1:<pid>) + suggested chips.
+  • NAVIGATION SHORTCUT ROUTER (owner refined mid-build: search is FIRST a
+    router, then a content finder): src/lib/nav-registry.js (+ test) — central
+    navigationRegistry {id,title,category(Settings|Features|Units|FAQ),
+    keywords[],route(nav-object),description}; ~35 static destinations + one
+    Units deep-link per TOPIC (learn-cards). searchRegistry() ranks exact/
+    prefix title > title words > keyword tags > description, capped at 6.
+    Rendered as the "Go to" group ABOVE content results, with category badges,
+    descriptions, ↑/↓ + Enter keyboard selection on the input. Imperative
+    popups (notes/feedback) are `action` entries → requestNote()/
+    requestFeedback(), not routes. No Fuse.js (not in stack, no new deps); no
+    TypeScript (repo is JS). Routes are nav objects because the app router is
+    the setNav state machine, not a URL router.
+  • Nav semantics: goTabDirect() clears the breadcrumb stack (root-switch), so
+    hardware back from any tab → Home → exit guard. No popstate changes.
+  • Drawer got a Search row (Tools) so desktop can reach it (bar hidden ≥1024px).
+  • All new anim classes registered in the reduced-motion opt-out block.
+
+DECISIONS: Favourites tab = the 'favorites' launcher screen (Bookmarks lives
+inside it; one-line swap to bookmarks-view if wanted). Slot 5 = Settings per
+owner; noted Stats would be higher-frequency and is a one-line swap. Bar stays
+OFF quizzes/tests/games (focus + answer integrity).
