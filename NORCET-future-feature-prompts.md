@@ -9674,3 +9674,97 @@ SEQUENCING for a user: notification card (≥5 attempts) → install card
 FILES: ADDED lib/install-prompt.js(+test) · ui/install-nudge.jsx;
   MODIFIED main.jsx · home.jsx · settings.jsx · keys.js
 GATE: 25 test files + vite compile green. Deployed via main.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# ABOUT PAGE + LEGAL v4 + DESKTOP SHELL + CONTENT MODERATION
+# (2026-07-04, commit 015c8fe — Duolingo/Playo-inspired brand pass)
+# ─────────────────────────────────────────────────────────────────────
+
+OWNER ASKS: Duolingo-style About section; updated legal; premium PC
+  experience (bottom bar is mobile-only — desktop had ONLY the Home
+  hamburger drawer; Settings/Premium were a 448px phone column on PC);
+  NEW: ban cuss words + auto-hide phones/emails in FAQ/anywhere
+  (English, Hindi/Hinglish, Assamese incl. script). Owner decisions:
+  solo-builder story; add Guidelines + Refunds docs; NO socials yet.
+
+⚠ LAUNCH-PHASE REMINDER (owner requested): after the testing phase,
+  CREATE SOCIAL CHANNELS (Instagram / YouTube / Telegram-WhatsApp) and
+  add a Socials column to ui/app-footer.jsx + links on the About page
+  (both deliberately shipped without one).
+
+MODERATION (lib/content-filter.js + test): profanity = BLOCK at submit
+  (friendly message, draft kept); PII (emails, +91/10-digit phones, UPI
+  handles, 12-digit IDs) = silent redact with a 2-char hint. Lists:
+  en + hinglish romanized + Devanagari + Assamese romanized/script.
+  Evasions caught: letter repeats (per-letter + regexes), leetspeak,
+  dot/dash padding. Self-censored forms (f**k) deliberately pass.
+  PRECISION RULES for a nursing app: strict word boundaries (Assam/
+  class/assessment can never hit), NO anatomy/clinical terms in the
+  list, ambiguous homographs excluded (kela=banana, baal=hair).
+  Wired: faq.jsx postQuestion (block+redact, red border + message),
+  q.text/authorName render through cleanForDisplay (legacy content
+  masked at read), signup + rename display names. Client-side by
+  design at 12-user scale; admin delete is the backstop; broker-side
+  faqq rejection = optional future hardening. Feedback-to-admin channel
+  deliberately NOT filtered (private; users may share contact on purpose).
+
+LEGAL v4 (lib/legal.js, LEGAL_VERSION 3→4 so users re-consent):
+  Privacy now names Supabase + IndexedDB and adds sections: Analytics
+  (Umami, cookieless), Bot protection (Turnstile), Notifications
+  (opt-in push, how to disable), Cookies & local storage, Payments
+  (nothing charged today). Terms adds: free-today/paid-later (premium +
+  family placeholder), one account per person + new-device-may-sign-
+  out-older clause, conduct pointer. NEW DOCS: guidelines (respect, no
+  personal info, fair leaderboard, filter+admin moderation,
+  consequences) + refunds (test-phase honest: nothing charged; at
+  launch: cancel anytime/access till period end, 7-day billing-error
+  window, family seats, 5–10 day refund path) — Indian gateways require
+  a refunds page at launch. Settings → Legal lists all 4; NEW
+  full-screen route nav.screen='legal' (payload doc) for footer/Search;
+  auth consent modal unchanged (privacy+terms only).
+
+ABOUT (screens/about.jsx, route 'about', lazy): hero (N logomark) →
+  mission card → 4-card approach grid (spaced revision / weak-area /
+  exam-day realism / gamified consistency, sec.* tints) → LIVE stats
+  strip with IntersectionObserver count-up (questions=allQuestions.
+  length, units=TOPICS.length, papers=PREVIOUS_YEAR_PAPERS.length —
+  computed, never invented; instant under reduced motion) →
+  solo-builder story card (chai CTA = requestSupport, share CTA) →
+  promise chips → contact rows (feedback/FAQ) → legal links. Entries:
+  drawer Help & Learn "About" row, Search registry, desktop footer.
+  NOTE: footer/About say "Made with care in Assam, India" — owner
+  should correct if wrong (one line in about.jsx).
+
+DESKTOP SHELL (≥1024px, the PC premium pass):
+  • ui/desktop-nav.jsx — persistent top navbar, mounted from App root
+    when isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen) (same 4 tab
+    roots as the bottom bar; games/quizzes chrome-free). Brand→Home
+    (goTabDirect), links Learn/Level Up/Revision/Library/Stats (via
+    handleHomeNavigate) with Duolingo hover-underline slide, right
+    cluster Search·note·bell(unread badge)·Favourites·profile chip→
+    Settings·Menu→drawer. Publishes --dnav-h + in-flow spacer.
+  • COLLISION MODEL (the tricky bit): Home's portaled phone header +
+    its spacer are lg:hidden; the tab-root TopBars (search/favorites/
+    settings main) pass NEW TopBar prop desktopHidden (bar+spacer
+    lg:hidden); all OTHER TopBars (sub-views like Settings→Legal) now
+    anchor at top: var(--dnav-h, 0px) so they stack BELOW the navbar
+    while it's mounted and at top:0 everywhere else. Mobile pixels
+    unchanged (var is 0/absent there).
+  • ui/app-footer.jsx — hidden lg:block Duolingo footer on the same 4
+    screens: brand block (Free · Ad-free · Always) + columns About /
+    Study / Help and support / Privacy and terms (all nav objects via
+    handleHomeNavigate; feedback/support via the imperative poppers).
+  • Width polish: settings.jsx + premium.jsx + favorites.jsx + legal
+    containers md:max-w-2xl/3xl — no more phone column on PC.
+  • Anims: about-in, dnav-in/link-underline/brand/icon/chip, foot-link
+    — registered in the reduced-motion master block.
+
+FILES: ADDED lib/content-filter.js(+test) · screens/about.jsx ·
+  ui/desktop-nav.jsx · ui/app-footer.jsx; MODIFIED legal.js ·
+  legal.jsx · settings.jsx · faq.jsx · auth-screen.jsx ·
+  rename-profile-modal.jsx · primitives.jsx (TopBar desktopHidden +
+  --dnav-h) · home.jsx (header lg:hidden) · favorites.jsx · search.jsx ·
+  premium.jsx · nav-drawer.jsx · nav-registry.js (+about/legal routes)
+  · App.jsx · font-styles.js
+GATE: 26 test files + vite compile green. Frontend-only ship.
