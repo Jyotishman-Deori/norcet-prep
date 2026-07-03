@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Target, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Target, Trophy, X } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
@@ -271,6 +271,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const learn = [
     { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques \u2014 active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
     { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team \u2014 ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
+    { key: 'about', icon: Info, color: T.accent, label: 'About', tip: 'Our mission, how the app teaches, and the person building it.', sub: 'The story behind NORCET Prep', action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly
   // spaced rows replacing the old combined panel.)

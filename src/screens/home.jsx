@@ -495,7 +495,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           A solid background + soft shadow removes the artifact while keeping
           the same look. */}
       {typeof document !== 'undefined' && createPortal(
-        <div className="fixed top-0 left-0 right-0 z-40"
+        /* lg:hidden — on desktop the persistent DesktopNav (App root) replaces
+           this header; all of its actions (menu, notes, bell, settings) live
+           there. Mobile/tablet keep this bar byte-identical. */
+        <div className="fixed top-0 left-0 right-0 z-40 lg:hidden"
              style={{ background: T.bg,
                       borderBottom: `1px solid ${T.borderSoft}`,
                       boxShadow: IS_DARK ? '0 2px 14px rgba(0,0,0,0.5)' : '0 2px 14px rgba(0,0,0,0.06)',
@@ -547,7 +550,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           (Menu button 38px + py-2.5), so the old 52px spacer let the first line
           (the "NORCET prep" eyebrow) tuck under the bar. 60px clears it on every
           device; the masthead adds extra top air on desktop below. */}
-      <div aria-hidden="true" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
+      <div aria-hidden="true" className="lg:hidden" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
 
       {/* Notification banners — width-capped on desktop so they read as
           intentional cards instead of full-bleed strips. */}

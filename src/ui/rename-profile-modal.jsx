@@ -10,6 +10,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { normalizeProfileId } from '../lib/profile-crypto.js';
+import { containsProfanity } from '../lib/content-filter.js';
 import { log } from '../lib/log.js';
 
 function RenameProfileModal({ profile, onRename, onClose }) {
@@ -45,6 +46,9 @@ function RenameProfileModal({ profile, onRename, onClose }) {
     setError(null);
     if (!trimmed) { setError('Enter a display name'); return; }
     if (!newId) { setError('Name needs at least one letter or number'); return; }
+    // Community moderation: display names show on the leaderboard and FAQ —
+    // profanity (en/hi/hinglish/assamese) is blocked here like everywhere else.
+    if (containsProfanity(trimmed).hit) { setError('That name contains a word we can’t show publicly — pick another.'); return; }
     if (trimmed === profile.displayName) { onClose(); return; }
     setBusy(true);
     try {

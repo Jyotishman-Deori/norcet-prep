@@ -84,7 +84,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
     }, 240);
   };
 
-  if (!favs) return <div className="anim-fadeup"><TopBar title="Favourites" onBack={onBack} solid /></div>;
+  if (!favs) return <div className="anim-fadeup"><TopBar title="Favourites" onBack={onBack} solid desktopHidden /></div>;
 
   return (
     <div className="anim-fadeup">
@@ -92,8 +92,8 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
           so "Favourites" is never truncated. Add + Edit moved into the page
           body below. (Side effect: this also fixes Issue 2 — Edit is no longer
           in an always-on-top bar that could sit over the open Add picker.) */}
-      <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }} solid />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <TopBar title="Favourites" onBack={onBack} feedback={{ screen: 'Favourites' }} solid desktopHidden />
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pt-2 pb-24">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
             One stop for everything you love

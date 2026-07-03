@@ -32,6 +32,7 @@ import {
 } from '../lib/profiles.js';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
 import { USERNAME_MAX, PASSWORD_MAX } from '../lib/auth-limits.js';
+import { containsProfanity } from '../lib/content-filter.js';
 import { LegalContent } from './legal.jsx';
 import { legalDoc } from '../lib/legal.js';
 
@@ -218,6 +219,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
     if (!displayName.trim()) { setError('Enter a display name'); return; }
     if (!password) { setError('Enter a password'); return; }
     if (mode === 'create') {
+      // Community moderation: names show on the leaderboard and FAQ threads —
+      // profanity (en/hi/hinglish/assamese) is blocked at the door.
+      if (containsProfanity(displayName.trim()).hit) {
+        setError('That display name contains a word we can’t show publicly — pick another.');
+        return;
+      }
       if (!securityQuestion) { setError('Pick a security question'); return; }
       if (!securityAnswer.trim()) { setError('Type an answer to your security question'); return; }
     }

@@ -38,6 +38,7 @@ export const STUDENT_ROUTE_SCREENS = new Set([
   'weightage', 'knowledge-map', 'learn-topics', 'learn-cards', 'revision-sheet',
   'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
   'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
+  'about', 'legal',
 ]);
 const NAV_ACTIONS = new Set(['note', 'feedback']);
 
@@ -76,6 +77,26 @@ const STATIC_REGISTRY = [
     keywords: ['premium', 'plans', 'subscription', 'upgrade', 'pricing', 'pay'],
     route: { screen: 'premium' },
     description: 'See upcoming plans — everything is free during testing.' },
+  { id: 'about', title: 'About NORCET Prep', category: 'Settings',
+    keywords: ['about', 'mission', 'story', 'team', 'developer', 'app', 'contact'],
+    route: { screen: 'about' },
+    description: 'Our mission, how the app teaches, and who builds it.' },
+  { id: 'legal-privacy', title: 'Privacy Policy', category: 'Settings',
+    keywords: ['privacy', 'policy', 'data', 'legal', 'gdpr'],
+    route: { screen: 'legal', doc: 'privacy' },
+    description: 'What we store and how it is used.' },
+  { id: 'legal-terms', title: 'Terms of Use', category: 'Settings',
+    keywords: ['terms', 'conditions', 'legal', 'rules'],
+    route: { screen: 'legal', doc: 'terms' },
+    description: 'The rules for using the app.' },
+  { id: 'legal-guidelines', title: 'Community Guidelines', category: 'Settings',
+    keywords: ['community', 'guidelines', 'conduct', 'rules', 'moderation', 'legal'],
+    route: { screen: 'legal', doc: 'guidelines' },
+    description: 'How we keep FAQ threads and the leaderboard friendly.' },
+  { id: 'legal-refunds', title: 'Cancellation & Refunds', category: 'Settings',
+    keywords: ['refund', 'cancel', 'cancellation', 'billing', 'subscription', 'legal'],
+    route: { screen: 'legal', doc: 'refunds' },
+    description: 'How paid plans will work — everything is free today.' },
 
   // — Features —
   { id: 'quick-test', title: 'Quick Test', category: 'Features',

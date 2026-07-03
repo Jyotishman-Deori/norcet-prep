@@ -507,36 +507,33 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     </>
   );
 
-  const renderLegalSub = () => (
-    <div className="space-y-2.5">
-      <Card className="p-0 overflow-hidden">
-        <button onClick={() => setLegalView('privacy')}
-                className="no-tap-highlight w-full flex items-center gap-3 px-4 py-4 text-left active:bg-black/5 transition">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-            <Shield size={17} style={{ color: T.primary }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium" style={{ color: T.ink }}>Privacy Policy</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>What we store and how it's used</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </button>
-      </Card>
-      <Card className="p-0 overflow-hidden">
-        <button onClick={() => setLegalView('terms')}
-                className="no-tap-highlight w-full flex items-center gap-3 px-4 py-4 text-left active:bg-black/5 transition">
-          <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-            <FileText size={17} style={{ color: T.primary }} />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-medium" style={{ color: T.ink }}>Terms of Use</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>The rules for using the app</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </button>
-      </Card>
-    </div>
-  );
+  const renderLegalSub = () => {
+    const LEGAL_ROWS = [
+      { key: 'privacy',    Icon: Shield,      title: 'Privacy Policy',         sub: "What we store and how it's used" },
+      { key: 'terms',      Icon: FileText,    title: 'Terms of Use',           sub: 'The rules for using the app' },
+      { key: 'guidelines', Icon: Heart,       title: 'Community Guidelines',   sub: 'How we keep FAQ threads and the leaderboard friendly' },
+      { key: 'refunds',    Icon: RotateCcw,   title: 'Cancellation & Refunds', sub: 'How paid plans will work (everything is free today)' },
+    ];
+    return (
+      <div className="space-y-2.5">
+        {LEGAL_ROWS.map(({ key, Icon, title, sub }) => (
+          <Card key={key} className="p-0 overflow-hidden">
+            <button onClick={() => setLegalView(key)}
+                    className="no-tap-highlight w-full flex items-center gap-3 px-4 py-4 text-left active:bg-black/5 transition">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+                <Icon size={17} style={{ color: T.primary }} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium" style={{ color: T.ink }}>{title}</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>{sub}</div>
+              </div>
+              <ChevronRight size={18} style={{ color: T.muted }} />
+            </button>
+          </Card>
+        ))}
+      </div>
+    );
+  };
 
   const SUB_PAGES = {
     profile:  { title: 'Profile',          render: renderProfileSub },
@@ -554,7 +551,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     return (
       <div className="anim-fadeup">
         <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${sp.title}`, noHelp: subPage === 'legal' }} />
-        <div className="max-w-md mx-auto px-4 pt-4 pb-24">
+        <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-4 pb-24">
           {sp.render()}
         </div>
       </div>
@@ -563,8 +560,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Settings" onBack={onBack} feedback={{ screen: "Settings" }} />
-      <div className="max-w-md mx-auto px-4 pt-4 pb-24">
+      <TopBar title="Settings" onBack={onBack} feedback={{ screen: "Settings" }} desktopHidden />
+      <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-4 pb-24">
 
         {/* Profile section */}
         {isGuest && (

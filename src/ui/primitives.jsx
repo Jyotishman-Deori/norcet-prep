@@ -148,7 +148,12 @@ function Button({ children, onClick, variant = 'primary', size = 'md', disabled 
   );
 }
 
-function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
+// `desktopHidden` — the four tab-root screens (search/favorites/settings)
+// pass true so THEIR TopBar disappears on lg, where the persistent DesktopNav
+// replaces it. Sub-views (Settings → Legal etc.) keep their TopBar, which
+// offsets itself below the navbar via the `--dnav-h` var DesktopNav publishes
+// while mounted (0px everywhere else, so nothing moves on mobile).
+function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopHidden = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   // Theme-aware background. `solid` opts OUT of the frosted blur: a fully opaque
   // bar with no backdrop-filter, so there is no compositing layer to re-sample
@@ -169,8 +174,9 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
   // useTheme still works through the portal (React context follows the tree,
   // not the DOM). The spacer stays in flow to reserve the bar's height.
   const bar = (
-    <div className={"fixed top-0 left-0 right-0 z-40" + (solid ? '' : ' backdrop-blur-md')}
-         style={{ background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
+    <div className={"fixed left-0 right-0 z-40" + (solid ? '' : ' backdrop-blur-md') + (desktopHidden ? ' lg:hidden' : '')}
+         style={{ top: 'var(--dnav-h, 0px)',
+                  background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
                   paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       {/* Inner content tracks the app content width on PC (matches PageContainer
           size="app": max-w-5xl + px-8), so the back button aligns to the left
@@ -219,8 +225,10 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false }) {
       {target ? createPortal(bar, target) : bar}
       {/* spacer — clears the fixed bar (row ≈ 61px: back button 36px + py-3) with
           a few px of premium breathing room, so content on every screen sits
-          comfortably below the bar regardless of its own top padding. */}
-      <div aria-hidden="true" style={{ height: 'calc(64px + env(safe-area-inset-top, 0px))' }} />
+          comfortably below the bar regardless of its own top padding. When the
+          bar is desktopHidden the spacer hides with it (DesktopNav has its own). */}
+      <div aria-hidden="true" className={desktopHidden ? 'lg:hidden' : undefined}
+           style={{ height: 'calc(64px + env(safe-area-inset-top, 0px))' }} />
     </>
   );
 }

@@ -62,7 +62,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Premium" onBack={onBack} feedback={{ screen: 'Premium' }} />
-        <div className="max-w-md mx-auto px-4 pt-16 pb-24 text-center">
+        <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-16 pb-24 text-center">
           <div className="mx-auto mb-4 w-20 h-20 rounded-3xl flex items-center justify-center"
                style={{ background: T.surfaceWarm, border: `1.5px solid ${T.border}` }}>
             <Crown size={34} strokeWidth={1.6} style={{ color: T.muted }} />
@@ -87,7 +87,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Premium" onBack={onBack} feedback={{ screen: 'Premium' }} />
-      <div className="max-w-md mx-auto px-4 pb-28 pt-2"
+      <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pb-28 pt-2"
            style={{ paddingBottom: 'calc(7rem + env(safe-area-inset-bottom, 0px))' }}>
 
         {/* ── Hero ─────────────────────────────────────────────────────── */}

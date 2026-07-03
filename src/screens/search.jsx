@@ -1,8 +1,8 @@
 // =====================================================================
-// src/screens/search.jsx — GLOBAL UTILITY SEARCH (the bottom-nav Search tab).
+// src/screens/search.jsx â€” GLOBAL UTILITY SEARCH (the bottom-nav Search tab).
 // STRICTLY a navigation shortcut router (blueprint M1/M2): it finds and
 // deep-links to App Settings, Features, Section/Unit titles and FAQ &
-// Help articles. It deliberately does NOT query curriculum content —
+// Help articles. It deliberately does NOT query curriculum content â€”
 // no questions, no reference values, no concept cards, no dictionary
 // lookups (learning stays on the sequential Learn path; the Reference
 // screen keeps its own in-section table filter).
@@ -11,7 +11,7 @@
 // lib/nav-registry.js: static app routes + per-topic Units + the DYNAMIC
 // admin-authored FAQ list, every entry schema-validated and route-
 // allowlisted (sanitizeRegistry) so nothing admin/internal can surface.
-// Ranked title > keywords > description, capped small; ↑/↓ + Enter
+// Ranked title > keywords > description, capped small; â†‘/â†“ + Enter
 // keyboard selection on the input.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -30,12 +30,12 @@ import { tokenize, highlightSegments, MIN_QUERY_LEN } from '../lib/search.js';
 import { buildDynamicRegistry, searchRegistry } from '../lib/nav-registry.js';
 
 const RECENT_MAX = 8;
-const RESULT_LIMIT = 7; // spec: 5–7; this is the only result list now
-// Idle-state suggestions — every one demonstrates the ROUTER (not content):
+const RESULT_LIMIT = 7; // spec: 5â€“7; this is the only result list now
+// Idle-state suggestions â€” every one demonstrates the ROUTER (not content):
 // settings, features, a unit, help.
 const SUGGESTED = ['dark mode', 'mistakes', 'mock test', 'pharmacology', 'leaderboard', 'backup'];
 
-// Highlighted text — every query-token occurrence gets a soft accent wash.
+// Highlighted text â€” every query-token occurrence gets a soft accent wash.
 function Hi({ text, tokens, color }) {
   const segs = useMemo(() => highlightSegments(text, tokens), [text, tokens]);
   return (
@@ -57,7 +57,7 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
   const inputRef = useRef(null);
 
   // Dynamic half of the registry: admin-authored FAQs (async, offline just
-  // means the FAQ entries are absent — never an error state).
+  // means the FAQ entries are absent â€” never an error state).
   useEffect(() => {
     let on = true;
     listFaqs().then(list => { if (on && Array.isArray(list)) setFaqs(list); }).catch(() => {});
@@ -88,7 +88,7 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
     safeStorage.delete(recentKey, false).catch(() => {});
   };
 
-  // Debounce typing → search runs ~180ms after the last keystroke.
+  // Debounce typing â†’ search runs ~180ms after the last keystroke.
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query), 180);
     return () => clearTimeout(t);
@@ -132,7 +132,7 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Search" onBack={onBack} feedback={{ screen: 'Search' }} />
+      <TopBar title="Search" onBack={onBack} feedback={{ screen: 'Search' }} desktopHidden />
       <div className="max-w-md md:max-w-2xl mx-auto px-4 pb-8 pt-2">
 
         {/* Hero search box */}
@@ -150,7 +150,7 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
                      else { e.currentTarget.blur(); saveRecent(query); }
                    } else if (e.key === 'Escape') { setQuery(''); setDebounced(''); }
                  }}
-                 placeholder="Find settings, features, units, help…"
+                 placeholder="Find settings, features, units, helpâ€¦"
                  autoFocus inputMode="search" enterKeyHint="go" aria-label="Search app sections and settings"
                  className="w-full rounded-2xl pl-11 pr-11 py-3.5 text-sm font-body"
                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink,
@@ -164,7 +164,7 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
           )}
         </div>
 
-        {/* Idle state — recents + suggestions */}
+        {/* Idle state â€” recents + suggestions */}
         {!searching && (
           <div className="anim-fadeup">
             {recent.length > 0 && (
@@ -191,13 +191,13 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
               ))}
             </div>
             <div className="mt-8 text-center text-xs leading-relaxed px-6" style={{ color: T.muted }}>
-              Search jumps you straight to any screen, setting, subject unit or FAQ — it doesn’t search
+              Search jumps you straight to any screen, setting, subject unit or FAQ â€” it doesnâ€™t search
               questions or study content. For learning, follow your path in Learn.
             </div>
           </div>
         )}
 
-        {/* Results — the shortcut router list */}
+        {/* Results â€” the shortcut router list */}
         {searching && (
           <>
             <div className="flex items-center gap-2 mb-2 px-1">
@@ -255,11 +255,11 @@ export default function SearchScreen({ onBack, onNavigate, profileId }) {
                   <SearchIcon size={22} style={{ color: T.muted }} />
                 </div>
                 <div className="text-sm font-medium" style={{ color: T.inkSoft }}>
-                  Nothing to jump to for “{debounced.trim()}”
+                  Nothing to jump to for â€œ{debounced.trim()}â€
                 </div>
                 <div className="text-xs mt-1.5 leading-relaxed px-8" style={{ color: T.muted }}>
-                  Try a feature name (“mock test”), a setting (“dark mode”), a subject (“pharmacology”)
-                  or a help topic (“streak”).
+                  Try a feature name (â€œmock testâ€), a setting (â€œdark modeâ€), a subject (â€œpharmacologyâ€)
+                  or a help topic (â€œstreakâ€).
                 </div>
               </div>
             )}

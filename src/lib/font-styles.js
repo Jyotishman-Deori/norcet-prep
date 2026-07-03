@@ -719,6 +719,46 @@ export const fontStyles = `
 }
 .nnudge-done { animation: nnudgeDone 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── About page — staggered section entrances (count-up is JS-gated). */
+@keyframes aboutIn {
+  0%   { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.about-in { animation: aboutIn 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Desktop shell (≥1024px) — navbar settle-in, Duolingo-style hover
+   underline that slides out under links, icon/chip hover lifts, and the
+   footer link hover. Color hovers use !important so they beat the inline
+   theme-token styles. */
+@keyframes dnavIn {
+  0%   { opacity: 0; transform: translateY(-10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.dnav-in { animation: dnavIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+.dnav-link::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: 3px;
+  height: 2.5px; border-radius: 2px;
+  background: var(--dnav-underline, var(--primary, currentColor));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.22s cubic-bezier(0.22,1,0.36,1);
+}
+.dnav-link:hover { color: var(--ink) !important; }
+.dnav-link:hover::after { transform: scaleX(1); }
+.dnav-brand > div:first-child { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.dnav-brand:hover > div:first-child { transform: rotate(-6deg) scale(1.06); }
+.dnav-icon { transition: background 0.15s ease, transform 0.15s ease; }
+.dnav-icon:hover { background: var(--surface-warm) !important; transform: translateY(-1px); }
+.dnav-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+.foot-link { position: relative; }
+.foot-link:hover { color: var(--foot-hover, var(--primary)) !important; }
+.foot-link::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: -2px; height: 1.5px;
+  background: var(--foot-hover, var(--primary));
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 0.2s cubic-bezier(0.22,1,0.36,1);
+}
+.foot-link:hover::after { transform: scaleX(1); }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -743,7 +783,11 @@ export const fontStyles = `
   .whx-recap-in, .whx-timer-glow,
   .bnav-in, .bnav-pop, .search-row-in,
   .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
-  .nnudge-in, .nnudge-bell, .nnudge-done { animation: none !important; }
+  .nnudge-in, .nnudge-bell, .nnudge-done,
+  .about-in, .dnav-in { animation: none !important; }
+  .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
+  .dnav-icon, .dnav-chip { transition: none !important; }
+  .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child { transform: none !important; }
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }

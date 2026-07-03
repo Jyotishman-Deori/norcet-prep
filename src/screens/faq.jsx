@@ -17,6 +17,11 @@ import {
   replyToCommunityQuestion, deleteCommunityQuestion, faqAnswerVoteId, faqReplyVoteId,
 } from '../lib/faq.js';
 import { GUEST_ID } from '../lib/profiles.js';
+// Community moderation (owner policy 2026-07-04): cuss words BLOCK the post
+// (en/hi/hinglish/assamese), contact info (phones/emails) is auto-hidden.
+// cleanForDisplay also runs over RENDERED community text so anything stored
+// before this filter (or slipped past it) is masked at read time.
+import { sanitizeUserText, cleanForDisplay, PROFANITY_BLOCK_MESSAGE } from '../lib/content-filter.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
 import RichText from '../ui/rich-text.jsx';
 import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
@@ -48,6 +53,7 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
   const [threads, setThreads] = useState({}); // { faqId: { loading, items } }
   const [draftQ, setDraftQ] = useState({});   // { faqId: text }
   const [draftReply, setDraftReply] = useState({}); // { qid: text }
+  const [modBlock, setModBlock] = useState({}); // { faqId: message } — filter rejections
 
   useEffect(() => { let a = true; listFaqs().then(f => { if (a) setFaqs(f); }).catch(() => { if (a) setFaqs([]); }); return () => { a = false; }; }, []);
 
@@ -105,8 +111,13 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
   const postQuestion = async (faqId) => {
     const text = (draftQ[faqId] || '').trim();
     if (!text || isGuest) return;
+    // Moderation gate: profanity blocks (draft kept so they can edit);
+    // contact info is silently masked and the post continues.
+    const mod = sanitizeUserText(text);
+    if (mod.blocked) { setModBlock(m => ({ ...m, [faqId]: PROFANITY_BLOCK_MESSAGE })); return; }
+    setModBlock(m => ({ ...m, [faqId]: null }));
     setDraftQ(d => ({ ...d, [faqId]: '' }));
-    try { await addCommunityQuestion(faqId, { text, authorId: profileId, authorName: profileName }); await refreshThread(faqId); } catch (e) {}
+    try { await addCommunityQuestion(faqId, { text: mod.text, authorId: profileId, authorName: profileName }); await refreshThread(faqId); } catch (e) {}
   };
 
   const postReply = async (q) => {
@@ -217,9 +228,9 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
                                   <div className="flex justify-end">
                                     <div className="max-w-[85%]">
                                       <div className="rounded-2xl rounded-tr-sm px-3.5 py-2.5 text-sm leading-relaxed" style={{ background: T.primary + '14', color: T.ink }}>
-                                        {q.text}
+                                        {cleanForDisplay(q.text)}
                                       </div>
-                                      <div className="text-[10px] mt-1 text-right" style={{ color: T.muted }}>{q.authorName} · {relTime(q.createdAt)}</div>
+                                      <div className="text-[10px] mt-1 text-right" style={{ color: T.muted }}>{cleanForDisplay(q.authorName)} · {relTime(q.createdAt)}</div>
                                     </div>
                                   </div>
 
@@ -268,16 +279,21 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
                           {isGuest ? (
                             <div className="text-[11px]" style={{ color: T.muted }}>Sign in to ask a question.</div>
                           ) : (
-                            <div className="flex items-end gap-2">
-                              <textarea value={draftQ[f.id] || ''} onChange={e => setDraftQ(d => ({ ...d, [f.id]: e.target.value }))}
-                                        placeholder="Ask a follow-up question…" rows={1}
-                                        className="flex-1 text-sm rounded-xl px-3 py-2 resize-none outline-none" style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
-                              <button onClick={() => postQuestion(f.id)} disabled={!(draftQ[f.id] || '').trim()}
-                                      className="no-tap-highlight flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition"
-                                      style={{ background: (draftQ[f.id] || '').trim() ? T.primary : T.border, color: '#FFF' }}>
-                                <Send size={16} />
-                              </button>
-                            </div>
+                            <>
+                              <div className="flex items-end gap-2">
+                                <textarea value={draftQ[f.id] || ''} onChange={e => { setDraftQ(d => ({ ...d, [f.id]: e.target.value })); if (modBlock[f.id]) setModBlock(m => ({ ...m, [f.id]: null })); }}
+                                          placeholder="Ask a follow-up question…" rows={1}
+                                          className="flex-1 text-sm rounded-xl px-3 py-2 resize-none outline-none" style={{ background: T.surface, border: `1px solid ${modBlock[f.id] ? (T.error || '#DC2626') : T.border}`, color: T.ink }} />
+                                <button onClick={() => postQuestion(f.id)} disabled={!(draftQ[f.id] || '').trim()}
+                                        className="no-tap-highlight flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center active:scale-95 transition"
+                                        style={{ background: (draftQ[f.id] || '').trim() ? T.primary : T.border, color: '#FFF' }}>
+                                  <Send size={16} />
+                                </button>
+                              </div>
+                              {modBlock[f.id] && (
+                                <div className="text-[11px] mt-1.5" style={{ color: T.error || '#DC2626' }}>{modBlock[f.id]}</div>
+                              )}
+                            </>
                           )}
                         </div>
                       </div>

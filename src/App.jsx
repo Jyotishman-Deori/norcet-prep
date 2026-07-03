@@ -223,6 +223,11 @@ const SearchScreen = lazy(() => import('./screens/search.jsx'));
 // MISTAKE VAULT + ACTIVITY HISTORY — retention surfaces (blueprint M3/M5).
 const MistakeVault = lazy(() => import('./screens/mistake-vault.jsx'));
 const ActivityLog = lazy(() => import('./screens/activity-log.jsx'));
+// ABOUT + full-screen LEGAL — mission page and the four legal docs
+// (Privacy / Terms / Community Guidelines / Cancellation & Refunds), both
+// reachable from the desktop footer, Search, and the drawer/Settings.
+const AboutScreen = lazy(() => import('./screens/about.jsx'));
+const LegalScreenLazy = lazy(() => import('./screens/legal.jsx'));
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
@@ -248,6 +253,10 @@ import { recordMilestone, levelUpMilestone, streakMilestone, crossedStreakMilest
 // BOTTOM NAV — the mobile/tablet tab bar (Home · Search · + · Favourites ·
 // Settings). Shown only on the tab-root screens in BOTTOM_NAV_SCREENS.
 import BottomNav, { BOTTOM_NAV_SCREENS } from './ui/bottom-nav.jsx';
+// DESKTOP SHELL — the persistent top navbar + Duolingo-style footer that
+// replace the bottom bar (and the phone-era headers) on ≥1024px screens.
+import DesktopNav from './ui/desktop-nav.jsx';
+import AppFooter from './ui/app-footer.jsx';
 import { useBreakpoint } from './lib/responsive.js';
 // Study-companion rename modal (opened from the note popup pencil + Settings).
 import { CompanionRenameHost } from './screens/companion-rename-modal.jsx';
@@ -2330,6 +2339,9 @@ export default function App() {
   // tab-hopping trail. Each tab restores its own last scroll position.
   const { isDesktop } = useBreakpoint();
   const bottomNavVisible = !isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen);
+  // Desktop shell (top navbar + footer) mirrors the bottom bar's scope: the
+  // four tab-root screens only — quiz/test/game screens stay chrome-free.
+  const desktopShellVisible = isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen);
   const goTabDirect = useCallback((screen) => {
     navStackRef.current = [];
     restoreNextScrollRef.current = true;
@@ -4159,6 +4171,22 @@ export default function App() {
       <CompanionRenameHost />
       {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && !bottomNavVisible && <NoteFab />}
 
+      {/* DESKTOP SHELL (≥1024px) — the persistent top navbar, the PC
+          counterpart of the bottom tab bar: same four tab-root screens,
+          quiz/test/game screens stay chrome-free. Mounted BEFORE the screen
+          so its in-flow spacer pushes content below the fixed bar; the
+          phone-era headers on these screens hide on lg (Home header,
+          TopBar desktopHidden). */}
+      {desktopShellVisible && (
+        <DesktopNav screen={nav.screen}
+                    onTab={goTabDirect}
+                    onNavigate={handleHomeNavigate}
+                    onOpenMenu={() => setDrawerOpen(true)}
+                    onOpenNote={() => requestNote()}
+                    unreadNotifCount={unreadNotifCount}
+                    onOpenNotifications={() => { setUnreadNotifCount(0); navigate({ screen: 'notifications' }); }} />
+      )}
+
       {nav.screen === 'home' && (
         <Home whatsNew={whatsNew} onDismissWhatsNew={dismissWhatsNew}
               announcement={announcement} onDismissAnnouncement={dismissAnnouncement}
@@ -4231,6 +4259,22 @@ export default function App() {
       {nav.screen === 'premium' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <PremiumScreen onBack={goHome} onEntitlementChanged={refreshEntitlement} />
+        </Suspense>
+      )}
+
+      {/* ABOUT — mission page (footer / drawer / Search / Settings). */}
+      {nav.screen === 'about' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <AboutScreen onBack={goHome} onNavigate={handleHomeNavigate} />
+        </Suspense>
+      )}
+
+      {/* LEGAL — full-screen route for the four legal docs (payload: doc).
+          Settings keeps its own inline sub-view; this route serves the
+          desktop footer, Search and the About page. */}
+      {nav.screen === 'legal' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <LegalScreenLazy doc={nav.doc || 'privacy'} onBack={goHome} />
         </Suspense>
       )}
 
@@ -4790,6 +4834,10 @@ export default function App() {
                       profileId={profile ? (profile.uid || profile.id) : 'guest'} />
         </Suspense>
       )}
+
+      {/* DESKTOP FOOTER — Duolingo-style link columns, rendered AFTER the
+          active screen on the same tab-root screens as the navbar. */}
+      {desktopShellVisible && <AppFooter onNavigate={handleHomeNavigate} />}
 
       {/* BOTTOM NAV — mobile/tablet tab bar. Rendered AFTER the active screen
           so its in-flow spacer sits at the end of the page and content

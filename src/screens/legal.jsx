@@ -1,8 +1,10 @@
 // =====================================================================
-// src/screens/legal.jsx — renders a legal document (Privacy / Terms).
+// src/screens/legal.jsx — renders a legal document (Privacy / Terms /
+// Community Guidelines / Cancellation & Refunds).
 //   • LegalContent — intro + sections only (embeddable, e.g. onboarding #17)
-//   • LegalScreen  — TopBar + LegalContent (Settings → Legal sub-view, #16)
-// Content comes from lib/legal.js, so Settings and onboarding stay in sync.
+//   • LegalScreen  — TopBar + LegalContent (Settings → Legal sub-view #16,
+//     and the full-screen `legal` route the desktop footer links to)
+// Content comes from lib/legal.js, so every surface stays in sync.
 // =====================================================================
 import React from 'react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -37,7 +39,7 @@ export function LegalScreen({ doc, onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title={d ? d.title : 'Legal'} onBack={onBack} feedback={{ screen: d ? d.title : 'Legal', noHelp: true }} />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-2 pb-24">
         <div className="font-display text-2xl font-semibold mb-4" style={{ color: T.ink }}>{d ? d.title : 'Legal'}</div>
         <LegalContent doc={doc} />
       </div>
