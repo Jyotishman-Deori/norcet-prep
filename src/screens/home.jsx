@@ -24,6 +24,9 @@ import { toPlainText } from '../lib/rich-text.js';
 import { Card, Button, requestConfirm, NoteButton } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
 import FavStrip from '../ui/fav-strip.jsx';
+// Push-reach fix — one-tap notification opt-in card (renders null unless the
+// tested rules in lib/push-opt-in.js say this is the right moment).
+import NotificationNudge from '../ui/notification-nudge.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
 import { Tip } from '../ui/tooltip.jsx';
 
@@ -82,7 +85,7 @@ function AllCaughtUpCard() {
   );
 }
 
-function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead }) {
+function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead, onEnableNotifications }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const { profile } = useProfile();
@@ -861,6 +864,15 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             )}
           </Card>
         </div>
+      )}
+
+      {/* Push-reach fix — one-tap notification opt-in. Renders null unless the
+          pure rules (lib/push-opt-in.js) say so: ≥5 attempts, not already on,
+          permission not denied, not snoozed/dismissed-twice. iOS Safari tabs
+          get the Add-to-Home-Screen walkthrough variant. */}
+      {onEnableNotifications && (
+        <NotificationNudge onEnable={onEnableNotifications}
+                           reminderTime={(data.preferences && data.preferences.dailyReminder && data.preferences.dailyReminder.time) || '20:00'} />
       )}
 
       {/* Spaced revision reminder. Three respects for the user:

@@ -698,6 +698,27 @@ export const fontStyles = `
 }
 .path-reco-pulse { animation: pathRecoPulse 2s ease-out infinite; }
 
+/* ── Notification opt-in nudge (Home) — card settles in, the bell gives two
+   polite rings after a beat, success check springs. */
+@keyframes nnudgeIn {
+  0%   { opacity: 0; transform: translateY(14px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.nnudge-in { animation: nnudgeIn 0.42s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes nnudgeBell {
+  0%, 40%, 100% { transform: rotate(0); }
+  6%  { transform: rotate(14deg); } 12% { transform: rotate(-12deg); }
+  18% { transform: rotate(9deg); }  24% { transform: rotate(-6deg); }
+  30% { transform: rotate(3deg); }  36% { transform: rotate(0); }
+}
+.nnudge-bell { animation: nnudgeBell 3.4s ease-in-out 0.7s 2; transform-origin: top center; }
+@keyframes nnudgeDone {
+  0%   { transform: scale(0.7); opacity: 0; }
+  70%  { transform: scale(1.08); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.nnudge-done { animation: nnudgeDone 0.4s cubic-bezier(0.34,1.56,0.64,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -721,7 +742,8 @@ export const fontStyles = `
   .whx-ghost-in, .whx-bloom, .whx-shake, .whx-result-bloom,
   .whx-recap-in, .whx-timer-glow,
   .bnav-in, .bnav-pop, .search-row-in,
-  .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse { animation: none !important; }
+  .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
+  .nnudge-in, .nnudge-bell, .nnudge-done { animation: none !important; }
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }

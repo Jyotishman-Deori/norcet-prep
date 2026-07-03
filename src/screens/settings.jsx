@@ -8,9 +8,9 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, ArrowUpDown, Check, ChevronRight, Clock, Copy, Download, Edit3,
-  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share2,
-  Shield, Sigma, Trash2, Upload, User, UserPlus, Volume2
+  AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Copy, Download, Edit3,
+  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
+  Shield, Sigma, SquarePlus, Trash2, Upload, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport, requestConfirm } from '../ui/primitives.jsx';
@@ -31,6 +31,9 @@ import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 import { useBackHandler } from '../lib/back-handler.js';
+// Push reach fix — support-aware notifications master switch (iOS Safari tabs
+// get an install walkthrough instead of a dead toggle).
+import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
 
 function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
@@ -94,6 +97,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // Notification permission so we can show a "blocked" hint without storing it.
   const reminder = (data.preferences && data.preferences.dailyReminder) || { enabled: false, time: '20:00' };
   const [drPerm, setDrPerm] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'unsupported');
+  // Support-aware master switch: 'ok' shows the toggle; 'ios-install' swaps it
+  // for the Add-to-Home-Screen walkthrough (a toggle that can't work is worse
+  // than honest steps); 'unsupported' shows a quiet hint. Computed once.
+  const [pushSupport] = useState(() => detectPushSupport(getPushEnv()));
   // #16 — Legal pages render as a self-contained sub-view of Settings (no app
   // routing needed). Set to 'privacy' | 'terms' to open; back returns here.
   const [legalView, setLegalView] = useState(null);
@@ -654,56 +661,89 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </>
         )}
 
-        {/* P3 — Daily study reminder. Toggle requests Notification permission;
-            when granted + on, a time picker appears. A best-effort local
-            notification fires on app-open if the user hasn't studied past their
-            chosen time (see setDailyReminder + the reminder effect in App). */}
+        {/* Notifications — ONE master switch (push-reach fix). One tap turns on
+            everything: OS permission + push registration + the daily study
+            nudge + new-content pings (content pings default ON). The rows
+            below it are optional fine-tuning, never required. On iOS Safari
+            TABS the toggle is replaced by the Add-to-Home-Screen walkthrough,
+            because web push simply doesn't exist there until installed. */}
         {onSetDailyReminder && (
           <>
             <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Notifications</div>
-            <Tip title="Daily reminders" text="A gentle once-a-day nudge if you haven’t studied by your chosen time — the simplest way to keep a streak alive.">
-            <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onToggleReminder}>
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
+
+            {pushSupport.level === 'ios-install' && !reminderOn ? (
+              /* iOS Safari tab: honest install steps instead of a dead toggle. */
+              <Card className="p-4 mb-3">
+                <div className="flex items-start gap-3">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '20' }}>
-                    <Clock size={18} style={{ color: T.accent }} />
+                    <Bell size={18} style={{ color: T.accent }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium" style={{ color: T.ink }}>Daily reminders</div>
-                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                      {reminderOn ? `A nudge if you haven't studied by ${reminder.time || '20:00'}` : 'Off — get a gentle daily study nudge'}
+                    <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
+                    <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.muted }}>
+                      iPhones only allow notifications from installed apps. Install first — it takes ten seconds:
+                    </div>
+                    <div className="mt-2.5 space-y-1.5 text-xs" style={{ color: T.inkSoft }}>
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                              style={{ background: T.accent + '22', color: T.accent }}>1</span>
+                        Tap <Share size={13} style={{ color: T.accent }} aria-label="Share" /> <b>Share</b> in Safari's toolbar
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
+                              style={{ background: T.accent + '22', color: T.accent }}>2</span>
+                        Choose <SquarePlus size={13} style={{ color: T.accent }} aria-label="Add" /> <b>Add to Home Screen</b>, open the app, and flip this switch
+                      </div>
                     </div>
                   </div>
                 </div>
-                <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0" style={{ background: reminderOn ? T.success : T.border, opacity: drBusy ? 0.6 : 1 }}>
-                  <div className="w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: reminderOn ? 'translateX(20px)' : 'translateX(0)' }} />
+              </Card>
+            ) : (
+              <Tip title="Notifications" text="One switch for everything: a gentle daily nudge if you haven’t studied by your chosen time, plus a ping when new question sets drop. Fine-tune both below.">
+              <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onToggleReminder}>
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '20' }}>
+                      <BellRing size={18} style={{ color: T.accent }} />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
+                      <div className="text-xs mt-0.5" style={{ color: T.muted }}>
+                        {reminderOn
+                          ? `On — daily nudge at ${reminder.time || '20:00'}${reminder.contentPush === false ? '' : ' + new-content pings'}`
+                          : 'One tap: a daily study nudge + a ping when new questions drop'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0" style={{ background: reminderOn ? T.success : T.border, opacity: drBusy ? 0.6 : 1 }}>
+                    <div className="w-5 h-5 rounded-full bg-white shadow transition-transform" style={{ transform: reminderOn ? 'translateX(20px)' : 'translateX(0)' }} />
+                  </div>
                 </div>
-              </div>
-            </Card>
-            </Tip>
+              </Card>
+              </Tip>
+            )}
 
-            {/* Time picker — only when reminders are on */}
+            {/* Fine-tuning — appears only when the master switch is on. */}
             {reminderOn && (
               <Card className="p-4 mb-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="text-sm font-medium" style={{ color: T.ink }}>Reminder time</div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium" style={{ color: T.ink }}>Nudge time</div>
+                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>Only fires if you haven't studied by then</div>
+                  </div>
                   <input type="time" value={reminder.time || '20:00'}
                          onChange={(e) => onSetDailyReminder({ time: e.target.value })}
                          onFocus={() => document.body.classList.remove('app-blurred')}
                          className="rounded-lg px-3 py-1.5 text-sm"
                          style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
                 </div>
-              </Card>
-            )}
-
-            {/* New content alerts — on by default; lets a user keep daily
-                reminders but mute the "new question set" push. */}
-            {reminderOn && (
-              <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
-                    onClick={() => onSetDailyReminder({ contentPush: reminder.contentPush === false })}>
-                <div className="flex items-center justify-between gap-3">
+                {/* New-content pings — an OPT-OUT row, on by default, so the
+                    master switch alone is always enough. */}
+                <div className="flex items-center justify-between gap-3 mt-3.5 pt-3.5 cursor-pointer no-tap-highlight"
+                     style={{ borderTop: `1px solid ${T.borderSoft}` }}
+                     onClick={() => onSetDailyReminder({ contentPush: reminder.contentPush === false })}>
                   <div className="min-w-0">
-                    <div className="font-medium" style={{ color: T.ink }}>New content alerts</div>
+                    <div className="text-sm font-medium" style={{ color: T.ink }}>New content alerts</div>
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                       {reminder.contentPush === false ? 'Off — no pings about new question sets' : 'A ping when the team adds a new question set'}
                     </div>
@@ -719,11 +759,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
             {!reminderOn && drPerm === 'denied' && (
               <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}30` }}>
                 <div className="text-xs" style={{ color: T.error }}>
-                  Notifications are blocked for this app. To turn reminders on, allow notifications for this site in your browser settings, then try again.
+                  Notifications are blocked for this app. To turn them on, allow notifications for this site in your browser settings, then try again.
                 </div>
               </Card>
             )}
-            {!reminderOn && drPerm === 'unsupported' && (
+            {!reminderOn && drPerm === 'unsupported' && pushSupport.level === 'unsupported' && (
               <Card className="p-3 mb-3" style={{ background: T.surfaceWarm }}>
                 <div className="text-xs" style={{ color: T.muted }}>
                   This browser doesn't support notifications. Try installing the app to your home screen.

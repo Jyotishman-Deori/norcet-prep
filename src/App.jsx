@@ -4179,6 +4179,7 @@ export default function App() {
               onOpenNotifications={() => setNav({ screen: 'notifications' })}
               unreadNotifCount={unreadNotifCount}
               onNotifRead={() => setUnreadNotifCount(0)}
+              onEnableNotifications={() => setDailyReminder({ enabled: true })}
               onNavigate={handleHomeNavigate} />
       )}
 
