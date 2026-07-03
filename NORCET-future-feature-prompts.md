@@ -9636,3 +9636,41 @@ NOT changed: server/brokers/KV schema (the existing setDailyReminder
 FILES: ADDED lib/push-opt-in.js(+test) · ui/notification-nudge.jsx;
   MODIFIED settings.jsx · home.jsx · App.jsx · keys.js · font-styles.js
 GATE: 24 test files + vite compile green. Deployed via main.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# PWA INSTALL SYSTEM — native one-tap prompt + Home card + Settings row
+# (2026-07-04, commit 611ecf7 — reach work part 2)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY: follow-on from the push reach fix — installs are the prerequisite
+  for push on iPhones and beforeinstallprompt was entirely unused (the
+  PWA was installable but nothing ever offered it; Chrome's mini-infobar
+  was the only path and we now suppress it to own the moment).
+
+BUILT:
+  • lib/install-prompt.js (+test) — main.jsx captures the ONE-SHOT
+    beforeinstallprompt at boot (with preventDefault); promptInstall()
+    replays the real native sheet on user tap; appinstalled +
+    display-mode:standalone set a sticky device-level localStorage flag
+    (norcet:installed:v1) so a later tab visit never re-nags. Pure
+    installDecision(): ≥10 attempts (INSTALL_MIN_ATTEMPTS), NEVER shows
+    while the notification nudge is showing (one ask at a time,
+    notifications first — install computes the notif decision from the
+    same pure fns + stored state, so they stay in lockstep), 30-day
+    snooze / 2-dismissals contract shared with push-opt-in.js
+    (normalizeNudgeState reused), and browsers with no install path
+    (desktop Firefox) stay silent rather than showing fake steps.
+  • ui/install-nudge.jsx — Home card below the notification nudge:
+    native variant = one-tap Install → real sheet → success state
+    (auto-hides; declining the sheet auto-snoozes); iOS variant =
+    Share → Add to Home Screen walkthrough framed around unlocking
+    reminders. Reuses nnudge-in/nnudge-done anims (reduced-motion OK).
+  • Settings — "Install the app" row under Notifications, shown ONLY
+    while hasDeferredPrompt() && !installed; hides after accepting.
+
+SEQUENCING for a user: notification card (≥5 attempts) → install card
+  (≥10 attempts, once notif is on/quiet). KEYS.installNudge local record.
+FILES: ADDED lib/install-prompt.js(+test) · ui/install-nudge.jsx;
+  MODIFIED main.jsx · home.jsx · settings.jsx · keys.js
+GATE: 25 test files + vite compile green. Deployed via main.
