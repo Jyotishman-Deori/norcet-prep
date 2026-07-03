@@ -57,6 +57,11 @@ export const DEFAULTS = {
     enabled: true,     // show the Premium page + drawer entry
     testPhase: true,   // true = "everything free during testing" banner + placeholder CTA
     adSlot: false,     // future rewarded-ad slot (hidden while false)
+    // Feature gates — which premium walls are ENFORCED. All ship OFF during
+    // the test phase (everything stays free); flip live from the admin Live
+    // config tool at launch, no redeploy. cribVault = saved crib sheets +
+    // the Mistake Vault history (the post-quiz session crib stays free).
+    gates: { cribVault: false },
     plans: [
       { id: 'monthly', label: 'Monthly', priceInr: 149, per: 'month' },
       { id: 'yearly',  label: 'Yearly',  priceInr: 999, per: 'year', save: 'Save 44%' },

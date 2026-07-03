@@ -21,6 +21,7 @@ import { attemptStats } from '../lib/compact.js';
 import { clampNum, todayStr } from '../lib/utils.js';
 import { topicIcon } from '../lib/topics.js';
 import { loadMindmapNotes, saveMindmapNotes, mindmapNoteMatch, sanitizeNoteText } from '../lib/notes.js';
+import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
@@ -547,7 +548,7 @@ const kmapIntroSeenKey = (pid) => 'kmapintroseen:v1:' + (pid || 'guest');
 // ---- The screen ----------------------------------------------------------
 function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
-  const { data, allQuestions } = useData();
+  const { data, allQuestions, setData } = useData();
   const profileId = useProfile().profileId;
   const fgOnDark = useFgOnDark();
   // #13 — per-state visuals now come from the module-scope _constNode()
@@ -840,6 +841,19 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
       const snapshot = buildMindmapStateSnapshot(model);
       const upgrades = diffMindmapUpgrades(prev, model);
       saveMindmapSeen(profileId, snapshot);            // re-baseline immediately (idempotent re-entry)
+      // MILESTONES — log familiar/mastered upgrades into the achievement
+      // history. Independent of the celebration ANIMATION below: reduced
+      // motion still records the event. 'discovered' is deliberately not
+      // logged (too chatty — every first touch of a subtopic).
+      const notable = upgrades.filter(u => u.toState === 'familiar' || u.toState === 'mastered');
+      if (notable.length) {
+        setData(d => {
+          if (!d) return d;
+          let ms = d.milestones;
+          for (const u of notable) ms = recordMilestone(ms, masteryMilestone(u.id, u.toState, u.name));
+          return ms === d.milestones ? d : { ...d, milestones: ms };
+        });
+      }
       if (reduced || upgrades.length === 0) return;    // reduced motion / nothing changed -> just show new state
       // Resolve each upgrade to a positioned node (drop any not in the layout).
       const queue = upgrades

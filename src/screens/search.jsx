@@ -1,47 +1,41 @@
 // =====================================================================
-// src/screens/search.jsx — GLOBAL SEARCH (the bottom-nav Search tab).
-// One keyword box across every study surface: practice questions, concept
-// cards, quick-reference rows, dosage drills and FAQs. Pure matching lives
-// in lib/search.js (tested); this screen feeds it the already-loaded data
-// and renders grouped, highlighted, tap-through results:
-//   • question rows expand INLINE (options + answer + explanation) and the
-//     group offers "Practice these N" → an untimed quiz of the matches
-//   • reference rows deep-link into Reference with the query pre-filled
-//   • concept rows open the exact Learn topic/sub; dosage/FAQ open their
-//     sections
-// Idle state = recent searches (local, per profile) + suggested chips.
-// All animation is decorative and opted out under prefers-reduced-motion
-// (see .search-row-in in font-styles.js).
+// src/screens/search.jsx — GLOBAL UTILITY SEARCH (the bottom-nav Search tab).
+// STRICTLY a navigation shortcut router (blueprint M1/M2): it finds and
+// deep-links to App Settings, Features, Section/Unit titles and FAQ &
+// Help articles. It deliberately does NOT query curriculum content —
+// no questions, no reference values, no concept cards, no dictionary
+// lookups (learning stays on the sequential Learn path; the Reference
+// screen keeps its own in-section table filter).
+//
+// The index is the sanitized navigationRegistry compiled by
+// lib/nav-registry.js: static app routes + per-topic Units + the DYNAMIC
+// admin-authored FAQ list, every entry schema-validated and route-
+// allowlisted (sanitizeRegistry) so nothing admin/internal can surface.
+// Ranked title > keywords > description, capped small; ↑/↓ + Enter
+// keyboard selection on the input.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Search as SearchIcon, X, Play, Check, History, Sparkles,
-  Target, BookOpen, FlaskConical, Calculator, HelpCircle, ChevronRight,
-  Compass, ArrowUpRight, Settings as SettingsIcon, Zap,
+  Search as SearchIcon, X, History, Sparkles, HelpCircle,
+  Compass, ArrowUpRight, Settings as SettingsIcon, Zap, BookOpen,
 } from 'lucide-react';
-import { useTheme, useData } from '../lib/app-context.jsx';
-import { useContent } from '../lib/content.js';
+import { useTheme } from '../lib/app-context.jsx';
 import { listFaqs } from '../lib/faq.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 import { TOPICS } from '../data/seed.js';
 import { haptic } from '../lib/juice.js';
 import { TopBar, requestNote, requestFeedback } from '../ui/primitives.jsx';
-import {
-  tokenize, buildEntries, searchEntries, highlightSegments,
-  MIN_QUERY_LEN, PRACTICE_CAP,
-} from '../lib/search.js';
-import { buildNavRegistry, searchRegistry } from '../lib/nav-registry.js';
+import { tokenize, highlightSegments, MIN_QUERY_LEN } from '../lib/search.js';
+import { buildDynamicRegistry, searchRegistry } from '../lib/nav-registry.js';
 
 const RECENT_MAX = 8;
-// Idle-state suggestions when the user has no search history yet — a mix of
-// shortcut-router hops ("dark mode" → Themes, "mistakes" → Weak Areas) and
-// content terms, so the first tap demonstrates the whole feature.
-const SUGGESTED = ['dark mode', 'mistakes', 'insulin', 'mock test', 'lab values', 'pharmacology'];
+const RESULT_LIMIT = 7; // spec: 5–7; this is the only result list now
+// Idle-state suggestions — every one demonstrates the ROUTER (not content):
+// settings, features, a unit, help.
+const SUGGESTED = ['dark mode', 'mistakes', 'mock test', 'pharmacology', 'leaderboard', 'backup'];
 
-const TOPIC_BY_ID = Object.fromEntries(TOPICS.map(t => [t.id, t]));
-
-// Highlighted text — every query-token occurrence gets a soft primary wash.
+// Highlighted text — every query-token occurrence gets a soft accent wash.
 function Hi({ text, tokens, color }) {
   const segs = useMemo(() => highlightSegments(text, tokens), [text, tokens]);
   return (
@@ -53,21 +47,17 @@ function Hi({ text, tokens, color }) {
   );
 }
 
-export default function SearchScreen({ onBack, onNavigate, onStartPractice, profileId }) {
+export default function SearchScreen({ onBack, onNavigate, profileId }) {
   const { theme: T } = useTheme();
-  const { allQuestions } = useData();
-  const { data: reference, loading: refLoading } = useContent('reference');
-  const { data: dosage, loading: dosLoading } = useContent('dosage');
-  const { data: conceptCards, loading: ccLoading } = useContent('conceptCards');
   const [faqs, setFaqs] = useState(null);
   const [query, setQuery] = useState('');
   const [debounced, setDebounced] = useState('');
-  const [expandedId, setExpandedId] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [selIdx, setSelIdx] = useState(-1);
   const inputRef = useRef(null);
 
-  // FAQ list is async (shared store) — merged into results when it arrives;
-  // offline just means the FAQ group is absent, never an error state.
+  // Dynamic half of the registry: admin-authored FAQs (async, offline just
+  // means the FAQ entries are absent — never an error state).
   useEffect(() => {
     let on = true;
     listFaqs().then(list => { if (on && Array.isArray(list)) setFaqs(list); }).catch(() => {});
@@ -103,37 +93,15 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
     const t = setTimeout(() => setDebounced(query), 180);
     return () => clearTimeout(t);
   }, [query]);
-  useEffect(() => { setExpandedId(null); }, [debounced]);
-
-  const entries = useMemo(
-    () => buildEntries({ questions: allQuestions, reference, dosage, conceptCards, faqs }),
-    [allQuestions, reference, dosage, conceptCards, faqs]
-  );
-  const tokens = useMemo(() => tokenize(debounced), [debounced]);
-  const results = useMemo(() => searchEntries(entries, debounced, { perGroup: 6 }), [entries, debounced]);
-
-  // NAVIGATION SHORTCUTS — the registry-backed "Go to" router. Ranked title >
-  // keywords > description, capped small; ↑/↓ + Enter select from the input.
-  const registry = useMemo(() => buildNavRegistry(TOPICS), []);
-  const navHits = useMemo(() => searchRegistry(registry, debounced), [registry, debounced]);
-  const [selIdx, setSelIdx] = useState(-1);
   useEffect(() => { setSelIdx(-1); }, [debounced]);
 
+  const registry = useMemo(() => buildDynamicRegistry({ topics: TOPICS, faqs }), [faqs]);
+  const tokens = useMemo(() => tokenize(debounced), [debounced]);
+  const navHits = useMemo(() => searchRegistry(registry, debounced, { limit: RESULT_LIMIT }), [registry, debounced]);
+
   const searching = debounced.trim().length >= MIN_QUERY_LEN;
-  const contentLoading = refLoading || dosLoading || ccLoading;
-  const totalAll = navHits.length + results.total;
 
-  // Per-group visual identity (icon + section accent), matching the house
-  // convention of clinical icons on earthy theme accents.
-  const GROUP_META = {
-    question:  { Icon: Target,       color: T.sec.quick },
-    concept:   { Icon: BookOpen,     color: T.sec.learn },
-    reference: { Icon: FlaskConical, color: T.sec.stats },
-    dosage:    { Icon: Calculator,   color: T.sec.library },
-    faq:       { Icon: HelpCircle,   color: T.sec.revision },
-  };
-
-  // Category identity for shortcut rows (icon + badge accent).
+  // Category identity (icon + badge accent).
   const CAT_META = {
     Settings: { Icon: SettingsIcon, color: T.inkSoft },
     Features: { Icon: Zap,          color: T.primary },
@@ -153,28 +121,6 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
     if (entry.route) onNavigate(entry.route);
   };
 
-  const openResult = (item) => {
-    haptic(5);
-    saveRecent(debounced);
-    if (item.type === 'question') {
-      const id = item.payload && item.payload.id;
-      setExpandedId(prev => (prev === id ? null : id));
-      return;
-    }
-    if (item.type === 'reference') onNavigate({ screen: 'reference', query: debounced });
-    else if (item.type === 'concept') onNavigate({ screen: 'learn-cards', topicId: item.payload.topicId, sub: item.payload.sub });
-    else if (item.type === 'dosage') onNavigate({ screen: 'dosage' });
-    else if (item.type === 'faq') onNavigate({ screen: 'faq' });
-  };
-
-  const practice = () => {
-    if (!results.questionIds.length) return;
-    haptic(12);
-    saveRecent(debounced);
-    onStartPractice(results.questionIds.slice(0, PRACTICE_CAP));
-  };
-
-  // A tappable pill chip (recent + suggested share the look).
   const Chip = ({ label, icon, onClick }) => (
     <button onClick={() => { haptic(5); onClick(); }}
             className="no-tap-highlight flex-shrink-0 flex items-center gap-1.5 pl-3 pr-3.5 py-2 rounded-full text-xs font-semibold active:scale-95 transition-transform"
@@ -183,66 +129,6 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
       {label}
     </button>
   );
-
-  // One result row. `i` drives the capped entrance stagger.
-  const Row = ({ item, i }) => {
-    const meta = GROUP_META[item.type];
-    const q = item.type === 'question' ? item.payload : null;
-    const topic = q ? TOPIC_BY_ID[q.topic] : null;
-    const expanded = q && expandedId === q.id;
-    const correct = q && Array.isArray(q.correct) ? q.correct : [];
-    return (
-      <div className="search-row-in rounded-2xl overflow-hidden"
-           style={{ background: T.surface, border: `1px solid ${expanded ? meta.color + '55' : T.border}`,
-                    animationDelay: `${Math.min(i, 8) * 35}ms` }}>
-        <button onClick={() => openResult(item)}
-                className="no-tap-highlight press-safe w-full flex items-start gap-3 px-3.5 py-3 text-left active:scale-[0.99] transition-transform">
-          <span className="w-8 h-8 mt-0.5 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
-                style={{ background: meta.color + '15' }}>
-            {topic ? topic.icon : <meta.Icon size={15} style={{ color: meta.color }} />}
-          </span>
-          <span className="flex-1 min-w-0">
-            <span className="block text-sm font-medium leading-snug" style={{ color: T.ink }}>
-              <Hi text={item.title} tokens={tokens} color={meta.color} />
-            </span>
-            {item.snippet && (
-              <span className="block text-xs mt-1 leading-snug" style={{ color: T.muted }}>
-                <Hi text={item.snippet} tokens={tokens} color={meta.color} />
-              </span>
-            )}
-          </span>
-          <ChevronRight size={15} className={`mt-1 flex-shrink-0 transition-transform duration-200 ${expanded ? 'rotate-90' : ''}`}
-                        style={{ color: T.muted }} />
-        </button>
-        {/* Inline answer preview — study without leaving the results list. */}
-        {expanded && (
-          <div className="px-3.5 pb-3.5 anim-fadeup">
-            <div className="space-y-1.5 mb-3">
-              {(q.options || []).map((opt, oi) => {
-                const right = correct.includes(oi);
-                return (
-                  <div key={oi} className="flex items-start gap-2 rounded-xl px-3 py-2 text-xs"
-                       style={{ background: right ? T.successSoft : T.surfaceWarm,
-                                border: `1px solid ${right ? T.success + '55' : T.borderSoft}`,
-                                color: right ? T.success : T.inkSoft,
-                                fontWeight: right ? 600 : 400 }}>
-                    {right && <Check size={13} className="mt-[1px] flex-shrink-0" />}
-                    <span className="min-w-0">{opt}</span>
-                  </div>
-                );
-              })}
-            </div>
-            {q.exp && (
-              <div className="text-xs leading-relaxed rounded-xl px-3 py-2.5"
-                   style={{ background: T.surfaceWarm, color: T.inkSoft, whiteSpace: 'pre-wrap' }}>
-                {q.exp}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   return (
     <div className="anim-fadeup">
@@ -254,8 +140,6 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
           <SearchIcon size={17} className="absolute left-4 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
           <input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)}
                  onKeyDown={e => {
-                   // ↑/↓ walk the "Go to" shortcuts; Enter opens the selected
-                   // (or the only) one. Plain Enter just dismisses the keyboard.
                    if (e.key === 'ArrowDown' && navHits.length) {
                      e.preventDefault(); setSelIdx(i => (i + 1) % navHits.length);
                    } else if (e.key === 'ArrowUp' && navHits.length) {
@@ -266,8 +150,8 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
                      else { e.currentTarget.blur(); saveRecent(query); }
                    } else if (e.key === 'Escape') { setQuery(''); setDebounced(''); }
                  }}
-                 placeholder="Search questions, drugs, values, concepts…"
-                 autoFocus inputMode="search" enterKeyHint="search" aria-label="Search all study content"
+                 placeholder="Find settings, features, units, help…"
+                 autoFocus inputMode="search" enterKeyHint="go" aria-label="Search app sections and settings"
                  className="w-full rounded-2xl pl-11 pr-11 py-3.5 text-sm font-body"
                  style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink,
                           boxShadow: '0 2px 8px rgba(26,43,35,0.05)' }} />
@@ -307,119 +191,75 @@ export default function SearchScreen({ onBack, onNavigate, onStartPractice, prof
               ))}
             </div>
             <div className="mt-8 text-center text-xs leading-relaxed px-6" style={{ color: T.muted }}>
-              One search covers practice questions, concept cards, lab values &amp; drugs, dosage drills and FAQs.
+              Search jumps you straight to any screen, setting, subject unit or FAQ — it doesn’t search
+              questions or study content. For learning, follow your path in Learn.
             </div>
           </div>
         )}
 
-        {/* Result count + shortcut router + practice CTA */}
+        {/* Results — the shortcut router list */}
         {searching && (
           <>
-            <div className="flex items-center justify-between mb-3 px-1">
-              <div className="text-xs font-medium" style={{ color: T.muted }}>
-                {totalAll} result{totalAll === 1 ? '' : 's'} for “{debounced.trim()}”
-                {contentLoading ? ' · loading more content…' : ''}
+            <div className="flex items-center gap-2 mb-2 px-1">
+              <Compass size={14} style={{ color: T.primary }} />
+              <div className="text-xs font-semibold" style={{ color: T.inkSoft }}>Go to</div>
+              <div className="text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full"
+                   style={{ background: T.primary + '15', color: T.primary }}>
+                {navHits.length}
               </div>
             </div>
 
-            {/* "Go to" — navigation shortcuts, always the FIRST group: the
-                search is a router before it is a content finder. */}
             {navHits.length > 0 && (
-              <div className="mb-5">
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <Compass size={14} style={{ color: T.primary }} />
-                  <div className="text-xs font-semibold" style={{ color: T.inkSoft }}>Go to</div>
-                </div>
-                <div className="space-y-2" role="listbox" aria-label="Navigation shortcuts">
-                  {navHits.map((entry, i) => {
-                    const meta = CAT_META[entry.category] || CAT_META.Features;
-                    const selected = i === selIdx;
-                    return (
-                      <button key={entry.id} onClick={() => openNav(entry)}
-                              role="option" aria-selected={selected}
-                              className="search-row-in no-tap-highlight press-safe w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-[0.99] transition-transform"
-                              style={{ background: selected ? T.primary + '0F' : T.surface,
-                                       border: `1px solid ${selected ? T.primary : T.border}`,
-                                       animationDelay: `${Math.min(i, 8) * 35}ms` }}>
-                        <span className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
-                              style={{ background: meta.color + '15' }}>
-                          {entry.icon ? entry.icon : <meta.Icon size={15} style={{ color: meta.color }} />}
-                        </span>
-                        <span className="flex-1 min-w-0">
-                          <span className="flex items-center gap-2 min-w-0">
-                            <span className="text-sm font-medium truncate" style={{ color: T.ink }}>
-                              <Hi text={entry.title} tokens={tokens} color={meta.color} />
-                            </span>
-                            <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
-                                  style={{ background: meta.color + '15', color: meta.color }}>
-                              {entry.category}
-                            </span>
+              <div className="space-y-2" role="listbox" aria-label="Navigation shortcuts">
+                {navHits.map((entry, i) => {
+                  const meta = CAT_META[entry.category] || CAT_META.Features;
+                  const selected = i === selIdx;
+                  return (
+                    <button key={entry.id} onClick={() => openNav(entry)}
+                            role="option" aria-selected={selected}
+                            className="search-row-in no-tap-highlight press-safe w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-left active:scale-[0.99] transition-transform"
+                            style={{ background: selected ? T.primary + '0F' : T.surface,
+                                     border: `1px solid ${selected ? T.primary : T.border}`,
+                                     animationDelay: `${Math.min(i, 8) * 35}ms` }}>
+                      <span className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-sm"
+                            style={{ background: meta.color + '15' }}>
+                        {entry.icon ? entry.icon : <meta.Icon size={15} style={{ color: meta.color }} />}
+                      </span>
+                      <span className="flex-1 min-w-0">
+                        <span className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm font-medium truncate" style={{ color: T.ink }}>
+                            <Hi text={entry.title} tokens={tokens} color={meta.color} />
                           </span>
-                          <span className="block text-xs mt-0.5 truncate" style={{ color: T.muted }}>
-                            {entry.description}
+                          <span className="text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded-full flex-shrink-0"
+                                style={{ background: meta.color + '15', color: meta.color }}>
+                            {entry.category}
                           </span>
                         </span>
-                        <ArrowUpRight size={15} className="flex-shrink-0"
-                                      style={{ color: selected ? T.primary : T.muted }} />
-                      </button>
-                    );
-                  })}
-                </div>
+                        <span className="block text-xs mt-0.5 truncate" style={{ color: T.muted }}>
+                          <Hi text={entry.description} tokens={tokens} color={meta.color} />
+                        </span>
+                      </span>
+                      <ArrowUpRight size={15} className="flex-shrink-0"
+                                    style={{ color: selected ? T.primary : T.muted }} />
+                    </button>
+                  );
+                })}
               </div>
             )}
 
-            {results.questionIds.length > 0 && (
-              <button onClick={practice}
-                      className="no-tap-highlight w-full mb-4 flex items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold active:scale-[0.98] transition-transform"
-                      style={{ background: T.primary, color: '#FFF', boxShadow: `0 6px 18px ${T.primary}44` }}>
-                <Play size={16} fill="#FFF" />
-                Practice {results.questionIds.length > PRACTICE_CAP
-                  ? `top ${PRACTICE_CAP} of ${results.questionIds.length}`
-                  : `these ${results.questionIds.length}`} question{results.questionIds.length === 1 ? '' : 's'}
-              </button>
-            )}
-
-            {/* Grouped results */}
-            {results.groups.map(group => {
-              const meta = GROUP_META[group.type];
-              return (
-                <div key={group.type} className="mb-5">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <meta.Icon size={14} style={{ color: meta.color }} />
-                    <div className="text-xs font-semibold" style={{ color: T.inkSoft }}>{group.label}</div>
-                    <div className="text-[10px] font-semibold tabular-nums px-1.5 py-0.5 rounded-full"
-                         style={{ background: meta.color + '15', color: meta.color }}>
-                      {group.total}
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    {group.items.map((item, i) => (
-                      <Row key={`${group.type}:${i}`} item={item} i={i} />
-                    ))}
-                  </div>
-                  {group.total > group.items.length && (
-                    <div className="text-[11px] mt-1.5 px-1" style={{ color: T.muted }}>
-                      +{group.total - group.items.length} more — refine your search to narrow down
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-
-            {/* Zero results (no shortcuts AND no content matched) */}
-            {totalAll === 0 && (
+            {/* Zero results */}
+            {navHits.length === 0 && (
               <div className="text-center py-14 anim-fadeup">
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4"
                      style={{ background: T.surfaceWarm }}>
                   <SearchIcon size={22} style={{ color: T.muted }} />
                 </div>
                 <div className="text-sm font-medium" style={{ color: T.inkSoft }}>
-                  No matches for “{debounced.trim()}”
+                  Nothing to jump to for “{debounced.trim()}”
                 </div>
                 <div className="text-xs mt-1.5 leading-relaxed px-8" style={{ color: T.muted }}>
-                  {contentLoading
-                    ? 'Some content is still downloading — try again in a moment.'
-                    : 'Check the spelling, or try a shorter medical term (e.g. “insulin” instead of a full sentence).'}
+                  Try a feature name (“mock test”), a setting (“dark mode”), a subject (“pharmacology”)
+                  or a help topic (“streak”).
                 </div>
               </div>
             )}

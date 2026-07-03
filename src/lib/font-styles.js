@@ -664,6 +664,40 @@ export const fontStyles = `
 }
 .search-row-in { animation: searchRowIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 
+/* ── Premium gate modal — card springs in; the upgrade CTA breathes with a
+   slow shadow/scale pulse (decorative; reduced motion shows it static). */
+@keyframes pgateIn {
+  0%   { opacity: 0; transform: translateY(18px) scale(0.96); }
+  100% { opacity: 1; transform: none; }
+}
+.pgate-in { animation: pgateIn 0.34s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes pgateCtaPulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.025); }
+}
+.pgate-cta { animation: pgateCtaPulse 2.2s ease-in-out 0.8s infinite; }
+
+/* ── Mistake Vault / Activity log — rows share searchRowIn; the vault's
+   "resolved" tick pops with the house spring. */
+@keyframes vaultTickIn {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.vault-tick-in { animation: vaultTickIn 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+/* ── Learn Path — nodes pop in with a stagger; the recommended node breathes. */
+@keyframes pathNodeIn {
+  0%   { opacity: 0; transform: scale(0.6); }
+  100% { opacity: 1; transform: none; }
+}
+.path-node-in { animation: pathNodeIn 0.36s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes pathRecoPulse {
+  0%, 100% { box-shadow: 0 0 0 0 var(--path-reco-glow, rgba(15,76,76,0.35)); }
+  55%      { box-shadow: 0 0 0 10px rgba(0,0,0,0); }
+}
+.path-reco-pulse { animation: pathRecoPulse 2s ease-out infinite; }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -686,7 +720,8 @@ export const fontStyles = `
   .whx-task-in, .whx-chip-in, .whx-handle-pop, .whx-readout-tick,
   .whx-ghost-in, .whx-bloom, .whx-shake, .whx-result-bloom,
   .whx-recap-in, .whx-timer-glow,
-  .bnav-in, .bnav-pop, .search-row-in { animation: none !important; }
+  .bnav-in, .bnav-pop, .search-row-in,
+  .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse { animation: none !important; }
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }

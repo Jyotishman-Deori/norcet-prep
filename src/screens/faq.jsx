@@ -6,7 +6,7 @@
 // the shared kv store (mirrors feedback). Admin controls (inline reply,
 // delete, helpful counts) appear only when isAdmin is true.
 // =====================================================================
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ChevronDown, MessageCircle, Send, Shield, Sparkles, Trash2, HelpCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
@@ -33,7 +33,9 @@ function relTime(ts) {
 const NEW_FAQ_MS = 7 * 86400000; // a FAQ added within 7 days shows a "New" badge
 const isNewFaq = (f) => !!(f && f.createdAt) && (Date.now() - f.createdAt) < NEW_FAQ_MS;
 
-function FAQScreen({ onBack, isAdmin = false, profile }) {
+// `focusId` — optional deep-link from the global Search router: once the list
+// loads, that FAQ opens and scrolls into view (one-shot; browsing is normal after).
+function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
   const { theme: T } = useTheme();
   const profileId = (profile && profile.id) || GUEST_ID;
   const profileName = (profile && profile.displayName) || 'Student';
@@ -66,6 +68,24 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
 
   const categories = ['All', ...faqCategories(faqs || [])];
   const visible = (faqs || []).filter(f => cat === 'All' || f.category === cat);
+
+  // Search deep-link: open + scroll to the focused FAQ once the list is in.
+  const focusedRef = useRef(false);
+  useEffect(() => {
+    if (focusedRef.current || !focusId || !faqs || faqs.length === 0) return;
+    if (!faqs.some(f => f.id === focusId)) return;
+    focusedRef.current = true;
+    setCat('All');
+    openFaq(focusId);
+    setTimeout(() => {
+      try {
+        const el = document.getElementById('faq-' + focusId);
+        const reduced = typeof window !== 'undefined' && window.matchMedia
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (el) el.scrollIntoView({ block: 'center', behavior: reduced ? 'auto' : 'smooth' });
+      } catch (e) {}
+    }, 150);
+  }, [faqs, focusId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const openFaq = async (id) => {
     if (openId === id) { setOpenId(null); return; }
@@ -148,7 +168,7 @@ function FAQScreen({ onBack, isAdmin = false, profile }) {
                 const isOpen = openId === f.id;
                 const th = threads[f.id];
                 return (
-                  <Card key={f.id} className="overflow-hidden" style={{ borderLeft: `3px solid ${isOpen ? T.primary : T.borderSoft}` }}>
+                  <Card key={f.id} id={'faq-' + f.id} className="overflow-hidden" style={{ borderLeft: `3px solid ${isOpen ? T.primary : T.borderSoft}` }}>
                     {/* Question row */}
                     <button onClick={() => openFaq(f.id)} className="no-tap-highlight w-full text-left p-4 flex items-start gap-3">
                       <MessageCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />

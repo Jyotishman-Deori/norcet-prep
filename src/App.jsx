@@ -215,6 +215,9 @@ import DoubtsScreen from './screens/doubts.jsx';
 const FAQScreen = lazy(() => import('./screens/faq.jsx'));
 // GLOBAL SEARCH — the bottom-nav Search tab (lazy: not part of first paint).
 const SearchScreen = lazy(() => import('./screens/search.jsx'));
+// MISTAKE VAULT + ACTIVITY HISTORY — retention surfaces (blueprint M3/M5).
+const MistakeVault = lazy(() => import('./screens/mistake-vault.jsx'));
+const ActivityLog = lazy(() => import('./screens/activity-log.jsx'));
 // [A1 slice 35] WeightageScreen extracted (data/allQuestions->useData; papers stays a prop).
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
@@ -233,6 +236,10 @@ import ConfirmHost from './ui/confirm-host.jsx';
 import NoteHost from './screens/note-taking-modal.jsx';
 import NoteFab from './ui/note-fab.jsx';
 import { loadShowFab, NOTEFAB_PREF_EVENT } from './lib/notes-store.js';
+// MILESTONES — achievement event log (level-ups, streak thresholds, mastery),
+// feeds the Activity history screen. Pure lib; events recorded at the same
+// sites that already compute the state change.
+import { recordMilestone, levelUpMilestone, streakMilestone, crossedStreakMilestones } from './lib/milestones.js';
 // BOTTOM NAV — the mobile/tablet tab bar (Home · Search · + · Favourites ·
 // Settings). Shown only on the tab-root screens in BOTTOM_NAV_SCREENS.
 import BottomNav, { BOTTOM_NAV_SCREENS } from './ui/bottom-nav.jsx';
@@ -2552,6 +2559,10 @@ export default function App() {
           ts: Date.now(),
           correct: r.correct,
           timeMs: r.timeMs || null,
+          // MISTAKE ENGINE — the option indices the user actually picked.
+          // Powers the Mistake Vault ("you answered X") and the explain
+          // coach (q.wrong[pick]). Empty for timeouts/reveals.
+          pick: Array.isArray(r.selected) ? r.selected : [],
           // #4 — the user's declared confidence for this answer (sure/unsure/
           // guess), or null for legacy/reveal. Powers the calibration report.
           conf: r.confidence || null,
@@ -2622,9 +2633,17 @@ export default function App() {
         graceJustUsed = false;
       }
 
+      // MILESTONES — log any streak thresholds this session just crossed
+      // (id carries the date, so a re-earned streak logs again months later).
+      let milestones = prev.milestones;
+      for (const d of crossedStreakMilestones(prev.stats.streakCurrent, streakCurrent)) {
+        milestones = recordMilestone(milestones, streakMilestone(d, today));
+      }
+
       return {
         ...prev,
         history: newHistory,
+        milestones,
         bookmarks: Array.from(bookmarkedLocal),
         stats: {
           ...prev.stats,
@@ -2997,6 +3016,7 @@ export default function App() {
     setData(prev => {
       let next = prev || {};
       if (gained > 0) next = { ...next, economy: addCoinsPure(next.economy, gained) };
+      if (res.leveledUp) next = { ...next, milestones: recordMilestone(next.milestones, levelUpMilestone(res.toLevel)) };
       return { ...next, levelup: res.levelup };
     });
     goLevelUpDirect();
@@ -3014,7 +3034,10 @@ export default function App() {
   const claimDailyQuest = useCallback((questId) => {
     const res = claimQuestPure(levelupRef.current, questId, todayStr());
     if (!res.claimed) return;
-    setData(prev => ({ ...prev, levelup: res.levelup }));
+    setData(prev => ({
+      ...prev, levelup: res.levelup,
+      milestones: res.leveledUp ? recordMilestone(prev && prev.milestones, levelUpMilestone(res.toLevel)) : (prev && prev.milestones),
+    }));
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
   }, []);
 
@@ -3027,6 +3050,7 @@ export default function App() {
       ...prev,
       levelup: res.levelup,
       economy: (res.reward.coins > 0) ? addCoinsPure(prev && prev.economy, res.reward.coins) : (prev && prev.economy),
+      milestones: res.leveledUp ? recordMilestone(prev && prev.milestones, levelUpMilestone(res.toLevel)) : (prev && prev.milestones),
     }));
     if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
     return res.reward;
@@ -4228,7 +4252,7 @@ export default function App() {
       {/* F-F — FAQ. Admin reply/delete + helpful counts show only when isAdmin. */}
       {nav.screen === 'faq' && (
         <Suspense fallback={<LazyScreenFallback />}>
-        <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} />
+        <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} focusId={nav.focusId || null} />
         </Suspense>
       )}
 
@@ -4578,6 +4602,7 @@ export default function App() {
             as its own sidebar item (the former "Exam date" entry). */}
         <RevisionSheet onLogVisit={recordRevisionVisit} onBack={goHome}
                        onStartReview={() => startQuiz({ mode: 'review-due' })}
+                       onOpenPremium={() => navigate({ screen: 'premium' })}
                        onOpenCrib={(c) => navigate({
                          screen: 'crib-sheet', items: c.items,
                          cribTitle: c.title, cribSubtitle: c.subtitle,
@@ -4637,13 +4662,30 @@ export default function App() {
                   onBack={goHome} />
       )}
 
-      {/* GLOBAL SEARCH — the bottom-nav Search tab (drawer entry on desktop).
-          One keyword box across questions/reference/concepts/dosage/FAQ;
-          "Practice these N" rides the existing explicit-id quiz path. */}
+      {/* MISTAKE VAULT — every ever-wrong question, due-first review queue,
+          coach notes. Locked behind the (default-off) cribVault gate. */}
+      {nav.screen === 'mistake-vault' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <MistakeVault onBack={goHome}
+                      onStartReview={(qIds) => startQuiz({ mode: 'wrong', qIds })}
+                      onOpenPremium={() => navigate({ screen: 'premium' })} />
+        </Suspense>
+      )}
+
+      {/* ACTIVITY HISTORY — chronological achievements + study timeline. */}
+      {nav.screen === 'activity-log' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <ActivityLog onBack={goHome} />
+        </Suspense>
+      )}
+
+      {/* GLOBAL UTILITY SEARCH — the bottom-nav Search tab (drawer entry on
+          desktop). Strictly a shortcut ROUTER over the sanitized navigation
+          registry (settings/features/units/FAQ) — it does not query
+          curriculum content. */}
       {nav.screen === 'search' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <SearchScreen onBack={goHome} onNavigate={handleHomeNavigate}
-                      onStartPractice={(qIds) => startQuiz({ mode: 'wrong', qIds })}
                       profileId={profile ? (profile.uid || profile.id) : 'guest'} />
         </Suspense>
       )}

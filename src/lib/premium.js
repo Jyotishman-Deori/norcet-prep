@@ -19,6 +19,7 @@ const FALLBACK = {
   enabled: true,
   testPhase: true,
   adSlot: false,
+  gates: { cribVault: false },
   plans: [
     { id: 'monthly', label: 'Monthly', priceInr: 149, per: 'month' },
     { id: 'yearly',  label: 'Yearly',  priceInr: 999, per: 'year', save: 'Save 44%' },
@@ -46,11 +47,12 @@ function normalizePlan(p) {
 export function getPremiumConfig() {
   let block;
   try { block = getConfig().premium; } catch (_e) { block = null; }
-  if (!isPlainObject(block)) return { ...FALLBACK, plans: [...FALLBACK.plans] };
+  if (!isPlainObject(block)) return { ...FALLBACK, plans: [...FALLBACK.plans], gates: { ...FALLBACK.gates } };
   return {
     enabled: block.enabled,
     testPhase: block.testPhase,
     adSlot: block.adSlot,
+    gates: isPlainObject(block.gates) ? block.gates : { ...FALLBACK.gates },
     plans: Array.isArray(block.plans) ? block.plans : FALLBACK.plans,
   };
 }
@@ -95,6 +97,19 @@ export function getPremiumState(profile) {
     return { active: true, plan: profile.premium.plan || null };
   }
   return { active: false, plan: null };
+}
+
+// isPremiumUser(profile) — the single entitlement check every gate reads.
+// Placeholder-backed today (profile.premium.active, written by no one until a
+// payment gateway lands); gates that call this work unchanged when it does.
+export function isPremiumUser(profile) { return getPremiumState(profile).active === true; }
+
+// cribVaultLocked(profile) — is the crib-history / Mistake Vault wall UP for
+// this user? True only when the remote gate is ON (default OFF during the
+// test phase) AND the user isn't premium. The post-quiz session crib sheet is
+// NEVER gated — that immediate review is the free tier's marketing hook.
+export function cribVaultLocked(profile) {
+  return getPremiumConfig().gates.cribVault === true && !isPremiumUser(profile);
 }
 
 // formatInr(n) → '₹' + n with Indian-style digit grouping (lakh system):

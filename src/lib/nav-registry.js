@@ -22,9 +22,24 @@
 // then DESCRIPTION text — capped small so the dropdown stays scannable.
 // =====================================================================
 import { tokenize } from './search.js';
+import { toPlainText } from './rich-text.js';
 
 export const NAV_CATEGORIES = ['Settings', 'Features', 'Units', 'FAQ'];
 export const NAV_RESULT_LIMIT = 6; // spec: 5–7 max, keep the list clean
+
+// SECURITY FILTER — the only screens a registry entry may route to. Anything
+// outside this allowlist (admin surfaces, internal/test routes, typos, a
+// hostile dynamic entry) is stripped by sanitizeRegistry before it can render
+// or deep-link. Student-reachable browse/config screens only.
+export const STUDENT_ROUTE_SCREENS = new Set([
+  'home', 'settings', 'themes', 'notifications', 'share-app', 'premium',
+  'quick-setup', 'topic-select', 'mock-setup', 'previous-papers', 'drill-tests',
+  'level-up', 'weak-areas', 'stats', 'ikigai', 'leaderboard', 'coverage',
+  'weightage', 'knowledge-map', 'learn-topics', 'learn-cards', 'revision-sheet',
+  'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
+  'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
+]);
+const NAV_ACTIONS = new Set(['note', 'feedback']);
 
 // ---- Static destinations (screens + the two imperative popups) ----
 const STATIC_REGISTRY = [
@@ -91,6 +106,14 @@ const STATIC_REGISTRY = [
     keywords: ['weak', 'mistakes', 'wrong', 'errors', 'improve', 'retry', 'hub'],
     route: { screen: 'weak-areas' },
     description: 'Re-practise the questions you got wrong.' },
+  { id: 'mistake-vault', title: 'Mistake Vault', category: 'Features',
+    keywords: ['mistakes', 'vault', 'wrong', 'errors', 'fix', 'review queue', 'history'],
+    route: { screen: 'mistake-vault' },
+    description: 'Every wrong answer, saved until you fix it.' },
+  { id: 'activity-log', title: 'Activity history', category: 'Features',
+    keywords: ['history', 'activity', 'achievements', 'timeline', 'log', 'milestones', 'level ups'],
+    route: { screen: 'activity-log' },
+    description: 'Your achievements and study timeline, newest first.' },
   { id: 'stats', title: 'Your Stats', category: 'Features',
     keywords: ['stats', 'progress', 'accuracy', 'performance', 'analytics', 'streak'],
     route: { screen: 'stats' },
@@ -194,6 +217,61 @@ export function buildNavRegistry(topics) {
       icon: t.icon,
     }));
   return [...STATIC_REGISTRY, ...units];
+}
+
+// ---------------------------------------------------------------------
+// faqRegistryEntries(faqs) — the DYNAMIC half of the registry: one entry per
+// admin-authored FAQ (published the moment the admin writes it — the faq:
+// store has no draft state; drafts of QUESTIONS live in the server-only
+// staging table and never reach any client). The full plain-text answer is
+// folded into keywords so answer text is searchable, while the description
+// stays a clipped preview.
+// ---------------------------------------------------------------------
+export function faqRegistryEntries(faqs) {
+  if (!Array.isArray(faqs)) return [];
+  const out = [];
+  for (const f of faqs) {
+    if (!f || !f.id || !f.question) continue;
+    const plain = toPlainText(f.answer || '');
+    out.push({
+      id: `faq-${f.id}`,
+      title: String(f.question),
+      category: 'FAQ',
+      keywords: [
+        ...(f.category ? tokenize(String(f.category)) : []),
+        ...tokenize(String(f.question)),
+        ...(plain ? [plain.toLowerCase()] : []),
+      ],
+      route: { screen: 'faq', focusId: f.id },
+      description: plain.length > 120 ? plain.slice(0, 119).trimEnd() + '…' : (plain || 'Answered by the team.'),
+    });
+  }
+  return out;
+}
+
+// ---------------------------------------------------------------------
+// sanitizeRegistry(entries) — schema + route validation. Drops any entry
+// that is malformed, carries an unknown category, or routes outside the
+// student allowlist. Run over EVERY compiled registry (static + dynamic)
+// so no future data source can smuggle an admin/internal path into search.
+// ---------------------------------------------------------------------
+export function sanitizeRegistry(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries.filter(e => {
+    if (!e || typeof e.id !== 'string' || !e.id) return false;
+    if (typeof e.title !== 'string' || !e.title.trim()) return false;
+    if (!NAV_CATEGORIES.includes(e.category)) return false;
+    if (!Array.isArray(e.keywords) || e.keywords.length === 0) return false;
+    if (typeof e.description !== 'string' || !e.description) return false;
+    if (e.route === null || e.route === undefined) return NAV_ACTIONS.has(e.action);
+    return !!e.route && typeof e.route === 'object' && STUDENT_ROUTE_SCREENS.has(e.route.screen);
+  });
+}
+
+// The full compiler: static app routes + per-topic units + dynamic
+// admin-authored FAQs, sanitized as one payload.
+export function buildDynamicRegistry({ topics, faqs } = {}) {
+  return sanitizeRegistry([...buildNavRegistry(topics), ...faqRegistryEntries(faqs)]);
 }
 
 // ---------------------------------------------------------------------

@@ -788,5 +788,9 @@ export const DEFAULT_DATA = {
   },
   // Dates the user opened the Revision sheet, each with a snapshot of that
   // day's revision set so they can jump back and re-revise. One entry per day.
-  revisionLog: []         // [{ date: 'YYYY-MM-DD', ts, ids: [qId,...] }]
+  revisionLog: [],        // [{ date: 'YYYY-MM-DD', ts, ids: [qId,...] }]
+  // MILESTONES — append-only achievement events (level-ups, mastery tier
+  // upgrades, streak milestones), deduped by id, capped. Feeds the Activity
+  // history screen. See lib/milestones.js; merged by id in lib/merge.js.
+  milestones: []          // [{ id, type, ts, label, meta }]
 };

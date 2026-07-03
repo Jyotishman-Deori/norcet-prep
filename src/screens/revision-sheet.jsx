@@ -19,7 +19,12 @@ import { TTSButton } from '../ui/question-widgets.jsx';
 // #5 — saved Crib Sheets shelf (dated test reviews, reopenable + printable).
 import { useProfile } from '../lib/app-context.jsx';
 import { loadCribs, removeCrib, daysAgo } from '../lib/cribs.js';
-import { FileText, ListChecks, Trash2 } from 'lucide-react';
+import { FileText, ListChecks, Trash2, Lock } from 'lucide-react';
+// FREEMIUM (M5) — the crib-vault gate. Enforced only when the remote
+// premium.gates.cribVault flag is ON and the user isn't premium; ships dark.
+import { cribVaultLocked } from '../lib/premium.js';
+import { buildMistakes, unresolvedCount } from '../lib/mistakes.js';
+import PremiumCribSheetModal from '../ui/premium-gate-modal.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { useBackHandler } from '../lib/back-handler.js';
 import BackToTop from '../ui/back-to-top.jsx';
@@ -36,11 +41,18 @@ const PRINT_STYLES = `
 }
 `;
 
-function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPlan }) {
+function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPlan, onOpenPremium }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const { profile } = useProfile();
   const cribPid = (profile && profile.id) || 'guest';
+  // FREEMIUM — is the saved-crib shelf behind the (default-off) premium wall?
+  const vaultLocked = cribVaultLocked(profile);
+  const [gateOpen, setGateOpen] = useState(false);
+  const unresolvedMistakes = useMemo(
+    () => (vaultLocked ? unresolvedCount(buildMistakes(data.history, allQuestions)) : 0),
+    [vaultLocked, data.history, allQuestions]
+  );
   // #5 — saved Crib Sheets (separate shelf inside Revision).
   const [cribs, setCribs] = useState([]);
   const [cribConfirm, setCribConfirm] = useState(null); // id pending delete
@@ -217,8 +229,40 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
             })}
           </div>
 
-          {/* ── CRIB SHEETS TAB ── */}
-          {tab === 'cribs' && (
+          {/* ── CRIB SHEETS TAB — locked shelf (freemium wall, ships dark) ── */}
+          {tab === 'cribs' && vaultLocked && (
+            <>
+              <div className="text-center py-10 px-4 rounded-2xl"
+                   style={{ background: T.surface, border: `1px dashed ${T.border}` }}>
+                <div className="w-12 h-12 mx-auto mb-3 rounded-2xl flex items-center justify-center"
+                     style={{ background: T.primary + '15' }}>
+                  <Lock size={20} style={{ color: T.primary }} />
+                </div>
+                <div className="font-display text-lg mb-1" style={{ color: T.ink }}>Your crib history is Premium</div>
+                <div className="text-sm leading-relaxed px-2 mb-1" style={{ color: T.muted }}>
+                  Right after any test, the Crib Sheet review is always free. Keeping every sheet —
+                  {cribs.length > 0 ? ` including the ${cribs.length} already saved —` : ''} and your
+                  full mistake history is a Premium perk.
+                </div>
+                {unresolvedMistakes > 0 && (
+                  <div className="inline-flex items-center gap-1.5 mt-2 px-3 py-1.5 rounded-full text-xs font-bold"
+                       style={{ background: T.primary + '15', color: T.primary }}>
+                    {unresolvedMistakes} unresolved mistake{unresolvedMistakes === 1 ? '' : 's'} waiting
+                  </div>
+                )}
+                <button onClick={() => setGateOpen(true)}
+                        className="no-tap-highlight mt-4 w-full max-w-xs mx-auto flex items-center justify-center gap-2 rounded-2xl py-3 text-sm font-bold active:scale-[0.98] transition-transform"
+                        style={{ background: T.primary, color: '#FFF', boxShadow: `0 6px 18px ${T.primary}44` }}>
+                  Unlock my history
+                </button>
+              </div>
+              <PremiumCribSheetModal open={gateOpen} count={unresolvedMistakes}
+                                     onClose={() => setGateOpen(false)}
+                                     onUpgrade={() => { setGateOpen(false); onOpenPremium && onOpenPremium(); }} />
+            </>
+          )}
+
+          {tab === 'cribs' && !vaultLocked && (
             cribs.length === 0 ? (
               <div className="text-center py-12">
                 <FileText size={36} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />

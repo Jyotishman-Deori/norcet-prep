@@ -9448,3 +9448,71 @@ DECISIONS: Favourites tab = the 'favorites' launcher screen (Bookmarks lives
 inside it; one-line swap to bookmarks-view if wanted). Slot 5 = Settings per
 owner; noted Stats would be higher-frequency and is a one-line swap. Bar stays
 OFF quizzes/tests/games (focus + answer integrity).
+
+# ─────────────────────────────────────────────────────────────────────
+# FEATURE — Duolingo-pattern retention build (6 modules, owner blueprint)  (2026-07-03, SHIPPED)
+# ─────────────────────────────────────────────────────────────────────
+Owner supplied a 6-module "Duolingo engineering patterns" blueprint (principal-
+architect prompt). Adapted to THIS stack (plain-JS Vite PWA, offline-first blob,
+kv brokers, NO runtime AI, no payments yet). All client-side; no Edge Fn/SQL.
+
+M4 MISTAKE ENGINE (data first): completeQuiz now persists `pick` (chosen option
+  indices) on every attempt; compact.js keeps pick in the compaction tail.
+  src/lib/mistakes.js (+test) derives the "UserMistakes" view from history —
+  failCount, lastPick, resolved (= lastResult right AND reviewCount ≥ 2, the
+  existing correct-streak counter), due-first orderMistakeQueue. NO new store:
+  IDOR-safe by inheritance (profile: blob is broker-owner-scoped — verified).
+  NOTE: advanced/paper tests still don't write per-question history.
+M3 MILESTONES + HISTORY: data.milestones event log (level-up/mastery/streak;
+  deduped by id, cap 200) in seed DEFAULT_DATA, normalizeUserData and an
+  explicit _gunionMilestones in merge.js (entry-level extras get dropped there
+  otherwise — the known trap). Recorded at: completeQuiz (streak 3/7/14/30/50/
+  100, id carries date), all 3 level-up sites, knowledge-map celebration diff
+  (mastery familiar/mastered — logs even under reduced motion). Feed screen
+  src/screens/activity-log.jsx: infinite-scroll (IntersectionObserver), day-
+  grouped, NO search by design; tests/revisions derived from existing
+  advancedTestHistory/previousPapers/revisionLog via buildActivityFeed (+test).
+M1c + M2 SEARCH IS NOW UTILITY-ONLY (⚠ behaviour change): the global Search no
+  longer queries curriculum (questions/reference/dosage/concepts REMOVED, incl.
+  "Practice these N") — it is strictly the shortcut router + FAQ articles.
+  nav-registry.js gained the DYNAMIC half (faqRegistryEntries — admin-authored
+  FAQs → same schema, full answer text searchable, deep-link focusId now
+  supported by faq.jsx) + sanitizeRegistry (schema + STUDENT_ROUTE_SCREENS
+  allowlist — admin/unknown routes stripped; tested). Audit confirmed drafts
+  live in the server-only questions_staging table (RLS, zero policies, REVOKE
+  ALL) and FAQ rows have no draft state → nothing unpublished can be indexed.
+  search.js (content engine) kept tested but unused by the screen — trivial to
+  re-feed if the owner ever wants content search back.
+M5 FREEMIUM CRIB VAULT (ships DARK): premium.gates.cribVault flag in
+  game_config DEFAULTS (default FALSE — test phase stays all-free) + admin
+  Live-config toggle. premium.js: isPremiumUser (reads the placeholder
+  profile.premium.active — still written by nothing) + cribVaultLocked.
+  When flipped ON: revision-sheet saved-crib shelf + the new Mistake Vault
+  lock for free users → count-only teaser (the local "403 +
+  {total_unresolved_mistakes}" equivalent) + PremiumCribSheetModal
+  (src/ui/premium-gate-modal.jsx: live unresolved count as leverage, pulsing
+  CTA → premium screen). Post-quiz session crib stays FREE always (the hook).
+M5/M6 MISTAKE VAULT + EXPLAIN COACH: src/screens/mistake-vault.jsx (route
+  'mistake-vault', drawer Study row, registry entry): stats band, due-first
+  queue, expandable rows (you answered X → correct Y), "Review N now" →
+  startQuiz({mode:'wrong', qIds}) so resolution happens through normal history
+  writes; Fixed shelf. "Explain my mistake" = src/lib/explain-mock.js (+test):
+  RULE-BASED composer over the question's real exp + wrong[pickIdx] rationales,
+  simulated 1.2s delay, honest disclosure line — complies with the NO-runtime-
+  AI rule; if a live provider is ever approved only explainMistake's body
+  changes.
+M1 LEARN PATH + GUIDEBOOKS: Learn's default view is now 'Path' (toggle: Path |
+  Modules | Quick): src/lib/learn-path.js (+test) — topological order over
+  kmap's prerequisite DAG, per-unit mastery ring state via mindmapState/
+  mindmapNextProgress from quiz history, ONE recommended-next node (start/
+  continue/strengthen) with pulse. DELIBERATE: no hard locks (live users have
+  nonlinear progress; exam prep needs weightage jumps). Per-unit Guidebook
+  (src/ui/unit-guidebook.jsx bottom sheet) auto-compiled from keypoints +
+  mnemonic cards (compileGuidebook) — zero new authoring.
+
+Tests: 22 files green (5 new: mistakes, milestones, explain-mock, learn-path +
+extended nav-registry/premium) + compile gate. New anim classes (.pgate-*,
+.vault-tick-in, .path-*) registered in the reduced-motion block.
+DEFERRED/flagged: admin_profile_ids anon-enumeration hardening (needs broker-
+backed client admin gate — pre-launch security pass); per-module read tracking
+for the path (rings are quiz-derived); payments still placeholder.

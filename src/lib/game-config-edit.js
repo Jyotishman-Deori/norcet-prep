@@ -58,6 +58,8 @@ export const SECTIONS = [
       { path: 'premium.enabled',  label: 'Show Premium page', type: 'toggle', help: 'Adds the Premium entry to the menu.' },
       { path: 'premium.testPhase', label: 'Test phase (all free)', type: 'toggle', help: 'Shows the "free during testing" banner; nothing is gated.' },
       { path: 'premium.adSlot',   label: 'Rewarded-ad slot', type: 'toggle', help: 'Future ad placeholder — keep off until a native wrap exists.' },
+      { path: 'premium.gates.cribVault', label: 'Gate: Crib vault + Mistake history', type: 'toggle',
+        help: 'ON = free users lose SAVED crib sheets + the Mistake Vault history (post-quiz review stays free) and see the upgrade modal. Keep OFF during testing.' },
       { path: 'premium.plans.0.priceInr', label: 'Monthly price', type: 'money', min: 0, max: 9999, step: 10 },
       { path: 'premium.plans.1.priceInr', label: 'Yearly price',  type: 'money', min: 0, max: 99999, step: 50 },
     ],

@@ -31,7 +31,7 @@ register('data:text/javascript,' + encodeURIComponent(loaderCode), pathToFileURL
 const {
   getPremiumConfig, getPremiumPlans, getPremiumFeatures,
   isPremiumEnabled, isTestPhase, isAdSlotEnabled,
-  getPremiumState, formatInr,
+  getPremiumState, formatInr, isPremiumUser, cribVaultLocked,
 } = await import('./premium.js');
 const { applyRemoteConfig, DEFAULTS } = await import('./game-config.js');
 
@@ -188,6 +188,35 @@ resetConfig();
   assert.equal(formatInr('999'), '₹—');
   assert.equal(formatInr(null), '₹—');
   assert.equal(formatInr(undefined), '₹—');
+}
+
+// ---- feature gates: cribVault (default OFF; gate ∧ ¬premium = locked) ----
+resetConfig();
+{
+  // default config: gate OFF → nothing locked for anyone
+  assert.equal(getPremiumConfig().gates.cribVault, false);
+  assert.equal(cribVaultLocked(null), false);
+  assert.equal(cribVaultLocked({ premium: { active: false } }), false);
+
+  // gate ON via remote override: free users locked, premium users pass
+  applyRemoteConfig({ premium: { gates: { cribVault: true } } });
+  assert.equal(getPremiumConfig().gates.cribVault, true);
+  assert.equal(cribVaultLocked(null), true, 'guest/free is locked when the gate is up');
+  assert.equal(cribVaultLocked({}), true);
+  assert.equal(cribVaultLocked({ premium: { active: true, plan: 'yearly' } }), false, 'premium passes the wall');
+
+  // mangled gates block degrades to FALLBACK (gate off, never throws)
+  applyRemoteConfig({ premium: { gates: 'oops' } });
+  assert.equal(getPremiumConfig().gates.cribVault, false);
+  assert.equal(cribVaultLocked(null), false);
+  resetConfig();
+}
+
+// ---- isPremiumUser mirrors getPremiumState ----
+{
+  assert.equal(isPremiumUser(null), false);
+  assert.equal(isPremiumUser({ premium: { active: 'yes' } }), false, 'strict boolean check');
+  assert.equal(isPremiumUser({ premium: { active: true } }), true);
 }
 
 console.log('premium.test.js — all assertions passed');

@@ -5,9 +5,9 @@
 // off" banner; (3) quick mode renders the app-curated revision stream. Props
 // onPick/onBack unchanged; new (optional) ranking-signal props come from App.
 // =====================================================================
-import React, { useState, useEffect } from 'react';
-import { BookOpen, ChevronDown, ChevronRight, Clock, Layers, Sparkles, GraduationCap, RotateCcw, Flag } from 'lucide-react';
-import { useTheme, useProfile } from '../lib/app-context.jsx';
+import React, { useState, useEffect, useMemo } from 'react';
+import { BookOpen, BookMarked, Check, ChevronDown, ChevronRight, Clock, Layers, Route, Sparkles, GraduationCap, RotateCcw, Flag } from 'lucide-react';
+import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
@@ -19,17 +19,34 @@ import { KEYS } from '../lib/keys.js';
 import { buildQuickRevisionPlan, cardBudget, buildRevisionStream, readMinutes } from '../lib/quick-revision.js';
 import { loadDoubts, unresolvedCards, unresolvedCount } from '../lib/doubts.js';
 import QuickRevisionView from '../ui/quick-revision-view.jsx';
+// M1 — the sequential Learn PATH (prereq-ordered units + mastery rings +
+// recommended-next) and the per-unit Guidebook digest.
+import { buildLearnPath, compileGuidebook, PATH_REASON_LABEL } from '../lib/learn-path.js';
+import { KMAP_STATE_LABEL } from '../lib/kmap.js';
+import UnitGuidebook from '../ui/unit-guidebook.jsx';
 
 function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopics = [], dueTopicIds = [], examDaysLeft = null }) {
   const { theme: T } = useTheme();
   const { profile } = useProfile();
+  const { data, allQuestions } = useData();
   const fgOnDark = useFgOnDark();
   const profileId = (profile && profile.id) || 'guest';
   const { data: cc, loading, error, reload } = useContent('conceptCards');
   const CONCEPT_CARDS = cc || {};
   const topicsWithCards = TOPICS.filter(t => CONCEPT_CARDS[t.id] && CONCEPT_CARDS[t.id].length > 0);
   const [expanded, setExpanded] = useState(null);
-  const [mode, setMode] = useState('study'); // 'study' | 'quick'
+  const [mode, setMode] = useState('path'); // 'path' | 'study' | 'quick'
+  // M1 — the ordered unit timeline (quiz-derived states; no reading tracker).
+  const pathNodes = useMemo(
+    () => buildLearnPath({ history: data && data.history, allQuestions, topics: topicsWithCards }),
+    [data && data.history, allQuestions, cc]
+  );
+  const [guideTopicId, setGuideTopicId] = useState(null);
+  const guideTopic = guideTopicId ? topicsWithCards.find(t => t.id === guideTopicId) : null;
+  const guidebook = useMemo(
+    () => (guideTopicId ? compileGuidebook(guideTopicId, CONCEPT_CARDS) : null),
+    [guideTopicId, cc]
+  );
   const [resume, setResume] = useState(null);
   const [recentTopics, setRecentTopics] = useState([]);
   const [doubtMap, setDoubtMap] = useState({});
@@ -61,8 +78,9 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
 
   const Toggle = () => (
     <div className="flex p-1 rounded-2xl mb-4" style={{ background: T.surfaceWarm }}>
-      {[{ id: 'study', label: 'Study mode', icon: <GraduationCap size={14} /> },
-        { id: 'quick', label: 'Quick revision', icon: <Sparkles size={14} /> }].map(t => {
+      {[{ id: 'path', label: 'Path', icon: <Route size={14} /> },
+        { id: 'study', label: 'Modules', icon: <GraduationCap size={14} /> },
+        { id: 'quick', label: 'Quick', icon: <Sparkles size={14} /> }].map(t => {
         const on = mode === t.id;
         return (
           <button key={t.id} onClick={() => setMode(t.id)}
@@ -75,17 +93,92 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
     </div>
   );
 
+  // M1 — one Learn-path node: mastery ring (progress toward the NEXT state)
+  // around the unit emoji, name + state chips, Guidebook + modules actions.
+  // Alternating sides give the timeline its gentle "snake". No hard locks.
+  const PathNode = ({ n, i }) => {
+    const topic = topicsWithCards.find(t => t.id === n.topicId);
+    if (!topic) return null;
+    const ratio = n.state === 'mastered' ? 1 : (n.next && n.next.ratio) || 0;
+    const R = 25, C = 2 * Math.PI * R;
+    const ringColor = n.state === 'locked' ? T.border : topic.color;
+    const right = i % 2 === 1;
+    return (
+      <div className={`path-node-in relative flex items-center gap-3 py-2.5 ${right ? 'flex-row-reverse' : ''}`}
+           style={{ animationDelay: `${Math.min(i, 10) * 60}ms` }}>
+        {/* Ring node */}
+        <button onClick={() => onPick(n.topicId, null)}
+                aria-label={`Open ${n.name}`}
+                className={`no-tap-highlight relative flex-shrink-0 active:scale-95 transition-transform rounded-full ${n.recommended ? 'path-reco-pulse' : ''}`}
+                style={n.recommended ? { '--path-reco-glow': topic.color + '59' } : undefined}>
+          <svg width="64" height="64" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r={R} fill={T.surface} stroke={T.borderSoft} strokeWidth="4" />
+            <circle cx="32" cy="32" r={R} fill="none" stroke={ringColor} strokeWidth="4"
+                    strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - ratio)}
+                    transform="rotate(-90 32 32)" />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-2xl">{topic.icon}</span>
+          {n.state === 'mastered' && (
+            <span className="absolute -right-0.5 -top-0.5 w-5 h-5 rounded-full flex items-center justify-center"
+                  style={{ background: '#D97706', boxShadow: '0 2px 6px rgba(217,119,6,0.5)' }}>
+              <Check size={11} color="#FFF" strokeWidth={3} />
+            </span>
+          )}
+        </button>
+
+        {/* Info card */}
+        <div className={`flex-1 min-w-0 rounded-2xl px-3.5 py-3 ${right ? 'text-right' : ''}`}
+             style={{ background: T.surface, border: `1px solid ${n.recommended ? topic.color + '66' : T.border}` }}>
+          {n.recommended && (
+            <div className={`text-[9px] font-bold uppercase tracking-widest mb-1 ${right ? 'text-right' : ''}`}
+                 style={{ color: topic.color }}>
+              {PATH_REASON_LABEL[n.reason] || 'Up next'}
+            </div>
+          )}
+          <div className="font-display text-sm font-semibold leading-tight truncate" style={{ color: T.ink }}>
+            {n.name}
+          </div>
+          <div className={`flex items-center gap-1.5 flex-wrap mt-1.5 ${right ? 'justify-end' : ''}`}>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
+                  style={{ background: ringColor + '18', color: n.state === 'locked' ? T.muted : fgOnDark(topic.color) }}>
+              {KMAP_STATE_LABEL[n.state]}
+            </span>
+            {n.attempted > 0 && (
+              <span className="text-[10px]" style={{ color: T.muted }}>
+                {n.attempted} attempts · {Math.round(n.accuracy * 100)}%
+              </span>
+            )}
+          </div>
+          <div className={`flex items-center gap-1.5 mt-2 ${right ? 'justify-end' : ''}`}>
+            <button onClick={() => setGuideTopicId(n.topicId)}
+                    className="no-tap-highlight inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold active:scale-95 transition"
+                    style={{ background: topic.color + '14', color: fgOnDark(topic.color) }}>
+              <BookMarked size={11} /> Guidebook
+            </button>
+            <button onClick={() => { setMode('study'); setExpanded(n.topicId); }}
+                    className="no-tap-highlight inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold active:scale-95 transition"
+                    style={{ background: T.surfaceWarm, color: T.inkSoft }}>
+              <Layers size={11} /> Modules
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="anim-fadeup">
       <TopBar title="Learn topic wise" onBack={onBack} feedback={{ screen: "Learn — topics" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
-            {mode === 'quick' ? 'Quick revision' : 'Concept cards'}
+            {mode === 'quick' ? 'Quick revision' : mode === 'path' ? 'Your learning path' : 'Concept cards'}
           </div>
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>
             {mode === 'quick'
               ? 'A fast, smart sweep of the points that matter most for you right now.'
+              : mode === 'path'
+              ? 'Units in study order — foundations first. Rings fill as you practise; nothing is locked, the pulse just shows your best next step.'
               : `Bite-sized notes across ${topicsWithCards.length} topics · ${totalCards} cards. Open a topic to pick a module, or read it top-to-bottom.`}
           </div>
         </div>
@@ -116,9 +209,20 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
               </Card>
             )}
 
-            {mode === 'quick' ? (
+            {mode === 'path' && (
+              <div className="relative">
+                {/* Central spine the alternating nodes hang off. */}
+                <div aria-hidden="true" className="absolute left-1/2 top-4 bottom-4 w-px -translate-x-1/2"
+                     style={{ background: `linear-gradient(${T.borderSoft}, ${T.border}, ${T.borderSoft})` }} />
+                {pathNodes.map((n, i) => <PathNode key={n.topicId} n={n} i={i} />)}
+              </div>
+            )}
+
+            {mode === 'quick' && (
               <QuickRevisionView stream={stream} examDaysLeft={examDaysLeft} onPick={onPick} onStartQuiz={onStartQuickTest} />
-            ) : (
+            )}
+
+            {mode === 'study' && (
               <>
                 {/* Resume banner */}
                 {resumeValid && (
@@ -234,6 +338,11 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
           </>
         )}
       </div>
+
+      {/* M1 — per-unit Guidebook digest (keypoints + mnemonics). */}
+      <UnitGuidebook open={!!guideTopic} topic={guideTopic} guidebook={guidebook}
+                     onClose={() => setGuideTopicId(null)}
+                     onRead={() => { const id = guideTopicId; setGuideTopicId(null); if (id) onPick(id, null); }} />
     </div>
   );
 }

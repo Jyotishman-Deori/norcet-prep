@@ -157,6 +157,10 @@ function compactHistoryRecord(h, cutoffTs) {
     timeMs: (a && typeof a.timeMs === 'number') ? a.timeMs : 0,
     // `selected` is intentionally dropped from the tail — it was useful
     // for debugging recent attempts but isn't worth bytes long-term.
+    // `pick` (mistake engine: which options the user chose) IS kept — the
+    // Mistake Vault's "you answered X" must survive compaction. A few
+    // small ints per attempt, capped by TAIL_KEEP.
+    ...(Array.isArray(a && a.pick) ? { pick: a.pick } : {}),
   }));
   const out = {
     // Spread original FIRST so SRS state and any unrelated fields ride

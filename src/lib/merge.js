@@ -80,6 +80,18 @@ export function _gunionRevisionLog(a, b) {
     .sort((x, y) => (x.date < y.date ? 1 : x.date > y.date ? -1 : 0))
     .slice(0, 60);
 }
+export function _gunionMilestones(a, b) {
+  // Achievement events: account first (wins id collisions), union by id,
+  // chronological, capped to the same limit lib/milestones.js enforces.
+  const out = []; const seen = new Set();
+  const push = (arr) => (Array.isArray(arr) ? arr : []).forEach(m => {
+    if (!m || !m.id || seen.has(m.id)) return;
+    seen.add(m.id); out.push(m);
+  });
+  push(a); push(b);
+  out.sort((x, y) => _gnum(x && x.ts) - _gnum(y && y.ts));
+  return out.slice(-200);
+}
 export function _gmergeHistoryEntry(ae, be) {
   const a = ae || {}; const b = be || {};
   const attempts = _gconcatCappedByTs(a.attempts, b.attempts, 0);
@@ -150,6 +162,7 @@ export function normalizeUserData(raw) {
     disabledBanks: isObj(migrated.disabledBanks) ? migrated.disabledBanks : {},
     feedbackRepliesSeen: isObj(migrated.feedbackRepliesSeen) ? migrated.feedbackRepliesSeen : {},
     revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
+    milestones: Array.isArray(migrated.milestones) ? migrated.milestones : [],
     preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
   };
 }
@@ -193,6 +206,7 @@ export function mergeGuestIntoAccount(account, guest) {
     bookmarks: _gunionArr(a.bookmarks, g.bookmarks),
     customQuestions: _gunionById(a.customQuestions, g.customQuestions),
     revisionLog: _gunionRevisionLog(a.revisionLog, g.revisionLog),
+    milestones: _gunionMilestones(a.milestones, g.milestones),
     advancedTestHistory: _gconcatCappedByTs(a.advancedTestHistory, g.advancedTestHistory, 50),
     previousPapers: _gmergePreviousPapers(a.previousPapers, g.previousPapers),
     bankVersionsSeen: _gmergeMaxMap(a.bankVersionsSeen, g.bankVersionsSeen),
