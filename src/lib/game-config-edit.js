@@ -65,6 +65,14 @@ export const SECTIONS = [
     ],
   },
   {
+    id: 'security', title: 'Security', icon: 'Shield',
+    blurb: 'Server-enforced account protections (the Edge brokers read these).',
+    fields: [
+      { path: 'security.singleSession', label: 'Single-device sessions', type: 'toggle',
+        help: 'ON = logging in on a new device signs out all older devices at their next sync (anti account-sharing for paid plans). Keep OFF during testing — testers use multiple devices.' },
+    ],
+  },
+  {
     id: 'frames', title: 'Cosmetic frame prices', icon: 'Sparkles',
     blurb: 'Coin cost of profile frames in the shop.',
     fields: [

@@ -102,15 +102,41 @@ async function hmac(data: string): Promise<Uint8Array> {
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
   return new Uint8Array(sig);
 }
-// Mint a signed token carrying { id, uid, iat, exp }. The kv-write broker
+// Mint a signed token carrying { id, uid, sid, iat, exp }. The kv-write broker
 // verifies the signature with the same secret and reads id/uid for authz.
-async function mintToken(id: string, uid: string | null): Promise<string> {
+// `sid` is the concurrent-session id ("last one wins"): rotated in
+// profile_secrets at every mint, compared by the brokers when the
+// game_config flag security.singleSession is ON.
+async function mintToken(id: string, uid: string | null, sid: string | null): Promise<string> {
   if (!SESSION_SECRET) throw new Error("SESSION_SIGNING_SECRET is not set on auth-secure");
-  const payload = { id, uid: uid ?? null, iat: Date.now(), exp: Date.now() + TOKEN_TTL_MS };
+  const payload = { id, uid: uid ?? null, sid: sid ?? null, iat: Date.now(), exp: Date.now() + TOKEN_TTL_MS };
   const enc = new TextEncoder();
   const payloadB64 = b64url(enc.encode(JSON.stringify(payload)));
   const sigB64 = b64url(await hmac(payloadB64));
   return `${payloadB64}.${sigB64}`;
+}
+
+// Rotate the account's active_session_id to a fresh cryptographically-random
+// UUID and return it. This is the "last one wins" write: the NEWEST login owns
+// the account; every older token's sid stops matching. BEST-EFFORT by design —
+// if the column doesn't exist yet (subscriptions.sql not applied) or the PATCH
+// fails, we return null and the minted token simply carries sid:null, which the
+// brokers treat as a legacy token. A DB blip must never break login itself.
+async function rotateSessionId(id: string): Promise<string | null> {
+  try {
+    const sid = crypto.randomUUID();
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify({ active_session_id: sid }),
+      },
+    );
+    return r.ok ? sid : null;
+  } catch {
+    return null;
+  }
 }
 
 // Normalize DOB the same way the client does (YYYY-MM-DD only).
@@ -373,7 +399,7 @@ Deno.serve(async (req: Request) => {
         });
       } catch (_) { /* anomaly logging is best-effort; never affects the account */ }
 
-      return json({ ok: true, token: await mintToken(id, uid) });
+      return json({ ok: true, token: await mintToken(id, uid, await rotateSessionId(id)) });
     }
 
     // -------------------------------------------------------------
@@ -387,7 +413,7 @@ Deno.serve(async (req: Request) => {
       if (!row || !row.password_hash || !row.salt) return json({ ok: false });
       const tryHash = await hashPassword(password, String(row.salt));
       if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false });
-      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid)) });
+      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid), await rotateSessionId(id)) });
     }
 
     // -------------------------------------------------------------
@@ -458,7 +484,7 @@ Deno.serve(async (req: Request) => {
         },
       );
       if (!r.ok) return json({ error: `reset failed: ${r.status}` }, 502);
-      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid)) });
+      return json({ ok: true, token: await mintToken(id, row.uid == null ? null : String(row.uid), await rotateSessionId(id)) });
     }
 
     // -------------------------------------------------------------
@@ -581,6 +607,10 @@ Deno.serve(async (req: Request) => {
           security_question: src.security_question ?? null,
           security_answer_hash: src.security_answer_hash ?? null,
           security_answer_salt: src.security_answer_salt ?? null,
+          // Carry the live session id across the rename so the user's current
+          // device stays logged in. Only when the column exists on the source
+          // row (pre-migration deploys must not break rename).
+          ...("active_session_id" in src ? { active_session_id: src.active_session_id ?? null } : {}),
           updated_at: new Date().toISOString(),
         }),
       });

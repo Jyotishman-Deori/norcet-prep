@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Save, RotateCcw, Check, Loader2, ChevronDown, SlidersHorizontal,
-  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle,
+  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle, Shield,
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
@@ -21,7 +21,7 @@ import {
 } from '../lib/game-config-edit.js';
 import { logAdminAction } from '../lib/admin-audit.js';
 
-const ICONS = { Gauge, Crown, Sparkles, Gift, Target };
+const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield };
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 export default function AdminConfigEditor({ onBack, actorName }) {

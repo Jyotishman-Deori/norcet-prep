@@ -17,6 +17,7 @@ import { KEYS } from './keys.js';
 import { listFeedback, deleteFeedback } from './feedback.js';
 import { listBanks, deleteBank } from './banks-storage.js';
 import { loadProfileIndex, deleteCredentials, clearPendingSync } from './profiles.js';
+import { getAuthToken } from '../storage.js';
 
 // Supabase config — Vite injects these at build time from .env / Vercel env.
 const SUPABASE_URL = (typeof import.meta !== 'undefined' && import.meta.env)
@@ -48,27 +49,33 @@ export async function verifyAdminPassphrase(passphrase) {
   return !!(j && j.ok === true);
 }
 
-// True iff profileId OR uid appears in the Supabase `admin_profile_ids` table.
-// Never throws — any network/parse/config failure resolves to false (fail-closed:
-// a broken admin check should reject, not grant).
+// True iff the LOGGED-IN caller appears in the `admin_profile_ids` table —
+// asked via the admin-manage broker (action "check-admin"), which verifies the
+// caller's signed session token server-side and reads the table with the
+// service-role key. The table itself is no longer anon-readable (see
+// supabase/lock-admin-list.sql), so there is no direct-REST fallback. The
+// (profileId, uid) params are kept for the call-site contract but the server
+// trusts only the TOKEN's identity — a caller can't check someone else.
+// Never throws — any network/parse/config failure resolves to false
+// (fail-closed: a broken admin check should reject, not grant).
 export async function checkServerAdmin(profileId, uid) {
   if (!profileId && !uid) return false;
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
   try {
-    const ids = [profileId, uid].filter(Boolean).map(encodeURIComponent);
-    const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids`
-      + `?profile_id=in.(${ids.join(',')})&select=profile_id`;
-    const r = await fetch(url, {
-      method: 'GET',
+    const token = getAuthToken();
+    if (!token) return false;
+    const r = await fetch(`${SUPABASE_URL}/functions/v1/admin-manage`, {
+      method: 'POST',
       headers: {
         'apikey': SUPABASE_ANON_KEY,
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        'Accept': 'application/json',
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({ action: 'check-admin', token }),
     });
     if (!r.ok) return false;
-    const rows = await r.json();
-    return Array.isArray(rows) && rows.length > 0;
+    const j = await r.json();
+    return !!(j && j.ok === true);
   } catch (e) {
     return false;
   }

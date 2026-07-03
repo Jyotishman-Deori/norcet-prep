@@ -103,18 +103,77 @@ async function hmacB64(data: string): Promise<string> {
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
   return b64url(new Uint8Array(sig));
 }
-type Session = { id: string; uid: string | null };
+type Session = { id: string; uid: string | null; sid: string | null };
 async function verifyToken(token: unknown): Promise<Session | null> {
   if (typeof token !== "string" || !token.includes(".")) return null;
   const [payloadB64, sigB64] = token.split(".");
   if (!payloadB64 || !sigB64) return null;
   const expected = await hmacB64(payloadB64);
   if (!safeEqual(expected, sigB64)) return null;
-  let payload: { id?: string; uid?: string | null; exp?: number };
+  let payload: { id?: string; uid?: string | null; sid?: string | null; exp?: number };
   try { payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(payloadB64))); }
   catch { return null; }
   if (!payload.id || typeof payload.exp !== "number" || Date.now() > payload.exp) return null;
-  return { id: String(payload.id), uid: payload.uid == null ? null : String(payload.uid) };
+  return {
+    id: String(payload.id),
+    uid: payload.uid == null ? null : String(payload.uid),
+    sid: payload.sid == null ? null : String(payload.sid),
+  };
+}
+
+// ---- single concurrent session ("last one wins") -------------------
+// When the game_config flag security.singleSession is ON, a token is only
+// good while its `sid` matches profile_secrets.active_session_id — which
+// auth-secure rotates on every login, so the NEWEST device wins and older
+// tokens die at their next broker call. Policy choices (deliberate):
+//   • flag OFF (the shipped default) → zero enforcement, zero extra queries
+//     beyond one cached game_config read per minute per isolate;
+//   • DB sid NULL (no login since the feature shipped) → allow, so turning
+//     the flag on never strands an already-logged-in tester;
+//   • any lookup/config failure → allow (fail-open: this guards revenue,
+//     it must never take the app down).
+let _ssFlag: { v: boolean; ts: number } | null = null;
+async function singleSessionEnabled(): Promise<boolean> {
+  if (_ssFlag && Date.now() - _ssFlag.ts < 60_000) return _ssFlag.v;
+  let v = false;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.game_config&select=value`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (r.ok) {
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) {
+        const cfg = JSON.parse(String(rows[0].value));
+        v = !!(cfg && cfg.security && cfg.security.singleSession === true);
+      }
+    }
+  } catch { /* fail-open */ }
+  _ssFlag = { v, ts: Date.now() };
+  return v;
+}
+async function sessionSidOk(s: Session): Promise<boolean> {
+  if (!(await singleSessionEnabled())) return true;
+  try {
+    // uid is the rename-safe handle; fall back to the id slug for legacy rows.
+    const q = s.uid
+      ? `uid=eq.${encodeURIComponent(s.uid)}`
+      : `id=eq.${encodeURIComponent(s.id)}`;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profile_secrets?${q}&select=active_session_id&limit=1`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (!r.ok) return true; // fail-open (incl. pre-migration: column missing → 4xx)
+    const rows = await r.json();
+    const dbSid = Array.isArray(rows) && rows.length ? rows[0].active_session_id : null;
+    if (dbSid == null || dbSid === "") return true;
+    return !!s.sid && safeEqual(String(s.sid), String(dbSid));
+  } catch {
+    return true;
+  }
+}
+function sessionExpired(): Response {
+  return json({ error: "SESSION_EXPIRED", message: "Logged in from another device" }, 401);
 }
 
 // ---- helpers against kv_shared / admin list (service-role) ----
@@ -241,6 +300,8 @@ Deno.serve(async (req: Request) => {
   // 1) Authenticate.
   const session = await verifyToken(body.token);
   if (!session) return json({ error: "Not authenticated" }, 401);
+  // 1b) Single concurrent session (flag-gated; see sessionSidOk above).
+  if (!(await sessionSidOk(session))) return sessionExpired();
 
   try {
     const admin = await isAdmin(session);

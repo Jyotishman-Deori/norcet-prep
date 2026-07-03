@@ -89,20 +89,33 @@ export function isPremiumEnabled() { return getPremiumConfig().enabled !== false
 export function isTestPhase() { return getPremiumConfig().testPhase !== false; }
 export function isAdSlotEnabled() { return getPremiumConfig().adSlot === true; }
 
-// getPremiumState(profile) → placeholder membership state. Nobody is premium
-// today, but the shape is future-ready: a profile.premium.active === true flag
-// flips it on. Never throws on null/undefined profile.
-export function getPremiumState(profile) {
-  if (profile && profile.premium && profile.premium.active === true) {
-    return { active: true, plan: profile.premium.plan || null };
+// getPremiumState(profile) → membership state from profile.premium, which the
+// subscription broker now writes (entitlementToPremium in subscription.js —
+// admin-granted during the placeholder-payments era). Tier-aware: SUPER is the
+// base paid tier, MAX includes it. An expired cached entitlement lapses even
+// offline (expiresAt is re-checked here); the server stays authoritative on
+// the next refresh. Never throws on null/undefined profile.
+export function getPremiumState(profile, now = Date.now()) {
+  const p = profile && profile.premium;
+  if (p && p.active === true) {
+    if (typeof p.expiresAt === 'number' && Number.isFinite(p.expiresAt) && p.expiresAt <= now) {
+      return { active: false, plan: null, tier: null };
+    }
+    return {
+      active: true,
+      plan: p.plan || p.billing || null,
+      tier: p.tier === 'MAX' ? 'MAX' : 'SUPER',
+    };
   }
-  return { active: false, plan: null };
+  return { active: false, plan: null, tier: null };
 }
 
 // isPremiumUser(profile) — the single entitlement check every gate reads.
-// Placeholder-backed today (profile.premium.active, written by no one until a
-// payment gateway lands); gates that call this work unchanged when it does.
+// True for ANY active paid tier (SUPER or MAX).
 export function isPremiumUser(profile) { return getPremiumState(profile).active === true; }
+
+// isMaxUser(profile) — the top-tier check for future MAX-only surfaces.
+export function isMaxUser(profile) { return getPremiumState(profile).tier === 'MAX'; }
 
 // cribVaultLocked(profile) — is the crib-history / Mistake Vault wall UP for
 // this user? True only when the remote gate is ON (default OFF during the

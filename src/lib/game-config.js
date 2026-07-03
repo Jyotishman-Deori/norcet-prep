@@ -68,6 +68,17 @@ export const DEFAULTS = {
     ],
   },
 
+  // Security switches. UNLIKE the rest of this config, these are enforced
+  // SERVER-side: the kv-write / kv-read / content-staging / subscription
+  // Edge Functions read this same game_config row (cached ~60s) directly.
+  security: {
+    // Single concurrent session ("last one wins"): ON = logging in on a new
+    // device invalidates every older device's session token at its next
+    // sync (the brokers answer 401 SESSION_EXPIRED). Anti account-sharing
+    // for the paid era. Ships OFF so multi-device testers stay logged in.
+    singleSession: false,
+  },
+
   // In-game combo banner milestones (consecutive correct answers).
   comboTiers: [
     { at: 3,  label: 'On a roll!',    tone: '#0CA678' },

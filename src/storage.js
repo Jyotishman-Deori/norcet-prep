@@ -173,11 +173,22 @@ let _onAuthError = null;
 // Set the current session token (called on login + on boot-restore).
 export function setAuthToken(token) { _authToken = token || null; }
 export function getAuthToken() { return _authToken; }
-// Optional hook: invoked when the broker rejects a write for an expired/
+// Optional hook: invoked when the broker rejects a call for an expired/
 // invalid token, so the app can nudge a re-login. Data is never lost — the
 // failed write returns null and the caller's pending-sync queue retries it
-// after the next successful login mints a fresh token.
+// after the next successful login mints a fresh token. The callback receives
+// a reason string: 'SESSION_EXPIRED' = the single-session guard fired (this
+// account logged in on a NEWER device — the app force-signs-out), anything
+// else = a plain bad/expired token (soft nudge only).
 export function setOnAuthError(cb) { _onAuthError = (typeof cb === 'function') ? cb : null; }
+
+// Classify a broker 401 body and fire the hook (best-effort, never throws).
+function fireAuthError(bodyText) {
+  if (!_onAuthError) return;
+  const reason = (typeof bodyText === 'string' && bodyText.includes('SESSION_EXPIRED'))
+    ? 'SESSION_EXPIRED' : 'auth';
+  try { _onAuthError(reason); } catch (_) {}
+}
 
 async function brokerWrite(op, key, value) {
   if (!SUPABASE_OK || !KV_WRITE_URL) throw new Error('Supabase not configured');
@@ -194,10 +205,12 @@ async function brokerWrite(op, key, value) {
     }),
   });
   if (!res.ok) {
-    // 401 = token missing/expired/invalid. Signal the app (best-effort) so it
-    // can prompt a re-login; the write still fails and queues locally.
-    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
-    throw new Error(`kv-write ${op} ${res.status} ${await safeText(res)}`);
+    // 401 = token missing/expired/invalid — or SESSION_EXPIRED when the
+    // single-session guard fired. Signal the app (best-effort) so it can
+    // prompt a re-login; the write still fails and queues locally.
+    const bodyText = await safeText(res);
+    if (res.status === 401) fireAuthError(bodyText);
+    throw new Error(`kv-write ${op} ${res.status} ${bodyText}`);
   }
 }
 
@@ -237,8 +250,9 @@ async function brokerGet(key) {
     body: JSON.stringify({ op: 'get', key, token: _authToken }),
   });
   if (!res.ok) {
-    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
-    throw new Error(`kv-read get ${res.status} ${await safeText(res)}`);
+    const bodyText = await safeText(res);
+    if (res.status === 401) fireAuthError(bodyText);
+    throw new Error(`kv-read get ${res.status} ${bodyText}`);
   }
   bumpEgress(res);
   const j = await res.json();
@@ -257,8 +271,9 @@ async function brokerList(prefix) {
     body: JSON.stringify({ op: 'list', prefix, token: _authToken }),
   });
   if (!res.ok) {
-    if (res.status === 401 && _onAuthError) { try { _onAuthError(); } catch (_) {} }
-    throw new Error(`kv-read list ${res.status} ${await safeText(res)}`);
+    const bodyText = await safeText(res);
+    if (res.status === 401) fireAuthError(bodyText);
+    throw new Error(`kv-read list ${res.status} ${bodyText}`);
   }
   bumpEgress(res);
   const j = await res.json();

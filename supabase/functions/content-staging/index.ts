@@ -93,19 +93,67 @@ async function hmacB64(data: string): Promise<string> {
   const sig = await crypto.subtle.sign("HMAC", key, enc.encode(data));
   return b64url(new Uint8Array(sig));
 }
-type Session = { id: string; uid: string | null };
+type Session = { id: string; uid: string | null; sid: string | null };
 async function verifyToken(token: unknown): Promise<Session | null> {
   if (typeof token !== "string" || !token.includes(".")) return null;
   const [payloadB64, sigB64] = token.split(".");
   if (!payloadB64 || !sigB64) return null;
   const expected = await hmacB64(payloadB64);
   if (!safeEqual(expected, sigB64)) return null;
-  let payload: { id?: string; uid?: string | null; exp?: number };
+  let payload: { id?: string; uid?: string | null; sid?: string | null; exp?: number };
   try {
     payload = JSON.parse(new TextDecoder().decode(b64urlToBytes(payloadB64)));
   } catch { return null; }
   if (!payload.id || typeof payload.exp !== "number" || Date.now() > payload.exp) return null;
-  return { id: String(payload.id), uid: payload.uid == null ? null : String(payload.uid) };
+  return {
+    id: String(payload.id),
+    uid: payload.uid == null ? null : String(payload.uid),
+    sid: payload.sid == null ? null : String(payload.sid),
+  };
+}
+
+// ---- single concurrent session ("last one wins") — mirror of kv-write ----
+// Flag-gated (game_config security.singleSession, cached 60s per isolate),
+// NULL DB sid always passes, every failure fails OPEN. See kv-write for the
+// full policy rationale.
+let _ssFlag: { v: boolean; ts: number } | null = null;
+async function singleSessionEnabled(): Promise<boolean> {
+  if (_ssFlag && Date.now() - _ssFlag.ts < 60_000) return _ssFlag.v;
+  let v = false;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.game_config&select=value`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (r.ok) {
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) {
+        const cfg = JSON.parse(String(rows[0].value));
+        v = !!(cfg && cfg.security && cfg.security.singleSession === true);
+      }
+    }
+  } catch { /* fail-open */ }
+  _ssFlag = { v, ts: Date.now() };
+  return v;
+}
+async function sessionSidOk(s: Session): Promise<boolean> {
+  if (!(await singleSessionEnabled())) return true;
+  try {
+    const q = s.uid
+      ? `uid=eq.${encodeURIComponent(s.uid)}`
+      : `id=eq.${encodeURIComponent(s.id)}`;
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/profile_secrets?${q}&select=active_session_id&limit=1`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (!r.ok) return true;
+    const rows = await r.json();
+    const dbSid = Array.isArray(rows) && rows.length ? rows[0].active_session_id : null;
+    if (dbSid == null || dbSid === "") return true;
+    return !!s.sid && safeEqual(String(s.sid), String(dbSid));
+  } catch {
+    return true;
+  }
 }
 
 // ---- Admin check (verbatim from kv-write) ----------------------------
@@ -227,6 +275,10 @@ Deno.serve(async (req: Request) => {
   // Authenticate.
   const session = await verifyToken(body.token);
   if (!session) return json({ error: "Not authenticated" }, 401);
+  // Single concurrent session (flag-gated; see sessionSidOk above).
+  if (!(await sessionSidOk(session))) {
+    return json({ error: "SESSION_EXPIRED", message: "Logged in from another device" }, 401);
+  }
 
   // Admin-only — fail closed.
   const admin = await isAdmin(session);

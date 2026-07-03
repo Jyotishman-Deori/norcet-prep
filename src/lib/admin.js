@@ -1,7 +1,9 @@
 // =====================================================================
 // src/lib/admin.js — admin allow-list client for the Manage Admins screen.
 //
-//   listAdmins()  — direct REST read of admin_profile_ids (anon SELECT policy).
+//   listAdmins()  — admin-manage Edge Function, action "list-admins"
+//                   (token-verified admin; the table has NO anon SELECT
+//                   any more — see supabase/lock-admin-list.sql).
 //   addAdmin()    — POST to the admin-manage Edge Function, action "add".
 //   removeAdmin() — POST to the admin-manage Edge Function, action "remove".
 //
@@ -14,6 +16,8 @@
 //   VITE_SUPABASE_URL       e.g. https://jabmjyhdfacoikkgmjzl.supabase.co
 //   VITE_SUPABASE_ANON_KEY
 // =====================================================================
+import { getAuthToken } from '../storage.js';
+
 const URL = (typeof import.meta !== 'undefined' && import.meta.env)
   ? import.meta.env.VITE_SUPABASE_URL : undefined;
 const KEY = (typeof import.meta !== 'undefined' && import.meta.env)
@@ -26,23 +30,33 @@ function anonHeaders(extra) {
   return { apikey: KEY, Authorization: `Bearer ${KEY}`, ...(extra || {}) };
 }
 
-// READ: direct anon SELECT. Returns [{ profile_id, note, added_at }] (note and
+// READ: via the admin-manage broker (the caller's session token must belong
+// to an admin — verified server-side against admin_profile_ids with the
+// service-role key). Returns [{ profile_id, note, added_at }] (note and
 // added_at may be absent on older rows).
 export async function listAdmins() {
   if (!configured()) {
     throw new Error('Supabase not configured (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY)');
   }
-  const url = `${URL}/rest/v1/admin_profile_ids`
-    + `?select=profile_id,note,added_at&order=added_at.asc.nullslast`;
-  const r = await fetch(url, { headers: anonHeaders({ Accept: 'application/json' }) });
+  const token = getAuthToken();
+  if (!token) {
+    const err = new Error('Not signed in');
+    err.status = 401;
+    throw err;
+  }
+  const r = await fetch(FN_URL, {
+    method: 'POST',
+    headers: anonHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action: 'list-admins', token }),
+  });
   if (!r.ok) {
     const t = await r.text().catch(() => '');
     const err = new Error(`list failed: ${r.status} ${t}`.trim());
     err.status = r.status;
     throw err;
   }
-  const rows = await r.json();
-  return Array.isArray(rows) ? rows : [];
+  const j = await r.json().catch(() => ({}));
+  return Array.isArray(j && j.admins) ? j.admins : [];
 }
 
 // WRITES: through the passphrase-gated Edge Function.

@@ -150,23 +150,36 @@ resetConfig();
   assert.equal(byId['support'].premium, 'Direct line');
 }
 
-// ---- getPremiumState: null, guest (no premium), future-premium ----
+// ---- getPremiumState: null, guest (no premium), tiers, expiry ----
 {
-  assert.deepEqual(getPremiumState(null), { active: false, plan: null });
-  assert.deepEqual(getPremiumState(undefined), { active: false, plan: null });
-  assert.deepEqual(getPremiumState({}), { active: false, plan: null }, 'guest with no premium field');
-  assert.deepEqual(getPremiumState({ premium: {} }), { active: false, plan: null });
-  assert.deepEqual(getPremiumState({ premium: { active: false } }), { active: false, plan: null });
-  // Future: a real premium profile flips it on and carries the plan.
+  const OFF = { active: false, plan: null, tier: null };
+  assert.deepEqual(getPremiumState(null), OFF);
+  assert.deepEqual(getPremiumState(undefined), OFF);
+  assert.deepEqual(getPremiumState({}), OFF, 'guest with no premium field');
+  assert.deepEqual(getPremiumState({ premium: {} }), OFF);
+  assert.deepEqual(getPremiumState({ premium: { active: false } }), OFF);
+  // An active entitlement carries the plan and defaults to the SUPER tier.
   assert.deepEqual(
     getPremiumState({ premium: { active: true, plan: 'yearly' } }),
-    { active: true, plan: 'yearly' },
+    { active: true, plan: 'yearly', tier: 'SUPER' },
   );
   assert.deepEqual(
     getPremiumState({ premium: { active: true } }),
-    { active: true, plan: null },
-    'active without plan → plan null',
+    { active: true, plan: null, tier: 'SUPER' },
+    'active without plan → plan null, tier defaults to SUPER',
   );
+  // Tier + billing come from the subscription broker's premium blob.
+  assert.deepEqual(
+    getPremiumState({ premium: { active: true, tier: 'MAX', billing: 'FAMILY' } }),
+    { active: true, plan: 'FAMILY', tier: 'MAX' },
+    'billing doubles as plan label; MAX tier honored',
+  );
+  assert.equal(getPremiumState({ premium: { active: true, tier: 'BOGUS' } }).tier, 'SUPER', 'unknown tier → SUPER');
+  // Expiry is honored client-side: a lapsed cached entitlement is inactive.
+  const now = 1_000_000;
+  assert.deepEqual(getPremiumState({ premium: { active: true, expiresAt: now } }, now), OFF, 'expiresAt <= now lapses');
+  assert.equal(getPremiumState({ premium: { active: true, expiresAt: now + 1 } }, now).active, true, 'future expiry stays active');
+  assert.equal(getPremiumState({ premium: { active: true, expiresAt: null } }, now).active, true, 'null expiry = no expiry');
 }
 
 // ---- formatInr: Indian grouping + non-finite ----

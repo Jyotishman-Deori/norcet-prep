@@ -9,7 +9,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   User, RefreshCw, Loader2, CheckCircle2, AlertTriangle, Flame, Coins,
-  Zap, Target, Heart, RotateCcw, ChevronDown, Gift,
+  Zap, Target, Heart, RotateCcw, ChevronDown, Gift, Crown,
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
@@ -19,6 +19,10 @@ import { summarizeUser, applyCoinAdjust, applyResetProgress, COIN_PRESETS } from
 import { logAdminAction } from '../lib/admin-audit.js';
 import { agoLabel } from '../lib/engagement.js';
 import { DEFAULT_DATA } from '../data/seed.js';
+// Premium tier ecosystem (placeholder-payments era): the admin grant IS the
+// "payment" until a gateway lands. All calls go through the subscription
+// Edge Function, which re-verifies this admin's session token server-side.
+import { adminGrantPremium, adminRevokePremium, adminPremiumStatus } from '../lib/subscription.js';
 
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
@@ -89,6 +93,53 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
 
   const customN = Number(custom);
   const customOk = Number.isFinite(customN) && customN !== 0 && Math.abs(customN) <= 1000000;
+
+  // ---- premium grant/revoke (subscription broker; admin-verified) ----
+  const [sub, setSub] = useState(undefined);   // undefined=loading, else entitlement
+  const [subBusy, setSubBusy] = useState(false);
+  const [subMsg, setSubMsg] = useState(null);
+  const [grantTier, setGrantTier] = useState('SUPER');
+  const [grantBilling, setGrantBilling] = useState('INDIVIDUAL');
+  const [grantMonths, setGrantMonths] = useState(null); // 1 | 3 | 12 | null (no expiry)
+  const targetRef = () => ({ targetId: meta.id, targetUid: (blob && blob.uid) || null });
+
+  useEffect(() => {
+    let cancelled = false;
+    setSub(undefined);
+    adminPremiumStatus({ targetId: meta.id, targetUid: null })
+      .then(r => { if (!cancelled) setSub(r.premium); })
+      .catch(() => { if (!cancelled) setSub(null); });
+    return () => { cancelled = true; };
+  }, [meta.id]);
+
+  const grantPremium = async () => {
+    if (subBusy) return;
+    setSubBusy(true); setSubMsg(null);
+    try {
+      const r = await adminGrantPremium({ ...targetRef(), tier: grantTier, billing: grantBilling, months: grantMonths });
+      if (r.ok) {
+        setSub(r.premium);
+        logAdminAction({ action: 'premium.grant', target: meta.id, targetName: meta.displayName,
+                         detail: { tier: grantTier, billing: grantBilling, months: grantMonths }, actorName });
+        setSubMsg({ ok: true, text: `${grantTier === 'MAX' ? 'Max' : 'Super'} granted. They'll see it on their next app open.` });
+      } else setSubMsg({ ok: false, text: 'Grant failed — check the subscription tables exist (subscriptions.sql).' });
+    } catch (e) { setSubMsg({ ok: false, text: failText(e) }); }
+    finally { setSubBusy(false); }
+  };
+
+  const revokePremium = async () => {
+    if (subBusy) return;
+    setSubBusy(true); setSubMsg(null);
+    try {
+      const r = await adminRevokePremium(targetRef());
+      if (r.ok) {
+        setSub(r.premium);
+        logAdminAction({ action: 'premium.revoke', target: meta.id, targetName: meta.displayName, actorName });
+        setSubMsg({ ok: true, text: 'Premium revoked (family members lose it too).' });
+      } else setSubMsg({ ok: false, text: 'Revoke failed.' });
+    } catch (e) { setSubMsg({ ok: false, text: failText(e) }); }
+    finally { setSubBusy(false); }
+  };
 
   return (
     <div className="anim-fadeup">
@@ -194,6 +245,86 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
                     Confirm
                   </Button>
                 </div>
+              )}
+            </Card>
+
+            {/* premium grant / revoke (the placeholder-era "payment") */}
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Crown size={16} style={{ color: '#D97706' }} />
+                <span className="font-display text-[15px] font-bold" style={{ color: T.ink }}>Premium</span>
+                {sub === undefined ? (
+                  <Loader2 size={13} className="animate-spin ml-auto" style={{ color: T.muted }} />
+                ) : sub && sub.active ? (
+                  <span className="ml-auto text-[11px] font-bold px-2 py-0.5 rounded-full"
+                        style={{ background: '#D9770620', color: '#D97706' }}>
+                    {sub.tier}{sub.billing === 'FAMILY' ? ' · family' : ''}
+                    {sub.role === 'member' ? ' (member)' : ''}
+                  </span>
+                ) : (
+                  <span className="ml-auto text-[11px] font-semibold" style={{ color: T.muted }}>free</span>
+                )}
+              </div>
+              <div className="text-[11px] mb-3" style={{ color: T.muted }}>
+                Manual grant — the placeholder "payment" until a gateway lands.
+                {sub && sub.active && typeof sub.expiresAt === 'number'
+                  ? ` Current plan runs until ${new Date(sub.expiresAt).toLocaleDateString()}.` : ''}
+              </div>
+              {sub && sub.active && sub.role === 'member' ? (
+                <div className="text-[12px]" style={{ color: T.inkSoft }}>
+                  Covered by someone else's family plan — grant/revoke on the plan owner instead.
+                </div>
+              ) : (
+                <>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {['SUPER', 'MAX'].map(t => (
+                      <button key={t} onClick={() => setGrantTier(t)}
+                              className="no-tap-highlight px-3 py-1.5 rounded-xl text-[12px] font-bold transition active:scale-95"
+                              style={{ background: grantTier === t ? T.primary : T.surfaceWarm,
+                                       color: grantTier === t ? '#FFF' : T.ink,
+                                       border: `1px solid ${grantTier === t ? T.primary : T.border}` }}>
+                        {t === 'MAX' ? 'Max' : 'Super'}
+                      </button>
+                    ))}
+                    <span className="w-px self-stretch" style={{ background: T.border }} />
+                    {['INDIVIDUAL', 'FAMILY'].map(b => (
+                      <button key={b} onClick={() => setGrantBilling(b)}
+                              className="no-tap-highlight px-3 py-1.5 rounded-xl text-[12px] font-bold transition active:scale-95"
+                              style={{ background: grantBilling === b ? T.primary : T.surfaceWarm,
+                                       color: grantBilling === b ? '#FFF' : T.ink,
+                                       border: `1px solid ${grantBilling === b ? T.primary : T.border}` }}>
+                        {b === 'FAMILY' ? 'Family (6 seats)' : 'Individual'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {[{ v: 1, l: '1 month' }, { v: 3, l: '3 months' }, { v: 12, l: '12 months' }, { v: null, l: 'No expiry' }].map(o => (
+                      <button key={String(o.v)} onClick={() => setGrantMonths(o.v)}
+                              className="no-tap-highlight px-3 py-1.5 rounded-xl text-[12px] font-semibold transition active:scale-95"
+                              style={{ background: grantMonths === o.v ? T.ink : T.surfaceWarm,
+                                       color: grantMonths === o.v ? T.bg : T.inkSoft,
+                                       border: `1px solid ${grantMonths === o.v ? T.ink : T.border}` }}>
+                        {o.l}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button onClick={grantPremium} disabled={subBusy}
+                            icon={subBusy ? <Loader2 size={15} className="animate-spin" /> : <Crown size={15} />}>
+                      {sub && sub.active ? 'Update plan' : 'Grant premium'}
+                    </Button>
+                    {sub && sub.active && (
+                      <button onClick={revokePremium} disabled={subBusy}
+                              className="no-tap-highlight px-3.5 py-2 rounded-xl text-[12px] font-bold"
+                              style={{ background: T.error + '14', color: T.error, border: `1px solid ${T.error}40` }}>
+                        Revoke
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+              {subMsg && (
+                <div className="text-[12px] mt-2.5" style={{ color: subMsg.ok ? T.success : T.error }}>{subMsg.text}</div>
               )}
             </Card>
 

@@ -19,21 +19,24 @@
 // animation class opts out in the reduced-motion block in font-styles.js.
 // =====================================================================
 import React, { useState } from 'react';
-import { Crown, Sparkles, Check, X, PlayCircle } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { Crown, Sparkles, Check, X, PlayCircle, Zap, BadgeCheck } from 'lucide-react';
+import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { prefersReducedMotion } from '../lib/juice.js';
 import {
   getPremiumPlans, getPremiumFeatures, isPremiumEnabled, isTestPhase,
-  isAdSlotEnabled, formatInr,
+  isAdSlotEnabled, formatInr, getPremiumState,
 } from '../lib/premium.js';
+import { TIERS, TIER_ORDER } from '../lib/subscription.js';
+import FamilyPlanCard from '../ui/family-plan.jsx';
 
 // Gold accent for the Premium surface — matches the drawer row's '#D97706'.
 // A deliberate, distinct "premium" tone, warmer than T.primary.
 const GOLD = '#D97706';
 
-function PremiumScreen({ onBack }) {
+function PremiumScreen({ onBack, onEntitlementChanged }) {
   const { theme: T } = useTheme();
+  const { profile } = useProfile();
   const reduced = prefersReducedMotion();
 
   // Server/contract is authority for the plan list; the UI only picks a
@@ -44,6 +47,13 @@ function PremiumScreen({ onBack }) {
   const defaultId = (plans.find(p => p.save) || plans[0] || {}).id || null;
   const [selectedId, setSelectedId] = useState(defaultId);
   const [showSheet, setShowSheet] = useState(false);
+
+  // Tier ecosystem: SUPER (base) / MAX (adds the coach experience — planned).
+  // Membership state comes from the server-confirmed profile.premium blob
+  // (written by the subscription broker; admin-granted until payments land).
+  const membership = getPremiumState(profile);
+  const [tierId, setTierId] = useState(membership.tier || 'SUPER');
+  const tier = TIERS[tierId] || TIERS.SUPER;
 
   // Safety net: if Premium is switched off in the contract, the drawer row is
   // already hidden — but a deep-link could still land here, so show a minimal,
@@ -113,6 +123,72 @@ function PremiumScreen({ onBack }) {
             </div>
           </Card>
         )}
+
+        {/* ── Active membership (server-granted; placeholder era = admin grants) ── */}
+        {membership.active && (
+          <Card className="p-4 mb-5" style={{ background: `${GOLD}0E`, border: `1.5px solid ${GOLD}55` }}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: GOLD }}>
+                <BadgeCheck size={18} color="#FFF" />
+              </div>
+              <div className="min-w-0">
+                <div className="font-display text-[15px] font-semibold" style={{ color: T.ink }}>
+                  You're on {membership.tier === 'MAX' ? 'Max' : 'Super'}
+                  {profile && profile.premium && profile.premium.billing === 'FAMILY' ? ' (family plan)' : ''}
+                </div>
+                <div className="text-[12px] mt-0.5" style={{ color: T.inkSoft }}>
+                  {profile && profile.premium && typeof profile.premium.expiresAt === 'number'
+                    ? `Active until ${new Date(profile.premium.expiresAt).toLocaleDateString()}`
+                    : 'Active — no expiry set'}
+                </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* ── Tier picker: Super | Max ─────────────────────────────────── */}
+        <div className="flex gap-2 mb-3" role="tablist" aria-label="Premium tiers">
+          {TIER_ORDER.map(id => {
+            const t = TIERS[id];
+            const sel = id === tierId;
+            return (
+              <button key={id} role="tab" aria-selected={sel}
+                      onClick={() => setTierId(id)}
+                      className="no-tap-highlight flex-1 rounded-2xl py-2.5 text-sm font-bold transition-all"
+                      style={{
+                        background: sel ? T.primary : T.surface,
+                        color: sel ? '#FFF' : T.ink,
+                        border: `2px solid ${sel ? T.primary : T.border}`,
+                      }}>
+                {t.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Selected tier's feature list. "Coming later" chips mark planned
+            perks that are NOT built yet — honest preview, no false promises. */}
+        <Card className="p-4 mb-6">
+          <div className="text-[12px] font-semibold mb-2.5" style={{ color: T.muted }}>{tier.blurb}</div>
+          <ul className="space-y-2">
+            {tier.features.map((f, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-[13px] leading-snug" style={{ color: T.inkSoft }}>
+                <Zap size={14} className="flex-shrink-0 mt-[2px]" style={{ color: GOLD }} />
+                <span className="flex-1">{f.label}</span>
+                {f.soon && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: T.surfaceWarm, color: T.muted }}>
+                    Coming later
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        {/* ── Family plan (owner manage / member status / pitch) ───────── */}
+        <FamilyPlanCard profile={profile} onChanged={onEntitlementChanged} />
 
         {/* ── Plan cards (selectable) ──────────────────────────────────── */}
         <div className="space-y-3 mb-6">

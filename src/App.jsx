@@ -36,6 +36,11 @@ import {
 } from './lib/profiles.js';
 import { referralCodeFor, getPendingBatch, clearPendingBatch } from './lib/referral.js';
 import { BatchJoinModal } from './ui/comparison-cards.jsx';
+// Premium tier ecosystem (blueprint 2026-07-03): server-confirmed entitlement
+// (subscription Edge Fn) mirrored into profile.premium + family invite links.
+import { parseJoinToken, fetchEntitlement, entitlementToPremium } from './lib/subscription.js';
+import SessionExpiredToast from './ui/session-expired-toast.jsx';
+import JoinFamilySheet from './ui/join-family.jsx';
 // [A1 step 35 / Pipeline] session-2 infra extraction. APPLY IN FULL REPO:
 // src/lib/safe-storage.js + src/lib/profile-crypto.js ship alongside this file.
 // Build-verified here only via esbuild-bundle with stubs. The rest of session 2
@@ -1780,6 +1785,21 @@ export default function App() {
   const [drawerOpen, setDrawerOpen] = useState(false); // nav drawer (lifted out of Home so position:fixed is viewport-relative)
   const [bridgeDead, setBridgeDead] = useState(false); // storage bridge unreachable (e.g. standalone home-screen app)
   const [bridgeWarnDismissed, setBridgeWarnDismissed] = useState(false);
+  // Premium tier ecosystem — a pending ?join=TOKEN family invite (parsed from
+  // the URL once at mount, then stripped from the address bar) and the
+  // single-session force-logout notice (broker answered 401 SESSION_EXPIRED).
+  const [joinToken, setJoinToken] = useState(() => {
+    try { return parseJoinToken(window.location.search); } catch (e) { return null; }
+  });
+  const [sessionExpiredNotice, setSessionExpiredNotice] = useState(false);
+  const sessionExpiredRef = useRef(false); // re-entry guard: many broker calls can 401 at once
+  const entitlementCheckedRef = useRef(null); // last account key we refreshed premium for
+  useEffect(() => {
+    // Strip the invite token from the URL so a reload/share doesn't re-trigger
+    // it; the token lives in state (and survives the login redirect) instead.
+    if (!joinToken) return;
+    try { window.history.replaceState(null, '', window.location.pathname); } catch (e) {}
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Probe storage liveness in the background and only warn if a deliberate
   // round-trip (with a retry) fails. This avoids false alarms from a single slow
@@ -1980,6 +2000,10 @@ export default function App() {
   // never loses progress.
   const pendingSaveRef = useRef(null);  // latest unsaved { profile, data }
   const saveTimerRef = useRef(null);
+  // Live data snapshot for out-of-band saves (premium entitlement writes) —
+  // those change PROFILE only, which the data-keyed debounce below skips.
+  const dataRef = useRef(null);
+  useEffect(() => { dataRef.current = data; }, [data]);
   // Egress/invocation guard: the serialised blob we last persisted. A debounced
   // save that produces an IDENTICAL blob is skipped (no Supabase write). Seeded
   // to the freshly-loaded blob so we never redundantly re-write data we READ.
@@ -3286,6 +3310,67 @@ export default function App() {
     setNav({ screen: 'home' });
   }, []);
 
+  // ===== Premium tier ecosystem: server-confirmed entitlement =====
+  // Mirror a normalized entitlement (lib/subscription.js) into profile.premium
+  // and persist it, so premium survives offline restarts (it self-expires via
+  // expiresAt; the server re-confirms on the next refresh). No-ops when nothing
+  // meaningful changed — checkedAt alone must never cause a Supabase write.
+  const applyEntitlement = useCallback((ent) => {
+    const premium = entitlementToPremium(ent);
+    setProfile(prev => {
+      if (!prev || isGuestProfile(prev)) return prev;
+      const old = prev.premium || {};
+      const same = old.active === premium.active
+        && (old.tier || null) === (premium.tier || null)
+        && (old.billing || null) === (premium.billing || null)
+        && (old.role || null) === (premium.role || null)
+        && (old.expiresAt || null) === (premium.expiresAt || null);
+      if (same) return prev;
+      const next = { ...prev, premium };
+      // Persist out-of-band: the debounced saver is keyed on DATA changes, so
+      // a profile-only change would otherwise sit unsaved. Best-effort — a
+      // failed write just means the next boot re-fetches from the server.
+      try {
+        const pending = pendingSaveRef.current;
+        const liveData = (pending && !pending.guest && pending.data) ? pending.data : dataRef.current;
+        if (liveData) saveProfile({ ...next, data: liveData });
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const refreshEntitlement = useCallback(() => {
+    fetchEntitlement().then(applyEntitlement).catch(() => { /* offline — keep cache */ });
+  }, [applyEntitlement]);
+
+  // Refresh once per signed-in account per app session. Guests have no token
+  // (the broker would 401), and during boot the profile is still resolving.
+  useEffect(() => {
+    if (!profile || isGuestProfile(profile) || sessionResolving) return;
+    const key = profile.uid || profile.id;
+    if (!key || entitlementCheckedRef.current === key) return;
+    entitlementCheckedRef.current = key;
+    refreshEntitlement();
+  }, [profile, sessionResolving, refreshEntitlement]);
+
+  // ===== Single-session enforcement, client half (blueprint Part 3) =====
+  // The storage brokers fire this hook on any 401. Only SESSION_EXPIRED (the
+  // "logged in from another device" guard) force-signs-out; a plain stale
+  // token keeps today's behavior (writes queue locally until re-login).
+  useEffect(() => {
+    kvStorage.setOnAuthError((reason) => {
+      if (reason !== 'SESSION_EXPIRED' || sessionExpiredRef.current) return;
+      sessionExpiredRef.current = true;
+      setSessionExpiredNotice(true);
+      // Clear the local session + token; the account's server data is
+      // untouched and the user lands in guest mode with a sign-in toast.
+      Promise.resolve(handleLogout()).catch(() => {}).finally(() => {
+        sessionExpiredRef.current = false;
+      });
+    });
+    return () => kvStorage.setOnAuthError(null);
+  }, [handleLogout]);
+
   // ===== Rename profile =====
   // Flushes any pending profile save first so we don't lose unsaved progress
   // mid-rename, then performs the rename, then updates local state and the
@@ -4011,6 +4096,21 @@ export default function App() {
           from any in-app screen; quizInProgress gates the mid-quiz confirm. */}
       <UpdateToast quizInProgress={nav.screen === 'quiz'} />
 
+      {/* Single-session force-logout notice (broker said SESSION_EXPIRED). */}
+      <SessionExpiredToast open={sessionExpiredNotice}
+                           onSignIn={() => { setSessionExpiredNotice(false); setNav({ screen: 'auth' }); }}
+                           onClose={() => setSessionExpiredNotice(false)} />
+
+      {/* Family-plan invite redemption (?join=TOKEN). Waits for the profile to
+          resolve; guests are routed to sign-in and the token survives it. */}
+      {joinToken && profile && !sessionResolving && (
+        <JoinFamilySheet token={joinToken}
+                         isGuest={isGuestProfile(profile)}
+                         onSignIn={() => setNav({ screen: 'auth' })}
+                         onJoined={applyEntitlement}
+                         onClose={() => setJoinToken(null)} />
+      )}
+
       {/* Report modal lives at the app root (no transformed ancestor) so its
           position:fixed centering is relative to the viewport, not a screen. */}
       <FeedbackHost />
@@ -4129,7 +4229,7 @@ export default function App() {
 
       {nav.screen === 'premium' && (
         <Suspense fallback={<LazyScreenFallback />}>
-        <PremiumScreen onBack={goHome} />
+        <PremiumScreen onBack={goHome} onEntitlementChanged={refreshEntitlement} />
         </Suspense>
       )}
 
