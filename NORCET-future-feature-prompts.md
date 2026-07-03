@@ -9381,10 +9381,10 @@ ARCHITECTURE ADAPTATIONS FOR *THIS* APP (the real work / what differs):
        Moderator : feedback replies, FAQ manager, content DRAFTS, read reports/
                    users, basic logs.
        Co-Admin  : + announcements, Live config, Push broadcast, Engagement,
-                   Storage self-test, delete users, member coin tools?, promote
+                   Storage self-test, delete users, member coin grant/reset, promote
                    up to Moderator, read Audit log.
        Admin     : + remove Co-Admins, ownership transfer, everything.
-     (Owner to confirm whether Co-Admin gets coin-grant/reset — sensitive.)
+     (Owner CONFIRMED 2026-07-03: Co-Admin DOES get member coin grant/reset.)
 
 ALREADY IN PLACE (prereqs done — this rides on them):
   • Fail-closed brokers w/ signed session token + admin_profile_ids re-check.
