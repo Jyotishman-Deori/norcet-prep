@@ -9516,3 +9516,78 @@ extended nav-registry/premium) + compile gate. New anim classes (.pgate-*,
 DEFERRED/flagged: admin_profile_ids anon-enumeration hardening (needs broker-
 backed client admin gate — pre-launch security pass); per-module read tracking
 for the path (rings are quiz-derived); payments still placeholder.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# PREMIUM TIER ECOSYSTEM — Super/Max subs, family plans, single-session,
+# admin-list lockdown (blueprint adaptation, 2026-07-03, commit 5913848)
+# ─────────────────────────────────────────────────────────────────────
+
+OWNER BLUEPRINT: language-app premium spec (Super/Max tiers, Individual/
+  Family billing, invite links, "last one wins" concurrent-session guard,
+  Prisma/JWT/Express assumed) → adapted to this stack, then "the proper
+  fix" for admin_profile_ids (broker first, lock table second).
+
+DATA (supabase/subscriptions.sql — APPLIED to prod via supabase db query):
+  subscriptions (owner_uid, tier SUPER|MAX, billing INDIVIDUAL|FAMILY,
+  status, seats 1|6, expires_at NULL=no expiry, source=admin-grant) ·
+  family_members (unique member_uid = one family per account; carries NO
+  progress — accounts stay completely isolated) · family_invites (SHA-256
+  token_hash only — raw token never stored; single-use; 7-day expiry) ·
+  profile_secrets.active_session_id. All three tables: RLS on, ZERO
+  policies, REVOKE ALL, service-role-only (questions_staging pattern).
+
+SERVER (all 6 Edge Fns DEPLOYED): NEW subscription fn — status /
+  invite-create / invite-accept / family-list / family-remove / leave +
+  admin-grant/revoke/status (token-verified admin). Caller identity ONLY
+  from the signed session token (IDOR-safe by construction); invites fail
+  with one generic invalid-invite (no used-vs-expired oracle); rate caps
+  via auth_rate. auth-secure: rotateSessionId() on register/verify/reset
+  writes active_session_id + embeds sid in the token (rename carries it).
+  kv-write/kv-read/content-staging/subscription: sessionSidOk() — enforced
+  ONLY when game_config security.singleSession=true (NEW flag, default
+  OFF, admin Live config → Security). NULL db-sid passes (rollout kicks
+  nobody); every failure fails OPEN (revenue guard, not a safety lock).
+  Mismatch → 401 {error:SESSION_EXPIRED, message:Logged in from another
+  device}.
+
+CLIENT: lib/subscription.js (+test) — TIERS catalog (MAX extras are
+  Coming-later COPY ONLY: no runtime AI, hard rule), normalizeEntitlement/
+  entitlementToPremium (client re-checks expiresAt so cached premium
+  lapses offline), parseJoinToken/buildJoinLink, fetch wrappers (lazy
+  storage import — game-config rule). premium.js getPremiumState now
+  tier+expiry aware; isMaxUser(). profile.premium FINALLY HAS A WRITER:
+  App refreshes entitlement once per account per session and persists it
+  out-of-band (debounced saver is data-keyed — dataRef + direct
+  saveProfile). storage.js: the dead setOnAuthError hook is LIVE —
+  brokers pass a reason; SESSION_EXPIRED → force sign-out + toast
+  (src/ui/session-expired-toast.jsx) → guest mode, one-tap re-login.
+  Premium screen: Super|Max picker + membership card + FamilyPlanCard
+  (owner: seats/members/remove + invite mint with share/copy; member:
+  covered-by + leave). ?join=TOKEN parsed at boot, stripped from URL,
+  redeemed via JoinFamilySheet (guests routed to sign-in, token kept).
+  Admin Users → member panel: Premium card (grant Super/Max ×
+  Individual/Family × 1/3/12mo/no-expiry, revoke, adminlog entries).
+
+PART B — admin_profile_ids LOCKDOWN (done end-to-end, verified live):
+  admin-manage gained TOKEN-verified check-admin + list-admins;
+  admin-ops.checkServerAdmin + admin.listAdmins now call them (zero
+  direct REST reads left); admin app redeployed (norcet-admin.vercel.app,
+  dpl_14NTWs…); THEN supabase/lock-admin-list.sql applied — dropped the
+  anon SELECT policy + REVOKE ALL (incl. the scary latent anon TRUNCATE,
+  which RLS does NOT gate). Probes: pre-lockdown anon read returned the
+  admin ids; post-lockdown → 401; check-admin still answers {ok:false}
+  for bogus tokens. findings.md SEC-021..023.
+
+DEPLOY STATE: student prod READY (www.nurseholic.in, commit 5913848);
+  admin prod READY; 6 Edge Fns deployed; both SQL files applied.
+  EVERYTHING SHIPS DARK: no payments exist, so premium only activates
+  via the admin grant; singleSession only bites when the owner flips
+  the Live-config toggle (decide at launch — kicks multi-device users
+  to re-login on device switch).
+
+LAUNCH DECISIONS ADDED: (1) flip premium.gates.cribVault only with real
+  payments; (2) flip security.singleSession only if account-sharing
+  protection is wanted more than multi-device convenience; (3) MAX tier
+  coach features stay marketing copy until the owner sanctions a build.
+  Gate: 23 test files + vite compile + admin build green.
