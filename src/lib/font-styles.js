@@ -726,6 +726,31 @@ export const fontStyles = `
 }
 .about-in { animation: aboutIn 0.5s cubic-bezier(0.22,1,0.36,1) both; }
 
+/* ── Launch waitlist — staggered reveal, join-success bloom, position tick,
+   approved-seat glow ring. Ends at transform:none (fixed-TopBar rule). */
+@keyframes wlIn {
+  0%   { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: none; }
+}
+.wl-in { animation: wlIn 0.5s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes wlBloom {
+  0%   { opacity: 0; transform: scale(0.82); }
+  60%  { opacity: 1; transform: scale(1.06); }
+  100% { opacity: 1; transform: none; }
+}
+.wl-bloom { animation: wlBloom 0.55s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes wlRing {
+  0%   { box-shadow: 0 0 0 0 var(--wl-ring, rgba(12,166,120,0.45)); }
+  100% { box-shadow: 0 0 0 22px rgba(12,166,120,0); }
+}
+.wl-ring { animation: wlRing 1.1s cubic-bezier(0.22,1,0.36,1) 0.25s 2; }
+@keyframes wlTick {
+  0%   { transform: scale(1); }
+  35%  { transform: scale(1.14); }
+  100% { transform: none; }
+}
+.wl-tick { animation: wlTick 0.35s cubic-bezier(0.34,1.56,0.64,1); display: inline-block; }
+
 /* ── Desktop shell (≥1024px) — navbar settle-in, Duolingo-style hover
    underline that slides out under links, icon/chip hover lifts, and the
    footer link hover. Color hovers use !important so they beat the inline
@@ -784,7 +809,8 @@ export const fontStyles = `
   .bnav-in, .bnav-pop, .search-row-in,
   .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
   .nnudge-in, .nnudge-bell, .nnudge-done,
-  .about-in, .dnav-in { animation: none !important; }
+  .about-in, .dnav-in,
+  .wl-in, .wl-bloom, .wl-ring, .wl-tick { animation: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
   .dnav-icon, .dnav-chip { transition: none !important; }
   .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child { transform: none !important; }

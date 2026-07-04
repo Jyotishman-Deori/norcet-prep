@@ -42,6 +42,11 @@ export const KEYS = {
   PUSH_SUB_TOKEN:'norcet:push-sub-token:v1', // C-5 capability token for /api/active
   PENDING_REFERRAL: 'norcet:pending-referral:v1', // {ref,via,ts} captured on arrival, until signup
   PENDING_BATCH: 'norcet:pending-batch:v1',  // batchId captured from ?batch= on arrival, until joined
+  // LAUNCH WAITLIST — this device's joined identity {email, code, ts} so
+  // revisits land on the status view (device-level: the visitor has no
+  // profile yet). The code doubles as the proof-of-ownership the status
+  // endpoint requires before revealing an approved claim token.
+  WAITLIST_IDENTITY: 'norcet:waitlist-identity:v1',
   SHARE_NUDGE:   'norcet:share-nudge:v1',    // {lastShownAt,lastStreak} results share-nudge gating
 
   // -- Shared / cross-device (private blobs, but visible across devices) --

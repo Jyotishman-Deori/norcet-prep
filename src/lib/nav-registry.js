@@ -38,7 +38,7 @@ export const STUDENT_ROUTE_SCREENS = new Set([
   'weightage', 'knowledge-map', 'learn-topics', 'learn-cards', 'revision-sheet',
   'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
   'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
-  'about', 'legal',
+  'about', 'legal', 'waitlist',
 ]);
 const NAV_ACTIONS = new Set(['note', 'feedback']);
 
@@ -81,6 +81,10 @@ const STATIC_REGISTRY = [
     keywords: ['about', 'mission', 'story', 'team', 'developer', 'app', 'contact'],
     route: { screen: 'about' },
     description: 'Our mission, how the app teaches, and who builds it.' },
+  { id: 'waitlist', title: 'Early access waitlist', category: 'Features',
+    keywords: ['waitlist', 'early access', 'invite', 'join', 'seat', 'founding', 'launch', 'beta'],
+    route: { screen: 'waitlist' },
+    description: 'Reserve your founding-member seat for the invite-only launch.' },
   { id: 'legal-privacy', title: 'Privacy Policy', category: 'Settings',
     keywords: ['privacy', 'policy', 'data', 'legal', 'gdpr'],
     route: { screen: 'legal', doc: 'privacy' },

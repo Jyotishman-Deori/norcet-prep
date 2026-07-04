@@ -72,7 +72,10 @@ import { DEFAULT_TARGET_PERCENTILE, STUDY_WINDOW_TIME } from './lib/demographics
 import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as restoreHeartsPure, addCoins as addCoinsPure } from './lib/economy.js';
 import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
 import { framePrice } from './lib/cosmetics.js';
-import { loadGameConfig } from './lib/game-config.js';
+import { loadGameConfig, getConfig } from './lib/game-config.js';
+// LAUNCH WAITLIST — ?claim=<uuid> invite links (parsed once at mount, like
+// the family ?join= tokens above).
+import { parseClaimParam } from './lib/waitlist.js';
 import { loadQuestionGate, filterHidden } from './lib/question-gate.js';
 import { normalizePace, paceFlags, FLASHPOINT_POINTS_MULTIPLIER } from './lib/pace.js';
 import FlashpointIntro from './ui/flashpoint-intro.jsx';
@@ -232,6 +235,10 @@ const LegalScreenLazy = lazy(() => import('./screens/legal.jsx'));
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
 const PremiumScreen = lazy(() => import('./screens/premium.jsx'));
+// LAUNCH WAITLIST — join/status/claim screen. Rendered two ways: a normal
+// route ('waitlist'), and the pre-auth launch wall for brand-new visitors
+// while game_config waitlist.gate is ON (early return before the app tree).
+const WaitlistScreenLazy = lazy(() => import('./screens/waitlist.jsx'));
 // [A1 slice 36] CoverageMap extracted (data/allQuestions->useData).
 const CoverageMap = lazy(() => import('./screens/coverage-map.jsx'));
 // [A1 slice 37] support modal extracted (its QR encoder lives in ./lib/qr.js, used internally there).
@@ -1803,10 +1810,20 @@ export default function App() {
   const [sessionExpiredNotice, setSessionExpiredNotice] = useState(false);
   const sessionExpiredRef = useRef(false); // re-entry guard: many broker calls can 401 at once
   const entitlementCheckedRef = useRef(null); // last account key we refreshed premium for
+  // LAUNCH WAITLIST — a ?claim=<uuid> invite link (same capture pattern as
+  // joinToken above) and the pre-auth wall decision computed once at boot
+  // (gate flag ON + brand-new visitor; existing data is never walled).
+  const [waitlistClaimToken] = useState(() => {
+    try { return parseClaimParam(window.location.search); } catch (e) { return null; }
+  });
+  const [waitlistGateVisitor, setWaitlistGateVisitor] = useState(false);
+  // "Maybe later" on a claim-link-only wall (gate flag OFF): the guest keeps
+  // their session; the token stays in state so a later signup still uses it.
+  const [claimWallDismissed, setClaimWallDismissed] = useState(false);
   useEffect(() => {
     // Strip the invite token from the URL so a reload/share doesn't re-trigger
     // it; the token lives in state (and survives the login redirect) instead.
-    if (!joinToken) return;
+    if (!joinToken && !waitlistClaimToken) return;
     try { window.history.replaceState(null, '', window.location.pathname); } catch (e) {}
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1968,6 +1985,26 @@ export default function App() {
             revisionLog: Array.isArray(migratedGuest.revisionLog) ? migratedGuest.revisionLog : DEFAULT_DATA.revisionLog,
             preferences: { ...DEFAULT_DATA.preferences, ...(migratedGuest.preferences || {}) }
           };
+          // LAUNCH WAITLIST WALL — only for BRAND-NEW visitors on THIS device:
+          // no restorable session (we're already in the guest boot path) and
+          // no meaningful local guest progress. NOTE: loadProfileIndex() is
+          // the GLOBAL directory (never empty in prod), so it must not be part
+          // of this check — device-locality comes from the absent session +
+          // empty guest blob. An account holder who signed out lands on the
+          // wall too, with the "Sign in" escape. The config must be AWAITED
+          // here (the fire-and-forget load in its own effect may not have
+          // landed by first paint, and the wall must not flash in/out).
+          // Config unreachable → fail-open: never wall anyone on an error.
+          let gatedVisitor = false;
+          try {
+            await loadGameConfig();
+            const wl = getConfig().waitlist || {};
+            const brandNew = !(guestData.stats && guestData.stats.totalAttempted > 0)
+              && !(Array.isArray(guestData.customQuestions) && guestData.customQuestions.length > 0)
+              && !(Array.isArray(guestData.bookmarks) && guestData.bookmarks.length > 0);
+            gatedVisitor = wl.gate === true && brandNew;
+          } catch (e) { /* fail-open */ }
+          if (gatedVisitor && !cancelled) setWaitlistGateVisitor(true);
           setProfile(makeGuestProfile());
           setData(guestData);
           try { const gm = await loadGuestMeta(); setGuestMeta(gm); } catch (e) {}
@@ -1975,11 +2012,14 @@ export default function App() {
           // show the tour on EACH launch until they create an account. We do
           // NOT mark onboarding "seen" for the guest sentinel (see
           // dismissWelcome), so it re-shows next launch. Skipped only once the
-          // guest has converted (guestMeta.signedUp) — defensive.
-          try {
-            const gmSeen = await loadGuestMeta();
-            if (!gmSeen.signedUp) setShowWelcome(true);
-          } catch (e) { setShowWelcome(true); }
+          // guest has converted (guestMeta.signedUp) — defensive. Gated
+          // visitors never see the tour (the waitlist wall renders instead).
+          if (!gatedVisitor) {
+            try {
+              const gmSeen = await loadGuestMeta();
+              if (!gmSeen.signedUp) setShowWelcome(true);
+            } catch (e) { setShowWelcome(true); }
+          }
         } catch (e) {
           log.error('boot.guest', e);
           // Even if guest restore fails, start a clean guest session so the
@@ -4012,6 +4052,7 @@ export default function App() {
           legacyData={legacyData}
           initialMode={authInitialMode}
           onAuthed={handleAuthed}
+          claimToken={waitlistClaimToken}
         />
       </>
     );
@@ -4030,8 +4071,32 @@ export default function App() {
           initialMode={authInitialMode}
           onAuthed={handleAuthed}
           onBack={() => setNav({ screen: 'settings' })}
+          claimToken={waitlistClaimToken}
         />
       </>
+    );
+  }
+
+  // LAUNCH WAITLIST WALL — a brand-new visitor while waitlist.gate is ON, or
+  // any guest arriving on a ?claim= invite link (they clicked it to claim a
+  // seat). Renders INSTEAD of the app; "Sign in" / "Claim your seat" route
+  // into the auth screen (the nav==='auth' branch above wins on re-render),
+  // and the wall clears itself the moment handleAuthed swaps in a real
+  // profile. Never shown over pendingMerge or an existing account.
+  if ((waitlistGateVisitor || (waitlistClaimToken && !claimWallDismissed)) && profile && isGuestProfile(profile)) {
+    return provide(
+      <div className="font-body min-h-screen" style={{ background: T.bg, color: T.ink }}>
+        <style>{fontStyles}</style>
+        <Suspense fallback={<LazyScreenFallback />}>
+          <WaitlistScreenLazy
+            gateMode
+            claimToken={waitlistClaimToken}
+            onSignIn={() => { setAuthInitialMode('login'); setNav({ screen: 'auth' }); }}
+            onClaim={() => { setAuthInitialMode('create'); setNav({ screen: 'auth' }); }}
+            onLater={!waitlistGateVisitor ? () => setClaimWallDismissed(true) : undefined}
+          />
+        </Suspense>
+      </div>
     );
   }
 
@@ -4262,6 +4327,16 @@ export default function App() {
       {nav.screen === 'legal' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <LegalScreenLazy doc={nav.doc || 'privacy'} onBack={goHome} />
+        </Suspense>
+      )}
+
+      {/* LAUNCH WAITLIST — join/status route (Home nudge / Search). Shows a
+          graceful "not open yet" state while the flags are dark. */}
+      {nav.screen === 'waitlist' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <WaitlistScreenLazy onBack={goHome}
+                            onSignIn={() => { setAuthInitialMode('login'); setNav({ screen: 'auth' }); }}
+                            onClaim={() => { setAuthInitialMode('create'); setNav({ screen: 'auth' }); }} />
         </Suspense>
       )}
 

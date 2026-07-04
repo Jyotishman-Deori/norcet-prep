@@ -65,6 +65,18 @@ export const SECTIONS = [
     ],
   },
   {
+    id: 'waitlist', title: 'Launch waitlist', icon: 'Ticket',
+    blurb: 'The invite-only launch system. Both switches are server-enforced.',
+    fields: [
+      { path: 'waitlist.collect', label: 'Waitlist signups open', type: 'toggle',
+        help: 'ON = the "Join the waitlist" screen goes live and starts collecting email + WhatsApp signups. The app itself stays open.' },
+      { path: 'waitlist.gate', label: 'Invite-only launch wall', type: 'toggle',
+        help: '⚠ ON = brand-new visitors see the waitlist INSTEAD of the app, and creating an account requires an approved invite. Existing accounts and devices with progress are never walled.' },
+      { path: 'waitlist.batchSize', label: 'Suggested batch size', type: 'int', min: 5, max: 200, step: 5,
+        help: 'Default seat count for "Approve top N" in the admin Waitlist panel.' },
+    ],
+  },
+  {
     id: 'security', title: 'Security', icon: 'Shield',
     blurb: 'Server-enforced account protections (the Edge brokers read these).',
     fields: [

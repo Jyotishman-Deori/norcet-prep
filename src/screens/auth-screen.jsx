@@ -42,7 +42,10 @@ async function clearLegacyData() {
   try { await safeStorage.delete(KEYS.USERDATA); } catch (e) {}
 }
 
-function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
+// `claimToken` (optional) — a one-time waitlist invite token captured from a
+// ?claim= link. Threaded into createProfile; REQUIRED by the server while the
+// invite-only launch wall (game_config waitlist.gate) is ON, ignored otherwise.
+function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, claimToken }) {
   const { theme: T } = useTheme();
   const [mode, setMode] = useState(initialMode);
   const [displayName, setDisplayName] = useState('');
@@ -239,7 +242,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
           securityAnswer,
           email,
           importData: (importExisting && legacyData) ? legacyData : undefined,
-          captchaToken
+          captchaToken,
+          claimToken
         });
         // One-time migration: after first profile creation on this device,
         // wipe legacy data so subsequent profiles on the same device don't see it.
@@ -308,6 +312,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack }) {
           <div className="text-sm mt-1" style={{ color: T.muted }}>
             {mode === 'create' ? 'Create a profile to save your progress across devices' : 'Welcome back'}
           </div>
+          {/* Waitlist invite chip — reassures the student their ?claim= link is
+              attached before they fill the form (the server checks it on submit). */}
+          {claimToken && mode === 'create' && !recovering && (
+            <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-xs font-medium"
+                 style={{ background: T.success + '1A', color: T.success, border: `1px solid ${T.success}40` }}>
+              <Check size={13} /> Founding-member invite active
+            </div>
+          )}
         </div>
 
         {/* Tabs — hidden during recovery so the user isn't tempted to swap mid-flow */}

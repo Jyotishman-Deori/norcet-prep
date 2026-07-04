@@ -9,7 +9,7 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
@@ -32,6 +32,11 @@ import NotificationNudge from '../ui/notification-nudge.jsx';
 import InstallNudge from '../ui/install-nudge.jsx';
 // TIP — hold (mobile) / hover (PC) info bubbles.
 import { Tip } from '../ui/tooltip.jsx';
+// LAUNCH WAITLIST — guest-only "reserve your seat" card, shown only while
+// game_config waitlist.collect is ON and this device hasn't joined yet.
+import { getConfig } from '../lib/game-config.js';
+import { safeStorage } from '../lib/safe-storage.js';
+import { KEYS } from '../lib/keys.js';
 
 // Lighten a 6-digit hex colour toward white by fraction t (0..1). Used to
 // build the Learn card's gradient from its single accent (T.sec.learn) so the
@@ -106,6 +111,20 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     window.addEventListener('norcet:favs', onFavs);
     return () => { alive = false; window.removeEventListener('norcet:favs', onFavs); };
   }, [profileId]);
+
+  // LAUNCH WAITLIST nudge — guests only, while signups are open
+  // (waitlist.collect) and this device hasn't already joined.
+  const [waitlistNudge, setWaitlistNudge] = useState(false);
+  useEffect(() => {
+    if (!isGuest) { setWaitlistNudge(false); return; }
+    const wl = getConfig().waitlist || {};
+    if (wl.collect !== true) { setWaitlistNudge(false); return; }
+    let alive = true;
+    safeStorage.get(KEYS.WAITLIST_IDENTITY, false)
+      .then(r => { if (alive) setWaitlistNudge(!(r && r.value)); })
+      .catch(() => { if (alive) setWaitlistNudge(true); });
+    return () => { alive = false; };
+  }, [isGuest]);
 
   // Issue 6 — the top bar (Menu / notifications / settings) is a FIXED bar that
   // hides as you scroll down and slides back in the moment you scroll up, so it's
@@ -583,6 +602,27 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                     className="no-tap-highlight p-1 -m-1 rounded-lg active:bg-black/5 flex-shrink-0">
               <X size={16} style={{ color: T.muted }} />
             </button>
+          </div>
+        </Card>
+      )}
+
+      {/* LAUNCH WAITLIST — guest-only reserve-your-seat card while signups
+          are open (waitlist.collect) and this device hasn't joined yet. */}
+      {isGuest && waitlistNudge && (
+        <Card className="p-3 mb-4 anim-fadeup"
+              onClick={() => onNavigate({ screen: 'waitlist' })}
+              style={{ background: T.accent + '10', border: `1px solid ${T.accent}40` }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '1A' }}>
+              <Ticket size={18} style={{ color: T.accent }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>Invite-only launch is coming</div>
+              <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
+                Reserve your founding-member seat on the waitlist — early batches get everything free.
+              </div>
+            </div>
+            <ChevronRight size={16} className="flex-shrink-0" style={{ color: T.muted }} />
           </div>
         </Card>
       )}

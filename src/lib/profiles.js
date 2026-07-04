@@ -462,7 +462,7 @@ export function normalizeDob(dob) {
   return s;
 }
 
-export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData, captchaToken }) {
+export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData, captchaToken, claimToken }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
@@ -512,6 +512,9 @@ export async function createProfile({ displayName, password, securityQuestion, s
     // Cloudflare Turnstile token — verified server-side (only enforced when the
     // function has TURNSTILE_SECRET_KEY set; otherwise ignored).
     captchaToken: captchaToken || undefined,
+    // Waitlist claim token — REQUIRED by the broker while the invite-only
+    // launch wall (game_config waitlist.gate) is ON; ignored otherwise.
+    claimToken: claimToken || undefined,
   });
   if (!reg || reg.ok !== true) {
     if (reg && reg.reason === 'captcha') {
@@ -522,6 +525,9 @@ export async function createProfile({ displayName, password, securityQuestion, s
     }
     if (reg && reg.reason === 'bad-answer') {
       throw new Error('Type an answer to your security question');
+    }
+    if (reg && reg.reason === 'waitlist') {
+      throw new Error("This invite isn't valid anymore — open your waitlist status for a fresh link, or join the waitlist to get in line.");
     }
     throw new Error('Could not create your account. Check your connection and try again.');
   }

@@ -68,6 +68,25 @@ export const DEFAULTS = {
     ],
   },
 
+  // Launch waitlist (see waitlist-implementation-plan.md + src/lib/waitlist.js).
+  // Both switches ship OFF; flip live from the admin Config editor.
+  waitlist: {
+    // collect: the Join-the-waitlist screen is live (public join/status/stats
+    // actions accepted by the waitlist Edge Function). Turn ON to start
+    // gathering signups while the app is still open.
+    collect: false,
+    // gate: the invite-only launch wall. ON = brand-new visitors (no account,
+    // no local progress) land on the waitlist instead of guest mode, and the
+    // auth-secure broker REQUIRES a one-time claim token to register.
+    // SERVER-enforced (auth-secure + waitlist Edge Functions read this row).
+    gate: false,
+    // Suggested batch size shown in the admin panel (spec §5.2: 25 per drop
+    // once running twice a week).
+    batchSize: 25,
+    // Batch drop schedule, IST (dow 0=Sun…6=Sat). Default Tue 10:00 + Fri 15:00.
+    schedule: [{ dow: 2, h: 10, m: 0 }, { dow: 5, h: 15, m: 0 }],
+  },
+
   // Security switches. UNLIKE the rest of this config, these are enforced
   // SERVER-side: the kv-write / kv-read / content-staging / subscription
   // Edge Functions read this same game_config row (cached ~60s) directly.

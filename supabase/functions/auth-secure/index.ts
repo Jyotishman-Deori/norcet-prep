@@ -21,6 +21,11 @@
 // login form always is. The win is purely that the hashes are no longer
 // downloadable. Rate-limiting per IP is a sensible follow-up (PROMPT 21).
 //
+// LAUNCH WAITLIST: while game_config `waitlist.gate` is ON, `register`
+// additionally requires a one-time claim token minted by an admin approval
+// in the waitlist table (see supabase/functions/waitlist). Burn-first and
+// fail-closed; a no-op while the flag is off.
+//
 // DEPLOY:
 //   supabase functions deploy auth-secure --no-verify-jwt
 // (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.
@@ -267,6 +272,30 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   }
 }
 
+// ---- LAUNCH WAITLIST gate flag — cached read of game_config (same 60s
+// pattern as kv-write's singleSessionEnabled; fail-open = gate OFF, but once
+// the flag reads ON the claim check itself is fail-closed). ----
+let _wlGate: { v: boolean; ts: number } | null = null;
+async function waitlistGateOn(): Promise<boolean> {
+  if (_wlGate && Date.now() - _wlGate.ts < 60_000) return _wlGate.v;
+  let v = false;
+  try {
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.game_config&select=value`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (r.ok) {
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) {
+        const cfg = JSON.parse(String(rows[0].value));
+        v = !!(cfg && cfg.waitlist && cfg.waitlist.gate === true);
+      }
+    }
+  } catch { /* fail-open */ }
+  _wlGate = { v, ts: Date.now() };
+  return v;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -348,6 +377,32 @@ Deno.serve(async (req: Request) => {
       const existing = await getSecret(id);
       if (existing) return json({ ok: false, reason: "exists" });
 
+      // LAUNCH WAITLIST GATE — while waitlist.gate is ON a new account needs
+      // a one-time claim token (minted by admin approval in the waitlist
+      // table). BURN-FIRST: the row is atomically consumed here, BEFORE the
+      // credentials insert — the PATCH filter (approved + unexpired + this
+      // exact token) makes reuse/expiry a 0-row match → fail-closed reject.
+      // If the later insert fails, the claim is best-effort restored below.
+      let claimedRow: { rowId: string; claimToken: string } | null = null;
+      if (await waitlistGateOn()) {
+        const claimToken = String(payload.claimToken ?? "").trim().toLowerCase();
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(claimToken)) {
+          return json({ ok: false, reason: "waitlist" });
+        }
+        const nowIso = new Date().toISOString();
+        const burn = await fetch(
+          `${SUPABASE_URL}/rest/v1/waitlist?claim_token=eq.${encodeURIComponent(claimToken)}&status=eq.approved&approval_expires_at=gt.${encodeURIComponent(nowIso)}`,
+          {
+            method: "PATCH",
+            headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=representation", Accept: "application/json" }),
+            body: JSON.stringify({ status: "onboarded", claimed_profile_id: id, claim_token: null, updated_at: nowIso }),
+          },
+        );
+        const burned = burn.ok ? await burn.json().catch(() => null) : null;
+        if (!Array.isArray(burned) || !burned.length) return json({ ok: false, reason: "waitlist" });
+        claimedRow = { rowId: String(burned[0].id), claimToken };
+      }
+
       const salt = genSalt();
       const password_hash = await hashPassword(password, salt);
       // DOB hash only when a DOB was actually provided (legacy path).
@@ -378,6 +433,17 @@ Deno.serve(async (req: Request) => {
         }),
       });
       if (!r.ok) {
+        // The claim was burned but the account wasn't created — restore the
+        // seat (best-effort) so the student's invite still works on retry.
+        if (claimedRow) {
+          try {
+            await fetch(`${SUPABASE_URL}/rest/v1/waitlist?id=eq.${encodeURIComponent(claimedRow.rowId)}&status=eq.onboarded`, {
+              method: "PATCH",
+              headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+              body: JSON.stringify({ status: "approved", claim_token: claimedRow.claimToken, claimed_profile_id: null }),
+            });
+          } catch (_) { /* best-effort */ }
+        }
         // 409 = unique violation (race): treat as "exists" rather than a 500.
         if (r.status === 409) return json({ ok: false, reason: "exists" });
         return json({ error: `register failed: ${r.status} ${await r.text().catch(() => "")}`.trim() }, 502);

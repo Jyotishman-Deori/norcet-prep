@@ -9920,3 +9920,68 @@ live GitHub-write path is untestable without the owner repo+token (external/
 destructive), so it was reasoned through + ships dark, not driven end-to-end.
 NOTE on my earlier opinion: this closes the ONE real gap in the Gemini backup
 doc; the rest (Model B / per-row sync / pg_dump) stays deliberately not-built.
+
+# ---------------------------------------------------------------------
+# (2026-07-05) LAUNCH WAITLIST — invite-gated launch system, ships DARK
+# ---------------------------------------------------------------------
+
+Implemented waitlist-implementation-plan.md (the Gemini growth spec) adapted
+to this stack: join -> referral loop -> priority score -> admin batch approval
+-> one-time claim token -> gated registration. NO email ever (no infra):
+delivery = self-serve status check on the waitlist screen + manual wa.me
+nudge buttons in the admin panel (spec's never-automate-WhatsApp rule).
+
+- Two game_config flags, BOTH default false, flip live from admin Live config:
+  waitlist.collect (join screen + public actions live) and waitlist.gate
+  (launch wall: brand-new visitors -> waitlist instead of guest mode, and
+  auth-secure REQUIRES a claim token to register). Also waitlist.batchSize
+  + waitlist.schedule (default Tue 10:00 + Fri 15:00 IST).
+- supabase/waitlist.sql: new service-role-only table (RLS on, zero policies,
+  UNIQUE normalized email/whatsapp/code/claim_token). OWNER MUST RUN ONCE in
+  the SQL editor. Stricter than the spec's public-INSERT: signups go through
+  the broker so validation can't be bypassed.
+- supabase/functions/waitlist/index.ts: public join/status/stats (Turnstile
+  on join, per-IP rate_hit, email normalization + temp-mail blacklist +
+  Indian phone regex, intent scoring >50 chars = 5, NURSE-XXXXX codes,
+  3-referral milestone -> pending_verification NEVER auto-approve) + admin
+  list/approve/reject/expire-sweep (session token + admin_profile_ids).
+  Priority score = referrals*100 + daysWaiting*10, computed in-function from
+  a 60s-cached snapshot (Range-header paginated — PostgREST caps bare
+  limit= at 1000 rows). Claim token revealed ONLY with email + own code
+  (anti-enumeration); expiry is lazy + admin sweep.
+- auth-secure register: waitlist.gate flag (cached 60s, fail-open) -> require
+  claimToken, burn-first atomic PATCH (approved + unexpired -> onboarded,
+  claimed_profile_id stamped, token nulled = single-use), fail-closed; claim
+  restored best-effort if the credentials insert then fails.
+- Client: src/lib/waitlist.js (pure, tested: normalization, codes incl. the
+  ?ref= slug reconstruction — captureReferralFromUrl mangles NURSE-AB12C to
+  nurseab12c; parseWaitlistRefCode reconstructs, referral.js untouched),
+  IST drop-schedule math, share/nudge builders. waitlist-api.js (tokenless),
+  waitlist-admin.js (admin bundle only). src/screens/waitlist.jsx: closed /
+  join / status / claim views with CountUp position, score breakdown, 1s
+  drop countdown, wa.me + copy share, state leaderboard, DPDP unchecked
+  consent + inline privacy modal, Turnstile; wl-* animations registered in
+  the reduced-motion block. App.jsx: ?claim= capture (join-token pattern),
+  gate early-return after nav-auth/before welcome; guest boot path now
+  AWAITS loadGameConfig before deciding the wall; "Maybe later" escape when
+  the wall is claim-link-only. Home guest nudge; nav-registry entry.
+- Admin app: Waitlist tile -> src/ui/admin-waitlist.jsx (status tabs, score
+  sort, state/NE filter, select-top-N + bulk approve/reject with confirms,
+  referral-cluster flags same-ip/same-device/velocity, per-approved-row
+  WhatsApp nudge + copy claim link, expired sweep).
+
+GOTCHA FIXED IN REVIEW: brand-new-visitor check must NOT use
+loadProfileIndex() (that's the GLOBAL directory, never empty in prod) —
+device-locality = no session + empty guest blob only.
+
+VERIFIED: 28 test files + both builds green; browser-driven (msedge
+Playwright, game_config response interception so PROD flags stayed dark):
+dark state byte-normal + closed card; collect ON -> Home nudge + join form
++ disabled-until-captcha; gate ON -> wall (no tour) + Sign-in escape;
+?claim= link -> claim view, URL stripped, Maybe-later returns to guest.
+NOT driven (needs table + deployed fns): live join/approve/claim loop.
+
+STATUS: frontend pushed dark; waitlist + auth-secure fns deployed; INERT
+until the owner runs supabase/waitlist.sql and flips waitlist.collect
+(testing/hype phase) and waitlist.gate (launch day). Founding-member premium
+grants = existing admin Premium tool (ops, not code).
