@@ -31,6 +31,9 @@ import {
   buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
 } from '../lib/notes.js';
 import { useBackHandler } from '../lib/back-handler.js';
+// Backup hardening — the last-local-backup timestamp lives in local storage.
+import { safeStorage } from '../lib/safe-storage.js';
+import { KEYS } from '../lib/keys.js';
 // Push reach fix — support-aware notifications master switch (iOS Safari tabs
 // get an install walkthrough instead of a dead toggle).
 import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
@@ -128,16 +131,41 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     finally { setDrBusy(false); }
   };
 
-  const handleExport = () => {
+  // Backup hardening — remember when this profile last downloaded a file, so
+  // the Backup screen can show "last backup: X ago" (cloud sync is separate +
+  // automatic; this is only about the manual safety-net file).
+  const [lastBackupAt, setLastBackupAt] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    const pid = (profile && profile.id) || 'guest';
+    safeStorage.get(KEYS.lastBackup(pid), false).then(r => {
+      if (!alive) return;
+      const n = r && r.value != null ? Number(r.value) : NaN;
+      if (Number.isFinite(n)) setLastBackupAt(n);
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [profile && profile.id]);
+
+  const handleExport = async () => {
+    const pid = (profile && profile.id) || 'guest';
+    // Fold the topic notes (a separate local blob) into the SAME file, so one
+    // download is a complete backup — no more "I backed up but lost my notes".
+    let notes = {};
+    try { notes = await loadMindmapNotes(profile && profile.id); } catch (e) {}
     const blob = {
       exportedAt: new Date().toISOString(),
       appVersion: 'norcet-prep-1',
       profileDisplayName: profile?.displayName,
-      data
+      data,
+      notes, // NEW: topic notes included; older files without this still import fine
     };
     const stamp = new Date().toISOString().slice(0, 10);
     const safeName = profile?.id || 'profile';
     downloadAsFile(JSON.stringify(blob, null, 2), `norcet-backup-${safeName}-${stamp}.json`);
+    const now = Date.now();
+    try { await safeStorage.set(KEYS.lastBackup(pid), String(now), false); } catch (e) {}
+    setLastBackupAt(now);
+    setImportMsg({ ok: true, text: 'Backup downloaded — keep it somewhere safe, like your email or a cloud drive.' });
   };
 
   const handleImportClick = () => fileInputRef.current?.click();
@@ -154,8 +182,31 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         if (!('customQuestions' in payload) && !('history' in payload) && !('stats' in payload)) {
           throw new Error('This does not look like a NORCET backup');
         }
-        onImportBackup(payload);
-        setImportMsg({ ok: true, text: 'Backup restored into this profile.' });
+        const incomingNotes = (parsed.notes && typeof parsed.notes === 'object') ? parsed.notes : null;
+        // Restore REPLACES this profile's current data — and because that change
+        // syncs up to the cloud, an accidental import would overwrite the good
+        // cloud copy too. So confirm first (this is the one destructive action here).
+        requestConfirm({
+          icon: <Upload size={20} style={{ color: T.error }} />,
+          title: 'Restore this backup?',
+          body: 'This replaces the current progress on this profile — history, stats, streaks, bookmarks and settings — with the contents of the file, and syncs the result to your account. It cannot be undone, so download a fresh backup first if you’re unsure.',
+          confirmLabel: 'Replace my data',
+          cancelLabel: 'Cancel',
+          tone: 'danger',
+          onConfirm: async () => {
+            onImportBackup(payload);
+            // Topic notes MERGE (newest kept) rather than replace — they're
+            // additive and cross-profile-shareable.
+            if (incomingNotes) {
+              try {
+                const pid = profile && profile.id;
+                const merged = mergeNotes(await loadMindmapNotes(pid), incomingNotes);
+                await saveMindmapNotes(pid, merged);
+              } catch (e2) {}
+            }
+            setImportMsg({ ok: true, text: 'Backup restored into this profile.' + (incomingNotes ? ' Topic notes merged in too.' : '') });
+          },
+        });
       } catch (err) {
         setImportMsg({ ok: false, text: 'Could not import: ' + err.message });
       }
@@ -429,10 +480,35 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     </>
   );
 
-  const renderBackupSub = () => (
+  const renderBackupSub = () => {
+    const relAgo = (ms) => {
+      const d = Math.floor((Date.now() - ms) / 86400000);
+      if (d <= 0) return 'today';
+      if (d === 1) return 'yesterday';
+      if (d < 30) return `${d} days ago`;
+      const m = Math.floor(d / 30);
+      return m === 1 ? 'about a month ago' : `about ${m} months ago`;
+    };
+    return (
     <>
-      <div className="text-xs mb-3" style={{ color: T.muted }}>
-        Your profile already syncs across devices via your account. A local backup file is an extra safety net.
+      {isGuest ? (
+        // Guests have NO cloud copy — their data is on this device only. Warn
+        // clearly and point at both escapes: back up, or sign in to sync.
+        <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40` }}>
+          <div className="text-xs leading-relaxed" style={{ color: T.error }}>
+            You're using the app as a guest, so your progress is saved <b>only on this device</b> and is not backed up to the cloud. Clearing your browser or losing this device would lose it. Download a backup file now — or sign in, and your data syncs automatically.
+          </div>
+        </Card>
+      ) : (
+        <div className="text-xs mb-3" style={{ color: T.muted }}>
+          Your profile already syncs across devices via your account — that's your automatic cloud backup. A downloaded file is an extra, offline safety net.
+        </div>
+      )}
+      {/* Last local backup status — nudges people who've never made a file. */}
+      <div className="text-[11px] mb-2.5 px-1" style={{ color: lastBackupAt ? T.muted : (T.accent || T.primary) }}>
+        {lastBackupAt
+          ? `Last downloaded backup: ${relAgo(lastBackupAt)}.`
+          : 'You haven’t downloaded a backup file yet.'}
       </div>
       <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleExport}>
         <div className="flex items-center gap-3">
@@ -441,7 +517,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
           <div className="min-w-0 flex-1">
             <div className="font-medium" style={{ color: T.ink }}>Download backup</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>This profile's questions, history, stats, bookmarks</div>
+            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Everything: questions, history, stats, bookmarks — and your topic notes</div>
           </div>
           <ChevronRight size={18} style={{ color: T.muted }} />
         </div>
@@ -466,7 +542,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
         </Card>
       )}
     </>
-  );
+    );
+  };
 
   const renderTopicNotesSub = () => (
     <>
