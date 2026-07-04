@@ -9886,3 +9886,37 @@ simplest): a scheduled dump of kv_shared to durable storage.
     Supabase pooler + free-tier pausing).
 NOT BUILT YET - needs the owner to pick a storage target + provide creds.
 Flagged for the pre-launch/scaling pass. See memory pre-launch-checklist.
+
+
+# ---------------------------------------------------------------------
+# OWNER DB BACKUP - nightly kv_shared snapshot to private GitHub repo
+# (2026-07-04, commit c6ddd88)
+# ---------------------------------------------------------------------
+
+Built the disaster-recovery backup flagged in the previous entry (owner chose
+GitHub repo as the storage target).
+
+- api/backup-db.js: reads ALL kv_shared rows via the service-role key
+  (paginated Range headers), commits snapshots/kv_shared-YYYY-MM-DD.json to a
+  PRIVATE repo via the GitHub Contents API (GET sha then PUT). Also a
+  CRON_SECRET-protected HTTP route (POST /api/backup-db) for manual/on-demand
+  runs + testing. SHIPS DARK: backupDatabase() returns
+  {ok:false,reason:not-configured,missing:[...]} until env is set.
+- Cron: Vercel Hobby caps at 2 crons, both used by send-reminders (AM+PM).
+  So NO 3rd cron - the AM run (currentSlot==='am', once/day) calls
+  backupDatabase() best-effort in try/catch; a backup failure never breaks
+  reminders. Result folded into the reminders response JSON.
+- Excludes profile_secrets (password hashes) by design - no credentials
+  off-platform; users recover progress by re-registering same display name
+  (restored profile:<id> blob loads).
+- DB_BACKUP_SETUP.md = the owner setup: private repo WITH a README (needs a
+  main branch to commit into), fine-grained PAT (Contents R+W on that one
+  repo), 3 Vercel env vars (SUPABASE_SERVICE_ROLE_KEY, BACKUP_GITHUB_TOKEN,
+  BACKUP_GITHUB_REPO), redeploy, then curl test with CRON_SECRET.
+
+STATUS: code deployed but INERT until the owner does the 3-env-var setup.
+api/ is NOT covered by the vite gate - syntax-checked with node --check; the
+live GitHub-write path is untestable without the owner repo+token (external/
+destructive), so it was reasoned through + ships dark, not driven end-to-end.
+NOTE on my earlier opinion: this closes the ONE real gap in the Gemini backup
+doc; the rest (Model B / per-row sync / pg_dump) stays deliberately not-built.
