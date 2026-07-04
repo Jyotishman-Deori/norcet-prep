@@ -2762,19 +2762,6 @@ export default function App() {
     goHome();
   }, [goHome]);
 
-  const importBackup = useCallback((payload) => {
-    // Merge with defaults so older or partial backups don't break the app.
-    // A11: walk the imported payload forward to current schema before the
-    // spread-merge — a backup may be from an old version of the app.
-    const migrated = runMigrations(payload);
-    setData({
-      ...DEFAULT_DATA,
-      ...migrated,
-      stats: { ...DEFAULT_DATA.stats, ...(migrated.stats || {}) },
-      advancedTestHistory: migrated.advancedTestHistory || []
-    });
-  }, []);
-
   const startAdvancedTest = useCallback((spec) => {
     const pool = spec.pool && spec.pool.length >= spec.count ? spec.pool : allQuestions;
     const qs = shuffle(pool).slice(0, spec.count);
@@ -4787,7 +4774,7 @@ export default function App() {
         <Settings themeMode={themeMode}
                   isGuest={isGuestProfile(profile)}
                   onGuestSignIn={() => setNav({ screen: 'auth' })}
-                  onClearAll={clearAll} onImportBackup={importBackup}
+                  onClearAll={clearAll}
                   onLogout={handleLogout} onSwitchProfile={handleLogout}
                   onToggleTheme={toggleTheme}
                   onSetColorTheme={setColorTheme}

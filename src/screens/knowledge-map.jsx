@@ -20,7 +20,7 @@ import { safeStorage } from '../lib/safe-storage.js';
 import { attemptStats } from '../lib/compact.js';
 import { clampNum, todayStr } from '../lib/utils.js';
 import { topicIcon } from '../lib/topics.js';
-import { loadMindmapNotes, saveMindmapNotes, mindmapNoteMatch, sanitizeNoteText } from '../lib/notes.js';
+import { loadMindmapNotes, mergeNotes, mindmapNoteMatch, sanitizeNoteText } from '../lib/notes.js';
 import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
@@ -545,6 +545,10 @@ const CMAP_STARS = (() => {
 })();
 const kmapIntroSeenKey = (pid) => 'kmapintroseen:v1:' + (pid || 'guest');
 
+// Stable empty-notes ref so `data.mindmapNotes || EMPTY_NOTES` doesn't churn
+// memo deps when a profile has no notes yet.
+const EMPTY_NOTES = {};
+
 // ---- The screen ----------------------------------------------------------
 function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -652,8 +656,11 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   useEffect(() => { let alive = true; loadMindmapSound().then(v => { if (alive) setSoundOn(v); }); return () => { alive = false; }; }, []);
 
   // ---- P11 Feature C — per-node study notes --------------------------------
-  // notes: { nodeId: { text, updatedAt } }, loaded once (local, shared:false).
-  const [notes, setNotes] = useState({});
+  // notes: { nodeId: { text, updatedAt } }. NOW live inside the synced blob
+  // (data.mindmapNotes) so they cloud-sync + follow the user across devices
+  // like all other progress — no local-only file to export. A one-time lazy
+  // migration below lifts any legacy device-local notes into `data`.
+  const notes = data.mindmapNotes || EMPTY_NOTES;
   const [noteEditor, setNoteEditor] = useState(null);   // node payload being edited | null
   const [query, setQuery] = useState('');               // search text
   const [searchOpen, setSearchOpen] = useState(false);  // search bar expanded?
@@ -668,29 +675,46 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     if (fullscreen) { setFullscreen(false); return true; }
     return false;
   });
+  // One-time lazy MIGRATION: lift legacy device-local notes (the old
+  // mindmapnotes:v1 blob) into the synced data.mindmapNotes. Merge (newest per
+  // node) so nothing is lost; idempotent — once they're in `data`, re-merging
+  // is a no-op. The legacy blob is left in place as a harmless fallback.
+  const migratedNotesRef = useRef(false);
   useEffect(() => {
+    if (migratedNotesRef.current) return;
     let alive = true;
-    loadMindmapNotes(profileId).then(n => { if (alive) setNotes(n || {}); });
+    loadMindmapNotes(profileId).then(legacy => {
+      if (!alive || migratedNotesRef.current) return;
+      migratedNotesRef.current = true;
+      if (!legacy || Object.keys(legacy).length === 0) return;
+      setData(prev => {
+        const merged = mergeNotes(prev.mindmapNotes || {}, legacy);
+        // Skip the state write when nothing new would land (avoids a needless
+        // sync of an unchanged blob).
+        if (JSON.stringify(merged) === JSON.stringify(prev.mindmapNotes || {})) return prev;
+        return { ...prev, mindmapNotes: merged };
+      });
+    }).catch(() => {});
     return () => { alive = false; };
-  }, [profileId]);
+  }, [profileId, setData]);
 
   const noteTextFor = useCallback((id) => (notes[id] && typeof notes[id].text === 'string') ? notes[id].text : '', [notes]);
 
-  // Save / delete a note for a node id; mirrors the badge + popup instantly and
-  // persists the whole blob (shared:false — guests included, never synced).
+  // Save / delete a note for a node id → writes into data.mindmapNotes via
+  // setData, so it rides the existing debounced cloud sync (offline-safe,
+  // pending-queue backed). Mirrors the badge + popup instantly.
   const saveNote = useCallback((id, text) => {
     const clean = sanitizeNoteText(text);
-    setNotes(prev => {
-      const next = { ...prev };
+    setData(prev => {
+      const next = { ...(prev.mindmapNotes || {}) };
       if (!clean) { delete next[id]; }
       else { next[id] = { text: clean, updatedAt: Date.now() }; }
-      saveMindmapNotes(profileId, next);
-      return next;
+      return { ...prev, mindmapNotes: next };
     });
-  }, [profileId]);
+  }, [setData]);
   const deleteNote = useCallback((id) => {
-    setNotes(prev => { const next = { ...prev }; delete next[id]; saveMindmapNotes(profileId, next); return next; });
-  }, [profileId]);
+    setData(prev => { const next = { ...(prev.mindmapNotes || {}) }; delete next[id]; return { ...prev, mindmapNotes: next }; });
+  }, [setData]);
 
   // Long-press (mobile) / right-click (desktop) -> open the note editor. A drag
   // or a quick tap must NOT trigger it, so we arm a timer on pointer-down and

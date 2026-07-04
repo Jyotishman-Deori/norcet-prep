@@ -792,5 +792,10 @@ export const DEFAULT_DATA = {
   // MILESTONES — append-only achievement events (level-ups, mastery tier
   // upgrades, streak milestones), deduped by id, capped. Feeds the Activity
   // history screen. See lib/milestones.js; merged by id in lib/merge.js.
-  milestones: []          // [{ id, type, ts, label, meta }]
+  milestones: [],         // [{ id, type, ts, label, meta }]
+  // TOPIC NOTES — the mnemonics/reminders a user pins to Knowledge-Map nodes.
+  // Kept INSIDE the synced blob (was a device-local shared:false key) so they
+  // cloud-sync and follow the user across devices like everything else. Shape:
+  // { nodeId: { text, updatedAt } }. Merged newest-per-node in lib/merge.js.
+  mindmapNotes: {}
 };

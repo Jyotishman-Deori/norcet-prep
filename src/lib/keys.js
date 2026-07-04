@@ -112,9 +112,9 @@ export const KEYS = {
   // (lib/install-prompt.js). The installed flag itself is device-level
   // localStorage, not here.
   installNudge:  (profileId) => `installnudge:v1:${profileId}`,
-  // Timestamp (ms) of the last downloaded LOCAL backup file for this profile —
-  // local, per profile (shared:false). Powers the "last backup: X ago" line in
-  // Settings → Backup. Cloud sync is separate + automatic; this is the manual file.
+  // Timestamp (ms) of the last CONFIRMED cloud sync for this profile — local,
+  // per profile (shared:false). Powers the "Last backed up: X ago" line in
+  // Settings → Sync & Backup; stamped whenever the pending-sync queue is empty.
   lastBackup:    (profileId) => `lastbackup:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --

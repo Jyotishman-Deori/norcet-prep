@@ -92,6 +92,23 @@ export function _gunionMilestones(a, b) {
   out.sort((x, y) => _gnum(x && x.ts) - _gnum(y && y.ts));
   return out.slice(-200);
 }
+export function _gunionNotes(a, b) {
+  // Topic notes { nodeId: { text, updatedAt } }: union by node, newest
+  // updatedAt wins per node (mirror of lib/notes.js mergeNotes). Additive —
+  // a note on either side survives; no note is ever dropped.
+  const out = {};
+  const isObj = (v) => v && typeof v === 'object' && !Array.isArray(v);
+  const src = [isObj(a) ? a : {}, isObj(b) ? b : {}];
+  src.forEach(m => Object.keys(m).forEach(id => {
+    const n = m[id];
+    if (!n || typeof n.text !== 'string') return;
+    const cur = out[id];
+    if (!cur || _gnum(n.updatedAt) >= _gnum(cur.updatedAt)) {
+      out[id] = { text: n.text, updatedAt: _gnum(n.updatedAt) };
+    }
+  }));
+  return out;
+}
 export function _gmergeHistoryEntry(ae, be) {
   const a = ae || {}; const b = be || {};
   const attempts = _gconcatCappedByTs(a.attempts, b.attempts, 0);
@@ -163,6 +180,7 @@ export function normalizeUserData(raw) {
     feedbackRepliesSeen: isObj(migrated.feedbackRepliesSeen) ? migrated.feedbackRepliesSeen : {},
     revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
     milestones: Array.isArray(migrated.milestones) ? migrated.milestones : [],
+    mindmapNotes: isObj(migrated.mindmapNotes) ? migrated.mindmapNotes : {},
     preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
   };
 }
@@ -207,6 +225,7 @@ export function mergeGuestIntoAccount(account, guest) {
     customQuestions: _gunionById(a.customQuestions, g.customQuestions),
     revisionLog: _gunionRevisionLog(a.revisionLog, g.revisionLog),
     milestones: _gunionMilestones(a.milestones, g.milestones),
+    mindmapNotes: _gunionNotes(a.mindmapNotes, g.mindmapNotes),
     advancedTestHistory: _gconcatCappedByTs(a.advancedTestHistory, g.advancedTestHistory, 50),
     previousPapers: _gmergePreviousPapers(a.previousPapers, g.previousPapers),
     bankVersionsSeen: _gmergeMaxMap(a.bankVersionsSeen, g.bankVersionsSeen),

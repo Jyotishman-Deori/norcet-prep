@@ -8,16 +8,15 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Copy, Download, Edit3,
-  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
-  Shield, Sigma, SquarePlus, Trash2, Upload, User, UserPlus, Volume2
+  AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Cloud, CloudOff, Copy, Download, Edit3,
+  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogIn, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
+  Shield, Sigma, SquarePlus, Trash2, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestSupport, requestConfirm } from '../ui/primitives.jsx';
 import { LegalScreen } from './legal.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { requestRename } from '../ui/rename-channel.js';
-import { downloadAsFile } from '../lib/utils.js';
 import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 // #21/#29 — sidebar gestures + crib sheet toggles; #27 — share card.
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
@@ -27,11 +26,11 @@ import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
 import StudyProfileCard from './study-profile-card.jsx';
 import { CompanionRenameCard } from './companion-rename-modal.jsx';
-import {
-  buildNotesExport, loadMindmapNotes, saveMindmapNotes, mergeNotes, parseNotesImport
-} from '../lib/notes.js';
 import { useBackHandler } from '../lib/back-handler.js';
-// Backup hardening — the last-local-backup timestamp lives in local storage.
+// Cloud Sync & Backup — the profile blob already syncs offline-first
+// (profiles.js). This screen just surfaces the status + a manual "Back up now".
+import { saveProfile, flushPendingSync, getPendingSync } from '../lib/profiles.js';
+import { describeSyncState, relTimeShort } from '../lib/backup-status.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 // Push reach fix — support-aware notifications master switch (iOS Safari tabs
@@ -40,7 +39,7 @@ import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
 // PWA install row — replays the captured native install sheet on tap.
 import { hasDeferredPrompt, promptInstall, isInstalledDevice } from '../lib/install-prompt.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImportBackup, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile } = useProfile();
@@ -79,7 +78,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   // [admin-app separation] adminInput, adminShow, adminError, adminBusy,
   // showAdminForm, adminFailCount, adminCooldown state hooks removed — the
   // Settings admin section is gone; admin lives in the standalone admin app.
-  const [importMsg, setImportMsg] = useState(null);
   // BUG-06 — copy-to-clipboard feedback for the account ID card.
   const [idCopied, setIdCopied] = useState(false);
   const accountId = profile ? (profile.uid || profile.id) : null; // matches what the admin allow-list checks
@@ -90,11 +88,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
       setIdCopied(true); setTimeout(() => setIdCopied(false), 1600);
     } catch (e) { /* clipboard blocked — the id is still visible to copy manually */ }
   };
-  const fileInputRef = useRef(null);
-  // P11 Feature C — topic-notes export/import (separate from the data backup;
-  // notes live in a local shared:false blob, not in `data`).
-  const [notesMsg, setNotesMsg] = useState(null);
-  const notesFileRef = useRef(null);
   // F-B — pull-to-refresh sound preference (local pref, not in `data`).
   const [soundOn, setSoundOn] = useState(true);
   useEffect(() => { let on = true; loadSoundEnabled().then(v => { if (on) setSoundOn(v); }); return () => { on = false; }; }, []);
@@ -131,124 +124,68 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     finally { setDrBusy(false); }
   };
 
-  // Backup hardening — remember when this profile last downloaded a file, so
-  // the Backup screen can show "last backup: X ago" (cloud sync is separate +
-  // automatic; this is only about the manual safety-net file).
-  const [lastBackupAt, setLastBackupAt] = useState(null);
+  // ===== Cloud Sync & Backup (WhatsApp-style; NO files) =================
+  // The profile blob already syncs offline-first (profiles.js saveProfile:
+  // local cache → Supabase, with a pending-sync queue that drains on
+  // reconnect). This screen only READS that status and offers a manual
+  // "Back up now". pendingCount === 0 is the truth of "backed up".
+  const [pendingCount, setPendingCount] = useState(0);
+  const [online, setOnline] = useState(typeof navigator === 'undefined' ? true : navigator.onLine);
+  const [lastSyncedAt, setLastSyncedAt] = useState(null);
+  const [syncBusy, setSyncBusy] = useState(false);
+  const [syncMsg, setSyncMsg] = useState(null);
+
+  const refreshSyncStatus = async () => {
+    try {
+      const pend = await getPendingSync();
+      const mine = profile && profile.id && pend && (profile.id in pend) ? 1 : 0;
+      setPendingCount(mine);
+      // "Backed up" the moment nothing is pending — stamp a confirmed time so
+      // the card can say "Last backed up X ago" (local, per profile).
+      if (!isGuest && mine === 0) {
+        const now = Date.now();
+        setLastSyncedAt(now);
+        try { await safeStorage.set(KEYS.lastBackup((profile && profile.id) || 'guest'), String(now), false); } catch (e) {}
+      }
+    } catch (e) {}
+  };
+
   useEffect(() => {
     let alive = true;
+    // Seed lastSyncedAt from storage (survives a fresh Settings mount).
     const pid = (profile && profile.id) || 'guest';
     safeStorage.get(KEYS.lastBackup(pid), false).then(r => {
       if (!alive) return;
       const n = r && r.value != null ? Number(r.value) : NaN;
-      if (Number.isFinite(n)) setLastBackupAt(n);
+      if (Number.isFinite(n)) setLastSyncedAt(n);
     }).catch(() => {});
-    return () => { alive = false; };
-  }, [profile && profile.id]);
+    refreshSyncStatus();
+    const on = () => { setOnline(true); refreshSyncStatus(); };
+    const off = () => setOnline(false);
+    window.addEventListener('online', on);
+    window.addEventListener('offline', off);
+    return () => { alive = false; window.removeEventListener('online', on); window.removeEventListener('offline', off); };
+  }, [profile && profile.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleExport = async () => {
-    const pid = (profile && profile.id) || 'guest';
-    // Fold the topic notes (a separate local blob) into the SAME file, so one
-    // download is a complete backup — no more "I backed up but lost my notes".
-    let notes = {};
-    try { notes = await loadMindmapNotes(profile && profile.id); } catch (e) {}
-    const blob = {
-      exportedAt: new Date().toISOString(),
-      appVersion: 'norcet-prep-1',
-      profileDisplayName: profile?.displayName,
-      data,
-      notes, // NEW: topic notes included; older files without this still import fine
-    };
-    const stamp = new Date().toISOString().slice(0, 10);
-    const safeName = profile?.id || 'profile';
-    downloadAsFile(JSON.stringify(blob, null, 2), `norcet-backup-${safeName}-${stamp}.json`);
-    const now = Date.now();
-    try { await safeStorage.set(KEYS.lastBackup(pid), String(now), false); } catch (e) {}
-    setLastBackupAt(now);
-    setImportMsg({ ok: true, text: 'Backup downloaded — keep it somewhere safe, like your email or a cloud drive.' });
-  };
-
-  const handleImportClick = () => fileInputRef.current?.click();
-
-  const handleFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const parsed = JSON.parse(ev.target.result);
-        const payload = parsed.data || parsed; // accept raw or wrapped
-        if (!payload || typeof payload !== 'object') throw new Error('Invalid file');
-        if (!('customQuestions' in payload) && !('history' in payload) && !('stats' in payload)) {
-          throw new Error('This does not look like a NORCET backup');
-        }
-        const incomingNotes = (parsed.notes && typeof parsed.notes === 'object') ? parsed.notes : null;
-        // Restore REPLACES this profile's current data — and because that change
-        // syncs up to the cloud, an accidental import would overwrite the good
-        // cloud copy too. So confirm first (this is the one destructive action here).
-        requestConfirm({
-          icon: <Upload size={20} style={{ color: T.error }} />,
-          title: 'Restore this backup?',
-          body: 'This replaces the current progress on this profile — history, stats, streaks, bookmarks and settings — with the contents of the file, and syncs the result to your account. It cannot be undone, so download a fresh backup first if you’re unsure.',
-          confirmLabel: 'Replace my data',
-          cancelLabel: 'Cancel',
-          tone: 'danger',
-          onConfirm: async () => {
-            onImportBackup(payload);
-            // Topic notes MERGE (newest kept) rather than replace — they're
-            // additive and cross-profile-shareable.
-            if (incomingNotes) {
-              try {
-                const pid = profile && profile.id;
-                const merged = mergeNotes(await loadMindmapNotes(pid), incomingNotes);
-                await saveMindmapNotes(pid, merged);
-              } catch (e2) {}
-            }
-            setImportMsg({ ok: true, text: 'Backup restored into this profile.' + (incomingNotes ? ' Topic notes merged in too.' : '') });
-          },
-        });
-      } catch (err) {
-        setImportMsg({ ok: false, text: 'Could not import: ' + err.message });
-      }
-      e.target.value = '';
-    };
-    reader.onerror = () => setImportMsg({ ok: false, text: 'Could not read file' });
-    reader.readAsText(file);
-  };
-
-  // P11 Feature C — export/import the user's topic notes (a separate JSON file
-  // from the full data backup; notes live in a local shared:false blob).
-  const handleNotesExport = async () => {
-    const pid = profile && profile.id;
-    const notes = await loadMindmapNotes(pid);
-    const count = notes ? Object.keys(notes).length : 0;
-    if (count === 0) { setNotesMsg({ ok: false, text: 'No topic notes yet — long-press a node on the Knowledge Map to add one.' }); return; }
-    const blob = buildNotesExport(pid, notes);
-    const stamp = new Date().toISOString().slice(0, 10);
-    downloadAsFile(JSON.stringify(blob, null, 2), `norcet-notes-${pid || 'guest'}-${stamp}.json`);
-    setNotesMsg({ ok: true, text: `Exported ${count} note${count === 1 ? '' : 's'}.` });
-  };
-  const handleNotesImportClick = () => notesFileRef.current && notesFileRef.current.click();
-  const handleNotesFile = (e) => {
-    const file = e.target.files && e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      try {
-        const incoming = parseNotesImport(ev.target.result);
-        const pid = profile && profile.id;
-        const existing = await loadMindmapNotes(pid);
-        const merged = mergeNotes(existing, incoming);
-        await saveMindmapNotes(pid, merged);
-        const added = Object.keys(incoming).length;
-        setNotesMsg({ ok: true, text: `Imported ${added} note${added === 1 ? '' : 's'} (merged; newest kept). Reopen the Knowledge Map to see them.` });
-      } catch (err) {
-        setNotesMsg({ ok: false, text: 'Could not import notes: ' + err.message });
-      }
-      e.target.value = '';
-    };
-    reader.onerror = () => setNotesMsg({ ok: false, text: 'Could not read file' });
-    reader.readAsText(file);
+  // "Back up now" — force an immediate write of the current blob + flush any
+  // queue, then re-check. No file leaves the device; it all goes to the cloud.
+  const handleBackupNow = async () => {
+    if (syncBusy || isGuest || !profile) return;
+    setSyncBusy(true); setSyncMsg(null);
+    try {
+      await saveProfile({ ...profile, data });
+      await flushPendingSync();
+      await refreshSyncStatus();
+      const pend = await getPendingSync();
+      const stillPending = profile.id in (pend || {});
+      setSyncMsg(stillPending
+        ? { ok: false, text: 'Couldn’t reach the cloud just now — your progress is safe on this device and will back up automatically when you’re back online.' }
+        : { ok: true, text: 'Backed up to the cloud just now.' });
+    } catch (e) {
+      setSyncMsg({ ok: false, text: 'Backup didn’t go through — check your connection and try again.' });
+    } finally {
+      setSyncBusy(false);
+    }
   };
 
   // ===== #8 — Settings sub-pages =====================================
@@ -480,109 +417,65 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
     </>
   );
 
-  const renderBackupSub = () => {
-    const relAgo = (ms) => {
-      const d = Math.floor((Date.now() - ms) / 86400000);
-      if (d <= 0) return 'today';
-      if (d === 1) return 'yesterday';
-      if (d < 30) return `${d} days ago`;
-      const m = Math.floor(d / 30);
-      return m === 1 ? 'about a month ago' : `about ${m} months ago`;
-    };
+  const renderSyncSub = () => {
+    const st = describeSyncState({ isGuest, online, pendingCount, lastSyncedAt, now: Date.now() });
+    // Tone → colour + icon for the status hero.
+    const TONE = {
+      ok:       { c: T.success, Icon: Cloud },
+      progress: { c: T.primary, Icon: RefreshCw },
+      muted:    { c: T.muted,   Icon: CloudOff },
+      warn:     { c: T.error,   Icon: CloudOff },
+    }[st.tone] || { c: T.muted, Icon: Cloud };
     return (
     <>
+      {/* Status hero — the WhatsApp-style reassurance card. */}
+      <Card className="p-4 mb-3" style={{ background: TONE.c + '0E', border: `1px solid ${TONE.c}33` }}>
+        <div className="flex items-start gap-3">
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: TONE.c + '1A' }}>
+            <TONE.Icon size={20} style={{ color: TONE.c }} className={st.state === 'pending' && syncBusy ? 'animate-spin' : ''} />
+          </div>
+          <div className="min-w-0">
+            <div className="font-display text-[15px] font-semibold" style={{ color: T.ink }}>{st.title}</div>
+            <div className="text-[12.5px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>{st.detail}</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Guests: the real fix is signing in (that IS the cloud backup). */}
       {isGuest ? (
-        // Guests have NO cloud copy — their data is on this device only. Warn
-        // clearly and point at both escapes: back up, or sign in to sync.
-        <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40` }}>
-          <div className="text-xs leading-relaxed" style={{ color: T.error }}>
-            You're using the app as a guest, so your progress is saved <b>only on this device</b> and is not backed up to the cloud. Clearing your browser or losing this device would lose it. Download a backup file now — or sign in, and your data syncs automatically.
-          </div>
-        </Card>
+        <Button onClick={() => onGuestSignIn && onGuestSignIn()} size="lg" className="w-full" icon={<LogIn size={17} />}>
+          Sign in to turn on cloud backup
+        </Button>
       ) : (
-        <div className="text-xs mb-3" style={{ color: T.muted }}>
-          Your profile already syncs across devices via your account — that's your automatic cloud backup. A downloaded file is an extra, offline safety net.
-        </div>
-      )}
-      {/* Last local backup status — nudges people who've never made a file. */}
-      <div className="text-[11px] mb-2.5 px-1" style={{ color: lastBackupAt ? T.muted : (T.accent || T.primary) }}>
-        {lastBackupAt
-          ? `Last downloaded backup: ${relAgo(lastBackupAt)}.`
-          : 'You haven’t downloaded a backup file yet.'}
-      </div>
-      <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleExport}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-            <Download size={18} style={{ color: T.primary }} />
+        <>
+          <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
+                onClick={handleBackupNow} aria-disabled={syncBusy}
+                style={{ opacity: syncBusy ? 0.6 : 1 }}>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
+                {syncBusy ? <RefreshCw size={18} className="animate-spin" style={{ color: T.primary }} />
+                          : <RefreshCw size={18} style={{ color: T.primary }} />}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="font-medium" style={{ color: T.ink }}>{syncBusy ? 'Backing up…' : 'Back up now'}</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Push your latest progress to the cloud right now</div>
+              </div>
+            </div>
+          </Card>
+          {syncMsg && (
+            <Card className="p-3 mb-3 anim-fadeup"
+                  style={{ background: syncMsg.ok ? T.successSoft : T.errorSoft, border: `1px solid ${syncMsg.ok ? T.success : T.error}40` }}>
+              <div className="text-sm" style={{ color: syncMsg.ok ? T.success : T.error }}>{syncMsg.text}</div>
+            </Card>
+          )}
+          <div className="text-[11px] leading-relaxed px-1 mt-1" style={{ color: T.muted }}>
+            Backup is automatic — everything you do saves to the cloud on its own, including your Knowledge-Map notes. There are no files to download or lose. To move to a new phone, just install the app and sign in.
           </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.ink }}>Download backup</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Everything: questions, history, stats, bookmarks — and your topic notes</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </div>
-      </Card>
-      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleImportClick}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
-            <Upload size={18} style={{ color: T.accent }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.ink }}>Restore from backup</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Replace this profile's data with a saved file</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </div>
-      </Card>
-      <input ref={fileInputRef} type="file" accept="application/json,.json" className="hidden" onChange={handleFile} />
-      {importMsg && (
-        <Card className="p-3 mb-3 anim-fadeup"
-              style={{ background: importMsg.ok ? T.successSoft : T.errorSoft, border: `1px solid ${importMsg.ok ? T.success : T.error}40` }}>
-          <div className="text-sm" style={{ color: importMsg.ok ? T.success : T.error }}>{importMsg.text}</div>
-        </Card>
+        </>
       )}
     </>
     );
   };
-
-  const renderTopicNotesSub = () => (
-    <>
-      <div className="text-xs mb-3" style={{ color: T.muted }}>
-        The notes you pin to topics on the Knowledge Map. Export to back them up or share your mnemonics; import merges into your existing notes.
-      </div>
-      <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={handleNotesExport}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '15' }}>
-            <Download size={18} style={{ color: T.primary }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.ink }}>Export notes</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Save all your topic notes as a JSON file</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </div>
-      </Card>
-      <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={handleNotesImportClick}>
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '15' }}>
-            <Upload size={18} style={{ color: T.accent }} />
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.ink }}>Import notes</div>
-            <div className="text-xs mt-0.5" style={{ color: T.muted }}>Merge notes from a file (newest kept per topic)</div>
-          </div>
-          <ChevronRight size={18} style={{ color: T.muted }} />
-        </div>
-      </Card>
-      <input ref={notesFileRef} type="file" accept="application/json,.json" className="hidden" onChange={handleNotesFile} />
-      {notesMsg && (
-        <Card className="p-3 mb-3 anim-fadeup"
-              style={{ background: notesMsg.ok ? T.successSoft : T.errorSoft, border: `1px solid ${notesMsg.ok ? T.success : T.error}40` }}>
-          <div className="text-sm" style={{ color: notesMsg.ok ? T.success : T.error }}>{notesMsg.text}</div>
-        </Card>
-      )}
-    </>
-  );
 
   const renderLegalSub = () => {
     const LEGAL_ROWS = [
@@ -615,8 +508,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
   const SUB_PAGES = {
     profile:  { title: 'Profile',          render: renderProfileSub },
     gestures: { title: 'Sidebar gestures', render: renderGesturesSub },
-    backup:   { title: 'Backup',           render: renderBackupSub },
-    notes:    { title: 'Topic notes',      render: renderTopicNotesSub },
+    backup:   { title: 'Sync & Backup',    render: renderSyncSub },
     legal:    { title: 'Legal',            render: renderLegalSub },
   };
 
@@ -989,21 +881,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onImp
           </div>
         </Card>
 
-        {/* #8 — Backup opens in a focused sub-page. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Backup</div>
-        <SubPageCard icon={Download} iconBg={T.primary} title="Backup"
-                     sub="Download a backup file, or restore from one"
-                     tip="Download a full backup of everything on this profile, or restore from one. Your safety net before switching phones or clearing the browser."
+        {/* Cloud Sync & Backup — a status page (no files). Everything, incl.
+            topic notes, syncs to the cloud automatically; this shows the state
+            + a manual "Back up now". */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sync &amp; Backup</div>
+        <SubPageCard icon={Cloud} iconBg={T.primary} title="Sync &amp; Backup"
+                     sub={isGuest ? 'Sign in to back up to the cloud' : 'Your progress is backed up automatically'}
+                     tip="See your cloud-backup status and back up on demand. Your progress — including Knowledge-Map notes — syncs automatically and restores when you sign in on any device. No files to download."
                      onClick={() => openSub('backup')} />
-
-        {/* #8 — Topic notes export/import opens in a focused sub-page.
-            Shown to everyone, incl. guests (they accumulate local notes via the
-            Knowledge Map and this is how they back them up / move them). */}
-        <div className="mt-6 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Topic notes</div>
-        <SubPageCard icon={FileText} iconBg={T.primary} title="Topic notes"
-                     sub="Export or import your Knowledge Map notes"
-                     tip="Export or import just your Knowledge-Map notes — your mnemonics and reminders — separately from a full backup. Works for guests too."
-                     onClick={() => openSub('notes')} />
 
         {/* [admin-app separation] The Settings admin section (unlock admin +
             Open Admin Panel) was removed. Admin now lives in the standalone
