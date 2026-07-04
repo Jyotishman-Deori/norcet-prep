@@ -9768,3 +9768,36 @@ FILES: ADDED lib/content-filter.js(+test) · screens/about.jsx ·
   premium.jsx · nav-drawer.jsx · nav-registry.js (+about/legal routes)
   · App.jsx · font-styles.js
 GATE: 26 test files + vite compile green. Frontend-only ship.
+
+
+# ─────────────────────────────────────────────────────────────────────
+# MODERATION HARDENING — server-side faqq filter + SEC-016 rate cap
+# (2026-07-04, follow-up to 015c8fe; kv-write DEPLOYED same day)
+# ─────────────────────────────────────────────────────────────────────
+
+WHY: the content filter shipped client-side only — cosmetic per this
+  app's own security rules (any logged-in user can hit the broker
+  directly). This closes the bypass and, in the same branch, the OPEN
+  SEC-016 finding (no rate cap on feedback:/faqq: creation).
+
+BUILT (supabase/functions/kv-write):
+  • NEW moderation.ts — Deno copy of src/lib/content-filter.js's core
+    (⚠ keep the wordlists/PII patterns IN SYNC by hand, same policy as
+    the verifyToken copies). containsProfanity (latin repeat-tolerant
+    boundary regexes + leet/padding normalize + Devanagari/Assamese
+    script lookarounds) + redactPII (email/UPI/12-digit/+91-phone,
+    2-char hint masks).
+  • index.ts §6 — non-admin SET on feedback:/faqq: now rate-capped
+    30/hour per user (bucket 'ugc-write' → 429, SEC-016 mitigation
+    as-proposed → findings.md flipped to fixed). faqq: values are
+    parsed and field-moderated (text / authorName / reply): profanity →
+    400 'Blocked: please keep community posts respectful'; PII redacted
+    in place before storage. Unparseable values fall through unchanged
+    (render-side cleanForDisplay still masks for readers). Admin writes
+    (replies/moderation) skip the filter — trusted.
+
+ORDER: safe by construction — the client filter shipped FIRST
+  (015c8fe), so the stricter broker never 400s anything the live UI
+  allows. Deployed: supabase functions deploy kv-write --no-verify-jwt.
+FILES: kv-write/index.ts · kv-write/moderation.ts (new) ·
+  docs/security/findings.md (SEC-016 → fixed).

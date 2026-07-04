@@ -44,6 +44,11 @@
 //   supabase functions deploy kv-write --no-verify-jwt
 // =====================================================================
 
+// Community-content moderation (server-side enforcement of the client's
+// content-filter: profanity rejects, contact info is redacted). See
+// ./moderation.ts — lists kept in sync with src/lib/content-filter.js.
+import { containsProfanity, redactPII } from "./moderation.ts";
+
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
@@ -414,6 +419,32 @@ Deno.serve(async (req: Request) => {
       const existing = await getRow(key);
       if (existing && !admin && !rowOwnedBy(existing, session)) {
         return json({ error: "Forbidden: not your content" }, 403);
+      }
+      if (op === "set" && !admin) {
+        // SEC-016 — cap user-generated-content writes at 30/hour per user
+        // (vote-toggle row inflation / scripted spam). Generous for humans.
+        const rl = await rateHit("ugc-write", session.id, 30, 60 * 60);
+        if (!rl.allowed) return tooMany(rl.retryAfter);
+        // faqq: is PUBLIC community text → server-side moderation (the client
+        // filter is UX only). Profanity rejects the write outright; contact
+        // info is redacted in place. Field-targeted so the row shape survives;
+        // an unparseable value falls through and is stored as-is (the render-
+        // side cleanForDisplay pass still masks it for readers).
+        if (key.startsWith("faqq:")) {
+          let entry: Record<string, unknown> | null = null;
+          try { entry = JSON.parse(String(body.value ?? "")); } catch { entry = null; }
+          if (entry && typeof entry === "object" && !Array.isArray(entry)) {
+            for (const f of ["text", "authorName", "reply"]) {
+              const v = entry[f];
+              if (typeof v !== "string" || !v) continue;
+              if (containsProfanity(v)) {
+                return json({ error: "Blocked: please keep community posts respectful" }, 400);
+              }
+              entry[f] = redactPII(v);
+            }
+            return await writeRow(key, JSON.stringify(entry));
+          }
+        }
       }
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
     }
