@@ -9801,3 +9801,34 @@ ORDER: safe by construction — the client filter shipped FIRST
   allows. Deployed: supabase functions deploy kv-write --no-verify-jwt.
 FILES: kv-write/index.ts · kv-write/moderation.ts (new) ·
   docs/security/findings.md (SEC-016 → fixed).
+
+
+# ---------------------------------------------------------------------
+# BACKUP HARDENING (2026-07-04, commit a37fa62)
+# ---------------------------------------------------------------------
+
+Owner (new to app dev) asked how backup works + a free-tier update.
+
+CURRENT SYSTEM (unchanged, all free): 3 layers -
+  1. AUTO cloud sync (logged-in): saveProfile writes local IndexedDB
+     cache + Supabase kv_shared profile:{id}, debounced 1.5s, offline
+     queue (markPendingSync/flushPendingSync drains on online+boot),
+     last-write-wins. The real device-loss backup.
+  2. MANUAL file (Settings->Backup): download/restore one JSON.
+  3. Guests: local IndexedDB only, NO cloud.
+
+FIXED (frontend-only, settings.jsx + KEYS.lastBackup):
+  - Restore was a SILENT full-replace that ALSO syncs up to cloud -> an
+    accidental import of an old file could wipe local AND the good cloud
+    copy. Now gated behind requestConfirm (danger tone).
+  - Backup file was INCOMPLETE (topic notes were a separate file). Now
+    handleExport folds notes into the same JSON; handleFile merges them
+    back (mergeNotes, newest-per-node). Backward compatible - old files
+    with no notes field still import.
+  - Added last-downloaded-backup timestamp (KEYS.lastBackup, local per
+    profile) shown in the Backup screen + a guest no-cloud warning card.
+
+DELIBERATELY NOT DONE (future, when scaling): auto-backup-to-cloud-drive
+  (Google Drive API etc. = setup + arguably paid), scheduled/versioned
+  backups, a Home nudge to back up. Current scale (~12 users) + auto
+  cloud sync makes these low-priority. If revisited, keep free-tier.
