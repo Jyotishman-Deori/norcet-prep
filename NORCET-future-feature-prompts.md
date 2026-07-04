@@ -9832,3 +9832,57 @@ DELIBERATELY NOT DONE (future, when scaling): auto-backup-to-cloud-drive
   (Google Drive API etc. = setup + arguably paid), scheduled/versioned
   backups, a Home nudge to back up. Current scale (~12 users) + auto
   cloud sync makes these low-priority. If revisited, keep free-tier.
+
+
+# ---------------------------------------------------------------------
+# CLOUD SYNC AND BACKUP (WhatsApp-style; no files) - 2026-07-04, eedfe9f
+# ---------------------------------------------------------------------
+
+Owner wanted NO user-facing JSON files (security) and a WhatsApp-style
+sync/backup. The app ALREADY had offline-first cloud sync of the profile
+blob (profiles.js saveProfile: local cache -> Supabase, pending-sync queue
+drains on reconnect/boot). So this was reframing + removing the file UI, and
+plugging the one gap (topic notes were device-local).
+
+DONE (frontend-only, verified in Edge, 27 test files green):
+- Settings: DELETED the file Download/Restore backup cards AND the whole
+  Topic-notes export/import sub-page. New "Sync and Backup" status screen
+  driven by NEW lib/backup-status.js (pure describeSyncState, states
+  guest/offline/pending/synced; +test). Guests -> "Not backed up yet" +
+  Sign-in CTA (signing in IS the backup). Accounts -> status card + "Back up
+  now" (force saveProfile + flushPendingSync, re-checks getPendingSync).
+  pendingCount===0 is the truth of "backed up". KEYS.lastBackup repurposed as
+  last-confirmed-sync time.
+- Topic notes moved from device-local (mindmapnotes:v1, shared:false) INTO
+  the synced data.mindmapNotes: seed default {}, merge.js _gunionNotes
+  (newest-per-node) in normalizeUserData + mergeGuestIntoAccount (ALSO fixes
+  a latent bug: guest notes were never merged on sign-up before). knowledge-
+  map.jsx reads/writes data.mindmapNotes via setData; one-time lazy migration
+  on KM mount lifts legacy local notes in (keeps the old blob as fallback).
+- App.jsx dropped onImportBackup + the unused importBackup.
+
+NOT exercised in-browser (lower risk, unit-tested): signed-in "Backed up /
+Back up now" states, and persisting a note (guest nodes are locked). Worth a
+manual tap-through once live.
+
+## OWNER DISASTER-RECOVERY GAP (my assessment of the Gemini backup doc)
+The Gemini doc is a good survey but ~60% is for NATIVE apps (SQLite/Core
+Data, iCloud/Drive) - does not map to this browser PWA. Verdict: this app is
+already Model A (offline-first continuous sync), the correct model; do NOT
+build WhatsApp Model B (encrypt-SQLite-to-iCloud), not possible in a PWA and
+unneeded. The per-row is_synced/UUID/batch machinery is overkill vs the
+whole-blob LWW at ~12 users.
+THE ONE REAL GAP the doc surfaces = OWNER-side DR: all users' data lives in
+ONE Supabase project's kv_shared. If it is deleted/corrupted/paused, there is
+NO recovery (Supabase free tier has no PITR/auto-backup). RECOMMENDED (free,
+simplest): a scheduled dump of kv_shared to durable storage.
+  Option A (simplest for this stack): Vercel Cron (Hobby allows 2) -> a new
+    admin-only api/ serverless route (NOTIFY_SECRET-style bearer) that reads
+    all kv_shared rows via the service role and commits a gzipped JSON to a
+    PRIVATE GitHub repo (free, versioned) OR uploads to Cloudflare R2 (10GB
+    free). Nightly. Restore = re-insert rows.
+  Option B: GitHub Actions cron + pg_dump of the Supabase Postgres -> R2
+    (the doc's script). More setup (DB connection string secret, fiddly with
+    Supabase pooler + free-tier pausing).
+NOT BUILT YET - needs the owner to pick a storage target + provide creds.
+Flagged for the pre-launch/scaling pass. See memory pre-launch-checklist.
