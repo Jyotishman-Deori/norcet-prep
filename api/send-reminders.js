@@ -23,6 +23,11 @@
 // =====================================================================
 import { kv } from '@vercel/kv';
 import webpush from 'web-push';
+// OWNER disaster-recovery backup. Vercel Hobby caps crons at 2 (both used by
+// this route's AM+PM runs), so instead of a 3rd cron we piggyback the daily
+// DB snapshot onto the AM run. Best-effort: a backup failure never affects
+// reminders. Ships dark until its env vars are set. See api/backup-db.js.
+import { backupDatabase } from './backup-db.js';
 
 webpush.setVapidDetails(
   process.env.VAPID_SUBJECT,
@@ -141,5 +146,13 @@ export default async function handler(req, res) {
     await Promise.all(keys.slice(i, i + CONCURRENCY).map(processOne));
   }
 
-  res.status(200).json({ today, sent, skipped, failed });
+  // Once-daily DB snapshot, piggybacked on the AM run only (so it runs once a
+  // day, not twice). Fully guarded — a backup error can never fail reminders.
+  let backup = null;
+  if (currentSlot === 'am') {
+    try { backup = await backupDatabase(); }
+    catch (e) { backup = { ok: false, error: String((e && e.message) || e) }; }
+  }
+
+  res.status(200).json({ today, sent, skipped, failed, backup });
 }
