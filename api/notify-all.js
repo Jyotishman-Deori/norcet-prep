@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   let payload = req.body;
   if (typeof payload === 'string') { try { payload = JSON.parse(payload); } catch (e) { payload = {}; } }
   payload = payload && typeof payload === 'object' ? payload : {};
-  const title = String(payload.title || 'NORCET Prep').slice(0, 80);
+  const title = String(payload.title || 'NurseHolic').slice(0, 80);
   const bodyText = String(payload.body || 'New content is available.').slice(0, 200);
   const url = String(payload.url || '/').slice(0, 200);
 

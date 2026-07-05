@@ -300,7 +300,7 @@ function tooMany(retryAfter: number): Response {
 // the nurseholic.in domain is verified (then set EMAIL_FROM).
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const OWNER_ALERT_EMAIL = Deno.env.get("OWNER_ALERT_EMAIL") || "jyotishmandeori5@gmail.com";
-const ALERT_FROM = Deno.env.get("EMAIL_FROM") || "NORCET Prep <onboarding@resend.dev>";
+const ALERT_FROM = Deno.env.get("EMAIL_FROM") || "NurseHolic <onboarding@resend.dev>";
 async function alertOwnerOnError(key: string): Promise<void> {
   if (!RESEND_API_KEY) return;
   const rl = await rateHit("owner-alert", "errlog", 2, 60 * 60);
@@ -311,7 +311,7 @@ async function alertOwnerOnError(key: string): Promise<void> {
     body: JSON.stringify({
       from: ALERT_FROM,
       to: [OWNER_ALERT_EMAIL],
-      subject: "NORCET Prep: a client error was recorded",
+      subject: "NurseHolic: a client error was recorded",
       text: `A crash/error group was just written to the error log.\n\n` +
         `Group key: ${key}\n\n` +
         `Open the admin app → Crash reports for the details and affected count.\n` +
@@ -427,7 +427,7 @@ Deno.serve(async (req: Request) => {
             if (rl.allowed) {
               const n = Array.isArray(incoming.questions) ? incoming.questions.length : 0;
               notify = {
-                title: "New on NORCET Prep",
+                title: "New on NurseHolic",
                 body: `${String(incoming.name || "A new question set")} — ${n} question${n === 1 ? "" : "s"} added. Open the Library.`,
               };
             }

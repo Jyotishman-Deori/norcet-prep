@@ -567,7 +567,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       )}
       {/* spacer reserving the fixed bar's REAL height. The bar row is ≈ 59px
           (Menu button 38px + py-2.5), so the old 52px spacer let the first line
-          (the "NORCET prep" eyebrow) tuck under the bar. 60px clears it on every
+          (the "NurseHolic" eyebrow) tuck under the bar. 60px clears it on every
           device; the masthead adds extra top air on desktop below. */}
       <div aria-hidden="true" className="lg:hidden" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
 
@@ -736,7 +736,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       {/* Greeting */}
       <div className="mb-6 mt-2 lg:mt-4">
-        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NORCET prep</div>
+        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NurseHolic</div>
         <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
           Good {timeOfDay}{userName ? `, ${userName}` : ''}
         </h1>

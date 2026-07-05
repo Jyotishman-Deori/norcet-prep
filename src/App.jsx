@@ -3566,10 +3566,10 @@ export default function App() {
       const past = now.getHours() > hh || (now.getHours() === hh && now.getMinutes() >= mm);
       if (!past) return;
       try {
-        const opts = { body: 'Your streak is at risk! Open NORCET Prep to keep it alive 🔥', tag: 'norcet-daily-reminder' };
+        const opts = { body: 'Your streak is at risk! Open NurseHolic to keep it alive 🔥', tag: 'norcet-daily-reminder' };
         const reg = navigator.serviceWorker ? await navigator.serviceWorker.getRegistration() : null;
-        if (reg && reg.showNotification) await reg.showNotification('NORCET Prep', opts);
-        else new Notification('NORCET Prep', opts);
+        if (reg && reg.showNotification) await reg.showNotification('NurseHolic', opts);
+        else new Notification('NurseHolic', opts);
         // Feature 7 — also log the reminder into the in-app Notification Center
         // (Feature 6), so it's visible even if the OS notification was missed.
         await pushNotification({
@@ -4004,7 +4004,7 @@ export default function App() {
         <div className="text-center px-8 max-w-sm mx-auto">
 
           {/* App name */}
-          <div className="font-display text-3xl font-semibold mb-1" style={{ color: T.primary }}>NORCET prep</div>
+          <div className="font-display text-3xl font-semibold mb-1" style={{ color: T.primary }}>NurseHolic</div>
 
           {/* Thin accent rule */}
           <div className="mx-auto mb-6 mt-3 rounded-full"

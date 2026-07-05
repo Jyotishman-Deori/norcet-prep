@@ -143,7 +143,7 @@ export default function ShareAppCard() {
   const share = async () => {
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'NORCET Prep', text: message });
+        await navigator.share({ title: 'NurseHolic', text: message });
         setShared(true);
         setTimeout(() => setShared(false), 1800);
         return;
@@ -159,7 +159,7 @@ export default function ShareAppCard() {
     setImgStatus('saving');
     try {
       const blob = await makeCardBlob();
-      const res = await shareOrSavePng(blob, 'norcet-qr.png', {});  // download path
+      const res = await shareOrSavePng(blob, 'nurseholic-qr.png', {});  // download path
       setImgStatus(res === 'error' ? 'error' : 'done');
     } catch (e) { setImgStatus('error'); }
     setTimeout(() => setImgStatus('idle'), 3200);
@@ -169,8 +169,8 @@ export default function ShareAppCard() {
     setImgStatus('sharing');
     try {
       const blob = await makeCardBlob();
-      const res = await shareOrSavePng(blob, 'norcet-qr.png', {
-        title: 'NORCET Prep',
+      const res = await shareOrSavePng(blob, 'nurseholic-qr.png', {
+        title: 'NurseHolic',
         text: `Free, no-ads AIIMS NORCET prep \u2014 scan or tap: ${qrUrl}`,
       });
       setImgStatus(res === 'error' ? 'error' : 'done');
@@ -186,7 +186,7 @@ export default function ShareAppCard() {
             <Share2 size={18} color="#FFF" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-medium" style={{ color: T.primary }}>Share NORCET Prep</div>
+            <div className="font-medium" style={{ color: T.primary }}>Share NurseHolic</div>
             <div className="text-xs mt-0.5" style={{ color: T.muted }}>
               {code
                 ? 'Your personal link \u2014 every install is credited to you'
@@ -354,7 +354,7 @@ export default function ShareAppCard() {
                     style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
               <X size={18} style={{ color: T.muted }} />
             </button>
-            <div className="text-[11px] uppercase tracking-[0.2em] font-semibold mb-1" style={{ color: T.primary }}>NORCET Prep</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] font-semibold mb-1" style={{ color: T.primary }}>NurseHolic</div>
             <div className="font-display text-xl font-semibold mb-1.5 leading-snug" style={{ color: T.ink }}>Free &amp; ad-free exam prep</div>
             <div className="text-[11px] font-medium mb-4" style={{ color: T.muted }}>Mock tests {'\u00B7'} PYQs {'\u00B7'} Revision notes {'\u00B7'} Dosage drills</div>
             <div className="rounded-2xl p-4 mb-4 w-full flex items-center justify-center"

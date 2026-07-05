@@ -267,7 +267,7 @@ export function buildWaitlistShareMessage({ code, url } = {}) {
 // Owner → approved student (manual WhatsApp nudge from the admin panel).
 export function buildApprovalNudgeMessage({ claimUrl, expiresAt } = {}) {
   const when = formatIstTime(expiresAt);
-  return `Your NORCET Prep seat is ready 🎉 Claim it here: ${claimUrl}` +
+  return `Your NurseHolic seat is ready 🎉 Claim it here: ${claimUrl}` +
     (when ? ` — your seat is held until ${when}, after that it goes to the next student in line.` : '');
 }
 

@@ -20,7 +20,8 @@ import { safeStorage } from './safe-storage.js';
 // v6: added the "FAQ" help section (Feature F-F).
 // v12 (FEAT-02): renamed the "Exam date" help section to "Study plan" and
 //     expanded it (date + daily goal + the day-by-day plan now live together).
-const CONTENT_VERSION = 12;
+// v13: rebrand — "NORCET Prep" → "NurseHolic" in help.json Share-app copy.
+const CONTENT_VERSION = 13;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

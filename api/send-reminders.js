@@ -36,11 +36,11 @@ webpush.setVapidDetails(
 );
 
 const MESSAGES = [
-  { title: 'Time to study', body: "You haven't opened NORCET prep today. Every day counts." },
+  { title: 'Time to study', body: "You haven't opened NurseHolic today. Every day counts." },
   { title: 'Your exam won\'t wait', body: 'Open the app. Even 15 minutes of focused practice moves the needle.' },
-  { title: 'Study session waiting', body: "Don't let today's session slip. Open NORCET prep." },
+  { title: 'Study session waiting', body: "Don't let today's session slip. Open NurseHolic." },
   { title: 'One more day closer', body: 'Your competitors are studying right now. Are you?' },
-  { title: 'NORCET prep', body: "Remember, it's never where you started, it's always where you finished." },
+  { title: 'NurseHolic', body: "Remember, it's never where you started, it's always where you finished." },
 ];
 
 // ── Duty Roster: window-aware delivery on the FREE tier ──────────────────────

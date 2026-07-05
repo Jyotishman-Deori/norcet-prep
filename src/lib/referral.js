@@ -36,7 +36,7 @@ export const VIA = {
 };
 const KNOWN_VIA = new Set(Object.values(VIA));
 
-const PROD_ORIGIN = 'https://norcet-prep.vercel.app';
+const PROD_ORIGIN = 'https://www.nurseholic.in';
 
 export function appOrigin() {
   if (typeof window !== 'undefined' && window.location && window.location.origin) {

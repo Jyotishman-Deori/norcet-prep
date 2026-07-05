@@ -185,7 +185,7 @@ const {
   });
   assert.match(nudge, /claim=x/);
   assert.match(nudge, /7:30 PM IST/);
-  assert.match(buildApprovalNudgeMessage({ claimUrl: 'u' }), /^Your NORCET Prep seat is ready/, 'no expiry → still valid copy');
+  assert.match(buildApprovalNudgeMessage({ claimUrl: 'u' }), /^Your NurseHolic seat is ready/, 'no expiry → still valid copy');
 
   assert.equal(buildWaUrl('+91 98765 43210', 'hi there'), 'https://wa.me/919876543210?text=hi%20there');
   assert.equal(buildWaUrl(null, 'hi'), 'https://wa.me/?text=hi', 'no number → share picker');

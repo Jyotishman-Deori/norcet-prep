@@ -59,7 +59,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
   const copyInvite = async () => {
     if (!invite) return;
     try {
-      if (navigator.share) { await navigator.share({ title: 'Join my NORCET Prep family plan', url: invite.link }); return; }
+      if (navigator.share) { await navigator.share({ title: 'Join my NurseHolic family plan', url: invite.link }); return; }
     } catch (e) { /* fall through to clipboard */ }
     try { await navigator.clipboard.writeText(invite.link); setCopied(true); setTimeout(() => setCopied(false), 2000); }
     catch (e) { setMsg({ ok: false, text: 'Copy failed — long-press the link to copy it.' }); }

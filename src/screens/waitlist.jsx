@@ -295,7 +295,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
     } catch (e) {}
   };
   const handleNativeShare = async () => {
-    try { await navigator.share({ title: 'NORCET Prep — early access', text: shareMessage }); }
+    try { await navigator.share({ title: 'NurseHolic — early access', text: shareMessage }); }
     catch (e) { /* user cancelled */ }
   };
 
@@ -309,7 +309,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
            style={{ background: T.primary, boxShadow: `0 10px 30px ${T.primary}45` }}>
         <GraduationCap size={30} color="#FFF" />
       </div>
-      <h1 className="font-display text-3xl font-semibold leading-tight" style={{ color: T.ink }}>NORCET Prep</h1>
+      <h1 className="font-display text-3xl font-semibold leading-tight" style={{ color: T.ink }}>NurseHolic</h1>
       <p className="text-sm mt-2 leading-relaxed max-w-sm mx-auto" style={{ color: T.inkSoft }}>
         {view === 'claim'
           ? 'Your founding-member seat is waiting.'
@@ -696,7 +696,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
            onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between px-5 pt-4 pb-3" style={{ borderBottom: `1px solid ${T.borderSoft || T.border}` }}>
           <div className="min-w-0">
-            <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NORCET Prep</div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NurseHolic</div>
             <div className="font-display text-lg font-semibold leading-tight" style={{ color: T.ink }}>
               {(legalDoc(legalView) || {}).title || 'Legal'}
             </div>

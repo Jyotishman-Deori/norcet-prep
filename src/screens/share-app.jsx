@@ -1,6 +1,6 @@
 // =====================================================================
 // src/screens/share-app.jsx  (issues round — Settings → Share sub-page)
-// The full "Share NORCET Prep" experience (platform selector, live message
+// The full "Share NurseHolic" experience (platform selector, live message
 // preview, Share / Copy actions) moved out of the Settings scroll into its
 // own focused page. Settings keeps a single tappable row that opens this.
 // All the actual share UI lives in ui/share-app-card.jsx (now rendered
@@ -15,7 +15,7 @@ function ShareAppScreen({ onBack }) {
   const { theme: T } = useTheme();
   return (
     <div className="anim-fadeup">
-      <TopBar title="Share NORCET Prep" onBack={onBack} feedback={{ screen: 'Share app' }} />
+      <TopBar title="Share NurseHolic" onBack={onBack} feedback={{ screen: 'Share app' }} />
       <div className="max-w-md mx-auto px-4 pt-3 pb-24">
         <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
           Pick who you're sending it to — the message carries the link <b>and</b> the

@@ -48,7 +48,7 @@ function HomeSupportNudge({ totalAttempted }) {
           <Heart size={17} style={{ color: T.primary }} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold" style={{ color: T.ink }}>Enjoying NORCET Prep? {'\u2615'}</div>
+          <div className="text-sm font-semibold" style={{ color: T.ink }}>Enjoying NurseHolic? {'\u2615'}</div>
           <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
             It's free and ad-free. You can buy me a chai to help keep it that way.
           </div>

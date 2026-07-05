@@ -7,11 +7,11 @@
    ===================================================================== */
 
 self.addEventListener('push', (event) => {
-  let payload = { title: 'NORCET prep', body: 'Time to study!' };
+  let payload = { title: 'NurseHolic', body: 'Time to study!' };
   try { if (event.data) payload = event.data.json(); } catch (e) {}
   const { title, body, icon, badge, tag, renotify, data } = payload;
   event.waitUntil(
-    self.registration.showNotification(title || 'NORCET prep', {
+    self.registration.showNotification(title || 'NurseHolic', {
       body: body || '',
       icon: icon || '/icon-192.png',
       badge: badge || '/icon-192.png',

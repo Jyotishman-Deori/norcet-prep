@@ -105,7 +105,7 @@ export default function AdminPushComposer({ onBack, actorName }) {
                  style={{ background: '#0F4C4C', color: '#FFF' }}>N</div>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2">
-                <span className="text-[13px] font-bold truncate" style={{ color: T.ink }}>{title.trim() || 'NORCET Prep'}</span>
+                <span className="text-[13px] font-bold truncate" style={{ color: T.ink }}>{title.trim() || 'NurseHolic'}</span>
                 <span className="text-[10px] flex-shrink-0" style={{ color: T.muted }}>now</span>
               </div>
               <div className="text-[12.5px] leading-snug mt-0.5" style={{ color: T.inkSoft, wordBreak: 'break-word' }}>

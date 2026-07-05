@@ -51,14 +51,14 @@ const APP_ORIGIN = "https://www.nurseholic.in"; // claim links always target the
 // INERT until:  supabase secrets set RESEND_API_KEY="re_…"
 // FROM uses Resend's shared onboarding address until nurseholic.in is
 // verified in the Resend dashboard (then set EMAIL_FROM, e.g.
-// "NORCET Prep <noreply@nurseholic.in>"). NOTE Resend's rule: with no
+// "NurseHolic <noreply@nurseholic.in>"). NOTE Resend's rule: with no
 // verified domain, delivery works ONLY to the Resend account owner's own
 // address — so student invites stay effectively off until the DNS step,
 // while owner alerts (kv-write) work immediately. Best-effort by contract:
 // a send failure never blocks the approval; the admin panel's MANUAL
 // WhatsApp nudge stays the primary delivery channel (India-first reach).
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
-const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "NORCET Prep <onboarding@resend.dev>";
+const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "NurseHolic <onboarding@resend.dev>";
 const SUPPORT_REPLY_TO = Deno.env.get("SUPPORT_EMAIL") || "jyotishmandeori5@gmail.com";
 async function sendApprovalInvite(
   email: string, claimUrl: string, _expiresAtIso: string,
@@ -72,11 +72,11 @@ async function sendApprovalInvite(
         from: EMAIL_FROM,
         to: [email],
         reply_to: SUPPORT_REPLY_TO,
-        subject: "Your NORCET Prep seat is ready 🎉",
-        text: `Your seat on the NORCET Prep waitlist just opened!\n\n` +
+        subject: "Your NurseHolic seat is ready 🎉",
+        text: `Your seat on the NurseHolic waitlist just opened!\n\n` +
           `Claim it here (one-time link):\n${claimUrl}\n\n` +
           `Your seat is held for 48 hours — after that it goes to the next student in line.\n\n` +
-          `See you inside,\nNORCET Prep · www.nurseholic.in`,
+          `See you inside,\nNurseHolic · www.nurseholic.in`,
       }),
     });
     if (!r.ok) return { sent: false, reason: `http-${r.status}` };

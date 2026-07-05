@@ -17,7 +17,7 @@ import { encodeQR } from '../lib/qr.js';
 // ---- Donate config (OWNER: set DONATE_UPI_ID to a real VPA before deploy) ----
 const DONATE_UPI_ID = 'onehalt.in@axl';          // <-- OWNER: set real UPI ID
 const DONATE_QR_URL = '/qr.png';                        // <-- OWNER (optional): static QR image URL; falls back to a generated QR
-const DONATE_PAYEE_NAME = 'NORCET Prep';
+const DONATE_PAYEE_NAME = 'NurseHolic';
 const DONATE_RAZORPAY_URL = '';                  // optional; '' hides the secondary option
 
 // #14 — updated tier amounts (Chai ₹10, Snack ₹20, Treat ₹50).
@@ -122,7 +122,7 @@ function SupportModal({ onClose }) {
                 <Heart size={20} style={{ color: T.primary }} fill={T.primary} />
               </span>
               <div className="min-w-0">
-                <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>Keep NORCET Prep free</div>
+                <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>Keep NurseHolic free</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>Free {'\u00b7'} Ad-free {'\u00b7'} Always</div>
               </div>
             </div>
@@ -210,7 +210,7 @@ function SupportModal({ onClose }) {
               <div className="text-4xl mb-3">{'\uD83D\uDC99'}</div>
               <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>Thank you! {'\uD83D\uDC99'}</div>
               <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-                Your support means a lot {'\u2014'} it genuinely helps keep NORCET Prep free for everyone.
+                Your support means a lot {'\u2014'} it genuinely helps keep NurseHolic free for everyone.
               </div>
               <button onClick={onClose}
                       className="no-tap-highlight w-full mt-5 py-3 rounded-xl text-sm font-semibold active:scale-[0.99] transition"

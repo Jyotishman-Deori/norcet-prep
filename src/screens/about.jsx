@@ -90,7 +90,7 @@ function AboutScreen({ onBack, onNavigate }) {
               N
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-semibold leading-tight" style={{ color: T.ink }}>
-              NORCET Prep
+              NurseHolic
             </h1>
             <p className="text-sm md:text-base mt-2 leading-relaxed max-w-md mx-auto" style={{ color: T.inkSoft }}>
               Serious NORCET preparation — free, ad-free, and built to feel like exam day.
@@ -107,7 +107,7 @@ function AboutScreen({ onBack, onNavigate }) {
             </div>
             <div className="text-[13.5px] leading-relaxed" style={{ color: T.inkSoft }}>
               Most aspirants drown in PDFs — endless notes, no idea where they actually stand or
-              what to fix next. NORCET Prep replaces that with deliberate practice: real exam-style
+              what to fix next. NurseHolic replaces that with deliberate practice: real exam-style
               questions, a clear map of your syllabus, and revision that arrives exactly when your
               memory needs it.
             </div>
@@ -168,7 +168,7 @@ function AboutScreen({ onBack, onNavigate }) {
                   Built by one person, for all of you
                 </div>
                 <div className="text-[13.5px] leading-relaxed whitespace-pre-line" style={{ color: T.inkSoft }}>
-                  NORCET Prep isn’t a company — it’s one developer who watched nursing aspirants
+                  NurseHolic isn’t a company — it’s one developer who watched nursing aspirants
                   pay for coaching they couldn’t afford and decided the tools, at least, should be
                   free. Every question, drill and feature here exists because someone preparing for
                   NORCET asked for it.
@@ -241,7 +241,7 @@ function AboutScreen({ onBack, onNavigate }) {
             ))}
           </div>
           <div className="text-center text-[11px]" style={{ color: T.muted }}>
-            © 2026 NORCET Prep · Made with care in Assam, India
+            © 2026 NurseHolic · Made with care in Assam, India
           </div>
         </div>
       </PageContainer>

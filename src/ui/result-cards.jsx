@@ -432,7 +432,7 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       // --- brand ---
       ctx.fillStyle = '#FFFFFF';
       ctx.font = '700 64px Georgia, "Times New Roman", serif';
-      ctx.fillText('NORCET Prep', cx, 140);
+      ctx.fillText('NurseHolic', cx, 140);
       ctx.font = '500 28px system-ui, -apple-system, "Segoe UI", sans-serif';
       ctx.fillStyle = 'rgba(255,255,255,0.78)';
       ctx.fillText('Free nursing exam preparation', cx, 188);
@@ -498,7 +498,7 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       ctx.fillText(shareMotivation(pct), cx, 936);
 
       // --- footer url — refined pill, alone in its reserved zone ---
-      const urlText = (typeof window !== 'undefined' && window.location && window.location.host) || 'norcet-prep.vercel.app';
+      const urlText = (typeof window !== 'undefined' && window.location && window.location.host) || 'www.nurseholic.in';
       ctx.font = '600 28px Georgia, "Times New Roman", serif';
       const uw = ctx.measureText(urlText).width + 76;
       rr(cx - uw / 2, S - 114, uw, 58, 29);
@@ -536,19 +536,19 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
     try { blob = await paintCard(); }
     catch (e) { setStatus('error'); setTimeout(() => setStatus('idle'), 3000); return; }
 
-    const file = new File([blob], 'norcet-result.png', { type: 'image/png' });
+    const file = new File([blob], 'nurseholic-result.png', { type: 'image/png' });
     // #11 — inviting caption: a friendly challenge + the tappable app link.
     // Phase-1: this is the sharer's PERSONAL link (?ref=<id>&via=score) so the
     // install is credited to them; guests get a channel-only link.
     const appUrl = scoreUrl;
     const inviteLine = pct >= 80
-      ? `Just aced a ${quizType || 'practice'} session on NORCET Prep \u2014 ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
+      ? `Just aced a ${quizType || 'practice'} session on NurseHolic \u2014 ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
       : pct >= 50
         ? `Putting in the NORCET reps \u2014 ${safeCorrect}/${safeTotal} this round and climbing \uD83D\uDCAA Join me?`
         : `Every attempt counts \u2014 grinding NORCET prep one session at a time \uD83C\uDFAF Study with me?`;
     const shareData = {
       files: [file],
-      title: 'My NORCET Prep result',
+      title: 'My NurseHolic result',
       text: `${inviteLine}\nIt's free \u2014 tests, revision notes, PYQs & more: ${appUrl}`
     };
 
@@ -795,8 +795,8 @@ function ShareNudge({ pct = 0, totalAttempted = 0, sessionAttempted = 0, streak 
         kind: milestone.kind, value: milestone.value,
         url, displayUrl: displayAppUrl(), theme: T,
       });
-      const res = await shareOrSavePng(blob, 'norcet-milestone.png', {
-        title: 'NORCET Prep',
+      const res = await shareOrSavePng(blob, 'nurseholic-milestone.png', {
+        title: 'NurseHolic',
         text: `Free, no-ads AIIMS NORCET prep \u2014 try it: ${url}`,
       });
       setStatus(res === 'error' ? 'error' : 'done');
@@ -812,7 +812,7 @@ function ShareNudge({ pct = 0, totalAttempted = 0, sessionAttempted = 0, streak 
           <Share2 size={16} />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-medium" style={{ color: T.ink }}>Enjoying NORCET Prep?</div>
+          <div className="text-sm font-medium" style={{ color: T.ink }}>Enjoying NurseHolic?</div>
           <div className="text-xs mt-0.5" style={{ color: T.muted }}>Share it with a friend who's also preparing.</div>
         </div>
       </div>

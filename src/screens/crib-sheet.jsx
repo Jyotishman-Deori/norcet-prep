@@ -242,10 +242,10 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     // question/answer blocks, and the URL as a subtle footer — the shared
     // sheet doubles as a high-quality ambassador for the app.
     const RULE = '\u2500'.repeat(26);
-    const baseUrl = ((typeof window !== 'undefined' && window.location && window.location.host) || 'norcet-prep.vercel.app');
+    const baseUrl = ((typeof window !== 'undefined' && window.location && window.location.host) || 'www.nurseholic.in');
     const head = [
       `\u2727${RULE}\u2727`,
-      '      N O R C E T   P R E P',
+      '    N U R S E H O L I C',
       '         Crib Sheet',
       `\u2727${RULE}\u2727`,
       '',
@@ -266,7 +266,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     const foot = [
       items.length > 50 ? `\u2026and ${items.length - 50} more questions inside the app.` : null,
       RULE,
-      'NORCET Prep \u2014 Free nursing exam prep:',
+      'NurseHolic \u2014 Free NORCET exam prep:',
       'tests, revision notes, PYQs, dosage drills.',
       `\u27a4 ${baseUrl}`,
     ].filter(Boolean);

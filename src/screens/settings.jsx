@@ -570,18 +570,18 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           </>
         )}
 
-        {/* "Share NORCET Prep" is now its OWN labelled section, clearly
+        {/* "Share NurseHolic" is now its OWN labelled section, clearly
             separated from the Profile/Account card above (own header + section
             spacing). For guests the Reset action renders below this section. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share</div>
-        <Tip title="Share NORCET Prep" text="Your personal invite — link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
+        <Tip title="Share NurseHolic" text="Your personal invite — link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
               <Share2 size={18} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Share NORCET Prep</div>
+              <div className="font-medium" style={{ color: T.ink }}>Share NurseHolic</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 Your personal invite link, QR code &amp; WhatsApp share
               </div>
@@ -1007,7 +1007,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Heart size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.primary }}>Keep NORCET Prep free {'\u2615'}</div>
+              <div className="font-medium" style={{ color: T.primary }}>Keep NurseHolic free {'\u2615'}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 Free and ad-free {'\u00b7'} buy me a chai to help with server costs
               </div>

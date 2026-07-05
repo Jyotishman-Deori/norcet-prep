@@ -1,4 +1,4 @@
-# NORCET Prep
+# NurseHolic (formerly "NORCET Prep")
 
 A Progressive Web App for NORCET nursing exam practice. Vite + React frontend,
 Supabase for shared multi-user data, IndexedDB for per-device personal data.

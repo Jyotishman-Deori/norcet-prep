@@ -126,7 +126,7 @@ function brandHeader(ctx, cx, theme) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `700 62px ${SERIF}`;
-  ctx.fillText('NORCET Prep', cx, 138);
+  ctx.fillText('NurseHolic', cx, 138);
   ctx.font = `500 27px ${SANS}`;
   ctx.fillStyle = 'rgba(255,255,255,0.80)';
   ctx.fillText('Free AIIMS NORCET nursing prep \u2014 no ads', cx, 184);
@@ -179,7 +179,7 @@ export function paintBrandedQrCard({ url, displayUrl, socialProof = null, theme 
 
       // URL pill (flow-positioned below the caption)
       const pillTop = yBelow + 88;
-      pill(ctx, displayUrl || 'norcet-prep.vercel.app', cx, pillTop);
+      pill(ctx, displayUrl || 'www.nurseholic.in', cx, pillTop);
 
       // optional social-proof line, below the pill (clamped within the frame)
       if (socialProof) {
@@ -257,7 +257,7 @@ export function paintMilestoneCard({ kind = 'questions', value = 0, url, display
       ctx.fillText('Scan to try it free', 84, S - margin - 46);
       ctx.font = `600 28px ${SERIF}`;
       ctx.fillStyle = 'rgba(255,255,255,0.78)';
-      ctx.fillText(displayUrl || 'norcet-prep.vercel.app', 84, S - margin - 6);
+      ctx.fillText(displayUrl || 'www.nurseholic.in', 84, S - margin - 6);
 
       canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
     } catch (e) { reject(e); }
@@ -270,7 +270,7 @@ export async function shareOrSavePng(blob, filename, meta = {}) {
   if (!blob) return 'error';
   try {
     const file = new File([blob], filename, { type: 'image/png' });
-    const data = { files: [file], title: meta.title || 'NORCET Prep', ...(meta.text ? { text: meta.text } : {}) };
+    const data = { files: [file], title: meta.title || 'NurseHolic', ...(meta.text ? { text: meta.text } : {}) };
     if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(data)) {
       try { await navigator.share(data); return 'shared'; }
       catch (e) { return 'cancelled'; }   // user dismissed the sheet

@@ -271,7 +271,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const learn = [
     { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques \u2014 active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
     { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team \u2014 ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
-    { key: 'about', icon: Info, color: T.accent, label: 'About', tip: 'Our mission, how the app teaches, and the person building it.', sub: 'The story behind NORCET Prep', action: () => go('about', null, 'about') },
+    { key: 'about', icon: Info, color: T.accent, label: 'About', tip: 'Our mission, how the app teaches, and the person building it.', sub: 'The story behind NurseHolic', action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly
   // spaced rows replacing the old combined panel.)
@@ -396,7 +396,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
               <GraduationCap size={18} color="#FFF" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-base font-semibold leading-tight" style={{ color: T.ink }}>NORCET prep</div>
+              <div className="font-display text-base font-semibold leading-tight" style={{ color: T.ink }}>NurseHolic</div>
               <div className="text-[11px]" style={{ color: T.muted }}>Menu</div>
             </div>
           </div>

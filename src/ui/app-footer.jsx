@@ -67,7 +67,7 @@ export default function AppFooter({ onNavigate }) {
                 N
               </div>
               <span className="font-display text-base font-semibold" style={{ color: T.ink }}>
-                NORCET <span style={{ color: T.primary }}>Prep</span>
+                Nurse<span style={{ color: T.primary }}>Holic</span>
               </span>
             </div>
             <div className="text-[12px] leading-relaxed" style={{ color: T.muted }}>
@@ -97,7 +97,7 @@ export default function AppFooter({ onNavigate }) {
         </div>
 
         <div className="mt-10 pt-6 text-[12px]" style={{ borderTop: `1px solid ${T.borderSoft}`, color: T.muted }}>
-          © 2026 NORCET Prep. All rights reserved.
+          © 2026 NurseHolic. All rights reserved.
         </div>
       </div>
     </footer>
