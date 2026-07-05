@@ -290,6 +290,36 @@ function tooMany(retryAfter: number): Response {
   );
 }
 
+// ---- OWNER ERROR ALERTS (owner request 2026-07-05) --------------------
+// When a client crash group lands in errlog:, email the owner via Resend.
+// INERT until the secret exists:  supabase secrets set RESEND_API_KEY="re_…"
+// Hard-capped at 2 emails/hour via the shared rate_hit RPC (bucket
+// 'owner-alert'), so a crash loop across many devices can never flood the
+// inbox. Best-effort by contract: any failure here must never affect the
+// errlog write itself. FROM uses Resend's shared onboarding address until
+// the nurseholic.in domain is verified (then set EMAIL_FROM).
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const OWNER_ALERT_EMAIL = Deno.env.get("OWNER_ALERT_EMAIL") || "jyotishmandeori5@gmail.com";
+const ALERT_FROM = Deno.env.get("EMAIL_FROM") || "NORCET Prep <onboarding@resend.dev>";
+async function alertOwnerOnError(key: string): Promise<void> {
+  if (!RESEND_API_KEY) return;
+  const rl = await rateHit("owner-alert", "errlog", 2, 60 * 60);
+  if (!rl.allowed) return;
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: ALERT_FROM,
+      to: [OWNER_ALERT_EMAIL],
+      subject: "NORCET Prep: a client error was recorded",
+      text: `A crash/error group was just written to the error log.\n\n` +
+        `Group key: ${key}\n\n` +
+        `Open the admin app → Crash reports for the details and affected count.\n` +
+        `(You get at most 2 of these emails per hour, no matter how many users hit errors.)`,
+    }),
+  });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -348,7 +378,11 @@ Deno.serve(async (req: Request) => {
         if (!admin) return json({ error: "Forbidden: admin only" }, 403);
         return await deleteRow(key);
       }
-      return await writeRow(key, String(body.value ?? ""));
+      const res = await writeRow(key, String(body.value ?? ""));
+      // Owner alert — inert until RESEND_API_KEY is set; ≤2/hour; failure
+      // can never affect the write result (see alertOwnerOnError).
+      try { await alertOwnerOnError(key); } catch (_) { /* best-effort */ }
+      return res;
     }
 
     // 4c) Trending counters (free-tier "trending" engine). One rolling blob per

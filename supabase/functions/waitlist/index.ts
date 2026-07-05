@@ -47,23 +47,43 @@ const MILESTONE = 3;                        // spec §4 — 3 referrals = fast-t
 const MAX_APPROVE_IDS = 200;
 const APP_ORIGIN = "https://www.nurseholic.in"; // claim links always target the student app
 
-// ---- EMAIL PLACEHOLDER (owner decision 2026-07-05) --------------------
-// The app has NO email-sending service yet. When the owner picks a provider
-// (e.g. Resend / Loops — both have free tiers; mind daily send caps):
-//   1. supabase secrets set EMAIL_API_KEY="<provider key>"
-//   2. Replace the TODO below with the provider's one POST call.
-//   3. Redeploy: supabase functions deploy waitlist --no-verify-jwt
-// Until then this is a safe no-op: admin-approve reports emailed:false per
-// row and the admin panel's MANUAL WhatsApp nudge stays the delivery channel
-// (it should remain even after email exists — India-first reach).
+// ---- APPROVAL INVITE EMAIL — Resend (owner picked it 2026-07-05) -------
+// INERT until:  supabase secrets set RESEND_API_KEY="re_…"
+// FROM uses Resend's shared onboarding address until nurseholic.in is
+// verified in the Resend dashboard (then set EMAIL_FROM, e.g.
+// "NORCET Prep <noreply@nurseholic.in>"). NOTE Resend's rule: with no
+// verified domain, delivery works ONLY to the Resend account owner's own
+// address — so student invites stay effectively off until the DNS step,
+// while owner alerts (kv-write) work immediately. Best-effort by contract:
+// a send failure never blocks the approval; the admin panel's MANUAL
+// WhatsApp nudge stays the primary delivery channel (India-first reach).
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
+const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "NORCET Prep <onboarding@resend.dev>";
+const SUPPORT_REPLY_TO = Deno.env.get("SUPPORT_EMAIL") || "jyotishmandeori5@gmail.com";
 async function sendApprovalInvite(
-  _email: string, _claimUrl: string, _expiresAtIso: string,
+  email: string, claimUrl: string, _expiresAtIso: string,
 ): Promise<{ sent: boolean; reason?: string }> {
-  const key = Deno.env.get("EMAIL_API_KEY") ?? "";
-  if (!key) return { sent: false, reason: "email-not-configured" };
-  // TODO(email): POST { to: _email, claimUrl: _claimUrl, expires: _expiresAtIso }
-  // to the chosen provider's transactional-send endpoint.
-  return { sent: false, reason: "email-not-implemented" };
+  if (!RESEND_API_KEY) return { sent: false, reason: "email-not-configured" };
+  try {
+    const r = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: EMAIL_FROM,
+        to: [email],
+        reply_to: SUPPORT_REPLY_TO,
+        subject: "Your NORCET Prep seat is ready 🎉",
+        text: `Your seat on the NORCET Prep waitlist just opened!\n\n` +
+          `Claim it here (one-time link):\n${claimUrl}\n\n` +
+          `Your seat is held for 48 hours — after that it goes to the next student in line.\n\n` +
+          `See you inside,\nNORCET Prep · www.nurseholic.in`,
+      }),
+    });
+    if (!r.ok) return { sent: false, reason: `http-${r.status}` };
+    return { sent: true };
+  } catch {
+    return { sent: false, reason: "network" };
+  }
 }
 
 const cors = {

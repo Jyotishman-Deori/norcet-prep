@@ -18,6 +18,12 @@
 export const LEGAL_VERSION = 4;       // v4 (July 2026): named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
 export const LEGAL_UPDATED = 'July 2026';   // last reviewed
 
+// Support contact — INTERIM personal address during the testing phase (owner
+// decision 2026-07-05). Swap to a custom-domain mailbox (e.g.
+// support@nurseholic.in) at launch: this one constant is the only place to
+// change (legal contact sections + the About screen's email row read it).
+export const SUPPORT_EMAIL = 'jyotishmandeori5@gmail.com';
+
 export const LEGAL = {
   privacy: {
     title: 'Privacy Policy',
@@ -82,7 +88,7 @@ export const LEGAL = {
       },
       {
         h: 'Contact',
-        body: 'Questions about your data or a deletion request? Use Settings → Send feedback to reach the developer directly.',
+        body: `Questions about your data or a deletion request? Use Settings → Send feedback to reach the developer directly, or email ${SUPPORT_EMAIL}.`,
       },
       {
         h: 'Changes',
@@ -195,7 +201,7 @@ export const LEGAL = {
       },
       {
         h: 'Contact',
-        body: 'For any billing question use Settings → Send feedback. Include the date and amount of the charge so we can find it quickly.',
+        body: `For any billing question use Settings → Send feedback or email ${SUPPORT_EMAIL}. Include the date and amount of the charge so we can find it quickly.`,
       },
     ],
   },

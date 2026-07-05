@@ -10018,3 +10018,37 @@ grants = existing admin Premium tool (ops, not code).
 7. TRADEMARK ™ (ops, from the growth spec §13.3) — run the free IP-India
    wordmark search (classes 9/41/42) before heavy marketing of the name;
    ™ symbol + dated (c) footer are free to add now; paid filing deferred.
+
+# ---------------------------------------------------------------------
+# (2026-07-05, later) EMAIL = RESEND + owner decisions on the register
+# ---------------------------------------------------------------------
+
+Owner decisions on the not-in-the-app-yet register, same day:
+
+1. EMAIL SERVICE PICKED: Resend (free 3k/mo, 100/day — plenty at this
+   scale). CODE IS LIVE AND INERT until `supabase secrets set
+   RESEND_API_KEY="re_..."`:
+   - waitlist fn sendApprovalInvite() now really POSTs to Resend
+     (from EMAIL_FROM, default "NORCET Prep <onboarding@resend.dev>";
+     reply_to = support email). Resend rule: until the nurseholic.in
+     domain is verified in their dashboard, delivery works ONLY to the
+     account owner's own address -> student invites effectively stay off
+     until the DNS step; WhatsApp nudge remains primary.
+   - OWNER ALERTING: kv-write now emails the owner when a client crash
+     group lands in errlog: (subject "a client error was recorded"),
+     hard-capped 2/hour via rate_hit bucket 'owner-alert', best-effort,
+     inert without the key. Recipient default jyotishmandeori5@gmail.com
+     (override secret OWNER_ALERT_EMAIL).
+   REMAINING OWNER STEPS: create resend.com account with the Gmail ->
+   API key -> hand over for `supabase secrets set` (fns pick up secrets
+   without redeploy). LATER: verify nurseholic.in domain (DNS records)
+   -> set EMAIL_FROM -> student invites go live. Key pasted in chat goes
+   on the launch rotation list.
+2. SUPPORT MAILBOX (INTERIM): owner's personal jyotishmandeori5@gmail.com,
+   centralized as SUPPORT_EMAIL in src/lib/legal.js (used by the privacy +
+   refunds Contact sections and the About screen's new "Email us" mailto
+   row). Swap to support@nurseholic.in at launch = edit that ONE constant.
+7. TRADEMARK: owner ran the clearance search for "nurseholic" — FREE, no
+   conflicts. OPEN QUESTION for launch: the app brands as "NORCET Prep"
+   but the domain/mark checked is "nurseholic" — decide which name carries
+   the (tm) + dated (c) footer before heavy marketing.

@@ -14,12 +14,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   HeartHandshake, Target, RotateCcw, Timer, Gamepad2, MessageCircle,
-  Share2, Coffee, ChevronRight, ShieldCheck, Sparkles,
+  Share2, Coffee, ChevronRight, ShieldCheck, Sparkles, Mail,
 } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, TopBar, requestFeedback, requestSupport } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { prefersReducedMotion } from '../lib/juice.js';
+import { SUPPORT_EMAIL } from '../lib/legal.js';
 import { TOPICS } from '../data/seed.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
 
@@ -209,6 +210,7 @@ function AboutScreen({ onBack, onNavigate }) {
           <Card className="p-0 overflow-hidden mb-4">
             {[
               { Icon: MessageCircle, label: 'Send feedback', sub: 'Reach the developer directly — every message is read', act: () => requestFeedback({ screen: 'About' }) },
+              { Icon: Mail, label: 'Email us', sub: SUPPORT_EMAIL, act: () => { try { window.location.href = `mailto:${SUPPORT_EMAIL}`; } catch (e) {} } },
               { Icon: Sparkles, label: 'FAQ & help', sub: 'Answers to common questions, ask your own', act: () => onNavigate && onNavigate({ screen: 'faq' }) },
             ].map(({ Icon, label, sub, act }, i) => (
               <button key={label} onClick={act}
