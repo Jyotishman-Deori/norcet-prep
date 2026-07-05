@@ -45,6 +45,26 @@ const TURNSTILE_SECRET = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
 const CLAIM_TTL_MS = 48 * 60 * 60 * 1000;   // spec §6.3 — 48h claim window
 const MILESTONE = 3;                        // spec §4 — 3 referrals = fast-track review
 const MAX_APPROVE_IDS = 200;
+const APP_ORIGIN = "https://www.nurseholic.in"; // claim links always target the student app
+
+// ---- EMAIL PLACEHOLDER (owner decision 2026-07-05) --------------------
+// The app has NO email-sending service yet. When the owner picks a provider
+// (e.g. Resend / Loops — both have free tiers; mind daily send caps):
+//   1. supabase secrets set EMAIL_API_KEY="<provider key>"
+//   2. Replace the TODO below with the provider's one POST call.
+//   3. Redeploy: supabase functions deploy waitlist --no-verify-jwt
+// Until then this is a safe no-op: admin-approve reports emailed:false per
+// row and the admin panel's MANUAL WhatsApp nudge stays the delivery channel
+// (it should remain even after email exists — India-first reach).
+async function sendApprovalInvite(
+  _email: string, _claimUrl: string, _expiresAtIso: string,
+): Promise<{ sent: boolean; reason?: string }> {
+  const key = Deno.env.get("EMAIL_API_KEY") ?? "";
+  if (!key) return { sent: false, reason: "email-not-configured" };
+  // TODO(email): POST { to: _email, claimUrl: _claimUrl, expires: _expiresAtIso }
+  // to the chosen provider's transactional-send endpoint.
+  return { sent: false, reason: "email-not-implemented" };
+}
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -637,7 +657,7 @@ Deno.serve(async (req: Request) => {
       const ids = (Array.isArray(body.ids) ? body.ids : []).map(String).filter((s: string) => UUID_RE.test(s)).slice(0, MAX_APPROVE_IDS);
       if (!ids.length) return json({ error: "No valid ids" }, 400);
       const expiresAt = new Date(now + CLAIM_TTL_MS).toISOString();
-      const approved: { id: string; email: string; whatsapp: string; claimToken: string; expiresAt: string }[] = [];
+      const approved: { id: string; email: string; whatsapp: string; claimToken: string; expiresAt: string; emailed: boolean }[] = [];
       for (const id of ids) {
         const claimToken = crypto.randomUUID();
         const changed = await patchRows(
@@ -645,7 +665,15 @@ Deno.serve(async (req: Request) => {
           { status: "approved", claim_token: claimToken, approval_expires_at: expiresAt, updated_at: nowIso },
         );
         if (changed && changed.length) {
-          approved.push({ id, email: changed[0].email, whatsapp: changed[0].whatsapp_num, claimToken, expiresAt });
+          // Email invite — placeholder no-op until a provider is wired (see
+          // sendApprovalInvite). Best-effort: a send failure never blocks approval.
+          let emailed = false;
+          try {
+            emailed = (await sendApprovalInvite(
+              changed[0].email, `${APP_ORIGIN}/?claim=${claimToken}`, expiresAt,
+            )).sent;
+          } catch { /* best-effort */ }
+          approved.push({ id, email: changed[0].email, whatsapp: changed[0].whatsapp_num, claimToken, expiresAt, emailed });
         }
       }
       invalidateSnapshot();

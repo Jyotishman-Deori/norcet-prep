@@ -9985,3 +9985,36 @@ STATUS: frontend pushed dark; waitlist + auth-secure fns deployed; INERT
 until the owner runs supabase/waitlist.sql and flips waitlist.collect
 (testing/hype phase) and waitlist.gate (launch day). Founding-member premium
 grants = existing admin Premium tool (ops, not code).
+
+# ---------------------------------------------------------------------
+# (2026-07-05) NOT-IN-THE-APP-YET REGISTER (owner asked to track these)
+# ---------------------------------------------------------------------
+# Owner instruction: whenever a task assumes something the app doesn't have,
+# put a placeholder, tell the owner, and log it here. Running list:
+
+1. TRANSACTIONAL EMAIL — the app cannot send email at all. Placeholder is
+   LIVE: supabase/functions/waitlist/index.ts sendApprovalInvite() no-ops
+   until EMAIL_API_KEY is set + one provider POST is filled in (admin-approve
+   already threads email + claim link through it and reports emailed:false).
+   Free-tier options when ready: Resend (free, ~100/day cap) or Loops
+   (free 1k contacts / 4k sends-month, no daily cap — better for batch
+   drops). Needs a FROM domain (see 2). Other future uses: password-reset
+   by email (signup already stores an OPTIONAL email in profile_secrets —
+   currently dormant, nothing ever sends to it), payment receipts.
+2. CUSTOM-DOMAIN MAILBOX (e.g. support@nurseholic.in) — no support/legal
+   email exists; contact today = in-app feedback only. Wanted at launch for
+   the DPDP grievance contact on the legal pages AND as the FROM address
+   for item 1.
+3. PAYMENT GATEWAY — premium is a placeholder (already tracked); Razorpay/
+   similar at launch flips profile.premium via the subscription fn.
+4. OWNER ALERTING — crashes/errors land in errlog + admin dashboard, but
+   NOTHING notifies the owner's phone. Cheap later: free Sentry tier, or a
+   self-push via the existing push-broadcast plumbing.
+5. URL ROUTING / DEEP LINKS (refactor item A12) — links can't open a
+   specific screen (only ?ref/?claim/?join params work); a shared "join the
+   waitlist" URL lands on the app root, not the waitlist screen.
+6. SOCIALS (already tracked as launch item 2d) — footer/About columns
+   deliberately empty until channels exist.
+7. TRADEMARK ™ (ops, from the growth spec §13.3) — run the free IP-India
+   wordmark search (classes 9/41/42) before heavy marketing of the name;
+   ™ symbol + dated (c) footer are free to add now; paid filing deferred.
