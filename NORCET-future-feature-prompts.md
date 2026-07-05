@@ -10052,3 +10052,59 @@ Owner decisions on the not-in-the-app-yet register, same day:
    conflicts. OPEN QUESTION for launch: the app brands as "NORCET Prep"
    but the domain/mark checked is "nurseholic" — decide which name carries
    the (tm) + dated (c) footer before heavy marketing.
+
+# ---------------------------------------------------------------------
+# (2026-07-06) BRAND RENAME "NORCET Prep" -> "NurseHolic" + Resend LIVE
+# ---------------------------------------------------------------------
+
+Owner resolved the open trademark question above by DECISION: the brand is
+"NurseHolic" everywhere the app names itself. Done in commit 92df00b
+(dev = main, pushed; Vercel auto-deploys prod):
+
+- STUDENT UI: every masthead/eyebrow, About (title/mission/story/(c) footer),
+  Settings (Share + Keep-free rows), share-app card + screen, result cards +
+  milestone card + QR canvas brand text, install/support/home nudges, nav
+  drawer header + About subtitle, waitlist screen hero + legal modal, family
+  plan share title, admin push composer preview default.
+- SHELL: index.html <title> ("NurseHolic — NORCET Prep") + apple-web-app-title
+  ("NurseHolic"); PWA manifest name + short_name -> "NurseHolic"; admin.html
+  title + AdminApp splash -> "NurseHolic Admin"; package.json name -> nurseholic;
+  push-sw.js default notification title.
+- SERVER/EMAIL: waitlist + kv-write Edge Fn email from/subject strings; api/
+  notify-all + send-reminders push titles/bodies. Both fns REDEPLOYED
+  (--no-verify-jwt).
+- CONTENT: help.json Share-app copy; CONTENT_VERSION 12 -> 13 (busts the
+  IndexedDB content cache so the new copy actually appears).
+- ORIGIN FALLBACKS: hardcoded norcet-prep.vercel.app defaults (referral.js
+  PROD_ORIGIN, qr-canvas, result-cards, crib-sheet) -> www.nurseholic.in.
+- DELIBERATELY KEPT "NORCET": anywhere it names the EXAM, not the app —
+  About mission/taglines ("Serious NORCET preparation"), share ad copy
+  ("AIIMS NORCET prep"), knowledge-map root node label, PYQ source labels,
+  study-methods copy. NORCET is the exam; NurseHolic is the product.
+
+RESEND NOW LIVE (no longer inert): owner created the resend.com account with
+the Gmail and handed over the API key; `supabase secrets set RESEND_API_KEY`
+done. Verified end-to-end with ONE real test send to jyotishmandeori5@gmail.com
+(Resend msg id a521f3c0-8020-4692-a648-a5ac2d90ca9b, HTTP 200) -> owner crash
+alerts are now delivering. ⚠ RESEND_API_KEY was pasted in chat -> on the
+launch key-rotation list. Student INVITE emails still gated on the DNS step
+(verify nurseholic.in in Resend -> set EMAIL_FROM); WhatsApp nudge stays the
+primary invite channel until then.
+
+STILL OPEN (told owner, logged here 2026-07-06):
+- SOCIAL LOGIN (Google / Apple / email sign-in) requested. NOT built — it's a
+  real architectural change, not a string swap. This app uses CUSTOM HMAC auth
+  (auth-secure -> profile_secrets, displayName + passphrase), NOT Supabase Auth,
+  so there is no OAuth surface to flip on. Adding it means either (a) layering
+  Supabase Auth / an OAuth broker beside the existing identity model and
+  reconciling profile.uid, or (b) a custom Google Identity Services flow.
+  COST/CONSTRAINT FLAGS: "Sign in with Apple" REQUIRES a paid Apple Developer
+  account (~$99/yr) — conflicts with the free-tier-only rule; Google sign-in is
+  free. Recommend: plan Google-first (+ keep the current name/passphrase as the
+  no-account-needed path), defer Apple until iOS distribution is real. Needs its
+  own design pass before any code.
+- PROJECT/DASHBOARD RENAME (Vercel project `norcet-prep`, Supabase project
+  `Norcet-prep`, admin project `norcet-admin`) -> "nurseholic" for consistency.
+  These are DASHBOARD-label changes, owner-side, cosmetic — they do NOT change
+  the app, the code, or the .vercel/.supabase project *refs* the tooling pins,
+  so nothing in-repo has to move. Safe to do anytime; low priority.
