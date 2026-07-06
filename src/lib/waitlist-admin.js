@@ -50,3 +50,7 @@ export function waitlistAdminReject(ids) { return call('admin-reject', { ids });
 
 // → { ok, expired:n }
 export function waitlistAdminExpireSweep() { return call('admin-expire-sweep', {}); }
+
+// Send a SAMPLE invite email through the real Resend path (nothing is written
+// to the table). email: string → { ok, sent, reason, from, to }.
+export function waitlistAdminTestInvite(email) { return call('admin-test-invite', { email }); }

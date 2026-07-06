@@ -16,7 +16,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   RefreshCw, Users, ShieldAlert, Check, X, MessageCircle, Copy,
-  Clock, Ticket, ChevronDown, AlertTriangle, Trophy,
+  Clock, Ticket, ChevronDown, AlertTriangle, Trophy, Send, Mail,
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar, requestConfirm } from './primitives.jsx';
@@ -28,6 +28,7 @@ import {
 } from '../lib/waitlist.js';
 import {
   waitlistAdminList, waitlistAdminApprove, waitlistAdminReject, waitlistAdminExpireSweep,
+  waitlistAdminTestInvite,
 } from '../lib/waitlist-admin.js';
 
 const TABS = [
@@ -55,6 +56,11 @@ export default function AdminWaitlist({ onBack }) {
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);     // {ok, text}
   const [copiedId, setCopiedId] = useState(null);
+  // Test-invite diagnostic (send a sample approval email through the real
+  // Resend path to confirm the from-domain is verified end-to-end).
+  const [testEmail, setTestEmail] = useState('');
+  const [testBusy, setTestBusy] = useState(false);
+  const [testResult, setTestResult] = useState(null); // {ok, text}
 
   const load = async () => {
     setSpin(true);
@@ -174,6 +180,28 @@ export default function AdminWaitlist({ onBack }) {
       setCopiedId(row.id);
       setTimeout(() => setCopiedId(null), 1500);
     } catch (e) {}
+  };
+
+  const runTestInvite = async () => {
+    if (testBusy) return;
+    const em = testEmail.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { setTestResult({ ok: false, text: 'Enter a valid email address.' }); return; }
+    setTestBusy(true);
+    setTestResult(null);
+    const r = await waitlistAdminTestInvite(em);
+    setTestBusy(false);
+    if (r && r.ok && r.sent) {
+      setTestResult({ ok: true, text: `Sent ✓ Check ${r.to} — it should arrive from ${r.from}.` });
+    } else if (r && r.ok && !r.sent) {
+      const why = r.reason === 'email-not-configured'
+        ? 'RESEND_API_KEY isn’t set on the server.'
+        : (r.reason && r.reason.startsWith('http-4'))
+          ? `Resend rejected it (${r.reason}) — the sending domain isn’t verified yet, or EMAIL_FROM points at an unverified address.`
+          : `Not sent (${r.reason || 'unknown'}).`;
+      setTestResult({ ok: false, text: why });
+    } else {
+      setTestResult({ ok: false, text: (r && (r.error || r.reason)) || 'Test failed.' });
+    }
   };
 
   const kpis = [
@@ -398,6 +426,43 @@ export default function AdminWaitlist({ onBack }) {
                 </Card>
               );
             })}
+
+            {/* Diagnostic: send a sample invite through the REAL Resend path
+                to confirm the from-domain is verified end-to-end. Writes
+                nothing to the table. */}
+            <Card className="p-4 mb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <Mail size={15} style={{ color: T.primary }} />
+                <div className="font-medium text-sm" style={{ color: T.ink }}>Test invite email</div>
+              </div>
+              <div className="text-[11px] mb-2.5" style={{ color: T.muted }}>
+                Sends a sample approval email (nothing is saved). Use it to confirm invites deliver from your verified domain.
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="email" value={testEmail} onChange={e => setTestEmail(e.target.value)}
+                  placeholder="you@example.com" autoComplete="email" inputMode="email"
+                  onKeyDown={e => { if (e.key === 'Enter') runTestInvite(); }}
+                  className="flex-1 min-w-0 rounded-xl px-3 py-2.5 text-sm"
+                  style={{ background: T.surfaceWarm, color: T.ink, border: `1.5px solid ${T.border}` }} />
+                <button onClick={runTestInvite} disabled={testBusy}
+                        className="no-tap-highlight px-4 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition inline-flex items-center gap-1.5 flex-shrink-0"
+                        style={{ background: T.primary, color: '#FFF', opacity: testBusy ? 0.7 : 1 }}>
+                  <Send size={14} /> {testBusy ? 'Sending…' : 'Send'}
+                </button>
+              </div>
+              {testResult && (
+                <div className="rounded-xl px-3 py-2.5 mt-2 flex items-start gap-2"
+                     style={testResult.ok
+                       ? { background: T.successSoft, border: `1px solid ${T.success}40` }
+                       : { background: T.errorSoft, border: `1px solid ${T.error}40` }}>
+                  {testResult.ok
+                    ? <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
+                    : <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" style={{ color: T.error }} />}
+                  <div className="text-[12px] leading-relaxed font-medium" style={{ color: testResult.ok ? T.success : T.error }}>{testResult.text}</div>
+                </div>
+              )}
+            </Card>
 
             {/* Hygiene: free unclaimed seats (also happens lazily on access). */}
             {(counts.approved || 0) > 0 && (

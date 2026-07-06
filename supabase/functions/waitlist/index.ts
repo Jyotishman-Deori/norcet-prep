@@ -742,6 +742,22 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, expired: changed ? changed.length : 0 });
     }
 
+    // ADMIN-TEST-INVITE — send a SAMPLE approval email to a chosen address
+    // through the EXACT real path (sendApprovalInvite → Resend, same EMAIL_FROM
+    // + RESEND_API_KEY the live approvals use). Writes nothing to the table.
+    // Surfaces the provider result so the owner can confirm end-to-end:
+    //   { sent:true }                       → delivered from the verified domain
+    //   { sent:false, reason:'email-not-configured' } → RESEND_API_KEY unset
+    //   { sent:false, reason:'http-403' }   → the from-domain isn't verified yet
+    if (action === "admin-test-invite") {
+      const email = normalizeWaitlistEmail(body.email).slice(0, 254);
+      if (!isValidEmail(email)) return json({ ok: false, reason: "invalid-email" });
+      const sampleExpiry = new Date(now + CLAIM_TTL_MS).toISOString();
+      const result = await sendApprovalInvite(email, `${APP_ORIGIN}/?claim=test-${crypto.randomUUID()}`, sampleExpiry);
+      // Echo the from-address in play so the UI can show what it sent AS.
+      return json({ ok: true, sent: result.sent, reason: result.reason ?? null, from: EMAIL_FROM, to: email });
+    }
+
     return json({ error: `Unknown action: ${action}` }, 400);
   } catch (e) {
     return json({ error: String((e as Error)?.message ?? e) }, 500);
