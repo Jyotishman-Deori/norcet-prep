@@ -10306,3 +10306,36 @@ deployed; client id verified in the live admin bundle.
 to the Google OAuth client's Authorized JavaScript origins, or the admin
 Google button will error on that origin. Email login already worked there
 (shared AuthScreen + lookup-by-email).
+
+# ---------------------------------------------------------------------
+# (2026-07-07, later) ADMIN 2FA (TOTP) + staff passphrase + infra confirms
+# ---------------------------------------------------------------------
+
+Owner confirmed: admin-roles.sql RUN (roles live — screenshot showed grouped
+Owner card + Nancy Luis Co-Admin); Resend domain VERIFIED (real send from
+noreply@send.nurseholic.in succeeded, id 38c06173); admin.nurseholic.in live;
+Google OAuth JS origins updated (owner also added a redirect URI — HARMLESS
+but UNUSED: GIS token flow has no callback path; can be deleted anytime).
+Codebase sweep for norcet-admin.vercel.app: zero functional refs (only the
+Vercel PROJECT name pin in post-admin-build.mjs — keep until project rename).
+
+SHIPPED 955c2ed (admin-manage deployed; admin app deployed):
+
+1. TOTP 2FA on the admin panel (Google Authenticator, free, no SDK):
+   - supabase/admin-2fa.sql ⚠ OWNER MUST RUN: profile_secrets.totp_secret.
+   - admin-manage: WebCrypto HMAC-SHA1 TOTP; check-admin returns totp status;
+     totp-enroll (otpauth:// URI shown ONCE; confirmed secrets can't be
+     silently re-keyed) / totp-verify (±1 step; first valid code confirms) /
+     totp-reset (OWNER only, audited — the lost-phone escape hatch).
+   - src/ui/admin-2fa.jsx: QR enrolment + per-browser-session 6-digit gate
+     (sessionStorage; sign-out re-locks). EVERY staff login now walks
+     through enrol-once-then-code-per-session. Scope: gates the PORTAL;
+     broker calls stay token+role gated.
+2. STAFF PASSPHRASE SPLIT: new STAFF_PASSPHRASE secret (owner picked
+   "norcet-boss" — pasted in chat → rotation list). admin-manage staff
+   writes verify the key BY ACTOR ROLE: owner → ADMIN_PASSPHRASE (unchanged,
+   never shared), co-admins → STAFF_PASSPHRASE. UI placeholder adapts.
+
+⚠ NOTE: until admin-2fa.sql is run, totp-enroll errors ("has admin-2fa.sql
+been run?") and the enrolment screen blocks the panel — run the SQL right
+after deploy. 2FA + roles both live entirely on free tiers.
