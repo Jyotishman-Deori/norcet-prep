@@ -21,6 +21,7 @@ import {
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import TurnstileWidget, { isTurnstileEnabled } from '../ui/turnstile.jsx';
+import GoogleSignInButton, { isGoogleSignInEnabled } from '../ui/google-signin.jsx';
 import { fontStyles } from '../lib/font-styles.js';
 import { KEYS } from '../lib/keys.js';
 import * as kvStorage from '../storage';
@@ -28,7 +29,7 @@ import { raceStorage, safeStorage } from '../lib/safe-storage.js';
 import { normalizeProfileId } from '../lib/profile-crypto.js';
 import {
   createProfile, authenticateProfile, recoverPasswordWithDob,
-  getRecoveryQuestion, recoverPasswordWithAnswer, saveSession
+  getRecoveryQuestion, recoverPasswordWithAnswer, saveSession, googleAuth
 } from '../lib/profiles.js';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
 import { USERNAME_MAX, PASSWORD_MAX } from '../lib/auth-limits.js';
@@ -65,6 +66,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
   // and isTurnstileEnabled() is false, so submit is never gated on it.
   const [captchaToken, setCaptchaToken] = useState(null);
   const turnstileRef = useRef(null);
+  // Google Sign-In: a first-time Google user has no linked profile yet, so
+  // the server hands back a suggested display name + verified email instead
+  // of creating an account; this state drives the "pick a name to finish"
+  // sub-step (mode stays 'create', password/security-question fields hide).
+  const [googleNewUser, setGoogleNewUser] = useState(null); // { suggestedName, email } | null
+  const [googleIdToken, setGoogleIdToken] = useState(null);
   // Forgot-password recovery flow lives inline (no separate screen). It is now
   // TWO steps: 'identify' (enter name → look up the recovery factor) then
   // 'verify' (answer the question, or DOB for legacy, + set a new password).
@@ -163,6 +170,39 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     resetCaptcha();
   };
 
+  // Fired by GoogleSignInButton with the signed GIS ID token. Either logs the
+  // caller straight in (an account is already linked to this Google account)
+  // or drops them into the Create tab's "pick a display name" sub-step.
+  const handleGoogleCredential = async (idToken) => {
+    if (working) return;
+    setError(null);
+    setWorking(true);
+    try {
+      const result = await googleAuth(idToken);
+      if (result.newGoogleUser) {
+        setGoogleIdToken(idToken);
+        setGoogleNewUser({ suggestedName: result.suggestedName, email: result.email });
+        setMode('create');
+        setDisplayName(result.suggestedName || '');
+        setEmail(result.email || '');
+      } else {
+        await saveSession({ profileId: result.profile.id });
+        onAuthed(result.profile);
+      }
+    } catch (e) {
+      setError(e.message || 'Google sign-in failed');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  const cancelGoogleNewUser = () => {
+    setGoogleNewUser(null);
+    setGoogleIdToken(null);
+    setDisplayName('');
+    setEmail('');
+  };
+
   const handleSubmit = async () => {
     if (working) return;
     setError(null);
@@ -220,7 +260,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
 
     // ---- Create / Login ----
     if (!displayName.trim()) { setError('Enter a display name'); return; }
-    if (!password) { setError('Enter a password'); return; }
+    if (!googleNewUser && !password) { setError('Enter a password'); return; }
     if (mode === 'create') {
       // Community moderation: names show on the leaderboard and FAQ threads —
       // profanity (en/hi/hinglish/assamese) is blocked at the door.
@@ -228,8 +268,10 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         setError('That display name contains a word we can’t show publicly — pick another.');
         return;
       }
-      if (!securityQuestion) { setError('Pick a security question'); return; }
-      if (!securityAnswer.trim()) { setError('Type an answer to your security question'); return; }
+      if (!googleNewUser) {
+        if (!securityQuestion) { setError('Pick a security question'); return; }
+        if (!securityAnswer.trim()) { setError('Type an answer to your security question'); return; }
+      }
     }
     setWorking(true);
     try {
@@ -237,13 +279,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
       if (mode === 'create') {
         profile = await createProfile({
           displayName,
-          password,
-          securityQuestion,
-          securityAnswer,
-          email,
+          password: googleNewUser ? undefined : password,
+          securityQuestion: googleNewUser ? undefined : securityQuestion,
+          securityAnswer: googleNewUser ? undefined : securityAnswer,
+          email: googleNewUser ? googleNewUser.email : email,
           importData: (importExisting && legacyData) ? legacyData : undefined,
           captchaToken,
-          claimToken
+          claimToken,
+          googleIdToken: googleNewUser ? googleIdToken : undefined
         });
         // One-time migration: after first profile creation on this device,
         // wipe legacy data so subsequent profiles on the same device don't see it.
@@ -252,6 +295,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         profile = await authenticateProfile(displayName, password, captchaToken);
       }
       await saveSession({ profileId: profile.id });
+      setGoogleNewUser(null);
+      setGoogleIdToken(null);
       onAuthed(profile);
     } catch (e) {
       setError(e.message || 'Something went wrong');
@@ -276,7 +321,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     || (captchaRequired && !captchaToken)
     || (inRecoveryIdentify ? false
         : inRecoveryVerify ? (!newPassword || (recoveryMethod === 'dob' ? !dob : !securityAnswer.trim()))
-        : mode === 'create' ? (!password || !securityQuestion || !securityAnswer.trim())
+        : mode === 'create' ? (googleNewUser ? false : (!password || !securityQuestion || !securityAnswer.trim()))
         : !password);
   const submitLabel = working
     ? (inRecoveryIdentify ? 'Checking…' : inRecoveryVerify ? 'Resetting…' : mode === 'create' ? 'Creating…' : 'Logging in…')
@@ -333,7 +378,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <UserPlus size={14} />
               Create profile
             </button>
-            <button onClick={() => { setMode('login'); setError(null); }}
+            <button onClick={() => { setMode('login'); setError(null); if (googleNewUser) cancelGoogleNewUser(); }}
                     className="no-tap-highlight py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
                     style={{ background: mode === 'login' ? T.surface : 'transparent',
                              color: mode === 'login' ? T.ink : T.muted,
@@ -342,6 +387,37 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               Log in
             </button>
           </div>
+        )}
+
+        {/* Google Sign-In — works for both tabs; renders nothing when
+            VITE_GOOGLE_CLIENT_ID isn't configured (see google-signin.jsx). */}
+        {!recovering && !googleNewUser && isGoogleSignInEnabled() && (
+          <>
+            <GoogleSignInButton onCredential={handleGoogleCredential} disabled={working} />
+            <div className="flex items-center gap-3 my-5">
+              <div className="flex-1 h-px" style={{ background: T.border }} />
+              <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>or</span>
+              <div className="flex-1 h-px" style={{ background: T.border }} />
+            </div>
+          </>
+        )}
+
+        {/* Mid-flow: a first-time Google sign-in has no linked profile yet —
+            confirm the verified identity and let them pick a display name
+            below (password/security-question fields are hidden). */}
+        {googleNewUser && (
+          <Card className="p-3 mb-5" style={{ background: T.successSoft, border: `1px solid ${T.success}40` }}>
+            <div className="flex items-center gap-2.5">
+              <Check size={16} className="flex-shrink-0" style={{ color: T.success }} />
+              <div className="flex-1 min-w-0 text-xs leading-relaxed" style={{ color: T.inkSoft }}>
+                Signed in with Google as <span className="font-medium" style={{ color: T.ink }}>{googleNewUser.email}</span> — pick a display name below to finish.
+              </div>
+              <button type="button" onClick={cancelGoogleNewUser}
+                      className="no-tap-highlight text-xs underline flex-shrink-0" style={{ color: T.muted }}>
+                Cancel
+              </button>
+            </div>
+          </Card>
         )}
 
         {/* Recovery header */}
@@ -370,10 +446,11 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           </Card>
         )}
 
-        {/* Display name */}
+        {/* Display name (login mode also accepts an email — routed through
+            lookup-by-email in authenticateProfile). */}
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
-            Display name
+            {mode === 'create' || recovering ? 'Display name' : 'Username or email'}
           </div>
           {/* Task 9 — live counter, CREATE mode only (login must not cap/clip an
               existing longer name). */}
@@ -389,7 +466,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             type="text"
             value={displayName}
             onChange={e => setDisplayName(mode === 'create' ? e.target.value.slice(0, USERNAME_MAX) : e.target.value)}
-            placeholder={mode === 'create' ? 'Your name' : 'Enter your name'}
+            placeholder={mode === 'create' ? 'Your name' : recovering ? 'Enter your name' : 'Username or email'}
             autoCapitalize="words"
             autoComplete="off"
             maxLength={mode === 'create' ? USERNAME_MAX : undefined}
@@ -406,7 +483,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 This name is already taken.{' '}
                 <button
                   type="button"
-                  onClick={() => { setMode('login'); setError(null); setPassword(''); setNameTaken(null); }}
+                  onClick={() => { setMode('login'); setError(null); setPassword(''); setNameTaken(null); if (googleNewUser) cancelGoogleNewUser(); }}
                   className="no-tap-highlight underline font-medium"
                   style={{ color: T.primary }}
                 >
@@ -430,8 +507,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           )}
         </div>
 
-        {/* Security question + answer — CREATE mode (replaces DOB). */}
-        {mode === 'create' && !recovering && (
+        {/* Security question + answer — CREATE mode (replaces DOB). Skipped
+            for a Google sign-up: Google itself is the recovery factor. */}
+        {mode === 'create' && !recovering && !googleNewUser && (
           <>
             <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between" style={{ color: T.muted }}>
               <span>Security question</span>
@@ -464,15 +542,20 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           </>
         )}
 
-        {/* Email — OPTIONAL, create mode only. Unverified; stored only in the
-            protected profile_secrets table (never the public blob). */}
+        {/* Email — OPTIONAL, create mode only. Unverified (unless it came
+            from a verified Google sign-up); stored only in the protected
+            profile_secrets table (never the public blob). Recommended (not
+            required) because it also becomes a second way to log in —
+            typing an email into the login box resolves to the right account. */}
         {mode === 'create' && !recovering && (
           <>
             <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between" style={{ color: T.muted }}>
               <span>Email</span>
-              <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>Optional</span>
+              <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>
+                {googleNewUser ? 'From Google' : 'Optional, but recommended'}
+              </span>
             </div>
-            <div className="relative mb-4">
+            <div className="relative mb-1">
               <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
               <input
                 type="email"
@@ -483,15 +566,22 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 autoCorrect="off"
                 autoComplete="email"
                 inputMode="email"
+                readOnly={!!googleNewUser}
                 className="w-full rounded-xl pl-10 pr-4 py-3 text-sm"
-                style={inputStyle}
+                style={{ ...inputStyle, opacity: googleNewUser ? 0.7 : 1 }}
               />
+            </div>
+            <div className="text-[10px] mb-4 px-1 leading-relaxed" style={{ color: T.muted }}>
+              {googleNewUser
+                ? 'Confirmed by your Google account.'
+                : "Lets you log in with either your username or email, and helps you recover your account."}
             </div>
           </>
         )}
 
-        {/* Password (create + login) */}
-        {!recovering && (
+        {/* Password (create + login). Skipped for a Google sign-up — Google
+            itself is the credential, there's no separate password to set. */}
+        {!recovering && !googleNewUser && (
           <>
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
@@ -616,7 +706,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <AlertCircle size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
                 {mode === 'create'
-                  ? <>Remember your display name and password — you'll need both to log in. Your security question is the only way to recover access if you forget.</>
+                  ? (googleNewUser
+                      ? <>Your Google account keeps this profile secure — there's no separate password to remember.</>
+                      : <>Remember your display name and password — you'll need both to log in. Your security question is the only way to recover access if you forget.</>)
                   : <>This is a study app, not a secure account — don't reuse a password you use elsewhere.</>}
               </div>
             </div>
@@ -699,7 +791,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           ) : (
             <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
               {mode === 'create'
-                ? 'Profiles sync across devices. Remember your display name and password, and your security answer.'
+                ? (googleNewUser
+                    ? 'Profiles sync across devices. Your Google account keeps you signed in — no password needed.'
+                    : 'Profiles sync across devices. Remember your display name and password, and your security answer.')
                 : 'Forgot your password? Use the link above — you can reset it with your security question.'}
             </div>
           )}

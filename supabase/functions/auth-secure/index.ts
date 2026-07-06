@@ -45,6 +45,12 @@ const TOKEN_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60 days
 // secret). Set it with:
 //   supabase secrets set TURNSTILE_SECRET_KEY="<secret from the Turnstile dashboard>"
 const TURNSTILE_SECRET = Deno.env.get("TURNSTILE_SECRET_KEY") ?? "";
+// Google Sign-In. Client ID is NOT a secret (it's public by design — Google's
+// own docs say so) but is kept as a Supabase secret alongside the others for
+// deploy-story consistency. Unset → verifyGoogleIdToken always fails closed,
+// so shipping this code before the owner finishes Google Cloud setup is safe.
+//   supabase secrets set GOOGLE_CLIENT_ID="<client id>.apps.googleusercontent.com"
+const GOOGLE_CLIENT_ID = Deno.env.get("GOOGLE_CLIENT_ID") ?? "";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -272,6 +278,38 @@ async function verifyTurnstile(token: string, ip: string): Promise<boolean> {
   }
 }
 
+// ---- GOOGLE SIGN-IN: verify a GIS ID token server-side ----------------
+// Simple HTTP verification via Google's tokeninfo endpoint (no JWT/JWKS
+// library needed at this scale — see CONTENT_PIPELINE-style scale notes
+// elsewhere in this repo). Checks the token was issued FOR this app (aud)
+// and that Google itself has verified the email. Returns null on ANY
+// failure (missing secret, bad token, aud mismatch, network error) — every
+// caller treats null as "Google sign-in unavailable/failed", fail-closed.
+async function verifyGoogleIdToken(idToken: string): Promise<{ sub: string; email: string; name: string } | null> {
+  if (!GOOGLE_CLIENT_ID || !idToken) return null;
+  try {
+    const r = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
+    if (!r.ok) return null;
+    const data = await r.json();
+    if (!data || data.aud !== GOOGLE_CLIENT_ID) return null;
+    if (data.email_verified !== true && data.email_verified !== "true") return null;
+    if (!data.sub || !data.email) return null;
+    return { sub: String(data.sub), email: String(data.email).toLowerCase(), name: data.name ? String(data.name) : "" };
+  } catch {
+    return null;
+  }
+}
+
+// Look up an existing profile_secrets row by Google sub. Returns { id, uid }
+// or null.
+async function getSecretByGoogleSub(sub: string): Promise<{ id: string; uid: string | null } | null> {
+  const url = `${SUPABASE_URL}/rest/v1/profile_secrets?google_sub=eq.${encodeURIComponent(sub)}&select=id,uid&limit=1`;
+  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) throw new Error(`google-sub lookup failed: ${r.status}`);
+  const rows = await r.json();
+  return Array.isArray(rows) && rows.length ? { id: String(rows[0].id), uid: rows[0].uid == null ? null : String(rows[0].uid) } : null;
+}
+
 // ---- LAUNCH WAITLIST gate flag — cached read of game_config (same 60s
 // pattern as kv-write's singleSessionEnabled; fail-open = gate OFF, but once
 // the flag reads ON the claim check itself is fail-closed). ----
@@ -305,8 +343,12 @@ Deno.serve(async (req: Request) => {
   catch { return json({ error: "Invalid JSON" }, 400); }
 
   const action = String(payload.action ?? "");
+  // google-auth and lookup-by-email are the two actions that RESOLVE an id
+  // (from a Google sub / an email) rather than being called with one already
+  // known — every other action still requires it.
+  const idNotYetKnown = action === "google-auth" || action === "lookup-by-email";
   const id = String(payload.id ?? "").trim();
-  if (!id) return json({ error: "Missing id" }, 400);
+  if (!id && !idNotYetKnown) return json({ error: "Missing id" }, 400);
 
   // -------------------------------------------------------------
   // RATE LIMIT — applied before any work. Unauth actions keyed by IP,
@@ -329,6 +371,10 @@ Deno.serve(async (req: Request) => {
       rl = await rateHit("set-security-question", id, 3, 60 * 60); // 3 / hour per id
     } else if (action === "update-email") {
       rl = await rateHit("update-email", id, 5, 60 * 60);     // 5 / hour per id
+    } else if (action === "google-auth") {
+      rl = await rateHit("google-auth", ip, 20, 15 * 60);     // 20 / 15 min per IP
+    } else if (action === "lookup-by-email") {
+      rl = await rateHit("lookup-by-email", ip, 10, 15 * 60); // 10 / 15 min per IP
     }
     if (rl && !rl.allowed) return tooMany(rl.retryAfter);
   }
@@ -354,24 +400,41 @@ Deno.serve(async (req: Request) => {
     // account's password can never be clobbered by a re-signup.
     // -------------------------------------------------------------
     if (action === "register") {
+      // GOOGLE SIGN-UP: the ID token is RE-VERIFIED here (never trust a
+      // client-supplied sub/email) — this is what makes a Google-linked
+      // account's "password" unnecessary: Google itself is the recovery
+      // factor. A Google account has no password_hash/salt at all.
+      const googleIdTokenIn = payload.googleIdToken == null ? "" : String(payload.googleIdToken);
+      let google: { sub: string; email: string; name: string } | null = null;
+      if (googleIdTokenIn) {
+        google = await verifyGoogleIdToken(googleIdTokenIn);
+        if (!google) return json({ ok: false, reason: "google-failed" });
+      }
+
       const password = String(payload.password ?? "");
-      if (password.length < 8) return json({ ok: false, reason: "weak-password" });
+      let securityQuestion: string | null = null;
+      let normAnswer = "";
+      let normDob: string | null = null;
 
-      // issues_new #3: a personal security question replaces DOB as the
-      // recovery factor for NEW accounts. DOB is now OPTIONAL (kept only for
-      // backward-compat / legacy clients). Require a question + a non-empty
-      // answer unless a legacy client is still sending a DOB instead.
-      const securityQuestion = payload.securityQuestion == null
-        ? null : String(payload.securityQuestion).trim() || null;
-      const normAnswer = normalizeAnswer(payload.securityAnswer);
-      const normDob = normalizeDob(payload.dob); // optional now
+      if (!google) {
+        if (password.length < 8) return json({ ok: false, reason: "weak-password" });
 
-      if (securityQuestion) {
-        if (!normAnswer) return json({ ok: false, reason: "bad-answer" });
-      } else if (!normDob) {
-        // Neither a security question nor a DOB was supplied → can't set up
-        // any recovery factor.
-        return json({ ok: false, reason: "no-recovery" });
+        // issues_new #3: a personal security question replaces DOB as the
+        // recovery factor for NEW accounts. DOB is now OPTIONAL (kept only for
+        // backward-compat / legacy clients). Require a question + a non-empty
+        // answer unless a legacy client is still sending a DOB instead.
+        securityQuestion = payload.securityQuestion == null
+          ? null : String(payload.securityQuestion).trim() || null;
+        normAnswer = normalizeAnswer(payload.securityAnswer);
+        normDob = normalizeDob(payload.dob); // optional now
+
+        if (securityQuestion) {
+          if (!normAnswer) return json({ ok: false, reason: "bad-answer" });
+        } else if (!normDob) {
+          // Neither a security question nor a DOB was supplied → can't set up
+          // any recovery factor.
+          return json({ ok: false, reason: "no-recovery" });
+        }
       }
 
       const existing = await getSecret(id);
@@ -403,8 +466,10 @@ Deno.serve(async (req: Request) => {
         claimedRow = { rowId: String(burned[0].id), claimToken };
       }
 
-      const salt = genSalt();
-      const password_hash = await hashPassword(password, salt);
+      // A Google-linked account has NO password — Google itself is the
+      // recovery factor. salt/password_hash are nullable for exactly this case.
+      const salt = google ? null : genSalt();
+      const password_hash = google ? null : await hashPassword(password, salt!);
       // DOB hash only when a DOB was actually provided (legacy path).
       let dob_hash: string | null = null;
       let dob_salt: string | null = null;
@@ -419,7 +484,12 @@ Deno.serve(async (req: Request) => {
         security_answer_salt = genSalt();
         security_answer_hash = await hashPassword(normAnswer, security_answer_salt);
       }
-      const email = payload.email == null ? null : String(payload.email).trim() || null;
+      // A Google sign-up's email is the VERIFIED claim from the re-checked ID
+      // token above (never the client-supplied field). Everyone else's email
+      // is optional/unverified as before — just lowercased so it matches the
+      // case-insensitive unique index and future lookup-by-email calls.
+      const email = google ? google.email : ((payload.email == null ? null : String(payload.email).trim().toLowerCase() || null));
+      const google_sub = google ? google.sub : null;
       const uid = payload.uid == null ? null : String(payload.uid);
       const display_name = payload.displayName == null ? null : String(payload.displayName);
 
@@ -430,6 +500,7 @@ Deno.serve(async (req: Request) => {
           id, uid, display_name, password_hash, salt, dob_hash, dob_salt, email,
           security_question: securityQuestion,
           security_answer_hash, security_answer_salt,
+          google_sub,
         }),
       });
       if (!r.ok) {
@@ -444,8 +515,15 @@ Deno.serve(async (req: Request) => {
             });
           } catch (_) { /* best-effort */ }
         }
-        // 409 = unique violation (race): treat as "exists" rather than a 500.
-        if (r.status === 409) return json({ ok: false, reason: "exists" });
+        // 409 = unique violation (race). The pkey (id) conflict keeps the
+        // original "exists" reason; the two NEW indexes (email, google_sub)
+        // get their own precise reasons so the client can say something useful.
+        if (r.status === 409) {
+          const bodyText = await r.text().catch(() => "");
+          if (/email/i.test(bodyText)) return json({ ok: false, reason: "email-exists" });
+          if (/google_sub/i.test(bodyText)) return json({ ok: false, reason: "google-exists" });
+          return json({ ok: false, reason: "exists" });
+        }
         return json({ error: `register failed: ${r.status} ${await r.text().catch(() => "")}`.trim() }, 502);
       }
 
@@ -466,6 +544,46 @@ Deno.serve(async (req: Request) => {
       } catch (_) { /* anomaly logging is best-effort; never affects the account */ }
 
       return json({ ok: true, token: await mintToken(id, uid, await rotateSessionId(id)) });
+    }
+
+    // -------------------------------------------------------------
+    // GOOGLE-AUTH — verify a Google ID token and either log the caller
+    // straight in (an account is already linked to this Google sub) or hand
+    // back enough info for the client to run its normal "pick a display
+    // name" register step. Creates NOTHING itself — a brand-new Google user
+    // only gets an account once they submit `register` with this same token.
+    // -------------------------------------------------------------
+    if (action === "google-auth") {
+      const idToken = String(payload.idToken ?? "");
+      const google = await verifyGoogleIdToken(idToken);
+      if (!google) return json({ ok: false, reason: "google-failed" });
+      const row = await getSecretByGoogleSub(google.sub);
+      if (row) {
+        return json({ ok: true, id: row.id, token: await mintToken(row.id, row.uid, await rotateSessionId(row.id)) });
+      }
+      const suggestedName = (google.name || google.email.split("@")[0] || "Student").slice(0, 40);
+      return json({ ok: true, newGoogleUser: true, suggestedName, email: google.email });
+    }
+
+    // -------------------------------------------------------------
+    // LOOKUP-BY-EMAIL — resolve an email typed into the sign-in box to the
+    // profile id it belongs to, so the client can then call `verify` exactly
+    // as it does for a username. Generic ok:false on any miss (same no-
+    // enumeration posture as verify) — this never reveals whether an email
+    // is or isn't registered beyond what a failed login already implies.
+    // -------------------------------------------------------------
+    if (action === "lookup-by-email") {
+      const email = String(payload.email ?? "").trim();
+      if (!email) return json({ ok: false });
+      // ilike (no wildcards) = case-insensitive exact match, so this also
+      // resolves the handful of pre-existing rows stored with mixed casing
+      // from before the case-insensitive unique index existed.
+      const url = `${SUPABASE_URL}/rest/v1/profile_secrets?email=ilike.${encodeURIComponent(email)}&select=id&limit=1`;
+      const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+      if (!r.ok) return json({ ok: false });
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) return json({ ok: true, id: String(rows[0].id) });
+      return json({ ok: false });
     }
 
     // -------------------------------------------------------------
@@ -595,7 +713,7 @@ Deno.serve(async (req: Request) => {
     // -------------------------------------------------------------
     if (action === "update-email") {
       const password = String(payload.password ?? "");
-      const email = payload.email == null ? "" : String(payload.email).trim();
+      const email = payload.email == null ? "" : String(payload.email).trim().toLowerCase();
       const row = await getSecret(id);
       if (!row || !row.password_hash || !row.salt) return json({ ok: false, reason: "no-account" });
       const tryHash = await hashPassword(password, String(row.salt));
@@ -609,7 +727,10 @@ Deno.serve(async (req: Request) => {
           body: JSON.stringify({ email: email || null, updated_at: new Date().toISOString() }),
         },
       );
-      if (!r.ok) return json({ error: `update-email failed: ${r.status}` }, 502);
+      if (!r.ok) {
+        if (r.status === 409) return json({ ok: false, reason: "email-exists" });
+        return json({ error: `update-email failed: ${r.status}` }, 502);
+      }
       return json({ ok: true });
     }
 

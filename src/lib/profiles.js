@@ -462,20 +462,25 @@ export function normalizeDob(dob) {
   return s;
 }
 
-export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData, captchaToken, claimToken }) {
+export async function createProfile({ displayName, password, securityQuestion, securityAnswer, dob, email, importData, captchaToken, claimToken, googleIdToken }) {
   const id = normalizeProfileId(displayName);
   if (!id) throw new Error('Display name needs at least one letter or number');
-  if (password.length < 8) throw new Error('Password must be at least 8 characters');
+  // A Google sign-up has no password — Google itself is the recovery factor,
+  // so the password/security-question requirements below are skipped entirely.
+  const isGoogle = !!googleIdToken;
+  if (!isGoogle && password.length < 8) throw new Error('Password must be at least 8 characters');
   // issues_new #3: a personal security question replaces DOB for new accounts.
-  const sq = (securityQuestion && String(securityQuestion).trim()) || null;
+  const sq = (!isGoogle && securityQuestion && String(securityQuestion).trim()) || null;
   const sa = (securityAnswer != null) ? String(securityAnswer) : '';
   // `dob` is still accepted for backward-compat but no longer required/collected.
-  const normDob = normalizeDob(dob);
-  if (!sq && !normDob) {
-    throw new Error('Pick a security question and answer — used to recover your password if you forget it');
-  }
-  if (sq && !sa.trim()) {
-    throw new Error('Type an answer to your security question');
+  const normDob = isGoogle ? null : normalizeDob(dob);
+  if (!isGoogle) {
+    if (!sq && !normDob) {
+      throw new Error('Pick a security question and answer — used to recover your password if you forget it');
+    }
+    if (sq && !sa.trim()) {
+      throw new Error('Type an answer to your security question');
+    }
   }
   const existing = await loadProfile(id);
   if (existing) throw new Error('That display name is already taken — pick another, or log in instead');
@@ -496,15 +501,20 @@ export async function createProfile({ displayName, password, securityQuestion, s
   const reg = await callAuthFn('register', {
     id, uid,
     displayName: displayName.trim(),
-    password,
+    password: isGoogle ? undefined : password,
     // New recovery factor — question + answer (answer is hashed server-side).
-    securityQuestion: sq,
-    securityAnswer: sq ? sa : undefined,
+    securityQuestion: isGoogle ? undefined : sq,
+    securityAnswer: (!isGoogle && sq) ? sa : undefined,
     // Legacy/optional — only sent if a caller still provides a DOB.
-    dob: normDob || undefined,
+    dob: (!isGoogle && normDob) || undefined,
     // Optional, unverified email. Stored ONLY in profile_secrets (never in
     // the public blob below), so it isn't PII-exposed via the anon key.
+    // (For a Google sign-up the server ignores this and uses the VERIFIED
+    // email from the ID token instead — this is just a harmless echo.)
     email: (email && String(email).trim()) || null,
+    // Google Sign-In — the server RE-VERIFIES this token itself; it never
+    // trusts a client-supplied sub/email.
+    googleIdToken: googleIdToken || undefined,
     // Phase-2 anomaly signals (server hashes IP + fingerprint; never raw).
     fingerprint: fingerprint || undefined,
     ref: (pending && pending.ref) ? pending.ref : undefined,
@@ -528,6 +538,15 @@ export async function createProfile({ displayName, password, securityQuestion, s
     }
     if (reg && reg.reason === 'waitlist') {
       throw new Error("This invite isn't valid anymore — open your waitlist status for a fresh link, or join the waitlist to get in line.");
+    }
+    if (reg && reg.reason === 'email-exists') {
+      throw new Error('That email is already linked to another profile — try logging in instead, or leave email blank.');
+    }
+    if (reg && reg.reason === 'google-exists') {
+      throw new Error('This Google account is already linked to a profile — try "Continue with Google" from the log-in tab instead.');
+    }
+    if (reg && reg.reason === 'google-failed') {
+      throw new Error('Google sign-in could not be verified. Please try again.');
     }
     throw new Error('Could not create your account. Check your connection and try again.');
   }
@@ -575,9 +594,23 @@ export async function createProfile({ displayName, password, securityQuestion, s
   return profile;
 }
 
-export async function authenticateProfile(displayName, password, captchaToken) {
-  const id = normalizeProfileId(displayName);
-  if (!id) throw new Error('Enter your display name');
+// The sign-in identifier accepts EITHER a display name OR an email — an "@"
+// routes through lookup-by-email first to resolve the real `id`, then falls
+// into the exact same `verify` call as a plain username always has.
+export async function authenticateProfile(identifier, password, captchaToken) {
+  const raw = String(identifier || '').trim();
+  let id;
+  if (raw.includes('@')) {
+    const lookup = await callAuthFn('lookup-by-email', { email: raw });
+    if (!lookup || lookup.ok !== true || !lookup.id) {
+      // Generic — same message a wrong password gets. No enumeration signal.
+      throw new Error('Display name or password is incorrect');
+    }
+    id = lookup.id;
+  } else {
+    id = normalizeProfileId(raw);
+    if (!id) throw new Error('Enter your display name');
+  }
   // STAGE 1: password check happens server-side. The function returns ok:false
   // for BOTH "no such account" and "wrong password" — one generic message, so
   // we no longer leak which display names exist (fixes the enumeration finding).
@@ -596,6 +629,32 @@ export async function authenticateProfile(displayName, password, captchaToken) {
     throw new Error("Signed in, but your profile data couldn't be loaded. Check your connection and try again.");
   }
   return profile;
+}
+
+// Google Sign-In. Posts the GIS ID token to auth-secure, which RE-VERIFIES it
+// server-side (never trusts the client). Two possible outcomes:
+//   { profile }                              — an account was already linked
+//                                               to this Google account; the
+//                                               caller can saveSession/onAuthed
+//                                               exactly like authenticateProfile.
+//   { newGoogleUser, suggestedName, email }   — no linked account yet; the
+//                                               caller shows a display-name
+//                                               picker, then calls
+//                                               createProfile({ googleIdToken }).
+export async function googleAuth(idToken) {
+  const res = await callAuthFn('google-auth', { idToken });
+  if (!res || res.ok !== true) {
+    throw new Error('Google sign-in failed. Please try again.');
+  }
+  if (res.newGoogleUser) {
+    return { newGoogleUser: true, suggestedName: res.suggestedName || '', email: res.email || '' };
+  }
+  await persistAuthToken(res.token);
+  const profile = await loadProfile(res.id);
+  if (!profile) {
+    throw new Error("Signed in, but your profile data couldn't be loaded. Check your connection and try again.");
+  }
+  return { profile };
 }
 
 // DOB-gated recovery. The DOB check now runs server-side against
@@ -700,6 +759,7 @@ export async function updateRecoveryEmail(displayName, password, email) {
   if (!res || res.ok !== true) {
     if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
     if (res && res.reason === 'bad-email') throw new Error('Enter a valid email address');
+    if (res && res.reason === 'email-exists') throw new Error('That email is already linked to another profile.');
     throw new Error('Could not update your email — please try again');
   }
   return true;
