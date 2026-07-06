@@ -59,7 +59,7 @@ const APP_ORIGIN = "https://www.nurseholic.in"; // claim links always target the
 // WhatsApp nudge stays the primary delivery channel (India-first reach).
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "NurseHolic <onboarding@resend.dev>";
-const SUPPORT_REPLY_TO = Deno.env.get("SUPPORT_EMAIL") || "jyotishmandeori5@gmail.com";
+const SUPPORT_REPLY_TO = Deno.env.get("SUPPORT_EMAIL") || "support@nurseholic.in";
 
 // ---- LOOPS CONTACT SYNC — growth/campaign audience (owner picked 2026-07-06) ---
 // INERT until:  supabase secrets set LOOPS_API_KEY="..."

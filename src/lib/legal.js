@@ -18,11 +18,11 @@
 export const LEGAL_VERSION = 4;       // v4 (July 2026): named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
 export const LEGAL_UPDATED = 'July 2026';   // last reviewed
 
-// Support contact — INTERIM personal address during the testing phase (owner
-// decision 2026-07-05). Swap to a custom-domain mailbox (e.g.
-// support@nurseholic.in) at launch: this one constant is the only place to
-// change (legal contact sections + the About screen's email row read it).
-export const SUPPORT_EMAIL = 'jyotishmandeori5@gmail.com';
+// Support contact — the public-facing address (About "Email us", Privacy +
+// Refunds contact sections all read this one constant). Now the custom-domain
+// mailbox: support@nurseholic.in is a live Namecheap forwarder → the owner's
+// inbox (set up 2026-07-06). Swap here if it ever moves to a real mailbox.
+export const SUPPORT_EMAIL = 'support@nurseholic.in';
 
 export const LEGAL = {
   privacy: {
