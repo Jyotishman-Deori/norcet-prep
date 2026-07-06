@@ -10108,3 +10108,58 @@ STILL OPEN (told owner, logged here 2026-07-06):
   These are DASHBOARD-label changes, owner-side, cosmetic — they do NOT change
   the app, the code, or the .vercel/.supabase project *refs* the tooling pins,
   so nothing in-repo has to move. Safe to do anytime; low priority.
+
+# ---------------------------------------------------------------------
+# (2026-07-06, later) GOOGLE SIGN-IN + EMAIL LOGIN + Loops live + email fwd
+# ---------------------------------------------------------------------
+
+Three follow-ups from the same session:
+
+1. EMAIL FORWARDING (support mailbox, FREE): owner set up Namecheap's built-in
+   Email Forwarding (NOT Zoho — Zoho no longer offers a free plan to new
+   signups; it paywalled at signup). Two forwarders, both -> the personal
+   Gmail: support@nurseholic.in + security@nurseholic.in. Gmail filter can
+   label security@ separately. SUPPORT_EMAIL const (src/lib/legal.js) can now
+   point at support@nurseholic.in whenever the owner wants (still Gmail today).
+
+2. LOOPS NOW LIVE (marketing/audience): owner made the Loops account (team
+   "Nurseholic"), key set via `supabase secrets set LOOPS_API_KEY`, validated
+   against Loops' /api-key endpoint (HTTP 200). waitlist fn now best-effort
+   syncs every join (userGroup waitlist-joined) + approval (waitlist-approved)
+   as a Loops contact — commit 7ad1119, deployed. Resend stays the
+   TRANSACTIONAL sender (claim links + owner alerts); Loops is the CAMPAIGN
+   audience (broadcasts later). ⚠ LOOPS_API_KEY pasted in chat -> rotation list.
+
+3. GOOGLE SIGN-IN + EMAIL-AS-LOGIN (commit d0b001e, shipped DARK): adds two
+   sign-in methods ALONGSIDE the existing username+password, on the app's
+   CUSTOM HMAC auth (auth-secure -> profile_secrets) — there is NO Supabase
+   Auth / Firebase / NextAuth / OAuth-redirect layer in this app.
+   - Schema: supabase/add-google-login.sql (owner RAN it) — password_hash/salt
+     now NULLABLE (a Google account has no password), google_sub column +
+     partial unique index, case-insensitive unique index on email.
+   - auth-secure: new actions google-auth (re-verifies a GIS ID token via
+     Google's tokeninfo endpoint: checks aud === GOOGLE_CLIENT_ID +
+     email_verified) and lookup-by-email (resolves an email -> id, generic
+     ok:false = no enumeration); register grows an optional googleIdToken path.
+     Deployed; smoke-tested live (lookup-by-email -> {ok:false};
+     google-auth -> {ok:false,reason:google-failed} with no client id set).
+   - Client: ui/google-signin.jsx (GIS button, mirrors turnstile.jsx pattern),
+     profiles.js googleAuth() + email-identifier resolution in
+     authenticateProfile(), auth-screen.jsx Google button on both tabs +
+     new-Google-user display-name sub-step + email reframed "optional but
+     recommended" + login box relabelled "Username or email".
+   - INERT until env vars set. OWNER STILL NEEDS (told them, free):
+       * Google Cloud Console -> OAuth Client ID (Web application). ⚠ CRITICAL:
+         this uses Google Identity Services' TOKEN/One-Tap flow, so Google needs
+         **Authorized JavaScript origins** (https://www.nurseholic.in + vercel
+         preview + http://localhost:5173), NOT an Authorized *redirect URI* —
+         there is NO server callback URL. The ID token is delivered to a JS
+         callback in the browser and POSTed to auth-secure's google-auth action.
+         Leave the redirect-URI field blank.
+       * Then: VITE_GOOGLE_CLIENT_ID in Vercel (both student + admin projects,
+         redeploy) + `supabase secrets set GOOGLE_CLIENT_ID="<id>"`.
+   - v1 SKIPS (logged, not built): Apple Sign-In (paid dev acct); auto-MERGE of
+     a Google login into an existing same-email username account (first pass:
+     Google logs into its own linked account or creates a fresh one); forced
+     email verification for the typed-email path (stays optional/unverified,
+     same posture as the pre-existing recovery-email field).
