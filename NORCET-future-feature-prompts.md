@@ -10203,3 +10203,47 @@ FIXED in commit 2084236 (auth-secure redeployed, dev=main pushed):
 5. BRAND STRAGGLER: desktop-nav.jsx wordmark was split across tags
    ("NORCET <span>Prep</span>") so the rename grep missed it — now
    Nurse<span>Holic</span>. (Owner's screenshot caught it.)
+
+# ---------------------------------------------------------------------
+# (2026-07-06, late) EMAIL SWAP + RESEND SEND DOMAIN + Manage-Admins revamp
+# ---------------------------------------------------------------------
+
+Owner-confirmed after a guided infra session: Google login live-tested OK;
+Gmail filters (support/security/hello labels) created; Namecheap forwarders
+(support@/security@/hello@ → Gmail) live + DNS-verified by me (root MX =
+eforward1-5). Loops DNS (mail.nurseholic.in) all verified. Then three code jobs:
+
+1. SUPPORT EMAIL SWAP (3c272ab): SUPPORT_EMAIL const (legal.js) Gmail →
+   support@nurseholic.in — About "Email us" + Privacy/Refunds contact; waitlist
+   invite reply_to too (SUPPORT_EMAIL secret set). Owner crash alerts (kv-write)
+   deliberately STAY on the personal Gmail (private ops signal, direct inbox).
+
+2. RESEND SENDING DOMAIN + test tool (b5de50b): owner added sending domain
+   send.nurseholic.in in Resend (Tokyo), DNS all correct + propagated (I
+   verified DKIM resend._domainkey.send, SPF send.send, DMARC at root — all
+   resolve). BUT Resend itself still shows the domain UNVERIFIED (403 on send) —
+   classic "clicked Verify while records were still Pending; Resend re-checks
+   on demand." ⏳ OWNER STEP: re-click "Verify" in Resend → Domains. I set
+   EMAIL_FROM secret = "NurseHolic <noreply@send.nurseholic.in>" so the instant
+   the domain verifies, BOTH student invites AND owner crash alerts send from
+   it (owner alerts are best-effort → temporarily dark until verified; acceptable
+   in testing). Resend API key is SEND-ONLY restricted (can't GET /domains).
+   NEW admin `admin-test-invite` action (waitlist fn) + "Test invite email" card
+   in the admin Waitlist panel: sends a SAMPLE approval through the real
+   sendApprovalInvite path, echoes { sent, reason, from } — the owner's live
+   verification checker (a 4xx = "domain not verified yet").
+
+3. MANAGE ADMINS REVAMP (8408991): the raw-id screen was confusing. Now:
+   - NEW admin-manage `resolve-profiles` action (token+admin gated) maps ids
+     AND uids → display_name via profile_secrets (profilemeta is slug-keyed +
+     has no uid, so it CAN'T resolve uids — profile_secrets is the only table
+     with both). admin.js resolveAdminProfiles().
+   - Username shown next to every id; add form resolves the name LIVE and a
+     confirm modal names the person before granting admin (no typo grants).
+   - Hierarchy shown: "Owner (you)" tier (crimson Crown) + "Admins" tier. Your
+     own rows are NEVER removable (Lock, not trash) — fixes the "delete myself"
+     footgun. Self-protection is client-side (removal stays passphrase-gated;
+     hard server owner-lock rides with the DEFERRED per-account role system —
+     see the "Role hierarchy: Admin > Co-Admin > Moderator" spec above, still
+     NOT built: that needs per-account staff login + roleOf() in all brokers).
+   Deployed: admin-manage fn + `npm run deploy:admin` (norcet-admin).
