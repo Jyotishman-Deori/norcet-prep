@@ -59,6 +59,27 @@ export async function listAdmins() {
   return Array.isArray(j && j.admins) ? j.admins : [];
 }
 
+// RESOLVE: admin-only lookup of display names for a set of ids/uids (via the
+// token, same as list-admins). Returns [{ id, uid, display_name }]. Used to
+// show a username next to each admin id and to preview who a candidate is
+// before granting admin. Never throws — resolution is best-effort UX sugar.
+export async function resolveAdminProfiles(ids) {
+  const list = Array.isArray(ids) ? ids.map((v) => String(v || '').trim()).filter(Boolean) : [];
+  if (!configured() || !list.length) return [];
+  const token = getAuthToken();
+  if (!token) return [];
+  try {
+    const r = await fetch(FN_URL, {
+      method: 'POST',
+      headers: anonHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: 'resolve-profiles', token, ids: list }),
+    });
+    if (!r.ok) return [];
+    const j = await r.json().catch(() => ({}));
+    return Array.isArray(j && j.profiles) ? j.profiles : [];
+  } catch (e) { return []; }
+}
+
 // WRITES: through the passphrase-gated Edge Function.
 async function callFn(action, profileId, passphrase, note) {
   if (!FN_URL) throw new Error('Supabase not configured');

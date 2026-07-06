@@ -136,6 +136,28 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, admins: Array.isArray(rows) ? rows : [] });
   }
 
+  // resolve-profiles: admin-only name lookup. Given profile ids/uids (the
+  // admin_profile_ids rows, or a candidate being added), return their real
+  // display names from profile_secrets (which is the ONLY table mapping both
+  // id AND uid → display_name). Lets the Manage Admins UI show a username next
+  // to every id, and preview "who is this?" before granting admin. Never
+  // returns hashes/secrets — only { id, uid, display_name }.
+  if (action === "resolve-profiles") {
+    if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
+    const session = await verifyToken(payload.token);
+    if (!session) return json({ error: "Not authenticated" }, 401);
+    if (!(await isAdmin(session))) return json({ error: "Forbidden: admin only" }, 403);
+    const rawIds = Array.isArray(payload.ids) ? payload.ids : [];
+    const ids = rawIds.map((v) => String(v).trim()).filter(Boolean).slice(0, 100);
+    if (!ids.length) return json({ ok: true, profiles: [] });
+    const quoted = ids.map((v) => `"${encodeURIComponent(v)}"`).join(",");
+    const url = `${SUPABASE_URL}/rest/v1/profile_secrets?or=(id.in.(${quoted}),uid.in.(${quoted}))&select=id,uid,display_name`;
+    const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+    if (!r.ok) return json({ error: `resolve failed: ${r.status}` }, 502);
+    const rows = await r.json();
+    return json({ ok: true, profiles: Array.isArray(rows) ? rows : [] });
+  }
+
   // ---- server-side auth: the passphrase is the gate, checked HERE ----
   if (!ADMIN_PASSPHRASE) return json({ error: "Server not configured" }, 500);
   const passOk = safeEqual(passphrase, ADMIN_PASSPHRASE);
