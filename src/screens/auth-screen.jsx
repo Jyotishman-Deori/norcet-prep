@@ -46,9 +46,14 @@ async function clearLegacyData() {
 // `claimToken` (optional) — a one-time waitlist invite token captured from a
 // ?claim= link. Threaded into createProfile; REQUIRED by the server while the
 // invite-only launch wall (game_config waitlist.gate) is ON, ignored otherwise.
-function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, claimToken }) {
+// loginOnly — the ADMIN app passes this: staff are EXISTING accounts added to
+// the allow-list, so "Create profile" here is meaningless (a fresh account
+// just gets bounced by the Not-Authorized screen). It hides the Create tab,
+// locks the screen to Log in, and turns a brand-new Google sign-in into a
+// clear "not a staff account" message instead of a sign-up.
+function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, claimToken, loginOnly = false }) {
   const { theme: T } = useTheme();
-  const [mode, setMode] = useState(initialMode);
+  const [mode, setMode] = useState(loginOnly ? 'login' : initialMode);
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
   // issues_new #3: security question + answer replace DOB at sign-up.
@@ -194,11 +199,16 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         setLinkGoogle({ displayName: result.displayName, email: result.email });
         setLinkPwd(''); setLinkErr(null);
       } else if (result.newGoogleUser) {
-        setGoogleIdToken(idToken);
-        setGoogleNewUser({ suggestedName: result.suggestedName, email: result.email });
-        setMode('create');
-        setDisplayName(result.suggestedName || '');
-        setEmail(result.email || '');
+        if (loginOnly) {
+          // Admin app: a Google account with no linked profile isn't staff.
+          setError('This Google account isn’t linked to a staff account. Sign in with your username & password, or link Google from the main app first.');
+        } else {
+          setGoogleIdToken(idToken);
+          setGoogleNewUser({ suggestedName: result.suggestedName, email: result.email });
+          setMode('create');
+          setDisplayName(result.suggestedName || '');
+          setEmail(result.email || '');
+        }
       } else {
         await saveSession({ profileId: result.profile.id });
         onAuthed(result.profile);
@@ -393,7 +403,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           </div>
           <div className="font-display text-3xl font-semibold" style={{ color: T.ink }}>NurseHolic</div>
           <div className="text-sm mt-1" style={{ color: T.muted }}>
-            {mode === 'create' ? 'Create a profile to save your progress across devices' : 'Welcome back'}
+            {loginOnly ? 'Staff sign-in' : mode === 'create' ? 'Create a profile to save your progress across devices' : 'Welcome back'}
           </div>
           {/* Waitlist invite chip — reassures the student their ?claim= link is
               attached before they fill the form (the server checks it on submit). */}
@@ -405,8 +415,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           )}
         </div>
 
-        {/* Tabs — hidden during recovery so the user isn't tempted to swap mid-flow */}
-        {!recovering && (
+        {/* Tabs — hidden during recovery so the user isn't tempted to swap
+            mid-flow, and hidden entirely on the admin app (login-only). */}
+        {!recovering && !loginOnly && (
           <div className="grid grid-cols-2 gap-2 mb-5 p-1 rounded-xl" style={{ background: T.surfaceWarm }}>
             <button onClick={() => { setMode('create'); setError(null); setRecoverySuccess(false); }}
                     className="no-tap-highlight py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"

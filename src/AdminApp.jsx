@@ -200,7 +200,7 @@ function AdminApp() {
   );
 
   if (booting) return provide(<Splash T={T} />);
-  if (!profile) return provide(<AuthScreen initialMode="login" onAuthed={setProfile} />);
+  if (!profile) return provide(<AuthScreen initialMode="login" loginOnly onAuthed={setProfile} />);
   if (adminState === 'unknown') return provide(<Splash T={T} label="Checking admin access…" />);
   if (adminState === 'no') return provide(<NotAuthorized T={T} profile={profile} onSignOut={handleSignOut} />);
 
