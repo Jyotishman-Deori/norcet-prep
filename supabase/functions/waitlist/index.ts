@@ -60,6 +60,26 @@ const APP_ORIGIN = "https://www.nurseholic.in"; // claim links always target the
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const EMAIL_FROM = Deno.env.get("EMAIL_FROM") || "NurseHolic <onboarding@resend.dev>";
 const SUPPORT_REPLY_TO = Deno.env.get("SUPPORT_EMAIL") || "jyotishmandeori5@gmail.com";
+
+// ---- LOOPS CONTACT SYNC — growth/campaign audience (owner picked 2026-07-06) ---
+// INERT until:  supabase secrets set LOOPS_API_KEY="..."
+// Resend stays the transactional sender (claim links, owner alerts). Loops
+// instead builds a segmentable AUDIENCE the owner can later run broadcast
+// campaigns against (hype emails, batch-drop announcements) — no campaign
+// exists yet, this just grows the list from day one. Best-effort: a sync
+// failure never blocks join/approve; WhatsApp/Resend remain the real
+// delivery path for anything time-sensitive.
+const LOOPS_API_KEY = Deno.env.get("LOOPS_API_KEY") ?? "";
+async function syncLoopsContact(email: string, userGroup: string): Promise<void> {
+  if (!LOOPS_API_KEY) return;
+  try {
+    await fetch("https://app.loops.so/api/v1/contacts/create", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${LOOPS_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ email, source: "waitlist", userGroup }),
+    });
+  } catch { /* best-effort */ }
+}
 async function sendApprovalInvite(
   email: string, claimUrl: string, _expiresAtIso: string,
 ): Promise<{ sent: boolean; reason?: string }> {
@@ -527,6 +547,7 @@ Deno.serve(async (req: Request) => {
       }
       if (!inserted) return json({ ok: false, reason: "exists" });
       invalidateSnapshot();
+      await syncLoopsContact(email, "waitlist-joined");
 
       // Referral milestone (§7.2-hardened): 3 uses → the referrer + all their
       // still-waiting referees move to pending_verification for admin review.
@@ -693,6 +714,7 @@ Deno.serve(async (req: Request) => {
               changed[0].email, `${APP_ORIGIN}/?claim=${claimToken}`, expiresAt,
             )).sent;
           } catch { /* best-effort */ }
+          await syncLoopsContact(changed[0].email, "waitlist-approved");
           approved.push({ id, email: changed[0].email, whatsapp: changed[0].whatsapp_num, claimToken, expiresAt, emailed });
         }
       }
