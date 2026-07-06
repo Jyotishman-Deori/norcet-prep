@@ -127,6 +127,34 @@ async function mintToken(id: string, uid: string | null, sid: string | null): Pr
   return `${payloadB64}.${sigB64}`;
 }
 
+// Verify a session token this function itself minted (inverse of mintToken).
+// Used by the token-authed read actions (security-status) so a logged-in
+// client can see its own account state without re-typing a password. Returns
+// the token payload's { id, uid } or null on any failure.
+function b64urlDecode(s: string): Uint8Array {
+  const b = s.replace(/-/g, "+").replace(/_/g, "/");
+  const pad = b.length % 4 === 0 ? "" : "=".repeat(4 - (b.length % 4));
+  const bin = atob(b + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function verifySessionToken(token: string): Promise<{ id: string; uid: string | null } | null> {
+  try {
+    if (!SESSION_SECRET || !token) return null;
+    const parts = token.split(".");
+    if (parts.length !== 2) return null;
+    const expected = b64url(await hmac(parts[0]));
+    if (!safeEqual(expected, parts[1])) return null;
+    const payload = JSON.parse(new TextDecoder().decode(b64urlDecode(parts[0])));
+    if (!payload || typeof payload.exp !== "number" || payload.exp < Date.now()) return null;
+    if (!payload.id) return null;
+    return { id: String(payload.id), uid: payload.uid == null ? null : String(payload.uid) };
+  } catch {
+    return null;
+  }
+}
+
 // Rotate the account's active_session_id to a fresh cryptographically-random
 // UUID and return it. This is the "last one wins" write: the NEWEST login owns
 // the account; every older token's sid stops matching. BEST-EFFORT by design —
@@ -346,7 +374,7 @@ Deno.serve(async (req: Request) => {
   // google-auth and lookup-by-email are the two actions that RESOLVE an id
   // (from a Google sub / an email) rather than being called with one already
   // known — every other action still requires it.
-  const idNotYetKnown = action === "google-auth" || action === "lookup-by-email";
+  const idNotYetKnown = action === "google-auth" || action === "lookup-by-email" || action === "google-link";
   const id = String(payload.id ?? "").trim();
   if (!id && !idNotYetKnown) return json({ error: "Missing id" }, 400);
 
@@ -375,6 +403,13 @@ Deno.serve(async (req: Request) => {
       rl = await rateHit("google-auth", ip, 20, 15 * 60);     // 20 / 15 min per IP
     } else if (action === "lookup-by-email") {
       rl = await rateHit("lookup-by-email", ip, 10, 15 * 60); // 10 / 15 min per IP
+    } else if (action === "google-link") {
+      // Password attempts gated like login (5/15min) — though each attempt
+      // ALSO needs a fresh valid Google token for the matching email, which
+      // is a far stronger constraint than the limiter itself.
+      rl = await rateHit("google-link", ip, 5, 15 * 60);      // 5 / 15 min per IP
+    } else if (action === "security-status") {
+      rl = await rateHit("security-status", id, 30, 15 * 60); // 30 / 15 min per id
     }
     if (rl && !rl.allowed) return tooMany(rl.retryAfter);
   }
@@ -561,8 +596,95 @@ Deno.serve(async (req: Request) => {
       if (row) {
         return json({ ok: true, id: row.id, token: await mintToken(row.id, row.uid, await rotateSessionId(row.id)) });
       }
+      // No linked account — but an EXISTING account may carry this (Google-
+      // verified) email as its recovery email. Offer to LINK rather than
+      // confusing the user with a fresh sign-up: the client shows a one-time
+      // "enter that profile's password" step (see google-link below), which
+      // proves ownership of BOTH sides before the accounts are joined.
+      // Revealing the display name here is safe: the caller has already
+      // proven (via Google) that they own this exact email address.
+      try {
+        const er = await fetch(
+          `${SUPABASE_URL}/rest/v1/profile_secrets?email=ilike.${encodeURIComponent(google.email)}&select=id,display_name,google_sub,password_hash&limit=1`,
+          { headers: dbHeaders({ Accept: "application/json" }) },
+        );
+        if (er.ok) {
+          const rows = await er.json();
+          if (Array.isArray(rows) && rows.length && !rows[0].google_sub && rows[0].password_hash) {
+            return json({
+              ok: true, linkAvailable: true,
+              displayName: String(rows[0].display_name || rows[0].id),
+              email: google.email,
+            });
+          }
+        }
+      } catch { /* lookup failure just falls through to the sign-up path */ }
       const suggestedName = (google.name || google.email.split("@")[0] || "Student").slice(0, 40);
       return json({ ok: true, newGoogleUser: true, suggestedName, email: google.email });
+    }
+
+    // -------------------------------------------------------------
+    // GOOGLE-LINK — join a Google account to an EXISTING password account
+    // that carries the same email. Requires proof of BOTH sides: a fresh
+    // Google ID token (re-verified server-side = owns the email) AND the
+    // existing account's password (= owns the profile). One-time: after
+    // this, google-auth logs the user straight in via google_sub.
+    // -------------------------------------------------------------
+    if (action === "google-link") {
+      const google = await verifyGoogleIdToken(String(payload.idToken ?? ""));
+      if (!google) return json({ ok: false, reason: "google-failed" });
+      const password = String(payload.password ?? "");
+      const lr = await fetch(
+        `${SUPABASE_URL}/rest/v1/profile_secrets?email=ilike.${encodeURIComponent(google.email)}&select=*&limit=1`,
+        { headers: dbHeaders({ Accept: "application/json" }) },
+      );
+      if (!lr.ok) return json({ error: `google-link lookup failed: ${lr.status}` }, 502);
+      const rows = await lr.json();
+      if (!Array.isArray(rows) || !rows.length) return json({ ok: false, reason: "no-match" });
+      const row = rows[0];
+      if (row.google_sub) return json({ ok: false, reason: "already-linked" });
+      if (!row.password_hash || !row.salt) return json({ ok: false, reason: "no-password" });
+      const tryHash = await hashPassword(password, String(row.salt));
+      if (!safeEqual(tryHash, String(row.password_hash))) return json({ ok: false, reason: "bad-password" });
+      // google_sub=is.null in the filter makes the write race-safe (a
+      // concurrent link attempt matches 0 rows instead of overwriting).
+      const pr = await fetch(
+        `${SUPABASE_URL}/rest/v1/profile_secrets?id=eq.${encodeURIComponent(String(row.id))}&google_sub=is.null`,
+        {
+          method: "PATCH",
+          headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=representation", Accept: "application/json" }),
+          body: JSON.stringify({ google_sub: google.sub, updated_at: new Date().toISOString() }),
+        },
+      );
+      if (!pr.ok) {
+        if (pr.status === 409) return json({ ok: false, reason: "google-exists" });
+        return json({ error: `google-link failed: ${pr.status}` }, 502);
+      }
+      const patched = await pr.json().catch(() => null);
+      if (!Array.isArray(patched) || !patched.length) return json({ ok: false, reason: "already-linked" });
+      const rid = String(row.id);
+      return json({ ok: true, id: rid, token: await mintToken(rid, row.uid == null ? null : String(row.uid), await rotateSessionId(rid)) });
+    }
+
+    // -------------------------------------------------------------
+    // SECURITY-STATUS — a LOGGED-IN user reads their own account-security
+    // state (recovery question, linked email, sign-in methods) so the
+    // Profile screen can show it instead of guessing. Auth = the session
+    // token this function minted; the token's id must match the requested
+    // id (you can only read your own row). Never returns hashes.
+    // -------------------------------------------------------------
+    if (action === "security-status") {
+      const tok = await verifySessionToken(String(payload.token ?? ""));
+      if (!tok || tok.id !== id) return json({ ok: false, reason: "unauthorized" }, 401);
+      const row = await getSecret(id);
+      if (!row) return json({ ok: false, reason: "no-account" });
+      return json({
+        ok: true,
+        question: row.security_question ? String(row.security_question) : null,
+        email: row.email ? String(row.email) : null,
+        hasGoogle: !!row.google_sub,
+        hasPassword: !!row.password_hash,
+      });
     }
 
     // -------------------------------------------------------------

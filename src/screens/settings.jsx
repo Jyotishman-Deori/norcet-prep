@@ -312,7 +312,20 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       {profile && !profile.isGuest && (
         <div className="mb-3"><ComparisonToggle /></div>
       )}
-      <div className="grid grid-cols-2 gap-2 mb-2">
+      {/* Study companion — rename the note feature's pet name (password-gated
+          for accounts inside the modal; guests rename freely). Visible to all. */}
+      {profile && <CompanionRenameCard profile={profile} />}
+      {/* NEW-02 — Study profile (optional, editable any time). Anything skipped
+          during onboarding can be set here, like the optional recovery email. */}
+      {profile && <StudyProfileCard demographics={data.demographics} onSave={onSetDemographics} />}
+      {/* Fix 6 — Account Security (logged-in only; the Profile sub-page is only
+          reachable when signed in). One-time recovery question + optional email. */}
+      {profile && <AccountSecurityCard profile={profile} />}
+      {/* Session actions — moved to the BOTTOM (owner request 2026-07-06):
+          exits live together at the end of the page, right above the
+          destructive Reset, instead of interrupting the account cards. */}
+      <div className="mt-7 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Session</div>
+      <div className="grid grid-cols-2 gap-2 mb-3">
         <Card className="p-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => requestConfirm({
                 icon: <RefreshCw size={18} style={{ color: T.primary }} />,
@@ -338,15 +351,6 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
         </Card>
       </div>
-      {/* Study companion — rename the note feature's pet name (password-gated
-          for accounts inside the modal; guests rename freely). Visible to all. */}
-      {profile && <CompanionRenameCard profile={profile} />}
-      {/* NEW-02 — Study profile (optional, editable any time). Anything skipped
-          during onboarding can be set here, like the optional recovery email. */}
-      {profile && <StudyProfileCard demographics={data.demographics} onSave={onSetDemographics} />}
-      {/* Fix 6 — Account Security (logged-in only; the Profile sub-page is only
-          reachable when signed in). One-time recovery question + optional email. */}
-      {profile && <AccountSecurityCard profile={profile} />}
       {renderReset()}
     </>
   );

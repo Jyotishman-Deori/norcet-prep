@@ -3,25 +3,61 @@
 // A quiet card shown inside Settings → Profile for LOGGED-IN users only.
 //  • Recovery question — set ONE TIME. The server refuses changes once set,
 //    so afterwards we just show "Recovery question set ✓" (read-only).
-//  • Recovery email — optional, add/update any time.
-// Both require the user's CURRENT PASSWORD, verified by the same service-role
-// auth-secure function (the anon key never touches the locked secrets).
+//  • Email — optional; doubles as a LOGIN identifier (auth-screen's
+//    "Username or email" box) and as the Google-link anchor.
+//  • Change password.
+// State is loaded once from the token-authed `security-status` action, so
+// the cards show what's ACTUALLY on file (linked email, Google link, has a
+// password at all) instead of guessing. Google-only accounts (no password)
+// get read-only variants — every editor here is password-gated server-side.
 // =====================================================================
 import React, { useState, useEffect } from 'react';
-import { ShieldCheck, Check, Lock, Mail, ChevronDown, ChevronRight, KeyRound } from 'lucide-react';
+import { ShieldCheck, Check, Lock, Mail, ChevronDown, ChevronRight, KeyRound, AlertCircle, Pencil } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card } from '../ui/primitives.jsx';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
-import { getRecoveryQuestion, setSecurityQuestion, updateRecoveryEmail, changePassword } from '../lib/profiles.js';
+import { getRecoveryQuestion, setSecurityQuestion, updateRecoveryEmail, changePassword, getSecurityStatus } from '../lib/profiles.js';
 import { PASSWORD_MAX } from '../lib/auth-limits.js';
 
-// A tappable card header + grid-rows collapse body (matches the sidebar section
-// folders). Defined at MODULE level (not inside the component) so its identity
-// is stable across renders — otherwise its input children would remount and
-// lose focus on every keystroke. The chevron rotates on open.
+// Success/error feedback box — one consistent, unmissable style for every
+// action in this section (replaces the old tiny one-line text that was easy
+// to overlook). anim-scalein gives it a soft "confirmation pop".
 function Msg({ T, m }) {
   if (!m) return null;
-  return <div className="text-[11px] mt-2 anim-fadeup" style={{ color: m.ok ? T.success : T.error }}>{m.text}</div>;
+  return (
+    <div className="rounded-xl px-3 py-2.5 mt-2 flex items-start gap-2 anim-scalein"
+         style={m.ok
+           ? { background: T.successSoft, border: `1px solid ${T.success}40` }
+           : { background: T.errorSoft, border: `1px solid ${T.error}40` }}>
+      {m.ok
+        ? <Check size={14} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
+        : <AlertCircle size={14} className="flex-shrink-0 mt-0.5" style={{ color: T.error }} />}
+      <div className="text-[12px] leading-relaxed font-medium" style={{ color: m.ok ? T.success : T.error }}>{m.text}</div>
+    </div>
+  );
+}
+
+// Small header status pill (right side of each collapsed card) so the state
+// is visible WITHOUT expanding — "is my email linked?" answered at a glance.
+function StatusPill({ T, ok, label }) {
+  return (
+    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1 flex-shrink-0"
+          style={ok
+            ? { background: T.successSoft, color: T.success }
+            : { background: T.surfaceWarm, color: T.muted }}>
+      {label}
+    </span>
+  );
+}
+
+// Read-only info row used for the Google-only variants.
+function InfoBox({ T, children }) {
+  return (
+    <div className="rounded-xl px-3 py-3 flex items-start gap-2" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+      <ShieldCheck size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.muted }} />
+      <div className="text-[12px] leading-relaxed" style={{ color: T.inkSoft }}>{children}</div>
+    </div>
+  );
 }
 
 // Password strength scorer for the Change Password card. Special characters
@@ -48,6 +84,10 @@ function scorePassword(pw) {
   return { level, label, ok: level !== 'weak' }; // medium or strong passes
 }
 
+// A tappable card header + grid-rows collapse body (matches the sidebar section
+// folders). Defined at MODULE level (not inside the component) so its identity
+// is stable across renders — otherwise its input children would remount and
+// lose focus on every keystroke. The chevron rotates on open.
 function CollapseCard({ T, icon: Icon, iconBg, iconColor, title, titleExtra, sub, badge, open, onToggle, children }) {
   return (
     <Card className="mb-3 p-0 overflow-hidden">
@@ -82,6 +122,13 @@ export default function AccountSecurityCard({ profile }) {
 
   const [loading, setLoading] = useState(true);
   const [existingQuestion, setExistingQuestion] = useState(null); // string if set
+  // What's actually on file (from the token-authed security-status read).
+  // emailKnown=false means the status call failed (offline / legacy fn) —
+  // the email card then falls back to the old "type it blind" editor.
+  const [emailOnFile, setEmailOnFile] = useState(null);
+  const [emailKnown, setEmailKnown] = useState(false);
+  const [hasGoogle, setHasGoogle] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true);
 
   // Security-question form
   const [sq, setSq] = useState(SECURITY_QUESTIONS[0]);
@@ -90,8 +137,11 @@ export default function AccountSecurityCard({ profile }) {
   const [sqBusy, setSqBusy] = useState(false);
   const [sqMsg, setSqMsg] = useState(null);
 
-  // Email form
+  // Email form. `emailEditing` gates the editor: with an email on file the
+  // card rests in a read-only "linked" panel and the editor only opens on
+  // an explicit "Change" — so a saved email can never look like a draft.
   const [email, setEmail] = useState('');
+  const [emailEditing, setEmailEditing] = useState(false);
   const [emPwd, setEmPwd] = useState('');
   const [emBusy, setEmBusy] = useState(false);
   const [emMsg, setEmMsg] = useState(null);
@@ -115,9 +165,23 @@ export default function AccountSecurityCard({ profile }) {
     let on = true;
     (async () => {
       try {
-        const r = await getRecoveryQuestion(displayName);
-        if (on) setExistingQuestion(r && r.method === 'question' ? r.question : null);
-      } catch (e) { /* couldn't reach server — leave form available */ }
+        // Preferred: one token-authed read of everything on file.
+        const s = await getSecurityStatus(displayName);
+        if (on) {
+          setExistingQuestion(s.question);
+          setEmailOnFile(s.email);
+          setEmailKnown(true);
+          setHasGoogle(s.hasGoogle);
+          setHasPassword(s.hasPassword);
+        }
+      } catch (e) {
+        // Fallback (offline / stale function): at least learn the question
+        // state the old way; the email card degrades to the blind editor.
+        try {
+          const r = await getRecoveryQuestion(displayName);
+          if (on) setExistingQuestion(r && r.method === 'question' ? r.question : null);
+        } catch (e2) { /* leave forms available */ }
+      }
       finally { if (on) setLoading(false); }
     })();
     return () => { on = false; };
@@ -143,14 +207,33 @@ export default function AccountSecurityCard({ profile }) {
     } finally { setSqBusy(false); }
   };
 
+  const startEmailEdit = () => {
+    setEmail(emailOnFile || '');
+    setEmPwd('');
+    setEmMsg(null);
+    setEmailEditing(true);
+  };
+  const cancelEmailEdit = () => {
+    setEmailEditing(false);
+    setEmail('');
+    setEmPwd('');
+    setEmMsg(null);
+  };
+
   const submitEmail = async () => {
     setEmMsg(null);
     if (!emPwd) { setEmMsg({ ok: false, text: 'Enter your current password.' }); return; }
     setEmBusy(true);
     try {
-      await updateRecoveryEmail(displayName, emPwd, email);
+      const next = email.trim().toLowerCase();
+      await updateRecoveryEmail(displayName, emPwd, next);
       setEmPwd('');
-      setEmMsg({ ok: true, text: email.trim() ? 'Email saved ✓' : 'Email cleared ✓' });
+      setEmailOnFile(next || null);
+      setEmailKnown(true);
+      setEmailEditing(false);
+      setEmMsg(next
+        ? { ok: true, text: 'Email saved — you can now log in with it too.' }
+        : { ok: true, text: 'Email removed from this profile.' });
     } catch (e) {
       setEmMsg({ ok: false, text: (e && e.message) || 'Could not save. Try again.' });
     } finally { setEmBusy(false); }
@@ -171,11 +254,51 @@ export default function AccountSecurityCard({ profile }) {
     try {
       await changePassword(displayName, pwCur, pwNew);
       setPwCur(''); setPwNew(''); setPwConf('');
-      setPwMsg({ ok: true, text: 'Password changed ✓' });
+      setPwMsg({ ok: true, text: 'Password changed ✓ Your other devices stay signed in.' });
     } catch (e) {
       setPwMsg({ ok: false, text: (e && e.message) || 'Could not change password. Try again.' });
     } finally { setPwBusy(false); }
   };
+
+  // The email editor (shared by "no email yet" and "change email"). The
+  // linked-state panel is the resting view whenever an email is on file.
+  const emailEditor = (
+    <>
+      <input value={email} onChange={e => setEmail(e.target.value)} type="email"
+             placeholder="you@example.com" autoComplete="email" inputMode="email"
+             className="w-full rounded-xl px-3 py-2.5 text-sm mb-2" style={inputStyle} />
+      {emailLooksOff && (
+        <div className="text-[11px] mb-2" style={{ color: T.error }}>
+          This doesn't look like a valid email — double-check before saving.
+        </div>
+      )}
+      <div className="relative mb-2">
+        <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
+        <input value={emPwd} onChange={e => setEmPwd(e.target.value)} type="password"
+               placeholder="Current password" autoComplete="current-password"
+               className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm" style={inputStyle} />
+      </div>
+      <div className="flex gap-2">
+        <button onClick={submitEmail} disabled={emBusy || emailLooksOff}
+                className="no-tap-highlight flex-1 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
+                style={{ background: T.accent, color: '#FFF', opacity: (emBusy || emailLooksOff) ? 0.7 : 1 }}>
+          {emBusy ? 'Saving…' : 'Save email'}
+        </button>
+        {emailOnFile && (
+          <button onClick={cancelEmailEdit} disabled={emBusy}
+                  className="no-tap-highlight px-4 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
+                  style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+            Cancel
+          </button>
+        )}
+      </div>
+      {emailOnFile && (
+        <div className="text-[10px] mt-2" style={{ color: T.muted }}>
+          Tip: clear the field and save to remove the email from this profile.
+        </div>
+      )}
+    </>
+  );
 
   return (
     <>
@@ -188,12 +311,8 @@ export default function AccountSecurityCard({ profile }) {
         title="Recovery question" sub="Used to reset your password if you forget it"
         open={qOpen} onToggle={() => setQOpen(o => !o)}
         badge={!loading && (
-          <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full mr-1 flex-shrink-0"
-                style={existingQuestion
-                  ? { background: T.successSoft, color: T.success }
-                  : { background: T.surfaceWarm, color: T.muted }}>
-            {existingQuestion ? 'Set ✓' : 'Not set'}
-          </span>
+          <StatusPill T={T} ok={!!existingQuestion}
+                      label={existingQuestion ? 'Set ✓' : (!hasPassword ? 'Not needed' : 'Not set')} />
         )}>
         {loading ? (
           <div className="text-[11px]" style={{ color: T.muted }}>Checking…</div>
@@ -206,6 +325,10 @@ export default function AccountSecurityCard({ profile }) {
               <div className="text-[10px] mt-1" style={{ color: T.muted }}>For your security this can't be changed once set.</div>
             </div>
           </div>
+        ) : !hasPassword ? (
+          <InfoBox T={T}>
+            You sign in with Google, so there's no password to recover — your Google account keeps this profile safe. No question needed.
+          </InfoBox>
         ) : (
           <>
             <div className="relative mb-2">
@@ -239,32 +362,56 @@ export default function AccountSecurityCard({ profile }) {
         <Msg T={T} m={sqMsg} />
       </CollapseCard>
 
-      {/* Recovery email (collapsible, optional) */}
+      {/* Email (collapsible). Resting view = the LINKED panel (what's on
+          file, at a glance); the editor opens only on explicit Change. */}
       <CollapseCard
         T={T}
         icon={Mail} iconBg={T.accent + '15'} iconColor={T.accent}
-        title="Recovery email" titleExtra={<span style={{ color: T.muted, fontWeight: 400 }}> · optional</span>}
-        sub="Add or update the email linked to your account"
-        open={eOpen} onToggle={() => setEOpen(o => !o)}>
-        <input value={email} onChange={e => setEmail(e.target.value)} type="email"
-               placeholder="you@example.com" autoComplete="email" inputMode="email"
-               className="w-full rounded-xl px-3 py-2.5 text-sm mb-2" style={inputStyle} />
-        {emailLooksOff && (
-          <div className="text-[11px] mb-2" style={{ color: T.error }}>
-            This doesn't look like a valid email — double-check before saving.
-          </div>
+        title="Email" titleExtra={<span style={{ color: T.muted, fontWeight: 400 }}> · optional</span>}
+        sub="Log in with it, recover your account, link Google"
+        open={eOpen} onToggle={() => setEOpen(o => !o)}
+        badge={!loading && emailKnown && (
+          <StatusPill T={T} ok={!!emailOnFile} label={emailOnFile ? 'Linked ✓' : 'Not set'} />
+        )}>
+        {loading ? (
+          <div className="text-[11px]" style={{ color: T.muted }}>Checking…</div>
+        ) : emailOnFile && !emailEditing ? (
+          <>
+            <div className="rounded-xl px-3 py-3" style={{ background: T.successSoft, border: `1px solid ${T.success}33` }}>
+              <div className="flex items-start gap-2">
+                <Check size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
+                <div className="min-w-0 flex-1">
+                  <div className="text-[13px] font-medium break-all" style={{ color: T.success }}>{emailOnFile}</div>
+                  <div className="text-[11px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>
+                    Linked to this profile — you can use it to log in{hasPassword ? ' instead of your username' : ''}.
+                  </div>
+                  {hasGoogle && (
+                    <div className="text-[11px] mt-1.5 inline-flex items-center gap-1 font-medium" style={{ color: T.success }}>
+                      <ShieldCheck size={12} /> Google sign-in connected — one tap logs you in
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+            {hasPassword ? (
+              <button onClick={startEmailEdit}
+                      className="no-tap-highlight w-full mt-2 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition inline-flex items-center justify-center gap-1.5"
+                      style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+                <Pencil size={14} /> Change email
+              </button>
+            ) : (
+              <div className="text-[10px] mt-2" style={{ color: T.muted }}>
+                This email comes from your Google account, so it can't be edited here.
+              </div>
+            )}
+          </>
+        ) : !hasPassword ? (
+          <InfoBox T={T}>
+            You sign in with Google — your Google email identifies this profile automatically.
+          </InfoBox>
+        ) : (
+          emailEditor
         )}
-        <div className="relative mb-2">
-          <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
-          <input value={emPwd} onChange={e => setEmPwd(e.target.value)} type="password"
-                 placeholder="Current password" autoComplete="current-password"
-                 className="w-full rounded-xl pl-9 pr-3 py-2.5 text-sm" style={inputStyle} />
-        </div>
-        <button onClick={submitEmail} disabled={emBusy || emailLooksOff}
-                className="no-tap-highlight w-full py-2.5 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
-                style={{ background: T.accent, color: '#FFF', opacity: (emBusy || emailLooksOff) ? 0.7 : 1 }}>
-          {emBusy ? 'Saving…' : 'Save email'}
-        </button>
         <Msg T={T} m={emMsg} />
       </CollapseCard>
 
@@ -272,8 +419,14 @@ export default function AccountSecurityCard({ profile }) {
       <CollapseCard
         T={T}
         icon={KeyRound} iconBg={T.primary + '15'} iconColor={T.primary}
-        title="Change password" sub="Update the password you use to sign in"
+        title="Change password" sub={hasPassword ? 'Update the password you use to sign in' : 'This profile signs in with Google'}
         open={pOpen} onToggle={() => setPOpen(o => !o)}>
+        {!hasPassword ? (
+          <InfoBox T={T}>
+            You sign in with Google — this profile has no password. Nothing to change here.
+          </InfoBox>
+        ) : (
+        <>
         {/* Current password (no length cap — existing passwords may be longer) */}
         <div className="relative mb-2">
           <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
@@ -347,6 +500,8 @@ export default function AccountSecurityCard({ profile }) {
                 style={{ background: T.primary, color: '#FFF', opacity: canChangePw ? 1 : 0.5 }}>
           {pwBusy ? 'Saving…' : 'Change password'}
         </button>
+        </>
+        )}
         <Msg T={T} m={pwMsg} />
       </CollapseCard>
     </>

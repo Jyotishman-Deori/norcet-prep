@@ -646,6 +646,12 @@ export async function googleAuth(idToken) {
   if (!res || res.ok !== true) {
     throw new Error('Google sign-in failed. Please try again.');
   }
+  // An existing password account carries this (Google-verified) email — the
+  // caller should offer the one-time link step (googleLink below) instead of
+  // a confusing fresh sign-up.
+  if (res.linkAvailable) {
+    return { linkAvailable: true, displayName: res.displayName || '', email: res.email || '' };
+  }
   if (res.newGoogleUser) {
     return { newGoogleUser: true, suggestedName: res.suggestedName || '', email: res.email || '' };
   }
@@ -655,6 +661,45 @@ export async function googleAuth(idToken) {
     throw new Error("Signed in, but your profile data couldn't be loaded. Check your connection and try again.");
   }
   return { profile };
+}
+
+// One-time Google ↔ existing-account link: proves BOTH sides (the Google ID
+// token proves the email; the password proves the profile), then logs in.
+// After this, googleAuth() logs the user straight into the linked profile.
+export async function googleLink(idToken, password) {
+  if (!password) throw new Error("Enter that profile's password");
+  const res = await callAuthFn('google-link', { idToken, password });
+  if (!res || res.ok !== true) {
+    if (res && res.reason === 'bad-password') throw new Error("That's not this profile's password — try again");
+    if (res && res.reason === 'already-linked') throw new Error('This profile is already linked to a different Google account.');
+    if (res && res.reason === 'google-failed') throw new Error('Google sign-in expired — close this and tap the Google button again.');
+    throw new Error('Could not link your Google account. Please try again.');
+  }
+  await persistAuthToken(res.token);
+  const profile = await loadProfile(res.id);
+  if (!profile) {
+    throw new Error("Linked, but your profile data couldn't be loaded. Check your connection and try again.");
+  }
+  return profile;
+}
+
+// LOGGED-IN read of the account's own security state (recovery question,
+// linked email, sign-in methods) for the Profile screen. Authenticated by
+// the stored session token — no password prompt. Returns
+// { question, email, hasGoogle, hasPassword } or throws.
+export async function getSecurityStatus(displayName) {
+  const id = normalizeProfileId(displayName);
+  if (!id) throw new Error('No profile is signed in');
+  const token = kvStorage.getAuthToken();
+  if (!token) throw new Error('Not signed in on this device');
+  const res = await callAuthFn('security-status', { id, token });
+  if (!res || res.ok !== true) throw new Error('Could not load account status');
+  return {
+    question: res.question || null,
+    email: res.email || null,
+    hasGoogle: !!res.hasGoogle,
+    hasPassword: !!res.hasPassword,
+  };
 }
 
 // DOB-gated recovery. The DOB check now runs server-side against

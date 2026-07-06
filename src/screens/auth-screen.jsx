@@ -16,7 +16,7 @@ import { createPortal } from 'react-dom';
 import {
   Check, AlertCircle, AlertTriangle, ArrowLeft,
   GraduationCap, User, UserPlus, LogIn, Lock, Eye, EyeOff, RefreshCw,
-  CalendarDays, Mail, ShieldQuestion, ChevronDown, X
+  CalendarDays, Mail, ShieldQuestion, ChevronDown, X, Link2
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
@@ -29,7 +29,7 @@ import { raceStorage, safeStorage } from '../lib/safe-storage.js';
 import { normalizeProfileId } from '../lib/profile-crypto.js';
 import {
   createProfile, authenticateProfile, recoverPasswordWithDob,
-  getRecoveryQuestion, recoverPasswordWithAnswer, saveSession, googleAuth
+  getRecoveryQuestion, recoverPasswordWithAnswer, saveSession, googleAuth, googleLink
 } from '../lib/profiles.js';
 import { SECURITY_QUESTIONS } from '../lib/security-questions.js';
 import { USERNAME_MAX, PASSWORD_MAX } from '../lib/auth-limits.js';
@@ -72,6 +72,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
   // sub-step (mode stays 'create', password/security-question fields hide).
   const [googleNewUser, setGoogleNewUser] = useState(null); // { suggestedName, email } | null
   const [googleIdToken, setGoogleIdToken] = useState(null);
+  // Google → EXISTING account link step: the tapped Google email is already
+  // the recovery email on a password account. One password entry joins them
+  // (server: google-link), then Google is one-tap forever. Rendered as a
+  // centred modal (mirrors the security-question picker portal).
+  const [linkGoogle, setLinkGoogle] = useState(null); // { displayName, email } | null
+  const [linkPwd, setLinkPwd] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkErr, setLinkErr] = useState(null);
   // Forgot-password recovery flow lives inline (no separate screen). It is now
   // TWO steps: 'identify' (enter name → look up the recovery factor) then
   // 'verify' (answer the question, or DOB for legacy, + set a new password).
@@ -179,7 +187,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     setWorking(true);
     try {
       const result = await googleAuth(idToken);
-      if (result.newGoogleUser) {
+      if (result.linkAvailable) {
+        // This Google email already belongs to a password account — offer the
+        // one-time link (password proves the profile; Google proved the email).
+        setGoogleIdToken(idToken);
+        setLinkGoogle({ displayName: result.displayName, email: result.email });
+        setLinkPwd(''); setLinkErr(null);
+      } else if (result.newGoogleUser) {
         setGoogleIdToken(idToken);
         setGoogleNewUser({ suggestedName: result.suggestedName, email: result.email });
         setMode('create');
@@ -201,6 +215,30 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     setGoogleIdToken(null);
     setDisplayName('');
     setEmail('');
+  };
+
+  // Submit the one-time Google ↔ existing-account link (modal below).
+  const handleGoogleLink = async () => {
+    if (linkBusy || !linkGoogle) return;
+    setLinkErr(null);
+    if (!linkPwd) { setLinkErr("Enter this profile's password"); return; }
+    setLinkBusy(true);
+    try {
+      const profile = await googleLink(googleIdToken, linkPwd);
+      await saveSession({ profileId: profile.id });
+      setLinkGoogle(null); setLinkPwd(''); setGoogleIdToken(null);
+      onAuthed(profile);
+    } catch (e) {
+      setLinkErr(e.message || 'Could not link your Google account');
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+  const cancelGoogleLink = () => {
+    setLinkGoogle(null);
+    setLinkPwd('');
+    setLinkErr(null);
+    setGoogleIdToken(null);
   };
 
   const handleSubmit = async () => {
@@ -828,6 +866,78 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             </div>
             <div className="px-5 pb-6 pt-4 overflow-y-auto">
               <LegalContent doc={legalView} />
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Google → existing account LINK modal. Shown when the tapped Google
+          email is already the recovery email on a password account: one
+          password entry proves the profile is theirs, the server joins the
+          two, and Google becomes one-tap from then on. */}
+      {linkGoogle && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[90] flex items-center justify-center p-4"
+             style={{ background: 'rgba(0,0,0,0.55)' }}
+             onClick={() => { if (!linkBusy) cancelGoogleLink(); }}>
+          <div className="w-full max-w-sm rounded-3xl anim-scalein overflow-hidden"
+               style={{ background: T.bg, boxShadow: '0 24px 60px rgba(0,0,0,0.35)' }}
+               onClick={e => e.stopPropagation()}>
+            <div className="px-5 pt-6 pb-5">
+              <div className="mx-auto mb-3 w-12 h-12 rounded-2xl flex items-center justify-center"
+                   style={{ background: T.primary + '15' }}>
+                <Link2 size={22} style={{ color: T.primary }} />
+              </div>
+              <div className="font-display text-lg font-semibold text-center mb-1.5" style={{ color: T.ink }}>
+                We found your profile
+              </div>
+              <div className="text-[12.5px] leading-relaxed text-center mb-4" style={{ color: T.inkSoft }}>
+                <span className="font-medium" style={{ color: T.ink }}>{linkGoogle.email}</span> is already on the profile{' '}
+                <span className="font-semibold" style={{ color: T.primary }}>{linkGoogle.displayName}</span>.
+                Enter that profile's password once to connect Google — after this, one tap signs you in.
+              </div>
+              <div className="relative mb-2">
+                <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={linkPwd}
+                  onChange={e => setLinkPwd(e.target.value)}
+                  placeholder={`Password for ${linkGoogle.displayName}`}
+                  autoComplete="current-password"
+                  autoFocus
+                  onKeyDown={e => { if (e.key === 'Enter') handleGoogleLink(); }}
+                  className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
+                  style={inputStyle}
+                />
+                <button onClick={() => setShowPassword(v => !v)}
+                        className="no-tap-highlight absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg active:bg-black/5"
+                        type="button">
+                  {showPassword ? <EyeOff size={16} style={{ color: T.muted }} /> : <Eye size={16} style={{ color: T.muted }} />}
+                </button>
+              </div>
+              {linkErr && (
+                <div className="flex items-start gap-2 text-xs mb-2 anim-fadeup" style={{ color: T.error }}>
+                  <AlertTriangle size={14} className="flex-shrink-0 mt-0.5" />
+                  <div>{linkErr}</div>
+                </div>
+              )}
+              <button onClick={handleGoogleLink} disabled={linkBusy || !linkPwd}
+                      className="no-tap-highlight w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.99] transition inline-flex items-center justify-center gap-2"
+                      style={{ background: T.primary, color: '#FFF', opacity: (linkBusy || !linkPwd) ? 0.6 : 1 }}>
+                {linkBusy ? <RefreshCw size={16} className="animate-spin" /> : <Link2 size={16} />}
+                {linkBusy ? 'Linking…' : 'Link & log in'}
+              </button>
+              <div className="flex items-center justify-between mt-3">
+                <button type="button"
+                        onClick={() => { const dn = linkGoogle.displayName; cancelGoogleLink(); setMode('login'); setDisplayName(dn); enterRecovery(); }}
+                        className="no-tap-highlight text-xs underline" style={{ color: T.muted }}>
+                  Forgot that password?
+                </button>
+                <button type="button" onClick={cancelGoogleLink}
+                        className="no-tap-highlight text-xs underline" style={{ color: T.muted }}>
+                  Not now
+                </button>
+              </div>
             </div>
           </div>
         </div>,
