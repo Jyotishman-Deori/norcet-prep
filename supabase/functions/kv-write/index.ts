@@ -182,15 +182,31 @@ function sessionExpired(): Response {
 }
 
 // ---- helpers against kv_shared / admin list (service-role) ----
-async function isAdmin(s: Session): Promise<boolean> {
+// STAFF ROLES (Admin > Co-Admin > Moderator; supabase/admin-roles.sql).
+// Role is read from the DB PER ACTION (never from the token) so a demotion
+// bites on the target's next call. LEGACY FALLBACK: before the migration the
+// role column doesn't exist — membership then counts as 'coadmin', so
+// deploying this ahead of the SQL changes nothing.
+type StaffRole = "admin" | "coadmin" | "moderator";
+const ROLE_RANK: Record<StaffRole, number> = { admin: 3, coadmin: 2, moderator: 1 };
+async function roleOf(s: Session): Promise<StaffRole | null> {
   const ids = [s.id, s.uid].filter(Boolean).map((v) => encodeURIComponent(String(v)));
-  if (!ids.length) return false;
-  const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})&select=profile_id`;
-  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-  if (!r.ok) return false;
+  if (!ids.length) return null;
+  const base = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})`;
+  let r = await fetch(`${base}&select=profile_id,role`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) r = await fetch(`${base}&select=profile_id`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return null;
   const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let best = 0;
+  for (const row of rows) {
+    const rank = row && row.role ? (ROLE_RANK[row.role as StaffRole] ?? 2) : 2;
+    if (rank > best) best = rank;
+  }
+  return best >= 3 ? "admin" : best === 2 ? "coadmin" : "moderator";
 }
+const atLeast = (role: StaffRole | null, min: StaffRole): boolean =>
+  !!role && ROLE_RANK[role] >= ROLE_RANK[min];
 
 async function getRow(key: string): Promise<Record<string, unknown> | null> {
   const url = `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(key)}&select=value`;
@@ -339,24 +355,32 @@ Deno.serve(async (req: Request) => {
   if (!(await sessionSidOk(session))) return sessionExpired();
 
   try {
-    const admin = await isAdmin(session);
+    const role = await roleOf(session);
+    // "admin" here = Co-Admin or above (full powers minus staff governance).
+    // Moderator-tier carve-outs are wired explicitly below.
+    const admin = atLeast(role, "coadmin");
 
     // 2) Owner-scoped private keys: id suffix must match (admins may moderate).
     // analytics:user:<id> — each user writes ONLY their own engagement summary.
+    // Moderators may write into myfeedback: threads (feedback replies are
+    // their core job); every other cross-user override stays Co-Admin+.
     const OWNER_PREFIXES = ["profile:", "profilemeta:", "myfeedback:", "leaderboard:", "favorder:", "analytics:user:"];
     for (const p of OWNER_PREFIXES) {
       if (key.startsWith(p)) {
-        if (admin || suffix(key, p) === session.id) {
+        const crossOk = p === "myfeedback:" ? atLeast(role, "moderator") : admin;
+        if (crossOk || suffix(key, p) === session.id) {
           return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
         }
         return json({ error: "Forbidden: not your row" }, 403);
       }
     }
 
-    // 3) Admin-only keys. `game_config` is the single live-tuning row (XP curve,
-    // prices, quests, crate odds) edited from the admin panel's Config editor.
+    // 3) Staff-only keys. faq: is Moderator+ (FAQ authoring is community
+    // control); announcement:/qgate:/game_config stay Co-Admin+ — they change
+    // what EVERY user sees or how the app behaves.
     if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:") || key === "game_config") {
-      if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+      const need: StaffRole = key.startsWith("faq:") ? "moderator" : "coadmin";
+      if (!atLeast(role, need)) return json({ error: `Forbidden: ${need === "moderator" ? "staff" : "co-admin or above"} only` }, 403);
       // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).
       const rl = await rateHit("admin-write", session.id, 20, 60 * 60);
       if (!rl.allowed) return tooMany(rl.retryAfter);
@@ -450,11 +474,13 @@ Deno.serve(async (req: Request) => {
     // faqq: = community FAQ questions. Neither is a question-set upload, so both
     // stay open to logged-in users.)
     if (key.startsWith("feedback:") || key.startsWith("faqq:")) {
+      // Moderators moderate community content (reports + community FAQ posts).
+      const mod = atLeast(role, "moderator");
       const existing = await getRow(key);
-      if (existing && !admin && !rowOwnedBy(existing, session)) {
+      if (existing && !mod && !rowOwnedBy(existing, session)) {
         return json({ error: "Forbidden: not your content" }, 403);
       }
-      if (op === "set" && !admin) {
+      if (op === "set" && !mod) {
         // SEC-016 — cap user-generated-content writes at 30/hour per user
         // (vote-toggle row inflation / scripted spam). Generous for humans.
         const rl = await rateHit("ugc-write", session.id, 30, 60 * 60);
@@ -489,8 +515,13 @@ Deno.serve(async (req: Request) => {
     // "who did it / when" is trustworthy and can't be forged, even by an admin
     // claiming to be someone else. DELETE is admin-only (log pruning).
     if (key.startsWith("adminlog:")) {
-      if (!admin) return json({ error: "Forbidden: admin only" }, 403);
-      if (op === "del") return await deleteRow(key);
+      // Any staff member's privileged actions get logged (Moderator+ may
+      // APPEND); pruning the log stays Co-Admin+.
+      if (!atLeast(role, "moderator")) return json({ error: "Forbidden: staff only" }, 403);
+      if (op === "del") {
+        if (!admin) return json({ error: "Forbidden: co-admin or above" }, 403);
+        return await deleteRow(key);
+      }
       let entry: Record<string, unknown>;
       try { entry = JSON.parse(String(body.value ?? "{}")); } catch { entry = {}; }
       if (!entry || typeof entry !== "object") entry = {};

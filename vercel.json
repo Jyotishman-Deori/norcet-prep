@@ -4,6 +4,14 @@
     { "path": "/api/send-reminders", "schedule": "30 2 * * *" },
     { "path": "/api/send-reminders", "schedule": "30 15 * * *" }
   ],
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "norcet-prep.vercel.app" }],
+      "destination": "https://www.nurseholic.in/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],

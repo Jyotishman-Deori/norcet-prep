@@ -156,17 +156,29 @@ async function sessionSidOk(s: Session): Promise<boolean> {
   }
 }
 
-// ---- Admin check (verbatim from kv-write) ----------------------------
-async function isAdmin(s: Session): Promise<boolean> {
+// ---- Staff-role check (roles pattern from kv-write) -------------------
+// STAFF ROLES (Admin > Co-Admin > Moderator; supabase/admin-roles.sql).
+// Legacy fallback: pre-migration membership counts as 'coadmin'.
+type StaffRole = "admin" | "coadmin" | "moderator";
+const ROLE_RANK: Record<StaffRole, number> = { admin: 3, coadmin: 2, moderator: 1 };
+async function roleOf(s: Session): Promise<StaffRole | null> {
   const ids = [s.id, s.uid].filter(Boolean).map((v) => encodeURIComponent(String(v)));
-  if (!ids.length) return false;
-  const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids`
-    + `?profile_id=in.(${ids.join(",")})&select=profile_id`;
-  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-  if (!r.ok) return false;
+  if (!ids.length) return null;
+  const base = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})`;
+  let r = await fetch(`${base}&select=profile_id,role`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) r = await fetch(`${base}&select=profile_id`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return null;
   const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let best = 0;
+  for (const row of rows) {
+    const rank = row && row.role ? (ROLE_RANK[row.role as StaffRole] ?? 2) : 2;
+    if (rank > best) best = rank;
+  }
+  return best >= 3 ? "admin" : best === 2 ? "coadmin" : "moderator";
 }
+const atLeast = (role: StaffRole | null, min: StaffRole): boolean =>
+  !!role && ROLE_RANK[role] >= ROLE_RANK[min];
 
 // ---- Gemini generation (the sanctioned runtime-AI exception) ---------
 // Direct REST call — no SDK import, so the function stays light. Ported from
@@ -280,11 +292,16 @@ Deno.serve(async (req: Request) => {
     return json({ error: "SESSION_EXPIRED", message: "Logged in from another device" }, 401);
   }
 
-  // Admin-only — fail closed.
-  const admin = await isAdmin(session);
-  if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+  // Staff-only — fail closed. Moderators may DRAFT (generate) and view the
+  // review queue; PUBLISHING into a live bank (approve) and deleting drafts
+  // stay Co-Admin+ — answer-key integrity per CLAUDE.md.
+  const role = await roleOf(session);
+  if (!role) return json({ error: "Forbidden: staff only" }, 403);
 
   const action = String(body.action ?? "");
+  if ((action === "approve" || action === "delete") && !atLeast(role, "coadmin")) {
+    return json({ error: "Forbidden: co-admin or above" }, 403);
+  }
 
   // ---- list -----------------------------------------------------------
   if (action === "list") {

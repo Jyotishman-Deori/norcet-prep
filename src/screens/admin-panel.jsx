@@ -52,7 +52,7 @@ import { examTopicWeightage } from '../lib/weightage.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
 
 function AdminPanel({
-  profile, banks, banksLoading,
+  profile, staffRole = 'admin', banks, banksLoading,
   announcement, onSaveAnnouncement, onClearAnnouncement,
   onLoadAnnHistory, onDeleteAnnHistoryItem, onClearAnnHistory,
   onRefreshBanks, onOpenLibrary, onCreateBank,
@@ -62,6 +62,25 @@ function AdminPanel({
   const { theme: T } = useTheme();
   // Which screen we're on: the tile dashboard, or one detail view a level deeper.
   const [view, setView] = useState('dashboard');
+
+  // ---- STAFF ROLE VISIBILITY MATRIX (Admin > Co-Admin > Moderator) ----
+  // Never render a control the role can't use (owner spec). This is pure UX —
+  // every broker re-checks the caller's CURRENT role server-side per action.
+  // Moderator = community control: feedback, FAQ, content drafts, users list,
+  // crash/basic logs, bank health, helpfulness. Everything else is Co-Admin+.
+  const ROLE_RANK = { admin: 3, coadmin: 2, moderator: 1 };
+  const can = (min) => (ROLE_RANK[staffRole] || 0) >= (ROLE_RANK[min] || 0);
+  const VIEW_MIN = {
+    helpfulness: 'moderator', feedback: 'moderator', users: 'moderator',
+    errors: 'moderator', demand: 'moderator', faq: 'moderator', 'content-review': 'moderator',
+    growth: 'coadmin', announcement: 'coadmin', manageAdmins: 'coadmin',
+    'storage-check': 'coadmin', config: 'coadmin', engagement: 'coadmin',
+    waitlist: 'coadmin', push: 'coadmin', audit: 'coadmin',
+  };
+  useEffect(() => {
+    if (view !== 'dashboard' && VIEW_MIN[view] && !can(VIEW_MIN[view])) setView('dashboard');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, staffRole]);
 
   // ── Issues round: HARDWARE-BACK GUARD ──────────────────────────────
   // The Admin Panel is registered as self-guarded in App (its NAV_SELF_
@@ -1359,7 +1378,7 @@ function AdminPanel({
 
   // =================== DETAIL VIEW: MANAGE ADMINS ===================
   if (view === 'manageAdmins') {
-    return <AdminManager onBack={backToDash} />;
+    return <AdminManager onBack={backToDash} staffRole={staffRole} />;
   }
 
   if (view === 'faq') {
@@ -1408,6 +1427,20 @@ function AdminPanel({
                 </button>
               } />
       <div className="max-w-md mx-auto px-4 pb-24 pt-3">
+        {/* Rank badge — who you are + what tier (owner spec: visible rank). */}
+        <div className="flex items-center gap-2 mb-3 px-1">
+          <span className="text-[12px] font-medium truncate" style={{ color: T.inkSoft }}>
+            {profile && (profile.displayName || profile.id)}
+          </span>
+          <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex-shrink-0"
+                style={staffRole === 'admin'
+                  ? { background: '#E5484D18', color: '#E5484D' }
+                  : staffRole === 'coadmin'
+                    ? { background: '#6E56CF18', color: '#6E56CF' }
+                    : { background: '#12A59418', color: '#12A594' }}>
+            {staffRole === 'admin' ? 'Owner' : staffRole === 'coadmin' ? 'Co-Admin' : 'Moderator'}
+          </span>
+        </div>
         {/* #19 — at-a-glance summary band. The numbers that need attention,
             before the section tiles. */}
         <div className="grid grid-cols-3 gap-2.5 mb-4">
@@ -1442,7 +1475,8 @@ function AdminPanel({
                     </span>
             } />
 
-          {/* Upload bank — straight to creating a bank */}
+          {/* Upload bank / Banks — Co-Admin+ (answer-key authority) */}
+          {can('coadmin') && (<>
           <AdminTile
             icon={<Upload size={22} style={{ color: T.primary }} />}
             accent={T.primary}
@@ -1451,7 +1485,6 @@ function AdminPanel({
             onClick={onCreateBank}
             signal={<Plus size={18} style={{ color: T.muted }} />} />
 
-          {/* Banks — total count; manage/edit/delete inside */}
           <AdminTile
             icon={<Layers size={22} style={{ color: T.sec.library }} />}
             accent={T.sec.library}
@@ -1459,6 +1492,7 @@ function AdminPanel({
             hint="Manage · edit · delete"
             onClick={onOpenLibrary}
             signal={bigCount(totalBanks, banksLoading)} />
+          </>)}
 
           {/* Users — total count; overview inside */}
           <AdminTile
@@ -1469,7 +1503,8 @@ function AdminPanel({
             onClick={() => setView('users')}
             signal={bigCount(totalUsers, usersLoading)} />
 
-          {/* Growth & Referrals — word-of-mouth intelligence (Phase 2) */}
+          {/* Growth & Referrals — Co-Admin+ (reads private profile blobs) */}
+          {can('coadmin') && (
           <AdminTile
             icon={<TrendingUp size={22} style={{ color: T.success }} />}
             accent={T.success}
@@ -1477,6 +1512,7 @@ function AdminPanel({
             hint="Referrals & channels"
             onClick={() => { setView('growth'); refreshGrowth(); }}
             signal={<TrendingUp size={18} style={{ color: T.muted }} />} />
+          )}
 
           {/* P8 — Helpfulness Insights: which explanations users rate */}
           <AdminTile
@@ -1507,14 +1543,16 @@ function AdminPanel({
             onClick={() => { setView('errors'); refreshErrs(); }}
             signal={<AlertTriangle size={18} style={{ color: T.muted }} />} />
 
-          {/* Manage admins — add/remove who has admin access */}
+          {/* Manage staff — Co-Admin+ (governance rules enforced server-side) */}
+          {can('coadmin') && (
           <AdminTile
             icon={<ShieldCheck size={22} style={{ color: T.primary }} />}
             accent={T.primary}
-            label="Manage admins"
-            hint="Add / remove admins"
+            label="Manage staff"
+            hint="Roles & access"
             onClick={() => setView('manageAdmins')}
             signal={<ShieldCheck size={18} style={{ color: T.muted }} />} />
+          )}
 
           {/* AI content pipeline — review/approve drafted questions from questions_staging */}
           <AdminTile
@@ -1525,8 +1563,10 @@ function AdminPanel({
             onClick={() => setView('content-review')}
             signal={<Sparkles size={18} style={{ color: T.muted }} />} />
 
-          {/* Storage self-test — verify admin content is readable by the app
-              (catches the RLS/broker "saved but invisible" class in one tap) */}
+          {/* Storage self-test / Live config / Engagement / Push / Waitlist /
+              Audit log — all Co-Admin+ (app-wide behavior, private data,
+              or the audit trail, which moderators must not read). */}
+          {can('coadmin') && (<>
           <AdminTile
             icon={<Database size={22} style={{ color: T.sec.revision }} />}
             accent={T.sec.revision}
@@ -1535,7 +1575,6 @@ function AdminPanel({
             onClick={() => setView('storage-check')}
             signal={<Database size={18} style={{ color: T.muted }} />} />
 
-          {/* Live config — tune XP curve, prices, quests, crate rewards with no redeploy */}
           <AdminTile
             icon={<SlidersHorizontal size={22} style={{ color: T.primary }} />}
             accent={T.primary}
@@ -1544,7 +1583,6 @@ function AdminPanel({
             onClick={() => setView('config')}
             signal={<SlidersHorizontal size={18} style={{ color: T.muted }} />} />
 
-          {/* Engagement — actives, signup trend, recency mix, win-back list */}
           <AdminTile
             icon={<Activity size={22} style={{ color: T.success }} />}
             accent={T.success}
@@ -1553,7 +1591,6 @@ function AdminPanel({
             onClick={() => setView('engagement')}
             signal={<Activity size={18} style={{ color: T.muted }} />} />
 
-          {/* Push broadcast — on-demand Web Push to every subscribed device */}
           <AdminTile
             icon={<BellRing size={22} style={{ color: T.accent }} />}
             accent={T.accent}
@@ -1562,7 +1599,6 @@ function AdminPanel({
             onClick={() => setView('push')}
             signal={<BellRing size={18} style={{ color: T.muted }} />} />
 
-          {/* Launch waitlist — batch approvals, referral-cluster review, nudges */}
           <AdminTile
             icon={<Ticket size={22} style={{ color: T.primary }} />}
             accent={T.primary}
@@ -1571,7 +1607,6 @@ function AdminPanel({
             onClick={() => setView('waitlist')}
             signal={<Ticket size={18} style={{ color: T.muted }} />} />
 
-          {/* Audit log — tamper-evident trail of every privileged admin action */}
           <AdminTile
             icon={<ScrollText size={22} style={{ color: T.inkSoft }} />}
             accent={T.inkSoft}
@@ -1579,6 +1614,7 @@ function AdminPanel({
             hint="Who did what, when"
             onClick={() => setView('audit')}
             signal={<ScrollText size={18} style={{ color: T.muted }} />} />
+          </>)}
 
           {/* F-F — author / edit FAQs (community replies happen on the FAQ screen) */}
           <AdminTile
@@ -1589,7 +1625,8 @@ function AdminPanel({
             onClick={() => setView('faq')}
             signal={<HelpCircle size={18} style={{ color: T.muted }} />} />
 
-          {/* Announcement — post a notice to everyone */}
+          {/* Announcement — Co-Admin+ (speaks to every user) */}
+          {can('coadmin') && (
           <AdminTile
             wide
             icon={<Flag size={22} style={{ color: T.sec.revision }} />}
@@ -1612,6 +1649,7 @@ function AdminPanel({
                   </span>
                 : <span className="text-xs font-medium" style={{ color: T.muted }}>None</span>
             } />
+          )}
         </div>
       </div>
       {/* Leave-confirmation for the device back button (issues round) */}

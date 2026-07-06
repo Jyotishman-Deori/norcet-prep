@@ -37,7 +37,8 @@ env vars / secret** below, so nothing changes for users until you switch each on
    - `nurseholic.in`
    - `nurseholic.com`
    - `norcet-prep.vercel.app`
-   - `norcet-admin.vercel.app`  ← the admin app login
+   - `admin.nurseholic.in`  ← the admin app login (custom domain, 2026-07-07)
+   - `norcet-admin.vercel.app`  ← the admin app's Vercel URL (still serves)
    - `localhost`  ← local dev
 3. Widget mode: **Managed** (recommended — usually invisible, challenges only when needed).
 4. Copy the **Site Key** (public) and the **Secret Key** (private).

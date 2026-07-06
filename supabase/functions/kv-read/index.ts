@@ -135,15 +135,31 @@ async function sessionSidOk(s: Session): Promise<boolean> {
 function sessionExpired(): Response {
   return json({ error: "SESSION_EXPIRED", message: "Logged in from another device" }, 401);
 }
-async function isAdmin(s: Session): Promise<boolean> {
+// STAFF ROLES (Admin > Co-Admin > Moderator; supabase/admin-roles.sql).
+// Role is read from the DB PER ACTION (never from the token) so a demotion
+// bites on the target's next call. LEGACY FALLBACK: before the migration the
+// role column doesn't exist — membership then counts as 'coadmin', so
+// deploying this ahead of the SQL changes nothing.
+type StaffRole = "admin" | "coadmin" | "moderator";
+const ROLE_RANK: Record<StaffRole, number> = { admin: 3, coadmin: 2, moderator: 1 };
+async function roleOf(s: Session): Promise<StaffRole | null> {
   const ids = [s.id, s.uid].filter(Boolean).map((v) => encodeURIComponent(String(v)));
-  if (!ids.length) return false;
-  const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})&select=profile_id`;
-  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-  if (!r.ok) return false;
+  if (!ids.length) return null;
+  const base = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})`;
+  let r = await fetch(`${base}&select=profile_id,role`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) r = await fetch(`${base}&select=profile_id`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) return null;
   const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
+  if (!Array.isArray(rows) || !rows.length) return null;
+  let best = 0;
+  for (const row of rows) {
+    const rank = row && row.role ? (ROLE_RANK[row.role as StaffRole] ?? 2) : 2;
+    if (rank > best) best = rank;
+  }
+  return best >= 3 ? "admin" : best === 2 ? "coadmin" : "moderator";
 }
+const atLeast = (role: StaffRole | null, min: StaffRole): boolean =>
+  !!role && ROLE_RANK[role] >= ROLE_RANK[min];
 
 // Prefix categories (see header). Order of checks: owner-scoped → owned-content
 // → admin-only → deny.
@@ -205,27 +221,35 @@ Deno.serve(async (req: Request) => {
   if (!(await sessionSidOk(session))) return sessionExpired();
 
   try {
-    const admin = await isAdmin(session);
+    const role = await roleOf(session);
+    // "admin" = Co-Admin or above; moderator carve-outs are per-prefix:
+    //   myfeedback:/feedback: — community control IS the moderator job.
+    //   errlog: — "basic logs" per the role spec.
+    //   profile:/analytics:/adminlog: — stay Co-Admin+ (private data / audit).
+    const admin = atLeast(role, "coadmin");
+    const crossFor = (p: string): boolean =>
+      (p === "myfeedback:" || p === "feedback:" || p === "errlog:")
+        ? atLeast(role, "moderator") : admin;
 
     // ---- GET one key ----
     if (body.op === "get") {
       const key = String(body.key ?? "");
-      // owner-scoped: suffix match or admin
+      // owner-scoped: suffix match or staff cross-read (tier per prefix)
       const os = prefixFrom(OWNER_SCOPED, key);
       if (os) {
-        if (!admin && suffix(key, os) !== session.id) return json({ error: "Forbidden: not your row" }, 403);
+        if (!crossFor(os) && suffix(key, os) !== session.id) return json({ error: "Forbidden: not your row" }, 403);
         return await getValueResponse(key);
       }
-      // owned-content: admin, or the row's author
+      // owned-content: staff (tier per prefix), or the row's author
       const oc = prefixFrom(OWNED_CONTENT, key);
       if (oc) {
-        if (!admin && !rowOwnedBy(await getRowParsed(key), session)) return json({ error: "Forbidden: not your content" }, 403);
+        if (!crossFor(oc) && !rowOwnedBy(await getRowParsed(key), session)) return json({ error: "Forbidden: not your content" }, 403);
         return await getValueResponse(key);
       }
-      // admin-only
+      // staff-only (tier per prefix)
       const ao = prefixFrom(ADMIN_ONLY, key);
       if (ao) {
-        if (!admin) return json({ error: "Forbidden: admin only" }, 403);
+        if (!crossFor(ao)) return json({ error: "Forbidden: staff only" }, 403);
         return await getValueResponse(key);
       }
       return json({ error: "Forbidden: not a broker-served key" }, 403);
@@ -241,19 +265,19 @@ Deno.serve(async (req: Request) => {
         const rows = await listRows(`${os}${session.id}`, false);
         return json({ keys: rows.map((x) => x.key) });
       }
-      // owned-content: admin sees all; a student sees only their own rows.
+      // owned-content: staff sees all (tier per prefix); students their own.
       const oc = prefixFrom(OWNED_CONTENT, prefix);
       if (oc) {
-        if (admin) return json({ keys: (await listRows(oc, false)).map((x) => x.key) });
+        if (crossFor(oc)) return json({ keys: (await listRows(oc, false)).map((x) => x.key) });
         const mine = (await listRows(oc, true)).filter((r) => {
           try { return rowOwnedBy(JSON.parse(String(r.value ?? "{}")), session); } catch { return false; }
         });
         return json({ keys: mine.map((x) => x.key) });
       }
-      // admin-only: everything for an admin, nothing for anyone else.
+      // staff-only: everything for the right tier, nothing for anyone else.
       const ao = prefixFrom(ADMIN_ONLY, prefix);
       if (ao) {
-        if (!admin) return json({ keys: [] });
+        if (!crossFor(ao)) return json({ keys: [] });
         return json({ keys: (await listRows(ao, false)).map((x) => x.key) });
       }
       return json({ error: "Forbidden: not a broker-served prefix" }, 403);

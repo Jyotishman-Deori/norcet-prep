@@ -1,25 +1,33 @@
 // =====================================================================
 // supabase/functions/admin-manage/index.ts
-// Secure admin-management endpoint for NORCET Prep.
+// Staff-governance endpoint for NurseHolic (roles: Admin > Co-Admin >
+// Moderator — see supabase/admin-roles.sql and the journal's "Role
+// hierarchy" spec).
 //
-// WHY: the public app can only READ admin_profile_ids (anon select). All
-// WRITES go through here. The passphrase is verified SERVER-SIDE, and the
-// row is written with the service-role key — which bypasses RLS and never
-// reaches the browser. This is what makes the lockdown actually secure.
+// WHY: all writes to admin_profile_ids go through here. Two locks stack on
+// every write: the ADMIN_PASSPHRASE (verified server-side) AND the caller's
+// signed session token (so the ACTOR is known and the promotion ceiling /
+// self-protection / owner-lock rules can be enforced + audited).
+//
+// GOVERNANCE RULES (server-enforced, mirrors the owner's spec):
+//   • roleOf(caller) is read from the DB per call — never from the token —
+//     so demotions bite on the very next action.
+//   • Promotion ceiling: you may grant/set only roles BELOW your own
+//     (admin → coadmin|moderator; coadmin → moderator; moderator → nothing).
+//   • Self-protection: you cannot remove or change your own rows.
+//   • Owner-lock: the 'admin' (owner) rows cannot be removed or demoted by
+//     ANYONE — ownership moves only via transfer-ownership (atomic RPC).
+//   • Every staff change writes a server-stamped adminlog: audit row with
+//     the actor, target, and the supplied reason.
 //
 // DEPLOY:
 //   supabase functions deploy admin-manage --no-verify-jwt
-// SET THE SECRET (this is the passphrase users type in the app):
-//   supabase secrets set ADMIN_PASSPHRASE="<your-strong-passphrase>"   # never commit the real value
-// (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are injected automatically.)
+// SECRETS: ADMIN_PASSPHRASE, SESSION_SIGNING_SECRET (already set).
 // =====================================================================
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_PASSPHRASE = Deno.env.get("ADMIN_PASSPHRASE") ?? "";
-// For the token-verified actions (check-admin / list-admins) — the same
-// signing secret auth-secure/kv-write use. The passphrase actions below
-// work without it, so a missing secret only disables the token actions.
 const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
 
 const cors = {
@@ -48,9 +56,6 @@ function dbHeaders(extra?: Record<string, string>): Record<string, string> {
 }
 
 // ---- session-token verification (byte-identical to kv-write) --------
-// Powers check-admin / list-admins: the admin app authenticates with the
-// LOGGED-IN ADMIN's signed session token, so the admin_profile_ids table
-// itself no longer needs any anon SELECT policy (see lock-admin-list.sql).
 function b64urlToBytes(s: string): Uint8Array {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
   while (s.length % 4) s += "=";
@@ -87,14 +92,68 @@ async function verifyToken(token: unknown): Promise<Session | null> {
     sid: payload.sid == null ? null : String(payload.sid),
   };
 }
-async function isAdmin(s: Session): Promise<boolean> {
-  const ids = [s.id, s.uid].filter(Boolean).map((v) => encodeURIComponent(String(v)));
-  if (!ids.length) return false;
-  const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})&select=profile_id`;
-  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
-  if (!r.ok) return false;
+
+// ---- STAFF ROLES ------------------------------------------------------
+type StaffRole = "admin" | "coadmin" | "moderator";
+const ROLE_RANK: Record<StaffRole, number> = { admin: 3, coadmin: 2, moderator: 1 };
+const rankToRole = (n: number): StaffRole | null =>
+  n >= 3 ? "admin" : n === 2 ? "coadmin" : n === 1 ? "moderator" : null;
+
+type StaffRow = { profile_id: string; role: StaffRole | null; note?: string | null; added_at?: string | null };
+
+// All staff rows (tolerates the pre-migration table without a role column —
+// rows then read as role:null = legacy 'coadmin').
+async function listStaff(): Promise<StaffRow[]> {
+  let r = await fetch(
+    `${SUPABASE_URL}/rest/v1/admin_profile_ids?select=profile_id,note,added_at,role&order=added_at.asc.nullslast`,
+    { headers: dbHeaders({ Accept: "application/json" }) },
+  );
+  if (!r.ok) {
+    r = await fetch(
+      `${SUPABASE_URL}/rest/v1/admin_profile_ids?select=profile_id,note,added_at&order=added_at.asc.nullslast`,
+      { headers: dbHeaders({ Accept: "application/json" }) },
+    );
+    if (!r.ok) throw new Error(`list failed: ${r.status}`);
+    const rows = await r.json();
+    return (Array.isArray(rows) ? rows : []).map((x: Record<string, unknown>) => ({ ...x, role: null } as StaffRow));
+  }
   const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
+  return Array.isArray(rows) ? rows : [];
+}
+
+// Caller's highest role across their id+uid rows. null = not staff.
+async function roleOf(s: Session): Promise<StaffRole | null> {
+  const idset = new Set([s.id, s.uid].filter(Boolean).map(String));
+  if (!idset.size) return null;
+  let best = 0;
+  try {
+    const rows = await listStaff();
+    for (const row of rows) {
+      if (!idset.has(row.profile_id)) continue;
+      const rank = row.role ? (ROLE_RANK[row.role] ?? 2) : 2; // legacy null = coadmin
+      if (rank > best) best = rank;
+    }
+  } catch { return null; }
+  return rankToRole(best);
+}
+const atLeast = (role: StaffRole | null, min: StaffRole): boolean =>
+  !!role && ROLE_RANK[role] >= ROLE_RANK[min];
+
+// ---- server-stamped audit row (adminlog: convention) -----------------
+async function audit(actor: Session, action: string, target: string, detail: string | null): Promise<void> {
+  try {
+    const id = crypto.randomUUID();
+    const entry = {
+      id, action, target, targetName: null,
+      detail: detail || null,
+      actorName: null, actorId: actor.id, actorUid: actor.uid, ts: Date.now(),
+    };
+    await fetch(`${SUPABASE_URL}/rest/v1/kv_shared`, {
+      method: "POST",
+      headers: dbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify({ key: `adminlog:${id}`, value: JSON.stringify(entry) }),
+    });
+  } catch { /* audit is best-effort; the action itself already succeeded */ }
 }
 
 Deno.serve(async (req: Request) => {
@@ -108,45 +167,39 @@ Deno.serve(async (req: Request) => {
   const action = String(payload.action ?? "");
   const id = String(payload.profileId ?? "").trim();
   const note = payload.note == null ? null : String(payload.note);
+  const reason = payload.reason == null ? null : String(payload.reason).slice(0, 300);
   const passphrase = typeof payload.passphrase === "string" ? payload.passphrase : "";
 
-  // ---- TOKEN-verified actions (no passphrase involved) ----------------
-  // check-admin: "is the LOGGED-IN caller on the allow-list?" — replaces the
-  // admin app's direct anon SELECT of admin_profile_ids, so that table can be
-  // fully locked (lock-admin-list.sql). Returns 200 { ok } always, so the
-  // client can branch without treating "no" as a transport error.
+  // ---- TOKEN-verified reads -------------------------------------------
+  // check-admin: is the LOGGED-IN caller staff, and at what tier? The admin
+  // app boots on this. { ok:false } for non-staff (200, so clients branch).
   if (action === "check-admin") {
     if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
     const session = await verifyToken(payload.token);
     if (!session) return json({ ok: false });
-    return json({ ok: await isAdmin(session) });
+    const role = await roleOf(session);
+    return json({ ok: !!role, role: role ?? null });
   }
-  // list-admins: the Manage Admins screen's read — admins only.
+  // list-admins: the Manage Admins screen's read — Co-Admin and above
+  // (moderators don't see staff governance at all).
   if (action === "list-admins") {
     if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
     const session = await verifyToken(payload.token);
     if (!session) return json({ error: "Not authenticated" }, 401);
-    if (!(await isAdmin(session))) return json({ error: "Forbidden: admin only" }, 403);
-    const r = await fetch(
-      `${SUPABASE_URL}/rest/v1/admin_profile_ids?select=profile_id,note,added_at&order=added_at.asc.nullslast`,
-      { headers: dbHeaders({ Accept: "application/json" }) },
-    );
-    if (!r.ok) return json({ error: `list failed: ${r.status}` }, 502);
-    const rows = await r.json();
-    return json({ ok: true, admins: Array.isArray(rows) ? rows : [] });
+    const role = await roleOf(session);
+    if (!atLeast(role, "coadmin")) return json({ error: "Forbidden: co-admin or above" }, 403);
+    try {
+      const rows = await listStaff();
+      return json({ ok: true, admins: rows, callerRole: role });
+    } catch (e) { return json({ error: String((e as Error).message ?? e) }, 502); }
   }
-
-  // resolve-profiles: admin-only name lookup. Given profile ids/uids (the
-  // admin_profile_ids rows, or a candidate being added), return their real
-  // display names from profile_secrets (which is the ONLY table mapping both
-  // id AND uid → display_name). Lets the Manage Admins UI show a username next
-  // to every id, and preview "who is this?" before granting admin. Never
-  // returns hashes/secrets — only { id, uid, display_name }.
+  // resolve-profiles: admin-only name lookup (id/uid → display_name via
+  // profile_secrets — the only table mapping BOTH). Never returns secrets.
   if (action === "resolve-profiles") {
     if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
     const session = await verifyToken(payload.token);
     if (!session) return json({ error: "Not authenticated" }, 401);
-    if (!(await isAdmin(session))) return json({ error: "Forbidden: admin only" }, 403);
+    if (!atLeast(await roleOf(session), "coadmin")) return json({ error: "Forbidden: co-admin or above" }, 403);
     const rawIds = Array.isArray(payload.ids) ? payload.ids : [];
     const ids = rawIds.map((v) => String(v).trim()).filter(Boolean).slice(0, 100);
     if (!ids.length) return json({ ok: true, profiles: [] });
@@ -158,39 +211,111 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, profiles: Array.isArray(rows) ? rows : [] });
   }
 
-  // ---- server-side auth: the passphrase is the gate, checked HERE ----
+  // ---- passphrase gate (all writes below) ------------------------------
   if (!ADMIN_PASSPHRASE) return json({ error: "Server not configured" }, 500);
   const passOk = safeEqual(passphrase, ADMIN_PASSPHRASE);
 
-  // "verify" is a yes/no check used to UNLOCK the admin UI. It returns the
-  // result with a 200 (never 401) so the frontend can branch on { ok } — and
-  // no passphrase or hash needs to live in the frontend at all.
+  // "verify" unlocks the admin UI — 200 { ok } either way.
   if (action === "verify") return json({ ok: passOk });
 
-  // add / remove require a correct passphrase.
   if (!passOk) return json({ error: "Wrong passphrase" }, 401);
+
+  // Writes ALSO require the actor's token: governance rules need to know WHO
+  // is acting, and the audit trail must be attributable.
+  const session = await verifyToken(payload.token);
+  if (!session) return json({ error: "Not authenticated (session token required)" }, 401);
+  const actorRole = await roleOf(session);
+  if (!atLeast(actorRole, "coadmin")) return json({ error: "Forbidden: co-admin or above" }, 403);
+  const actorIds = new Set([session.id, session.uid].filter(Boolean).map(String));
+
+  // Target row (for remove/set-role) + its effective role.
+  const staff = await listStaff().catch(() => [] as StaffRow[]);
+  const targetRow = staff.find((x) => x.profile_id === id) || null;
+  const targetRole: StaffRole | null = targetRow ? (targetRow.role ?? "coadmin") : null;
 
   if (action === "add") {
     if (!id) return json({ error: "Missing profileId" }, 400);
+    // Requested role must sit BELOW the actor's own (promotion ceiling).
+    const reqRole = (String(payload.role ?? "moderator") as StaffRole);
+    if (!["coadmin", "moderator"].includes(reqRole)) return json({ error: "Invalid role" }, 400);
+    if (ROLE_RANK[reqRole] >= ROLE_RANK[actorRole as StaffRole]) {
+      return json({ error: "Forbidden: you can only grant roles below your own" }, 403);
+    }
+    if (targetRow) return json({ error: "Already on the staff list — change their role instead" }, 409);
     const r = await fetch(`${SUPABASE_URL}/rest/v1/admin_profile_ids`, {
       method: "POST",
-      headers: dbHeaders({
-        "Content-Type": "application/json",
-        Prefer: "resolution=merge-duplicates,return=minimal",
-      }),
-      body: JSON.stringify({ profile_id: id, note }),
+      headers: dbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+      body: JSON.stringify({ profile_id: id, note, role: reqRole }),
     });
-    if (!r.ok) return json({ error: `add failed: ${r.status} ${await r.text().catch(() => "")}`.trim() }, 502);
+    if (!r.ok) {
+      // Pre-migration table (no role column): retry without it — legacy add.
+      const r2 = await fetch(`${SUPABASE_URL}/rest/v1/admin_profile_ids`, {
+        method: "POST",
+        headers: dbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
+        body: JSON.stringify({ profile_id: id, note }),
+      });
+      if (!r2.ok) return json({ error: `add failed: ${r2.status} ${await r2.text().catch(() => "")}`.trim() }, 502);
+    }
+    await audit(session, "staff-add", id, reason || `role: ${reqRole}${note ? ` · ${note}` : ""}`);
     return json({ ok: true });
   }
 
   if (action === "remove") {
     if (!id) return json({ error: "Missing profileId" }, 400);
+    if (actorIds.has(id)) return json({ error: "Forbidden: you can't remove your own access" }, 403);
+    if (!targetRow) return json({ ok: true }); // already gone
+    if (targetRole === "admin") return json({ error: "Forbidden: the owner can't be removed — transfer ownership first" }, 403);
+    if (ROLE_RANK[targetRole as StaffRole] >= ROLE_RANK[actorRole as StaffRole]) {
+      return json({ error: "Forbidden: you can only remove roles below your own" }, 403);
+    }
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=eq.${encodeURIComponent(id)}`,
       { method: "DELETE", headers: dbHeaders() },
     );
     if (!r.ok && r.status !== 404) return json({ error: `remove failed: ${r.status}` }, 502);
+    await audit(session, "staff-remove", id, reason);
+    return json({ ok: true });
+  }
+
+  if (action === "set-role") {
+    if (!id) return json({ error: "Missing profileId" }, 400);
+    const newRole = (String(payload.role ?? "") as StaffRole);
+    if (!["coadmin", "moderator"].includes(newRole)) return json({ error: "Invalid role (ownership moves via transfer)" }, 400);
+    if (actorIds.has(id)) return json({ error: "Forbidden: you can't change your own role" }, 403);
+    if (!targetRow) return json({ error: "Not on the staff list" }, 404);
+    if (targetRole === "admin") return json({ error: "Forbidden: the owner's role only changes via ownership transfer" }, 403);
+    // Ceiling on BOTH sides: current role and new role must sit below actor's.
+    if (ROLE_RANK[targetRole as StaffRole] >= ROLE_RANK[actorRole as StaffRole] ||
+        ROLE_RANK[newRole] >= ROLE_RANK[actorRole as StaffRole]) {
+      return json({ error: "Forbidden: you can only manage roles below your own" }, 403);
+    }
+    const r = await fetch(
+      `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=eq.${encodeURIComponent(id)}`,
+      {
+        method: "PATCH",
+        headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=minimal" }),
+        body: JSON.stringify({ role: newRole }),
+      },
+    );
+    if (!r.ok) return json({ error: `set-role failed: ${r.status} (has admin-roles.sql been run?)` }, 502);
+    await audit(session, "staff-role", id, reason || `→ ${newRole}`);
+    return json({ ok: true });
+  }
+
+  if (action === "transfer-ownership") {
+    if (!id) return json({ error: "Missing profileId" }, 400);
+    if (actorRole !== "admin") return json({ error: "Forbidden: only the owner can transfer ownership" }, 403);
+    if (actorIds.has(id)) return json({ error: "You already own this app" }, 400);
+    if (!targetRow) return json({ error: "Target must already be on the staff list" }, 404);
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/admin_transfer_ownership`, {
+      method: "POST",
+      headers: dbHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
+      body: JSON.stringify({ p_to: id }),
+    });
+    if (!r.ok) return json({ error: `transfer failed: ${r.status} (has admin-roles.sql been run?)` }, 502);
+    const okRes = await r.json().catch(() => false);
+    if (okRes !== true) return json({ error: "Transfer refused — target not on the staff list" }, 409);
+    await audit(session, "ownership-transfer", id, reason);
     return json({ ok: true });
   }
 

@@ -23,7 +23,7 @@ import AuthScreen from './screens/auth-screen.jsx';
 import { BankEditor } from './screens/bank-screens.jsx';
 import Library from './screens/library.jsx';
 import {
-  checkServerAdmin, loadAdminStatus, saveAdminStatus,
+  checkServerAdminRole, loadAdminStatus, saveAdminStatus,
   loadAnnouncement, loadAnnouncementHistory, saveAnnouncement,
   deleteAnnouncementHistoryItem, clearAnnouncementHistory, clearAnnouncement,
   adminListUsers, adminDeleteProfile,
@@ -99,6 +99,7 @@ function AdminApp() {
   const [booting, setBooting] = useState(true);
   const [profile, setProfile] = useState(null);
   const [adminState, setAdminState] = useState('unknown'); // 'unknown' | 'yes' | 'no'
+  const [staffRole, setStaffRole] = useState(null); // 'admin' | 'coadmin' | 'moderator' | null
   const [banks, setBanks] = useState([]);
   const [banksLoading, setBanksLoading] = useState(false);
   const [announcement, setAnnouncement] = useState(null);
@@ -122,15 +123,20 @@ function AdminApp() {
   }, []);
 
   // 2) Verify admin server-side whenever a profile is active (fail-closed).
+  // Also captures the caller's STAFF ROLE (admin/coadmin/moderator) — the
+  // panel renders only what the role can use; the brokers enforce it anyway.
   useEffect(() => {
     if (!profile || !profile.id) { setAdminState('unknown'); return; }
     let cancelled = false;
     (async () => {
       try { if (await loadAdminStatus() && !cancelled) setAdminState('yes'); } catch (e) {}
-      const ok = await checkServerAdmin(profile.id, profile.uid);
+      const res = await checkServerAdminRole(profile.id, profile.uid);
       if (cancelled) return;
-      setAdminState(ok ? 'yes' : 'no');
-      try { await saveAdminStatus(ok); } catch (e) {}
+      setAdminState(res.ok ? 'yes' : 'no');
+      // Legacy server (no role field yet) → treat as full admin (that is
+      // exactly what list membership meant before the migration).
+      setStaffRole(res.ok ? (res.role || 'admin') : null);
+      try { await saveAdminStatus(res.ok); } catch (e) {}
     })();
     return () => { cancelled = true; };
   }, [profile]);
@@ -187,7 +193,7 @@ function AdminApp() {
     <Suspense fallback={<Splash T={T} />}>
       {nav.screen === 'panel' && (
         <AdminPanel
-          profile={profile} banks={banks} banksLoading={banksLoading} allQuestions={allQuestions}
+          profile={profile} staffRole={staffRole} banks={banks} banksLoading={banksLoading} allQuestions={allQuestions}
           announcement={announcement}
           onSaveAnnouncement={(text, level, days) => saveAnnouncement(text, level, profile.id, days).then(e => { setAnnouncement(e); return e; })}
           onClearAnnouncement={() => clearAnnouncement().then(() => setAnnouncement(null))}

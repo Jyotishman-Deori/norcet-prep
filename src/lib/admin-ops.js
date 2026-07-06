@@ -59,11 +59,20 @@ export async function verifyAdminPassphrase(passphrase) {
 // Never throws — any network/parse/config failure resolves to false
 // (fail-closed: a broken admin check should reject, not grant).
 export async function checkServerAdmin(profileId, uid) {
-  if (!profileId && !uid) return false;
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return false;
+  const res = await checkServerAdminRole(profileId, uid);
+  return res.ok;
+}
+
+// Role-aware variant: { ok, role } where role ∈ 'admin'|'coadmin'|'moderator'
+// (the staff hierarchy — supabase/admin-roles.sql). A legacy server that
+// predates roles returns ok without a role; callers should treat that as
+// full access (everyone on the list was a full admin then).
+export async function checkServerAdminRole(profileId, uid) {
+  if (!profileId && !uid) return { ok: false, role: null };
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return { ok: false, role: null };
   try {
     const token = getAuthToken();
-    if (!token) return false;
+    if (!token) return { ok: false, role: null };
     const r = await fetch(`${SUPABASE_URL}/functions/v1/admin-manage`, {
       method: 'POST',
       headers: {
@@ -73,11 +82,12 @@ export async function checkServerAdmin(profileId, uid) {
       },
       body: JSON.stringify({ action: 'check-admin', token }),
     });
-    if (!r.ok) return false;
+    if (!r.ok) return { ok: false, role: null };
     const j = await r.json();
-    return !!(j && j.ok === true);
+    if (!j || j.ok !== true) return { ok: false, role: null };
+    return { ok: true, role: j.role || null };
   } catch (e) {
-    return false;
+    return { ok: false, role: null };
   }
 }
 

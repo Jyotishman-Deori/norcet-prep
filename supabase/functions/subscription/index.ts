@@ -100,14 +100,26 @@ async function verifyToken(token: unknown): Promise<Session | null> {
     sid: payload.sid == null ? null : String(payload.sid),
   };
 }
+// STAFF ROLES (Admin > Co-Admin > Moderator; supabase/admin-roles.sql).
+// This broker's actions are Co-Admin+; moderators (community control only)
+// get nothing here. Legacy fallback: pre-migration membership = 'coadmin'.
+type StaffRole = "admin" | "coadmin" | "moderator";
+const ROLE_RANK: Record<StaffRole, number> = { admin: 3, coadmin: 2, moderator: 1 };
 async function isAdmin(s: Session): Promise<boolean> {
   const ids = [s.id, s.uid].filter(Boolean).map((v) => encodeURIComponent(String(v)));
   if (!ids.length) return false;
-  const url = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})&select=profile_id`;
-  const r = await fetch(url, { headers: dbHeaders({ Accept: "application/json" }) });
+  const base = `${SUPABASE_URL}/rest/v1/admin_profile_ids?profile_id=in.(${ids.join(",")})`;
+  let r = await fetch(`${base}&select=profile_id,role`, { headers: dbHeaders({ Accept: "application/json" }) });
+  if (!r.ok) r = await fetch(`${base}&select=profile_id`, { headers: dbHeaders({ Accept: "application/json" }) });
   if (!r.ok) return false;
   const rows = await r.json();
-  return Array.isArray(rows) && rows.length > 0;
+  if (!Array.isArray(rows) || !rows.length) return false;
+  let best = 0;
+  for (const row of rows) {
+    const rank = row && row.role ? (ROLE_RANK[row.role as StaffRole] ?? 2) : 2;
+    if (rank > best) best = rank;
+  }
+  return best >= 2; // Co-Admin or above
 }
 
 // ---- single concurrent session ("last one wins") — mirror of kv-write ----

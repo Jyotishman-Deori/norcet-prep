@@ -56,7 +56,10 @@ export async function listAdmins() {
     throw err;
   }
   const j = await r.json().catch(() => ({}));
-  return Array.isArray(j && j.admins) ? j.admins : [];
+  return {
+    admins: Array.isArray(j && j.admins) ? j.admins : [],
+    callerRole: (j && j.callerRole) || null,
+  };
 }
 
 // RESOLVE: admin-only lookup of display names for a set of ids/uids (via the
@@ -80,32 +83,52 @@ export async function resolveAdminProfiles(ids) {
   } catch (e) { return []; }
 }
 
-// WRITES: through the passphrase-gated Edge Function.
-async function callFn(action, profileId, passphrase, note) {
+// WRITES: passphrase + the ACTOR's session token (governance rules — the
+// promotion ceiling, self-protection and the audit trail — need to know WHO
+// is acting, so the token now rides along with every write).
+async function callFn(action, profileId, passphrase, extra) {
   if (!FN_URL) throw new Error('Supabase not configured');
   const r = await fetch(FN_URL, {
     method: 'POST',
     headers: anonHeaders({ 'Content-Type': 'application/json' }),
-    body: JSON.stringify({ action, profileId, passphrase: passphrase || '', note: note ?? null }),
+    body: JSON.stringify({
+      action, profileId, passphrase: passphrase || '',
+      token: getAuthToken(), ...(extra || {}),
+    }),
   });
   if (!r.ok) {
     let msg = `${r.status}`;
     try { const j = await r.json(); if (j && j.error) msg = j.error; } catch (e) { /* ignore */ }
     const err = new Error(msg);
-    err.status = r.status; // 401 => wrong passphrase
+    err.status = r.status; // 401 => wrong passphrase / not signed in
     throw err;
   }
   return r.json().catch(() => ({}));
 }
 
-export async function addAdmin(profileId, passphrase, note) {
+// role: 'coadmin' | 'moderator' (must sit BELOW the actor's own role).
+export async function addAdmin(profileId, passphrase, note, role) {
   const id = String(profileId || '').trim();
   if (!id) throw new Error('Enter a profile id');
-  return callFn('add', id, passphrase, note || null);
+  return callFn('add', id, passphrase, { note: note ?? null, role: role || 'moderator' });
 }
 
-export async function removeAdmin(profileId, passphrase) {
+export async function removeAdmin(profileId, passphrase, reason) {
   const id = String(profileId || '').trim();
   if (!id) throw new Error('Missing profile id');
-  return callFn('remove', id, passphrase);
+  return callFn('remove', id, passphrase, { reason: reason ?? null });
+}
+
+// Promote/demote between coadmin ↔ moderator (ownership moves via transfer).
+export async function setAdminRole(profileId, role, passphrase, reason) {
+  const id = String(profileId || '').trim();
+  if (!id) throw new Error('Missing profile id');
+  return callFn('set-role', id, passphrase, { role, reason: reason ?? null });
+}
+
+// Owner only: atomically demote self + promote the target (admin-roles.sql RPC).
+export async function transferOwnership(profileId, passphrase, reason) {
+  const id = String(profileId || '').trim();
+  if (!id) throw new Error('Missing profile id');
+  return callFn('transfer-ownership', id, passphrase, { reason: reason ?? null });
 }
