@@ -10247,3 +10247,62 @@ eforward1-5). Loops DNS (mail.nurseholic.in) all verified. Then three code jobs:
      see the "Role hierarchy: Admin > Co-Admin > Moderator" spec above, still
      NOT built: that needs per-account staff login + roleOf() in all brokers).
    Deployed: admin-manage fn + `npm run deploy:admin` (norcet-admin).
+
+# ---------------------------------------------------------------------
+# (2026-07-07) STAFF ROLE HIERARCHY SHIPPED + admin custom domain + brand end
+# ---------------------------------------------------------------------
+
+The "FUTURE / DEFERRED — Role hierarchy" spec above is now BUILT (d627d5f,
+dev=main; all 8 Edge Fns deployed; admin app deployed). Owner asked for the
+complete version.
+
+⚠ OWNER STEP REQUIRED: run supabase/admin-roles.sql in the SQL editor.
+Until then everything behaves exactly as before (legacy membership counts
+as Co-Admin — deploy-safe fallback in every broker). After the SQL: owner
+rows (iyro + uid) = admin; other rows = coadmin; RPC
+admin_transfer_ownership() exists (service-role only).
+
+WHAT SHIPPED:
+- roleOf() in ALL brokers, read from DB per action (never in the token):
+  demotion bites on the target's next call — the spec's "instant revocation
+  freebie". Tier map: Moderator = faq: writes, myfeedback: replies,
+  feedback:/faqq: moderation, adminlog APPEND, errlog/feedback cross-READS,
+  content-staging list+generate (drafts). Co-Admin+ = everything else
+  (announce/config/banks/push/waitlist/subscription/referral-intel/
+  profile-blob reads/audit-log READS/content publish). admin-manage
+  governance: writes need passphrase + actor token; promotion ceiling
+  (grant only below your own role); self-action block; owner-lock (owner
+  changes only via atomic transfer); server-stamped adminlog rows w/ reason.
+- Admin UI: staffRole captured at login (check-admin returns role; legacy
+  no-role => treated as full admin); dashboard rank badge (Owner crimson /
+  Co-Admin purple / Moderator teal); tile+view visibility matrix (moderators
+  see Feedback/Users/Bank health/Crash reports/Content Review/FAQ/
+  Helpfulness ONLY). Manage Staff v2: rows GROUPED BY PERSON (slug+uid = ONE
+  card — fixes owner's duplicate self-card report; group actions apply to
+  every id), role DROPDOWN on add (only roles below yours + power blurbs),
+  live username lookup + named confirm before grant, promote/demote/remove
+  via inline caution panels with a LOGGED REASON, ownership transfer with
+  type-TRANSFER confirm, self/owner rows hard-locked in UI and server.
+
+BRAND STRAGGLERS CLOSED: the "norcet-prep" the owner saw in the share
+section = share cards display window.location.host, so it only appears when
+the app RUNS on norcet-prep.vercel.app (old origin/stale PWA install).
+Fixed for good with a PERMANENT host redirect in vercel.json
+(norcet-prep.vercel.app -> https://www.nurseholic.in/:path*; previews
+unaffected; admin project has its own deploy so unaffected). All remaining
+"NORCET" strings in src/ are deliberate EXAM descriptors.
+
+ADMIN CUSTOM DOMAIN: owner activated admin.nurseholic.in (CNAME ->
+vercel-dns, Valid Config + SSL). Codebase sweep for norcet-admin.vercel.app:
+ZERO functional references (no CORS lists/callbacks/env URLs; GIS has no
+redirect URIs; Edge Fns allow *). Only scripts/post-admin-build.mjs pins
+projectName norcet-admin — that's the Vercel PROJECT name; keep until the
+project itself is renamed. Docs updated (Turnstile hostnames + this note).
+
+GOOGLE ON ADMIN LOGIN: admin builds LOCALLY from .env (deploy:admin), so
+VITE_GOOGLE_CLIENT_ID (public value) was appended to .env; rebuilt +
+deployed; client id verified in the live admin bundle.
+⚠ OWNER STEP: add https://admin.nurseholic.in (+ keep norcet-admin.vercel.app)
+to the Google OAuth client's Authorized JavaScript origins, or the admin
+Google button will error on that origin. Email login already worked there
+(shared AuthScreen + lookup-by-email).
