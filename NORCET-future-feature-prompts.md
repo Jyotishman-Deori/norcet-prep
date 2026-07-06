@@ -10339,3 +10339,18 @@ SHIPPED 955c2ed (admin-manage deployed; admin app deployed):
 ⚠ NOTE: until admin-2fa.sql is run, totp-enroll errors ("has admin-2fa.sql
 been run?") and the enrolment screen blocks the panel — run the SQL right
 after deploy. 2FA + roles both live entirely on free tiers.
+
+# ---------------------------------------------------------------------
+# (2026-07-07, later) Admin auth = LOGIN-ONLY
+# ---------------------------------------------------------------------
+
+Owner: "the create profile section in the admin panel is completely useless
+and meaningless." Correct — staff are EXISTING accounts added to the
+allow-list; a fresh profile created on the admin login just hits the
+Not-Authorized screen. Fixed (9a9de30): AuthScreen gained a `loginOnly` prop
+(AdminApp passes it) that hides the Create/Log-in tab switcher, locks to Log
+in, sets the subtitle to "Staff sign-in", and turns a brand-new Google
+sign-in (no linked profile) into a clear "not a staff account" message rather
+than dropping into sign-up. Existing-account Google + email + username login
+all still work. Student app unchanged (default keeps both tabs). Admin
+redeployed.
