@@ -132,3 +132,24 @@ export async function transferOwnership(profileId, passphrase, reason) {
   if (!id) throw new Error('Missing profile id');
   return callFn('transfer-ownership', id, passphrase, { reason: reason ?? null });
 }
+
+// ---- 2FA (TOTP / Google Authenticator) — token-authed, no passphrase ----
+async function callTotp(action, extra) {
+  if (!FN_URL) throw new Error('Supabase not configured');
+  const r = await fetch(FN_URL, {
+    method: 'POST',
+    headers: anonHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({ action, token: getAuthToken(), ...(extra || {}) }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const err = new Error((j && j.error) || `${r.status}`);
+    err.status = r.status;
+    throw err;
+  }
+  return j;
+}
+// → { ok, secret, otpauth } (otpauth:// URI for the authenticator QR)
+export function totpEnroll() { return callTotp('totp-enroll', {}); }
+// → { ok } | { ok:false, reason:'bad-code'|'not-enrolled' }
+export function totpVerify(code) { return callTotp('totp-verify', { code }); }

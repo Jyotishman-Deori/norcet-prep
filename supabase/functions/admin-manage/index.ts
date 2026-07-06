@@ -28,6 +28,10 @@
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const ADMIN_PASSPHRASE = Deno.env.get("ADMIN_PASSPHRASE") ?? "";
+// Staff key: Co-Admins/Moderators type THIS for staff-management changes,
+// never the owner's key (owner decision 2026-07-07). Owner keeps
+// ADMIN_PASSPHRASE. Which one applies is decided by the ACTOR's role.
+const STAFF_PASSPHRASE = Deno.env.get("STAFF_PASSPHRASE") ?? "";
 const SESSION_SECRET = Deno.env.get("SESSION_SIGNING_SECRET") ?? "";
 
 const cors = {
@@ -139,6 +143,84 @@ async function roleOf(s: Session): Promise<StaffRole | null> {
 const atLeast = (role: StaffRole | null, min: StaffRole): boolean =>
   !!role && ROLE_RANK[role] >= ROLE_RANK[min];
 
+// ---- TOTP (RFC 6238, SHA-1/30s/6 digits — Google Authenticator) -------
+// The secret lives ONLY in profile_secrets.totp_secret (service-role-only
+// table; see supabase/admin-2fa.sql). "pending:"-prefixed until the first
+// valid code confirms the enrolment.
+const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+function b32encode(bytes: Uint8Array): string {
+  let bits = 0, value = 0, out = "";
+  for (const b of bytes) {
+    value = (value << 8) | b; bits += 8;
+    while (bits >= 5) { out += B32[(value >>> (bits - 5)) & 31]; bits -= 5; }
+  }
+  if (bits > 0) out += B32[(value << (5 - bits)) & 31];
+  return out;
+}
+function b32decode(s: string): Uint8Array {
+  const clean = s.toUpperCase().replace(/[^A-Z2-7]/g, "");
+  let bits = 0, value = 0;
+  const out: number[] = [];
+  for (const c of clean) {
+    value = (value << 5) | B32.indexOf(c); bits += 5;
+    if (bits >= 8) { out.push((value >>> (bits - 8)) & 255); bits -= 8; }
+  }
+  return new Uint8Array(out);
+}
+async function hotp(secretB32: string, counter: number): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    "raw", b32decode(secretB32), { name: "HMAC", hash: "SHA-1" }, false, ["sign"],
+  );
+  const buf = new ArrayBuffer(8);
+  new DataView(buf).setBigUint64(0, BigInt(counter));
+  const h = new Uint8Array(await crypto.subtle.sign("HMAC", key, buf));
+  const off = h[h.length - 1] & 0xf;
+  const code = ((h[off] & 0x7f) << 24) | (h[off + 1] << 16) | (h[off + 2] << 8) | h[off + 3];
+  return String(code % 1_000_000).padStart(6, "0");
+}
+// ±1 time-step window (90s of clock drift tolerance).
+async function totpCheck(secretB32: string, code: string): Promise<boolean> {
+  const c = String(code || "").replace(/\D/g, "");
+  if (c.length !== 6) return false;
+  const step = Math.floor(Date.now() / 30_000);
+  for (const s of [step, step - 1, step + 1]) {
+    if (safeEqual(await hotp(secretB32, s), c)) return true;
+  }
+  return false;
+}
+// Read/write the caller's totp_secret (profile_secrets is keyed by the slug
+// id; fall back to the uid column for safety). Returns null when unset OR
+// when the column doesn't exist yet (admin-2fa.sql not run) — callers then
+// surface a clear "run the migration" error on enrol.
+async function totpRead(s: Session): Promise<string | null> {
+  for (const q of [s.id ? `id=eq.${encodeURIComponent(s.id)}` : null, s.uid ? `uid=eq.${encodeURIComponent(s.uid)}` : null]) {
+    if (!q) continue;
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/profile_secrets?${q}&select=totp_secret&limit=1`,
+        { headers: dbHeaders({ Accept: "application/json" }) });
+      if (!r.ok) return null; // column missing pre-migration → treat as unset
+      const rows = await r.json();
+      if (Array.isArray(rows) && rows.length) return rows[0].totp_secret || null;
+    } catch { return null; }
+  }
+  return null;
+}
+async function totpWrite(s: Session, value: string | null): Promise<boolean> {
+  for (const q of [s.id ? `id=eq.${encodeURIComponent(s.id)}` : null, s.uid ? `uid=eq.${encodeURIComponent(s.uid)}` : null]) {
+    if (!q) continue;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/profile_secrets?${q}`, {
+      method: "PATCH",
+      headers: dbHeaders({ "Content-Type": "application/json", Prefer: "return=representation", Accept: "application/json" }),
+      body: JSON.stringify({ totp_secret: value }),
+    });
+    if (r.ok) {
+      const rows = await r.json().catch(() => []);
+      if (Array.isArray(rows) && rows.length) return true;
+    }
+  }
+  return false;
+}
+
 // ---- server-stamped audit row (adminlog: convention) -----------------
 async function audit(actor: Session, action: string, target: string, detail: string | null): Promise<void> {
   try {
@@ -178,7 +260,57 @@ Deno.serve(async (req: Request) => {
     const session = await verifyToken(payload.token);
     if (!session) return json({ ok: false });
     const role = await roleOf(session);
-    return json({ ok: !!role, role: role ?? null });
+    if (!role) return json({ ok: false });
+    // 2FA status rides along so the admin app knows whether to show the
+    // enrolment screen or the 6-digit gate: 'confirmed' | 'pending' | 'none'.
+    const sec = await totpRead(session);
+    const totp = !sec ? "none" : sec.startsWith("pending:") ? "pending" : "confirmed";
+    return json({ ok: true, role, totp });
+  }
+
+  // ---- 2FA (token-verified; staff only) --------------------------------
+  // totp-enroll: mint a fresh secret (or replace an unconfirmed one) and
+  // return the otpauth:// URI for the authenticator app. Refuses to replace
+  // a CONFIRMED secret — the owner clears it first (totp-reset) so a stolen
+  // session can't silently re-key someone's 2FA.
+  if (action === "totp-enroll") {
+    if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
+    const session = await verifyToken(payload.token);
+    if (!session) return json({ error: "Not authenticated" }, 401);
+    const role = await roleOf(session);
+    if (!role) return json({ error: "Forbidden: staff only" }, 403);
+    const existing = await totpRead(session);
+    if (existing && !existing.startsWith("pending:")) {
+      return json({ error: "2FA is already set up — ask the owner to reset it first" }, 409);
+    }
+    const raw = new Uint8Array(20);
+    crypto.getRandomValues(raw);
+    const secret = b32encode(raw);
+    if (!(await totpWrite(session, `pending:${secret}`))) {
+      return json({ error: "Could not save the 2FA secret (has admin-2fa.sql been run?)" }, 502);
+    }
+    const label = encodeURIComponent(`NurseHolic Admin:${session.id}`);
+    return json({
+      ok: true, secret,
+      otpauth: `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent("NurseHolic Admin")}&algorithm=SHA1&digits=6&period=30`,
+    });
+  }
+  // totp-verify: check a 6-digit code; the first valid code CONFIRMS a
+  // pending enrolment. Rate-limited by simple lockstep (6 codes/min is
+  // already impossible to brute-force at 10^6 space with ±1 window).
+  if (action === "totp-verify") {
+    if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
+    const session = await verifyToken(payload.token);
+    if (!session) return json({ error: "Not authenticated" }, 401);
+    if (!(await roleOf(session))) return json({ error: "Forbidden: staff only" }, 403);
+    const stored = await totpRead(session);
+    if (!stored) return json({ ok: false, reason: "not-enrolled" });
+    const secret = stored.startsWith("pending:") ? stored.slice(8) : stored;
+    if (!(await totpCheck(secret, String(payload.code ?? "")))) {
+      return json({ ok: false, reason: "bad-code" });
+    }
+    if (stored.startsWith("pending:")) await totpWrite(session, secret); // confirm
+    return json({ ok: true });
   }
   // list-admins: the Manage Admins screen's read — Co-Admin and above
   // (moderators don't see staff governance at all).
@@ -213,20 +345,38 @@ Deno.serve(async (req: Request) => {
 
   // ---- passphrase gate (all writes below) ------------------------------
   if (!ADMIN_PASSPHRASE) return json({ error: "Server not configured" }, 500);
-  const passOk = safeEqual(passphrase, ADMIN_PASSPHRASE);
 
-  // "verify" unlocks the admin UI — 200 { ok } either way.
-  if (action === "verify") return json({ ok: passOk });
+  // "verify" unlocks the admin UI — 200 { ok } either way. No token context
+  // here, so either key counts (the real writes below are role-matched).
+  if (action === "verify") {
+    return json({ ok: safeEqual(passphrase, ADMIN_PASSPHRASE) || (!!STAFF_PASSPHRASE && safeEqual(passphrase, STAFF_PASSPHRASE)) });
+  }
 
-  if (!passOk) return json({ error: "Wrong passphrase" }, 401);
-
-  // Writes ALSO require the actor's token: governance rules need to know WHO
-  // is acting, and the audit trail must be attributable.
+  // Writes require the actor's token FIRST: governance rules need to know WHO
+  // is acting — and WHICH passphrase applies. The OWNER types the owner key
+  // (ADMIN_PASSPHRASE); Co-Admins type the STAFF key (STAFF_PASSPHRASE) and
+  // the owner key is never shared with them.
   const session = await verifyToken(payload.token);
   if (!session) return json({ error: "Not authenticated (session token required)" }, 401);
   const actorRole = await roleOf(session);
   if (!atLeast(actorRole, "coadmin")) return json({ error: "Forbidden: co-admin or above" }, 403);
+  const passOk = actorRole === "admin"
+    ? safeEqual(passphrase, ADMIN_PASSPHRASE)
+    : (!!STAFF_PASSPHRASE && safeEqual(passphrase, STAFF_PASSPHRASE));
+  if (!passOk) {
+    return json({ error: actorRole === "admin" ? "Wrong passphrase" : "Wrong staff passphrase" }, 401);
+  }
   const actorIds = new Set([session.id, session.uid].filter(Boolean).map(String));
+
+  // totp-reset — OWNER ONLY: clear a locked-out staffer's 2FA so they can
+  // re-enrol on next login. Audited.
+  if (action === "totp-reset") {
+    if (actorRole !== "admin") return json({ error: "Forbidden: only the owner can reset 2FA" }, 403);
+    if (!id) return json({ error: "Missing profileId" }, 400);
+    await totpWrite({ id, uid: id, sid: null }, null);
+    await audit(session, "totp-reset", id, reason);
+    return json({ ok: true });
+  }
 
   // Target row (for remove/set-role) + its effective role.
   const staff = await listStaff().catch(() => [] as StaffRow[]);

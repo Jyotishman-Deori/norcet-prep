@@ -30,6 +30,7 @@ import {
 } from './lib/admin-ops.js';
 
 const AdminPanel = lazy(() => import('./screens/admin-panel.jsx'));
+const Admin2FA = lazy(() => import('./ui/admin-2fa.jsx'));
 
 // Minimal error boundary (the student app's lives in App.jsx, which we must not
 // import). Keeps a thrown render from blanking the admin tool.
@@ -100,6 +101,17 @@ function AdminApp() {
   const [profile, setProfile] = useState(null);
   const [adminState, setAdminState] = useState('unknown'); // 'unknown' | 'yes' | 'no'
   const [staffRole, setStaffRole] = useState(null); // 'admin' | 'coadmin' | 'moderator' | null
+  // 2FA gate: 'confirmed' | 'pending' | 'none' from check-admin, plus a
+  // per-browser-session unlock flag (sessionStorage — a fresh session asks
+  // for a fresh 6-digit code; a page reload within the session doesn't).
+  const [totpStatus, setTotpStatus] = useState('none');
+  const [twoFaOk, setTwoFaOk] = useState(() => {
+    try { return sessionStorage.getItem('nh-admin-2fa') === '1'; } catch (e) { return false; }
+  });
+  const passTwoFa = () => {
+    try { sessionStorage.setItem('nh-admin-2fa', '1'); } catch (e) {}
+    setTwoFaOk(true);
+  };
   const [banks, setBanks] = useState([]);
   const [banksLoading, setBanksLoading] = useState(false);
   const [announcement, setAnnouncement] = useState(null);
@@ -136,6 +148,7 @@ function AdminApp() {
       // Legacy server (no role field yet) → treat as full admin (that is
       // exactly what list membership meant before the migration).
       setStaffRole(res.ok ? (res.role || 'admin') : null);
+      setTotpStatus(res.ok ? (res.totp || 'none') : 'none');
       try { await saveAdminStatus(res.ok); } catch (e) {}
     })();
     return () => { cancelled = true; };
@@ -170,6 +183,9 @@ function AdminApp() {
   const handleSignOut = useCallback(async () => {
     try { await saveAdminStatus(false); } catch (e) {}
     try { await saveSession(null); } catch (e) {}
+    // Re-lock 2FA — the next sign-in must present a fresh code.
+    try { sessionStorage.removeItem('nh-admin-2fa'); } catch (e) {}
+    setTwoFaOk(false);
     setProfile(null); setAdminState('unknown'); setNav({ screen: 'panel' });
   }, []);
 
@@ -187,6 +203,18 @@ function AdminApp() {
   if (!profile) return provide(<AuthScreen initialMode="login" onAuthed={setProfile} />);
   if (adminState === 'unknown') return provide(<Splash T={T} label="Checking admin access…" />);
   if (adminState === 'no') return provide(<NotAuthorized T={T} profile={profile} onSignOut={handleSignOut} />);
+
+  // 2FA gate — staff confirmed as staff, but this browser session hasn't
+  // presented a 6-digit code yet (or 2FA isn't enrolled yet → enrolment).
+  if (!twoFaOk) {
+    return provide(
+      <Suspense fallback={<Splash T={T} />}>
+        <Admin2FA mode={totpStatus === 'confirmed' ? 'verify' : 'enroll'}
+                  profileName={profile.displayName || profile.id}
+                  onDone={passTwoFa} onSignOut={handleSignOut} />
+      </Suspense>
+    );
+  }
 
   // adminState === 'yes' → the content-management surface.
   return provide(

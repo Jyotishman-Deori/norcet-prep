@@ -85,7 +85,8 @@ export async function checkServerAdminRole(profileId, uid) {
     if (!r.ok) return { ok: false, role: null };
     const j = await r.json();
     if (!j || j.ok !== true) return { ok: false, role: null };
-    return { ok: true, role: j.role || null };
+    // totp: 'confirmed' | 'pending' | 'none' — drives the 2FA gate/enrolment.
+    return { ok: true, role: j.role || null, totp: j.totp || 'none' };
   } catch (e) {
     return { ok: false, role: null };
   }

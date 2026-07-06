@@ -382,7 +382,9 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
         <div className="relative mb-4">
           <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
           <input value={pass} onChange={e => setPass(e.target.value)} type="password"
-                 placeholder="Admin passphrase — required for any change"
+                 placeholder={myRole === 'admin'
+                   ? 'Owner passphrase — required for any change'
+                   : 'Staff passphrase — required for any change'}
                  className="w-full rounded-xl pl-9 pr-3 py-3 text-sm" style={inputStyle} />
         </div>
 
