@@ -10163,3 +10163,43 @@ Three follow-ups from the same session:
      Google logs into its own linked account or creates a fresh one); forced
      email verification for the typed-email path (stays optional/unverified,
      same posture as the pre-existing recovery-email field).
+
+# ---------------------------------------------------------------------
+# (2026-07-06, night) GOOGLE LIVE + account LINKING + Account-Security UX
+# ---------------------------------------------------------------------
+
+GOOGLE SIGN-IN WENT LIVE tonight: owner created the OAuth client
+(JS origins only, redirect URI blank), GOOGLE_CLIENT_ID set as a Supabase
+secret + VITE_GOOGLE_CLIENT_ID on Vercel norcet-prep production, redeployed,
+client id verified present in the live bundle. ⚠ REMAINING OWNER STEP: OAuth
+consent screen is still in TESTING mode — must click "Publish App" (basic
+scopes only, no Google review needed) or every non-test-user gets
+"Access blocked". Client secret exists but is UNUSED by design (GIS token
+flow) — never needed anywhere.
+
+Owner then hit the flagged v1 gap in real life (their Gmail was the recovery
+email on account "iyro"; Google sign-in offered a confusing fresh sign-up).
+FIXED in commit 2084236 (auth-secure redeployed, dev=main pushed):
+
+1. GOOGLE→EXISTING-ACCOUNT LINKING: google-auth now looks up the verified
+   Google email among existing accounts on a google_sub miss and returns
+   { linkAvailable, displayName }; new `google-link` action proves BOTH sides
+   (fresh Google ID token = owns email; profile password = owns account),
+   sets google_sub (race-safe is.null filter), mints a session. Auth screen
+   shows a "We found your profile" modal — password once, then Google is
+   one-tap forever. Forgot-password escape drops into the recovery flow.
+2. NEW `security-status` action (token-authed self-read: question, email,
+   hasGoogle, hasPassword) + verifySessionToken (inverse of mintToken) in
+   auth-secure — the Profile screen now shows what's ACTUALLY on file.
+3. ACCOUNT SECURITY UX (owner: "premium class, proper visual confirmation"):
+   status pills on every card (Linked ✓ / Set ✓ / Not set); email card rests
+   in a read-only LINKED panel (full email + "log in with it" + "Google
+   sign-in connected" line) with explicit Change/Cancel editing; success/
+   error feedback upgraded to boxed anim-scalein confirmations everywhere;
+   Google-only accounts (hasPassword=false) get read-only info variants
+   instead of dead password-gated forms (they have no password to type).
+4. Switch/Log out relocated to the BOTTOM of Settings→Profile under a
+   "Session" header, directly above Reset (owner request).
+5. BRAND STRAGGLER: desktop-nav.jsx wordmark was split across tags
+   ("NORCET <span>Prep</span>") so the rename grep missed it — now
+   Nurse<span>Holic</span>. (Owner's screenshot caught it.)
