@@ -10354,3 +10354,68 @@ sign-in (no linked profile) into a clear "not a staff account" message rather
 than dropping into sign-up. Existing-account Google + email + username login
 all still work. Student app unchanged (default keeps both tabs). Admin
 redeployed.
+
+# ---------------------------------------------------------------------
+# (2026-07-07, later) Admin: 2FA QR fix + premium UI/UX revamp + security QA
+# ---------------------------------------------------------------------
+
+Owner report: 2FA QR was a blank white box (only the manual key showed); the
+admin top bar had confusing chrome (a note button, a meaningless home back
+arrow, no clear exit); popups weren't centred on the current screen; and the
+panel wasn't laid out for PC/tablet. Plus: "can a normal user log in, enrol
+2FA and reach the panel?" and a request for a security-auditor QA pass.
+
+SHIPPED e8113c3 (student pushed to main; admin deployed; admin-manage deployed):
+
+1. QR (the blank box) — ROOT CAUSE: src/lib/qr.js encoded only QR versions
+   1-6 (106-byte cap); the otpauth:// URI is ~140-170 bytes, so encodeQR threw
+   every time and QrSvg silently returned null. FIX: extended the encoder to
+   v9 (EC-M rows 7/8/9, alignment patterns, and the 18-bit VERSION-INFORMATION
+   blocks v>=7 requires — without them v7-9 codes are unscannable; BCH gen
+   0x1F25, known vectors v7=0x07C94/v8=0x085BC/v9=0x09A99). Added qr.test.js
+   (v1-6 regression locks + v7-9 structure + version-info vectors). QrSvg now
+   shows a visible fallback instead of a blank box. Server otpauth URI trimmed
+   to spec defaults (dropped &algorithm/&digits/&period → lower, denser QR).
+   VERIFIED by a full encode->decode ROUND-TRIP on v7/v8/v9 + the real URI
+   (proves data placement survives around the version-info blocks).
+
+2. "Can a normal user reach the panel via 2FA?" — NO (verified + audited).
+   AdminApp gates login → server role check (non-staff → Not-Authorized) →
+   2FA → panel; totp-enroll/verify are 403 for non-staff BEFORE any secret is
+   minted. The sessionStorage 2FA flag + admin-status cache are UI-only (every
+   broker re-checks roleOf server-side).
+
+3. Top bar / shell: NoteButton + Feedback/Help buttons are now registry-aware
+   (self-hide when no host is mounted → gone from the admin app, unchanged in
+   the student app — they were DEAD chrome in admin). Home bar drops the
+   no-op back arrow and gains an explicit "Sign out" pill (confirm dialog).
+   Device-back "Leave?" now actually leaves the page.
+
+4. Popups centred on every device: ConfirmDialog + ReportedQuestionModal +
+   the bank-delete dialog now PORTAL to <body> (a transformed anim-fadeup
+   ancestor was containing position:fixed and shoving overlays off-centre).
+   FUNCTIONAL BUG FIXED: ConfirmHost was never mounted in AdminApp, so every
+   requestConfirm() in Manage staff / Waitlist / Helpfulness / Content review
+   silently no-opped — those destructive confirms never completed. Inline
+   two-tap confirms (user delete, announcement history, crash delete) folded
+   into the one centred dialog.
+
+5. Responsive revamp (mobile BYTE-IDENTICAL): all admin views adopt
+   PageContainer width tiers; dashboard tiles 2/3/4-col at phone/tablet/PC;
+   Users + Feedback lists 2-col on tablet; Growth stats 4-col; tile
+   hover/focus affordances; ≥40px touch targets; 16px inputs (no iOS zoom);
+   safe-area padding on the fixed bottom bars.
+
+6. Security-auditor QA → docs/security/findings.md (SEC-034..042). Applied
+   SEC-035: added the shared rate limiter (auth_rate + rate_hit RPC) to
+   admin-manage — totp-verify 10/15min per account (closes a 6-digit
+   brute-force oracle) + passphrase verify 10/15min per IP; removed a FALSE
+   "rate-limited" comment. Bundle grep: no admin secret ships in dist-admin.
+
+⚠ OWNER STEP (SEC-034, top finding): the live kv_shared anon-read policy is
+the 2-prefix denylist, so adminlog:/errlog:/analytics:/feedback: are readable
+with the public anon key (staff audit log, crash stacks, engagement, report
+PII). The client ALREADY routes all six through the kv-read broker, so it's
+safe to apply supabase/secure-admin-read-policy.sql (locks those 4 + the 2)
+and then probe: with the anon key, `SELECT key FROM kv_shared WHERE key LIKE
+'adminlog:%'` should return 0 rows. Reversible.
