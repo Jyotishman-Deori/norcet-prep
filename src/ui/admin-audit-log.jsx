@@ -98,7 +98,7 @@ export default function AdminAuditLog({ onBack }) {
                   <RefreshCw size={18} style={{ color: T.muted }} className={spin ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
         <div className="text-xs leading-relaxed mb-3 px-1 flex items-start gap-1.5" style={{ color: T.muted }}>
           <ShieldAlert size={13} className="flex-shrink-0 mt-0.5" />
           <span>Every privileged action, newest first. The <b>who</b> and <b>when</b> are stamped by the server and can't be edited.</span>

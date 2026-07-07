@@ -11,7 +11,7 @@
 // via registerFeedbackOpener / registerHelpOpener instead of poking a shared
 // module global directly, so this module owns the whole request channel.
 // =====================================================================
-import React from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { isPYQ, pyqLabel } from '../lib/pyq.js';
@@ -25,13 +25,28 @@ import { Tip } from './tooltip.jsx';
 // ---- Report / Help open-request channel -----------------------------------
 // Buttons (rendered inside any TopBar) call request*(); the single host modal
 // mounted at the app root registers its setter via register*Opener().
+// Feedback/Help/Note channels are OBSERVABLE (subscribe/has): their TopBar
+// buttons hide themselves in bundles that mount no host (the admin app),
+// instead of rendering dead chrome there.
 let _openFeedback = null;
+const _feedbackSubs = new Set();
 export function requestFeedback(ctx) { if (_openFeedback) _openFeedback(ctx || {}); }
-export function registerFeedbackOpener(fn) { _openFeedback = fn; }
+export function registerFeedbackOpener(fn) {
+  _openFeedback = fn;
+  _feedbackSubs.forEach(cb => { try { cb(); } catch (e) {} });
+}
+export function subscribeFeedbackOpener(cb) { _feedbackSubs.add(cb); return () => _feedbackSubs.delete(cb); }
+export function hasFeedbackOpener() { return !!_openFeedback; }
 
 let _openHelp = null;
+const _helpSubs = new Set();
 export function requestHelp(ctx) { if (_openHelp) _openHelp(ctx || {}); }
-export function registerHelpOpener(fn) { _openHelp = fn; }
+export function registerHelpOpener(fn) {
+  _openHelp = fn;
+  _helpSubs.forEach(cb => { try { cb(); } catch (e) {} });
+}
+export function subscribeHelpOpener(cb) { _helpSubs.add(cb); return () => _helpSubs.delete(cb); }
+export function hasHelpOpener() { return !!_openHelp; }
 
 let _openSupport = null;
 export function requestSupport() { if (_openSupport) _openSupport(); }
@@ -47,9 +62,18 @@ export function registerConfirmOpener(fn) { _openConfirm = fn; }
 // AI Learning Notes — the note-taking popup is a single app-root host
 // (NoteHost) opened imperatively from the TopBar note button AND the draggable
 // floating button (note-fab.jsx), so both entry points share one modal.
+// The channel is OBSERVABLE (subscribe/has) so NoteButton can hide itself in
+// bundles that mount no NoteHost (the admin app) instead of being a dead
+// button there — no per-call-site prop needed.
 let _openNote = null;
+const _noteSubs = new Set();
 export function requestNote(ctx) { if (_openNote) _openNote(ctx || {}); }
-export function registerNoteOpener(fn) { _openNote = fn; }
+export function registerNoteOpener(fn) {
+  _openNote = fn;
+  _noteSubs.forEach(cb => { try { cb(); } catch (e) {} });
+}
+export function subscribeNoteOpener(cb) { _noteSubs.add(cb); return () => _noteSubs.delete(cb); }
+export function hasNoteOpener() { return !!_openNote; }
 
 function Pill({ children, color, bg, className = '' }) {
   const { theme: T } = useTheme();
@@ -239,6 +263,11 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
 // its surrounding tap padding; labelled by aria + Tip for accessibility.
 function NoteButton() {
   const { theme: T } = useTheme();
+  // Registry-gated: renders nothing until a NoteHost has registered an opener
+  // (student app root). In the admin bundle there is no NoteHost, so the
+  // button never appears there.
+  const hasHost = useSyncExternalStore(subscribeNoteOpener, hasNoteOpener, hasNoteOpener);
+  if (!hasHost) return null;
   return (
     <Tip text="Jot quick study notes, then copy them into an AI to learn more">
       <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} requestNote(); }}
@@ -254,8 +283,10 @@ function NoteButton() {
 function FeedbackButton({ screen, questionId, profileId, profileName }) {
   const { profile: CURRENT_PROFILE } = useProfile();
   const { theme: T } = useTheme();
+  const hasHost = useSyncExternalStore(subscribeFeedbackOpener, hasFeedbackOpener, hasFeedbackOpener);
   const pid = profileId || (CURRENT_PROFILE && CURRENT_PROFILE.id) || null;
   const pname = profileName || (CURRENT_PROFILE && CURRENT_PROFILE.displayName) || null;
+  if (!hasHost) return null;
   return (
     <Tip text="Found a bug or have an idea? Send a report straight to the developer">
     <button onClick={() => requestFeedback({ screen, questionId, profileId: pid, profileName: pname })}
@@ -271,6 +302,8 @@ function FeedbackButton({ screen, questionId, profileId, profileName }) {
 
 function HelpButton({ screen }) {
   const { theme: T } = useTheme();
+  const hasHost = useSyncExternalStore(subscribeHelpOpener, hasHelpOpener, hasHelpOpener);
+  if (!hasHost) return null;
   return (
     <Tip text="What this screen does, how to use it, and why it helps">
       <button onClick={() => requestHelp({ screen })}

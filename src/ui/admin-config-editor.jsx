@@ -94,7 +94,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Live config" onBack={onBack} />
-        <div className="max-w-md mx-auto px-4 pt-10 flex justify-center">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pt-10 flex justify-center">
           <Loader2 size={22} className="animate-spin" style={{ color: T.muted }} />
         </div>
       </div>
@@ -106,7 +106,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Live config" onBack={onBack} />
-      <div className="max-w-md mx-auto px-4 pb-32 pt-2 space-y-3">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-32 pt-2 space-y-3">
         <Card className="p-3.5">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '18' }}>
@@ -172,8 +172,10 @@ export default function AdminConfigEditor({ onBack, actorName }) {
       </div>
 
       {/* sticky action bar */}
-      <div className="fixed bottom-0 inset-x-0 z-20" style={{ background: T.bg + 'F2', borderTop: `1px solid ${T.border}`, backdropFilter: 'blur(8px)' }}>
-        <div className="max-w-md mx-auto px-4 py-3 flex items-center gap-2.5">
+      <div className="fixed bottom-0 inset-x-0 z-20"
+           style={{ background: T.bg + 'F2', borderTop: `1px solid ${T.border}`, backdropFilter: 'blur(8px)',
+                    paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 py-3 flex items-center gap-2.5">
           {confirmReset ? (
             <>
               <span className="text-[12px] flex-1" style={{ color: T.ink }}>Reset everything to defaults?</span>

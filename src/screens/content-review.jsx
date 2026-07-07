@@ -223,7 +223,7 @@ function ContentReview({ onBack, profile }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Save question set" onBack={closeSet} />
-        <div className="max-w-md mx-auto px-4 pb-32 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-32 pt-2">
           <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
             Review the details, then save these approved drafts as a question set.
             A <strong>public</strong> set goes live for students right away.
@@ -312,9 +312,10 @@ function ContentReview({ onBack, profile }) {
           )}
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
-             style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-          <div className="max-w-md mx-auto">
+        <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pt-3"
+             style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}`,
+                      paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}>
+          <div className="max-w-md md:max-w-3xl mx-auto">
             <Button onClick={saveSet} disabled={saving || !setName.trim() || n === 0} size="lg" className="w-full"
                     icon={saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}>
               {saving ? 'Saving…' : `Save question set (${n})`}
@@ -337,7 +338,7 @@ function ContentReview({ onBack, profile }) {
                   <RefreshCw size={18} style={{ color: T.muted }} className={loading ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-28 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-28 pt-2">
         <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
           AI-drafted questions awaiting review, grouped by topic. <strong>Approve all as a set</strong> bundles
           a whole topic into a question set you name and publish. Or open a folder to <strong>Approve</strong>

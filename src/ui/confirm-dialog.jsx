@@ -16,6 +16,7 @@
 //   tone="primary" → confirm is the theme primary filled button.
 // =====================================================================
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 
@@ -43,7 +44,11 @@ export default function ConfirmDialog({
   const matched = !needsWord || typed.trim().toUpperCase() === String(confirmWord).trim().toUpperCase();
   const doConfirm = () => { if (matched && onConfirm) onConfirm(); };
 
-  return (
+  // Portaled to <body> (same pattern as TopBar): position:fixed is contained
+  // by ANY transformed ancestor (e.g. an anim-fadeup wrapper mid-entrance),
+  // which used to shove dialogs off-centre. From body, viewport-centring is
+  // unconditional on every device.
+  const overlay = (
     <div className="fixed inset-0 z-[90] flex items-center justify-center p-5"
          style={{ background: 'rgba(0,0,0,0.5)' }}
          onClick={onCancel}>
@@ -96,4 +101,5 @@ export default function ConfirmDialog({
       </div>
     </div>
   );
+  return (typeof document !== 'undefined' && document.body) ? createPortal(overlay, document.body) : overlay;
 }

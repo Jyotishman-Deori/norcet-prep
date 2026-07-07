@@ -17,7 +17,7 @@
 // extracted AdminTile, AdminFeedbackCard and ReportedQuestionModal.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
-  Activity, AlertCircle, AlertTriangle, BellRing, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, Lock, Plus,
+  Activity, AlertCircle, AlertTriangle, BellRing, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, LogOut, Plus,
   RefreshCw, ScrollText, Send, ShieldCheck, SlidersHorizontal, Square, Ticket, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
@@ -133,11 +133,9 @@ function AdminPanel({
   // #12 — expiry + history state
   const [annExpiry, setAnnExpiry] = useState('7');           // days | 'never'
   const [annHistory, setAnnHistory] = useState([]);
-  const [annHistConfirm, setAnnHistConfirm] = useState(null); // id | 'ALL'
   const [annBusy, setAnnBusy] = useState(false);
   const [annMsg, setAnnMsg] = useState(null);
 
-  const [confirmDeleteUser, setConfirmDeleteUser] = useState(null);
   // Member detail panel (stats + coin tools) — the meta of the open user.
   const [openUser, setOpenUser] = useState(null);
   // #27b — Users list search + sort.
@@ -189,7 +187,6 @@ function AdminPanel({
   const [errsLoading, setErrsLoading] = useState(true);
   const [errFilter, setErrFilter] = useState('open'); // 'open' | 'resolved' | 'all'
   const [errOpen, setErrOpen] = useState(null);        // expanded signature
-  const [errDelConfirm, setErrDelConfirm] = useState(null);
   // #29 — crash reports loader + actions
   const refreshErrs = useCallback(async () => {
     setErrsLoading(true);
@@ -202,9 +199,15 @@ function AdminPanel({
   }, []);
   const deleteErr = useCallback(async (sig) => {
     setErrs(prev => prev.filter(e => e.sig !== sig));
-    setErrDelConfirm(null);
     await deleteErrorGroup(sig);
   }, []);
+  const confirmDeleteErr = (sig) => requestConfirm({
+    icon: <Trash2 size={20} style={{ color: T.error }} />,
+    title: 'Delete this crash group?',
+    body: "Removes the grouped record for everyone. If it happens again it'll reappear as a new group.",
+    confirmLabel: 'Delete', cancelLabel: 'Cancel', tone: 'danger',
+    onConfirm: () => deleteErr(sig),
+  });
 
   // #24 — bank demand vs supply (computed, no telemetry). Supply = questions in
   // each topic's bank; demand = how heavily the exam tests that topic (weightage
@@ -328,8 +331,15 @@ function AdminPanel({
     await onDeleteProfile(id);
     logAdminAction({ action: 'user.delete', target: id, targetName: victim && victim.displayName, actorName: profile && profile.displayName });
     setUsers(prev => prev.filter(u => u.id !== id));
-    setConfirmDeleteUser(null);
   };
+  // Named, centred confirm (one pattern everywhere — no inline two-taps).
+  const confirmDeleteUser = (u) => requestConfirm({
+    icon: <Trash2 size={20} style={{ color: T.error }} />,
+    title: `Delete ${u.displayName || u.id}?`,
+    body: 'Permanently removes this member’s profile and progress from the cloud. This cannot be undone.',
+    confirmLabel: 'Delete profile', cancelLabel: 'Cancel', tone: 'danger',
+    onConfirm: () => deleteUser(u.id),
+  });
 
   const totalUsers = users.length;
   const totalBanks = banks ? banks.length : 0;
@@ -407,7 +417,7 @@ function AdminPanel({
                     <RefreshCw size={18} style={{ color: T.muted }} className={helpfulLoading ? 'animate-spin' : ''} />
                   </button>
                 } />
-        <div className="max-w-md mx-auto px-4 pb-28 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-28 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             How users rate explanations. Only questions with at least one response appear — silent users are intentionally excluded. A high <span style={{ color: T.error, fontWeight: 600 }}>✕</span> count flags an explanation worth rewriting. Tap a row to read the full question and explanation.
           </div>
@@ -505,7 +515,7 @@ function AdminPanel({
                         {!helpfulSelMode && (
                           <button onClick={(e) => { e.stopPropagation(); confirmClearOne(r); }}
                                   aria-label="Clear this question's votes"
-                                  className="no-tap-highlight p-1.5 -m-1 rounded-lg active:bg-black/5">
+                                  className="no-tap-highlight p-3 -m-2.5 rounded-lg active:bg-black/5">
                             <Trash2 size={15} style={{ color: T.error }} />
                           </button>
                         )}
@@ -555,8 +565,8 @@ function AdminPanel({
     );
     return (
       <div className="anim-fadeup">
-        <TopBar title="Growth & Referrals" onBack={backToDash} feedback={{ screen: 'Settings' }} />
-        <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+        <TopBar title="Growth & Referrals" onBack={backToDash} />
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pt-3 pb-24">
           {/* tab switcher */}
           <div className="grid grid-cols-3 gap-1.5 mb-3 p-1 rounded-xl" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
             {tabs.map(([id, label]) => {
@@ -591,7 +601,7 @@ function AdminPanel({
               {/* ── OVERVIEW ── */}
               {growthTab === 'overview' && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <StatCard label="Joined via referral" value={g.viaReferral} sub={`${g.pct}% of all users`} accent={T.success} />
                     <StatCard label="This week" value={g.thisWeek}
                               sub={g.trend === 0 ? 'same as last week' : (g.trend > 0 ? `\u25B2 ${g.trend} vs last week` : `\u25BC ${Math.abs(g.trend)} vs last week`)} />
@@ -788,7 +798,7 @@ function AdminPanel({
                     <RefreshCw size={18} style={{ color: T.muted }} className={feedbackLoading ? 'animate-spin' : ''} />
                   </button>
                 } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             Reports and suggestions from users, newest first. Tap a <span style={{ color: T.primary, fontWeight: 600 }}>Q:</span> chip to view the exact question. Set a status or reply — the user sees it in "My feedback". Resolved items (Fixed / Won't fix / Thanks) move to their own filter.
           </div>
@@ -886,7 +896,7 @@ function AdminPanel({
               </div>
             </Card>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-3 md:space-y-0 md:grid md:grid-cols-2 md:gap-3 md:items-start">
               {shown.map(it => (
                 <AdminFeedbackCard key={it.id} item={it}
                                    onSaveReply={saveReply} onDelete={removeFeedback} onPeek={setPeekId} />
@@ -916,7 +926,7 @@ function AdminPanel({
                     <RefreshCw size={18} style={{ color: T.muted }} className={usersLoading ? 'animate-spin' : ''} />
                   </button>
                 } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1 flex items-start gap-1.5" style={{ color: T.muted }}>
             <EyeOff size={13} className="flex-shrink-0 mt-0.5" />
             <span>Tap a member for stats & coin tools. Personal answers and passwords stay private — never shown.</span>
@@ -944,7 +954,7 @@ function AdminPanel({
               {/* search */}
               <input value={userSearch} onChange={e => setUserSearch(e.target.value)}
                      placeholder={`Search ${users.length} user${users.length === 1 ? '' : 's'}…`}
-                     className="w-full px-3.5 py-2.5 rounded-xl text-sm mb-2.5 outline-none"
+                     className="w-full px-3.5 py-2.5 rounded-xl text-base md:text-sm mb-2.5 outline-none"
                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
               {/* sort */}
               <div className="flex gap-2 mb-3">
@@ -962,7 +972,7 @@ function AdminPanel({
               {shownUsers.length === 0 ? (
                 <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>No users match “{userSearch.trim()}”.</div></Card>
               ) : (
-              <div className="space-y-2">
+              <div className="space-y-2 md:space-y-0 md:grid md:grid-cols-2 md:gap-2.5 md:items-start">
               {shownUsers.map(u => {
                 const isSelf = profile && u.id === profile.id;
                 return (
@@ -986,22 +996,11 @@ function AdminPanel({
                         </div>
                       </button>
                       {!isSelf && (
-                        confirmDeleteUser === u.id ? (
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            <button onClick={() => setConfirmDeleteUser(null)}
-                                    className="no-tap-highlight text-xs px-2 py-1 rounded-lg"
-                                    style={{ color: T.muted, background: T.surfaceWarm }}>No</button>
-                            <button onClick={() => deleteUser(u.id)}
-                                    className="no-tap-highlight text-xs px-2 py-1 rounded-lg font-medium"
-                                    style={{ color: '#FFF', background: T.error }}>Delete</button>
-                          </div>
-                        ) : (
-                          <button onClick={() => setConfirmDeleteUser(u.id)}
-                                  className="no-tap-highlight p-1.5 -m-1.5 flex-shrink-0 rounded-lg active:bg-black/5"
-                                  aria-label="Delete profile">
-                            <Trash2 size={15} style={{ color: T.error }} />
-                          </button>
-                        )
+                        <button onClick={() => confirmDeleteUser(u)}
+                                className="no-tap-highlight p-3 -m-3 flex-shrink-0 rounded-lg active:bg-black/5"
+                                aria-label={`Delete ${u.displayName || u.id}'s profile`}>
+                          <Trash2 size={15} style={{ color: T.error }} />
+                        </button>
                       )}
                     </div>
                   </Card>
@@ -1023,7 +1022,7 @@ function AdminPanel({
     return (
       <div className="anim-fadeup">
         <TopBar title="Announcement" onBack={backToDash} />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <Card className="p-4">
             <div className="text-xs leading-relaxed mb-3" style={{ color: T.muted }}>
               Post a short notice shown on every user's home screen until they dismiss it. Posting again replaces the current one.
@@ -1106,27 +1105,25 @@ function AdminPanel({
           </Card>
 
           {/* #12 — PAST ANNOUNCEMENTS: every post is recorded here; delete
-              individual entries or wipe the whole history (with an inline
-              two-tap confirm — no accidental wipes). */}
+              individual entries or wipe the whole history (centred confirm
+              dialogs — no accidental wipes). */}
           {annHistory.length > 0 && (
             <div className="mt-5">
               <div className="flex items-center justify-between mb-2 px-1">
                 <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>
                   Past announcements · {annHistory.length}
                 </div>
-                {annHistConfirm === 'ALL' ? (
-                  <button onClick={async () => { setAnnHistory(await onClearAnnHistory()); setAnnHistConfirm(null); }}
-                          className="no-tap-highlight text-[10px] font-bold px-2.5 py-1 rounded-full active:scale-95 transition"
-                          style={{ background: T.error, color: '#FFF' }}>
-                    Wipe all — sure?
-                  </button>
-                ) : (
-                  <button onClick={() => { setAnnHistConfirm('ALL'); setTimeout(() => setAnnHistConfirm(v => v === 'ALL' ? null : v), 2500); }}
-                          className="no-tap-highlight text-[11px] font-medium active:scale-95 transition"
-                          style={{ color: T.error, opacity: 0.8 }}>
-                    Clear history
-                  </button>
-                )}
+                <button onClick={() => requestConfirm({
+                          icon: <AlertTriangle size={20} style={{ color: T.error }} />,
+                          title: 'Wipe announcement history?',
+                          body: `Deletes all ${annHistory.length} past announcements from the record. The live announcement (if any) keeps showing to users. This cannot be undone.`,
+                          confirmLabel: 'Wipe history', cancelLabel: 'Cancel', tone: 'danger',
+                          onConfirm: async () => setAnnHistory(await onClearAnnHistory()),
+                        })}
+                        className="no-tap-highlight text-[11px] font-medium px-2 py-1.5 -my-1.5 active:scale-95 transition"
+                        style={{ color: T.error, opacity: 0.8 }}>
+                  Clear history
+                </button>
               </div>
               <div className="space-y-2">
                 {annHistory.map((a, ai) => {
@@ -1155,19 +1152,17 @@ function AdminPanel({
                             {a.text}
                           </div>
                         </div>
-                        {annHistConfirm === a.id ? (
-                          <button onClick={async () => { setAnnHistory(await onDeleteAnnHistoryItem(a.id)); setAnnHistConfirm(null); }}
-                                  className="no-tap-highlight text-[10px] font-bold px-2 py-1.5 rounded-full active:scale-95 transition flex-shrink-0"
-                                  style={{ background: T.error, color: '#FFF' }}>
-                            Sure?
-                          </button>
-                        ) : (
-                          <button onClick={() => { setAnnHistConfirm(a.id); setTimeout(() => setAnnHistConfirm(v => v === a.id ? null : v), 2500); }}
-                                  aria-label="Delete this announcement from history"
-                                  className="no-tap-highlight p-1.5 rounded-full active:bg-black/10 flex-shrink-0">
-                            <Trash2 size={13} style={{ color: T.muted }} />
-                          </button>
-                        )}
+                        <button onClick={() => requestConfirm({
+                                  icon: <Trash2 size={20} style={{ color: T.error }} />,
+                                  title: 'Delete this announcement?',
+                                  body: 'Removes it from the history record only — if it is currently live, users keep seeing it until you stop it above.',
+                                  confirmLabel: 'Delete', cancelLabel: 'Cancel', tone: 'danger',
+                                  onConfirm: async () => setAnnHistory(await onDeleteAnnHistoryItem(a.id)),
+                                })}
+                                aria-label="Delete this announcement from history"
+                                className="no-tap-highlight p-3 -m-1.5 rounded-full active:bg-black/10 flex-shrink-0">
+                          <Trash2 size={13} style={{ color: T.muted }} />
+                        </button>
                       </div>
                     </Card>
                   );
@@ -1201,7 +1196,7 @@ function AdminPanel({
                     <RefreshCw size={18} style={{ color: T.muted }} className={errsLoading ? 'animate-spin' : ''} />
                   </button>
                 } />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             Uncaught errors, promise rejections and render crashes from across the app, grouped by signature and newest first. The count is how many times each has happened. A re-occurrence reopens a resolved group.
           </div>
@@ -1276,8 +1271,8 @@ function AdminPanel({
                               style={{ background: e.resolved ? T.surfaceWarm : T.success + '1A', color: e.resolved ? T.muted : T.success }}>
                         {e.resolved ? 'Reopen' : 'Resolve'}
                       </button>
-                      <button onClick={() => setErrDelConfirm(e.sig)} aria-label="Delete group"
-                              className="no-tap-highlight ml-auto p-1.5 rounded-lg active:scale-95 transition" style={{ color: T.muted }}>
+                      <button onClick={() => confirmDeleteErr(e.sig)} aria-label="Delete group"
+                              className="no-tap-highlight ml-auto p-3 -m-1.5 rounded-lg active:scale-95 transition" style={{ color: T.muted }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -1288,11 +1283,6 @@ function AdminPanel({
           )}
         </div>
       </div>
-      <ConfirmDialog open={!!errDelConfirm}
-                     title="Delete this crash group?"
-                     body="Removes the grouped record for everyone. If it happens again it'll reappear as a new group."
-                     confirmLabel="Delete" cancelLabel="Cancel" tone="danger"
-                     onConfirm={() => deleteErr(errDelConfirm)} onCancel={() => setErrDelConfirm(null)} />
       </>
     );
   }
@@ -1303,8 +1293,8 @@ function AdminPanel({
     const riskLabel = (r) => (r === 'high' ? 'Low supply' : r === 'watch' ? 'Watch' : 'Healthy');
     return (
       <div className="anim-fadeup">
-        <TopBar title="Bank health" onBack={backToDash} feedback={{ screen: 'Admin · Bank health' }} />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+        <TopBar title="Bank health" onBack={backToDash} />
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
             Supply (questions in each bank) vs demand (how heavily the exam tests that topic). Topics the exam emphasises but your bank is thin on get used up fastest — add questions there first. {demand.total} questions total.
           </div>
@@ -1416,17 +1406,26 @@ function AdminPanel({
   // =================== DASHBOARD HOME (tiles only) ===================
   return (
     <div className="anim-fadeup">
-      {/* Issues round — the in-app back goes through the same leave
-          confirmation as the device back, so the two always mirror. */}
-      <TopBar title="Admin" onBack={() => setLeaveConfirm(true)}
+      {/* HOME BAR — no back arrow (this IS the home of a standalone app; the
+          device back still gets the leave guard below). The one exit is an
+          explicit, labelled Sign out with a centred confirm. */}
+      <TopBar title="Admin"
               right={
-                <button onClick={onLockAdmin}
-                        className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5"
-                        aria-label="Lock admin">
-                  <Lock size={18} style={{ color: T.muted }} />
+                <button onClick={() => requestConfirm({
+                          icon: <LogOut size={20} style={{ color: T.primary }} />,
+                          title: 'Sign out of admin?',
+                          body: 'You’ll need your password and a fresh 2-factor code to get back in.',
+                          confirmLabel: 'Sign out', cancelLabel: 'Stay', tone: 'primary',
+                          onConfirm: onLockAdmin,
+                        })}
+                        className="no-tap-highlight flex items-center gap-1.5 pl-2.5 pr-3 py-2 -mr-1 rounded-full active:scale-95 transition-transform"
+                        style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}
+                        aria-label="Sign out of admin">
+                  <LogOut size={15} style={{ color: T.primary }} />
+                  <span className="text-xs font-medium">Sign out</span>
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-3">
+      <div className="max-w-md md:max-w-3xl lg:max-w-5xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-3">
         {/* Rank badge — who you are + what tier (owner spec: visible rank). */}
         <div className="flex items-center gap-2 mb-3 px-1">
           <span className="text-[12px] font-medium truncate" style={{ color: T.inkSoft }}>
@@ -1443,19 +1442,20 @@ function AdminPanel({
         </div>
         {/* #19 — at-a-glance summary band. The numbers that need attention,
             before the section tiles. */}
-        <div className="grid grid-cols-3 gap-2.5 mb-4">
+        <div className="grid grid-cols-3 gap-2.5 md:gap-3 mb-4">
           {[
             { label: 'Users', value: usersLoading ? '—' : totalUsers, tone: T.ink },
             { label: openFeedback === 1 ? 'Open report' : 'Open reports', value: feedbackLoading ? '—' : openFeedback, tone: openFeedback > 0 ? T.accent : T.success },
             { label: demand.highCount === 1 ? 'Bank alert' : 'Bank alerts', value: demand.highCount, tone: demand.highCount > 0 ? T.error : T.success },
           ].map((s, i) => (
-            <div key={i} className="rounded-2xl p-3 text-center" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
-              <div className="font-display text-2xl font-semibold tabular-nums leading-none" style={{ color: s.tone }}>{s.value}</div>
-              <div className="text-[10px] mt-1" style={{ color: T.muted }}>{s.label}</div>
+            <div key={i} className="rounded-2xl p-3 md:p-4 text-center" style={{ background: T.surface, border: `1px solid ${T.borderSoft}` }}>
+              <div className="font-display text-2xl md:text-3xl font-semibold tabular-nums leading-none" style={{ color: s.tone }}>{s.value}</div>
+              <div className="text-[10px] md:text-[11px] mt-1" style={{ color: T.muted }}>{s.label}</div>
             </div>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        {/* Tile grid scales with the device: 2-up phone, 3-up tablet, 4-up PC. */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
 
           {/* Feedback — N new badge */}
           <AdminTile

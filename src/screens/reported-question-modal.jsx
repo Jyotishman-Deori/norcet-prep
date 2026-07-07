@@ -8,6 +8,7 @@
 // unchanged.
 // =====================================================================
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { FileText, X, AlertCircle, Check } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
@@ -37,10 +38,12 @@ function ReportedQuestionModal({ questionId, onClose }) {
   const q = found ? found.q : null;
   const correctSet = found && found.kind === 'mcq' ? new Set(q.correct || []) : null;
 
-  return (
-    <div className="fixed inset-0 z-[85] flex items-end sm:items-center justify-center"
+  // Portaled to <body> and ALWAYS viewport-centred (was a bottom sheet on
+  // phones) — admin popups centre on the current screen on every device.
+  const overlay = (
+    <div className="fixed inset-0 z-[85] flex items-center justify-center p-4"
          style={{ background: 'rgba(0,0,0,0.5)' }} onClick={onClose}>
-      <div className="w-full max-w-md mx-auto flex flex-col anim-scalein rounded-t-3xl sm:rounded-3xl overflow-hidden"
+      <div className="w-full max-w-md mx-auto flex flex-col anim-scalein rounded-3xl overflow-hidden"
            ref={dialogRef} role="dialog" aria-modal="true" aria-label="Reported question"
            style={{ background: T.bg, maxHeight: '88vh', border: `1px solid ${T.border}` }}
            onClick={e => e.stopPropagation()}>
@@ -147,6 +150,7 @@ function ReportedQuestionModal({ questionId, onClose }) {
       </div>
     </div>
   );
+  return (typeof document !== 'undefined' && document.body) ? createPortal(overlay, document.body) : overlay;
 }
 
 export default ReportedQuestionModal;

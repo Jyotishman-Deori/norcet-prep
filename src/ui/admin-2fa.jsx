@@ -18,7 +18,17 @@ import { totpEnroll, totpVerify } from '../lib/admin.js';
 function QrSvg({ value, px = 168, quiet = 3, fg = '#0B1220' }) {
   let qr = null;
   try { qr = encodeQR(value); } catch (e) { qr = null; }
-  if (!qr) return null;
+  if (!qr) {
+    // Never a silent blank box: same footprint, tells the user to use the
+    // manual key right below (which always works).
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 text-center px-4"
+           style={{ width: px, height: px, color: '#6B7280' }}>
+        <AlertTriangle size={22} />
+        <div className="text-[11.5px] leading-snug">QR unavailable — enter the manual key below in your authenticator app.</div>
+      </div>
+    );
+  }
   const dim = qr.size + quiet * 2;
   const rects = [];
   for (let r = 0; r < qr.size; r++) {
@@ -69,9 +79,11 @@ export default function Admin2FA({ mode = 'verify', profileName, onDone, onSignO
     try {
       const r = await totpVerify(code.replace(/\D/g, ''));
       if (r && r.ok) { onDone(); return; }
-      setErr(r && r.reason === 'not-enrolled'
-        ? '2FA isn’t set up yet — reload and scan the QR first.'
-        : 'That code didn’t match — check the app and try again.');
+      setErr(r && r.reason === 'rate-limited'
+        ? (r.message || 'Too many attempts — please wait a bit and try again.')
+        : r && r.reason === 'not-enrolled'
+          ? '2FA isn’t set up yet — reload and scan the QR first.'
+          : 'That code didn’t match — check the app and try again.');
       setCode('');
       try { inputRef.current && inputRef.current.focus(); } catch (e) {}
     } catch (e) {

@@ -39,7 +39,7 @@ export default function AdminStorageCheck({ onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Storage self-test" onBack={onBack} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2 space-y-3">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2 space-y-3">
         <Card className="p-4">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '18' }}>

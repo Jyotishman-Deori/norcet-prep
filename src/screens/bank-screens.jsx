@@ -12,6 +12,7 @@
 // stay PROPS. No fgOnDark, no fontStyles. Two render sites in App (the
 // 'bank-detail' and 'bank-editor' routes) are UNCHANGED.
 import React, { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   AlertCircle, AlertTriangle, Check, X, Download, Edit3, Eye, EyeOff,
   Layers, Plus, RefreshCw, Save, Trash2, Upload
@@ -246,7 +247,9 @@ function DeleteBankConfirm({ bank, onCancel, onDelete }) {
   const [typed, setTyped] = useState('');
   const armed = !isPublic || typed.trim().toUpperCase() === 'DELETE';
   const RED = '#E02020';
-  return (
+  // Portaled to <body> so viewport-centring survives transformed ancestors
+  // (anim-fadeup wrappers) — same pattern as ConfirmDialog / TopBar.
+  const overlay = (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={onCancel}>
       <Card className="p-5 max-w-sm w-full anim-scalein" onClick={e => e.stopPropagation()}>
         <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>Delete "{bank.name}"?</div>
@@ -285,6 +288,7 @@ function DeleteBankConfirm({ bank, onCancel, onDelete }) {
       </Card>
     </div>
   );
+  return (typeof document !== 'undefined' && document.body) ? createPortal(overlay, document.body) : overlay;
 }
 
 function BankEditor({ existingBank, profile, onSave, onBack }) {

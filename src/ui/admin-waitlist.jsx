@@ -222,7 +222,7 @@ export default function AdminWaitlist({ onBack }) {
                   <RefreshCw size={18} style={{ color: T.muted }} className={spin ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2 space-y-3">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2 space-y-3">
         {!data ? (
           <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
         ) : (

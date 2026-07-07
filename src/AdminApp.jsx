@@ -22,6 +22,7 @@ import { SEED_QUESTIONS } from './data/seed.js';
 import AuthScreen from './screens/auth-screen.jsx';
 import { BankEditor } from './screens/bank-screens.jsx';
 import Library from './screens/library.jsx';
+import ConfirmHost from './ui/confirm-host.jsx';
 import {
   checkServerAdminRole, loadAdminStatus, saveAdminStatus,
   loadAnnouncement, loadAnnouncementHistory, saveAnnouncement,
@@ -196,6 +197,10 @@ function AdminApp() {
       data={dataStub} setData={() => {}} allQuestions={allQuestions}>
       <style>{fontStyles}</style>
       {node}
+      {/* Imperative-confirm host — without it every requestConfirm() in the
+          admin surface (Manage staff, Waitlist, Helpfulness, Content review)
+          silently no-ops. Mounted on every gate state, like App.jsx does. */}
+      <ConfirmHost />
     </AppProviders>
   );
 
@@ -234,7 +239,7 @@ function AdminApp() {
           onLockAdmin={handleSignOut}
           onListUsers={adminListUsers}
           onDeleteProfile={adminDeleteProfile}
-          onBack={() => {}} />
+          onBack={() => { try { window.history.back(); } catch (e) {} }} />
       )}
 
       {nav.screen === 'library' && (

@@ -1,18 +1,21 @@
 // =====================================================================
-// src/lib/qr.js — tiny byte-mode QR encoder (EC level M, versions 1-6).
-// Pure, no deps, no React/DOM. Extracted VERBATIM from App.jsx (A1 slice 37).
-// Public API: encodeQR(str) -> { size, dark:Uint8Array(size*size, 1=dark) }
-// or throws (caller falls back to a copyable UPI ID). All _qr* helpers are
+// src/lib/qr.js — tiny byte-mode QR encoder (EC level M, versions 1-9).
+// Pure, no deps, no React/DOM. Extracted VERBATIM from App.jsx (A1 slice 37);
+// later extended v6 → v9 for otpauth:// URIs (admin 2FA enrolment, ~140-170
+// bytes — v6's 106-byte cap left the QR blank). Public API:
+// encodeQR(str) -> { size, dark:Uint8Array(size*size, 1=dark) }
+// or throws (caller shows a copyable-text fallback). All _qr* helpers are
 // module-private; only encodeQR is exported.
 // =====================================================================
 
 // =====================================================================
-// Tiny byte-mode QR encoder, EC level M, versions 1-6 (decode-verified
-// against the `qrcode` package + `jsqr` round-trip in dev). Versions 1-6
-// cover every realistic upi:// string (cap = 106 bytes at v6); longer
-// input throws so the caller falls back to the copyable UPI ID rather
-// than ever drawing a broken code. Pure, no deps, no network. Returns
-// { size, dark:Uint8Array(size*size, 1=dark) }.
+// Tiny byte-mode QR encoder, EC level M, versions 1-9 (v1-6 decode-verified
+// against the `qrcode` package + `jsqr` round-trip in dev; v7-9 verified by
+// real-device authenticator scan). Cap = 180 bytes at v9; longer input
+// throws so the caller falls back to copyable text rather than ever
+// drawing a broken code. Versions ≥7 carry the 18-bit version-information
+// blocks the spec requires (see _qrVersionInfo). Pure, no deps, no
+// network. Returns { size, dark:Uint8Array(size*size, 1=dark) }.
 // =====================================================================
 const _qrEXP = new Uint8Array(512);
 const _qrLOG = new Uint8Array(256);
@@ -41,19 +44,26 @@ function _qrRsEncode(data, ecLen) {
   }
   return res.slice(data.length);
 }
-// [ecPerBlock, g1Blocks, g1Data, g2Blocks, g2Data] for EC level M, v1-6
+// [ecPerBlock, g1Blocks, g1Data, g2Blocks, g2Data] for EC level M, v1-9
+// (ISO/IEC 18004 table 9; v7-9 rows checked against the same reference).
 const _qrECM = {
   1: [10, 1, 16, 0, 0], 2: [16, 1, 28, 0, 0], 3: [26, 1, 44, 0, 0],
   4: [18, 2, 32, 0, 0], 5: [24, 2, 43, 0, 0], 6: [16, 4, 27, 0, 0],
+  7: [18, 4, 31, 0, 0], 8: [22, 2, 38, 2, 39], 9: [22, 3, 36, 2, 37],
 };
-const _qrALIGN = { 1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34] };
+const _qrALIGN = {
+  1: [], 2: [6, 18], 3: [6, 22], 4: [6, 26], 5: [6, 30], 6: [6, 34],
+  7: [6, 22, 38], 8: [6, 24, 42], 9: [6, 26, 46],
+};
 function _qrTotalData(v) { const a = _qrECM[v]; return a[1] * a[2] + a[3] * a[4]; }
 function _qrPickVersion(byteLen) {
-  for (let v = 1; v <= 6; v++) {
+  for (let v = 1; v <= 9; v++) {
     const need = Math.ceil((4 + 8 + 8 * byteLen) / 8); // 8-bit char count for v1-9
     if (need <= _qrTotalData(v)) return v;
   }
-  throw new Error('QR data too long (>v6)');
+  // Stopping at v9 keeps the 8-bit byte-mode char count valid (v10+ needs
+  // 16 bits) — 180 bytes covers every otpauth:// / upi:// payload we draw.
+  throw new Error('QR data too long (>v9)');
 }
 function _qrToBytes(str) {
   if (typeof TextEncoder !== 'undefined') return Array.from(new TextEncoder().encode(str));
@@ -97,6 +107,15 @@ function _qrBitStream(str) {
   for (const cw of out) for (let i = 7; i >= 0; i--) finalBits.push((cw >> i) & 1);
   return { version: v, bits: finalBits };
 }
+// 18-bit version information (v≥7 only): 6-bit version + 12-bit BCH(18,6)
+// remainder, generator polynomial 0x1F25 (x^12+x^11+x^10+x^9+x^8+x^5+x^2+1).
+// Known vectors: v7 → 0x07C94, v8 → 0x085BC, v9 → 0x09A99.
+function _qrVersionInfo(version) {
+  let d = version << 12;
+  const g = 0b1111100100101; // 0x1F25
+  for (let i = 17; i >= 12; i--) if ((d >> i) & 1) d ^= g << (i - 12);
+  return (version << 12) | d;
+}
 function _qrBuildMatrix(version, bits) {
   const size = version * 4 + 17;
   const m = Array.from({ length: size }, () => new Int8Array(size).fill(-1));
@@ -122,6 +141,18 @@ function _qrBuildMatrix(version, bits) {
     }
   }
   set(size - 8, 8, 1); // dark module
+  if (version >= 7) {
+    // Two copies of the version info, placed LSB-first: bottom-left 6×3
+    // block at (size-11+i%3, ⌊i/3⌋) and its transpose top-right. Must be
+    // set (and thereby fn-reserved) BEFORE the data walk below.
+    const vinfo = _qrVersionInfo(version);
+    for (let i = 0; i < 18; i++) {
+      const bit = (vinfo >> i) & 1;
+      const a = size - 11 + (i % 3), b = Math.floor(i / 3);
+      set(a, b, bit);
+      set(b, a, bit);
+    }
+  }
   for (let i = 0; i <= 8; i++) { if (!fn[8][i]) fn[8][i] = 1; if (!fn[i][8]) fn[i][8] = 1; }
   for (let i = 0; i < 8; i++) { fn[8][size - 1 - i] = 1; fn[size - 1 - i][8] = 1; }
   fn[8][8] = 1;

@@ -364,7 +364,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
                   <RefreshCw size={18} style={{ color: T.muted }} className={rows === null ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
 
         {/* Hierarchy explainer */}
         <Card className="p-3.5 mb-4" style={{ background: `linear-gradient(150deg, ${T.primary}0E, transparent 70%)` }}>

@@ -91,7 +91,7 @@ export default function AdminFaqManager({ onBack, actorName }) {
     return (
       <div className="anim-fadeup">
         <TopBar title={form.id ? 'Edit FAQ' : 'New FAQ'} onBack={() => setForm(null)} />
-        <div className="max-w-md mx-auto px-4 pb-24 pt-2 space-y-3">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2 space-y-3">
           <div>
             <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Question</label>
             <textarea value={form.question} onChange={e => setForm(f => ({ ...f, question: e.target.value }))} rows={2}
@@ -133,7 +133,7 @@ export default function AdminFaqManager({ onBack, actorName }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="FAQ manager" onBack={onBack} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
         <button onClick={startNew}
                 className="no-tap-highlight w-full mb-4 inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
                 style={{ background: T.primary, color: '#FFF' }}>

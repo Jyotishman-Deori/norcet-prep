@@ -59,6 +59,47 @@ function dbHeaders(extra?: Record<string, string>): Record<string, string> {
   return { apikey: SERVICE_ROLE, Authorization: `Bearer ${SERVICE_ROLE}`, ...(extra ?? {}) };
 }
 
+// ---- rate limiting (SEC-035) ----------------------------------------
+// Same fixed-window limiter auth-secure uses: the locked auth_rate table +
+// rate_hit() RPC (supabase/auth-rate.sql). FAILS OPEN — a limiter/DB blip must
+// never lock staff out. Used to cap the 2FA code check (a 6-digit brute-force
+// oracle otherwise) and the passphrase compare.
+function clientIp(req: Request): string {
+  const xff = req.headers.get("x-forwarded-for");
+  if (xff) return xff.split(",")[0].trim();
+  return req.headers.get("x-real-ip") || "unknown";
+}
+async function rateHit(
+  bucket: string,
+  identifier: string,
+  limit: number,
+  windowSeconds: number,
+): Promise<{ allowed: boolean; retryAfter: number }> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/rpc/rate_hit`, {
+      method: "POST",
+      headers: dbHeaders({ "Content-Type": "application/json", Accept: "application/json" }),
+      body: JSON.stringify({
+        p_bucket: bucket,
+        p_identifier: identifier || "unknown",
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+    if (!r.ok) return { allowed: true, retryAfter: 0 }; // fail OPEN
+    const rows = await r.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row) return { allowed: true, retryAfter: 0 };
+    return { allowed: !!row.allowed, retryAfter: Number(row.retry_after) || 0 };
+  } catch {
+    return { allowed: true, retryAfter: 0 }; // fail OPEN on any limiter error
+  }
+}
+function tooMany(retryAfter: number): Response {
+  return json({ ok: false, reason: "rate-limited", retryAfter,
+    message: `Too many attempts. Please wait a moment and try again.` }, 429);
+}
+
 // ---- session-token verification (byte-identical to kv-write) --------
 function b64urlToBytes(s: string): Uint8Array {
   s = s.replace(/-/g, "+").replace(/_/g, "/");
@@ -290,19 +331,26 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Could not save the 2FA secret (has admin-2fa.sql been run?)" }, 502);
     }
     const label = encodeURIComponent(`NurseHolic Admin:${session.id}`);
+    // SHA1 / 6 digits / 30s are the otpauth spec DEFAULTS — every authenticator
+    // app assumes them, so we omit them to keep the URI short (a shorter URI =
+    // a lower-version, denser-free QR that scans more reliably). totp-verify
+    // computes from the stored secret with the same defaults, never this URI.
     return json({
       ok: true, secret,
-      otpauth: `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent("NurseHolic Admin")}&algorithm=SHA1&digits=6&period=30`,
+      otpauth: `otpauth://totp/${label}?secret=${secret}&issuer=${encodeURIComponent("NurseHolic Admin")}`,
     });
   }
   // totp-verify: check a 6-digit code; the first valid code CONFIRMS a
-  // pending enrolment. Rate-limited by simple lockstep (6 codes/min is
-  // already impossible to brute-force at 10^6 space with ±1 window).
+  // pending enrolment. Brute-force capped per staff account (SEC-035): 10
+  // wrong codes / 15 min. Without this a stolen session token could grind the
+  // 10^6 space (×3 with the ±1 window) at full speed.
   if (action === "totp-verify") {
     if (!SESSION_SECRET) return json({ error: "Server not configured" }, 500);
     const session = await verifyToken(payload.token);
     if (!session) return json({ error: "Not authenticated" }, 401);
     if (!(await roleOf(session))) return json({ error: "Forbidden: staff only" }, 403);
+    const rl = await rateHit("admin-totp-verify", session.id || clientIp(req), 10, 15 * 60);
+    if (!rl.allowed) return tooMany(rl.retryAfter);
     const stored = await totpRead(session);
     if (!stored) return json({ ok: false, reason: "not-enrolled" });
     const secret = stored.startsWith("pending:") ? stored.slice(8) : stored;
@@ -348,7 +396,10 @@ Deno.serve(async (req: Request) => {
 
   // "verify" unlocks the admin UI — 200 { ok } either way. No token context
   // here, so either key counts (the real writes below are role-matched).
+  // Rate-limited per IP (SEC-035) so the two passphrases can't be ground out.
   if (action === "verify") {
+    const rl = await rateHit("admin-verify", clientIp(req), 10, 15 * 60);
+    if (!rl.allowed) return tooMany(rl.retryAfter);
     return json({ ok: safeEqual(passphrase, ADMIN_PASSPHRASE) || (!!STAFF_PASSPHRASE && safeEqual(passphrase, STAFF_PASSPHRASE)) });
   }
 

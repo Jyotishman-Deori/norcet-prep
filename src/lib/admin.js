@@ -142,6 +142,9 @@ async function callTotp(action, extra) {
     body: JSON.stringify({ action, token: getAuthToken(), ...(extra || {}) }),
   });
   const j = await r.json().catch(() => ({}));
+  // 429 carries a friendly { ok:false, reason:'rate-limited', message } body —
+  // hand it back so the caller can show it, rather than a bare "429".
+  if (r.status === 429) return (j && j.reason) ? j : { ok: false, reason: 'rate-limited' };
   if (!r.ok) {
     const err = new Error((j && j.error) || `${r.status}`);
     err.status = r.status;
@@ -151,5 +154,5 @@ async function callTotp(action, extra) {
 }
 // → { ok, secret, otpauth } (otpauth:// URI for the authenticator QR)
 export function totpEnroll() { return callTotp('totp-enroll', {}); }
-// → { ok } | { ok:false, reason:'bad-code'|'not-enrolled' }
+// → { ok } | { ok:false, reason:'bad-code'|'not-enrolled'|'rate-limited' }
 export function totpVerify(code) { return callTotp('totp-verify', { code }); }
