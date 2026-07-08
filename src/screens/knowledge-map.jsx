@@ -1139,6 +1139,29 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   // crosses a wedge boundary, so it feeds the scene memo directly as a dep.
   const focusSubjectId = kmapFocusSubjectId(subjectNodesOnly, view);
 
+  // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
+  // get a subtle shimmer that pulls the eye toward what's unlockable next.
+  // (Declared ABOVE the scene memo — it is one of its deps; a `const` read
+  // before its declaration line is a runtime TDZ crash the build won't catch.)
+  const fogSet = useMemo(() => {
+    const m = new Map();   // id -> 'soft' | 'strong'
+    const byId = {}; (model.subjects || []).forEach(s => { byId[s.id] = s; });
+    (model.subjects || []).forEach(subj => {
+      const started = mindmapStateRank(subj.state) >= 1;   // discovered+
+      const masteredSib = (subj.subs || []).some(x => x.state === 'mastered');
+      (subj.subs || []).forEach(sub => {
+        if (sub.state === 'locked' && started) m.set(`${subj.id}::${sub.sub}`, masteredSib ? 'strong' : 'soft');
+      });
+    });
+    DEPENDENCIES.forEach(dep => {
+      const a = byId[dep.from], b = byId[dep.to];
+      if (!a || !b) return;
+      if (a.state === 'locked' && mindmapStateRank(b.state) >= 1 && !m.has(a.id)) m.set(a.id, 'soft');
+      if (b.state === 'locked' && mindmapStateRank(a.state) >= 1 && !m.has(b.id)) m.set(b.id, 'soft');
+    });
+    return m;
+  }, [model]);
+
   // ── MEMOIZED SCENE (perf) ───────────────────────────────────────────
   // The whole static sky (backdrop, starfield, edges, nodes) is built once
   // per (data, quantized-zoom) change. Pan/tween frames then re-render ONLY
@@ -1441,27 +1464,6 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   }, [layout, matchSet, fogSet, notes, explorerBadges, pulseTier, focusSubjectId,
       kq, surfacePx, T.primary, T.accent, activateNode, noteGestureProps]);
 
-
-  // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
-  // get a subtle shimmer that pulls the eye toward what's unlockable next.
-  const fogSet = useMemo(() => {
-    const m = new Map();   // id -> 'soft' | 'strong'
-    const byId = {}; (model.subjects || []).forEach(s => { byId[s.id] = s; });
-    (model.subjects || []).forEach(subj => {
-      const started = mindmapStateRank(subj.state) >= 1;   // discovered+
-      const masteredSib = (subj.subs || []).some(x => x.state === 'mastered');
-      (subj.subs || []).forEach(sub => {
-        if (sub.state === 'locked' && started) m.set(`${subj.id}::${sub.sub}`, masteredSib ? 'strong' : 'soft');
-      });
-    });
-    DEPENDENCIES.forEach(dep => {
-      const a = byId[dep.from], b = byId[dep.to];
-      if (!a || !b) return;
-      if (a.state === 'locked' && mindmapStateRank(b.state) >= 1 && !m.has(a.id)) m.set(a.id, 'soft');
-      if (b.state === 'locked' && mindmapStateRank(a.state) >= 1 && !m.has(b.id)) m.set(b.id, 'soft');
-    });
-    return m;
-  }, [model]);
 
   // #13 — first-time cinematic reveal. Start zoomed in on the NORCET sun, then
   // pull back to the full galaxy over ~2.6s and show the one-time welcome.
