@@ -249,6 +249,7 @@ import FeedbackHost from './screens/feedback-modal.jsx';
 import HelpHost from './screens/help-modal.jsx';
 // #7 — app-root confirmation dialog host (un-bookmark caution, etc.).
 import ConfirmHost from './ui/confirm-host.jsx';
+import OfflineIndicator from './ui/offline-indicator.jsx';
 // AI Learning Notes — app-root note popup host + draggable floating button.
 import NoteHost from './screens/note-taking-modal.jsx';
 import NoteFab from './ui/note-fab.jsx';
@@ -4193,6 +4194,10 @@ export default function App() {
       {/* #7 — app-root confirmation dialog. Opened via requestConfirm() — used
           by the un-bookmark caution and reusable for any future confirm. */}
       <ConfirmHost />
+
+      {/* Connectivity pill — subtle "you're offline" caution + "back online"
+          affirmation. Pointer-events none: informs, never blocks. */}
+      <OfflineIndicator />
 
       {/* Level Up — rank-up celebration (fires when a game pushes you over a
           level). App-root so it overlays whatever screen is active. */}

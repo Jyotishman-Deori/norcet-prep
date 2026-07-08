@@ -167,6 +167,24 @@ export const fontStyles = `
   .kmap-celeb-particle, .kmap-celeb-check, .kmap-celeb-sparkle { animation: none !important; }
 }
 
+/* Connectivity pill (offline-indicator.jsx) — subtle, never a roadblock.
+   Offline: slide in + a breathing icon while it stays. Back online: one
+   arc that slides in, lingers, and fades itself out (unmount follows). */
+@keyframes connPillIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: none; } }
+.conn-pill-in { animation: connPillIn 0.28s ease-out both; }
+@keyframes connPillAffirm {
+  0% { opacity: 0; transform: translateY(-10px); }
+  12% { opacity: 1; transform: none; }
+  78% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-6px); }
+}
+.conn-pill-affirm { animation: connPillAffirm 2.6s ease both; }
+@keyframes connBreathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+.conn-pill-breathe { animation: connBreathe 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .conn-pill-in, .conn-pill-affirm, .conn-pill-breathe { animation: none !important; }
+}
+
 /* #13 Constellation overhaul — ambient/state animations on the dark star map.
    All keyed on transform-box: fill-box so SVG transforms stay node-local. */
 @keyframes kmapPulseSlow { 0%, 100% { opacity: 0.22; transform: scale(1); } 50% { opacity: 0.42; transform: scale(1.12); } }
