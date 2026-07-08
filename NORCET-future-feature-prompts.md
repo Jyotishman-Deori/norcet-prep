@@ -10630,3 +10630,16 @@ give up or file feedback. Shipped 57f4c6e; all three surfaces live.
 Owner device check: spam-tap a blank area on Home ~5x fast, then open
 admin -> Crash reports: one amber [UX] group should appear. Spam-tapping in
 any Level Up drill or on the Knowledge Map must produce nothing.
+
+---
+
+## 2026-07-09 — Connectivity pill (offline caution + back-online affirmation)
+
+src/ui/offline-indicator.jsx at the app root (75ac0f6): amber floating pill
+on going offline ("You're offline. Progress saves on this device.", breathing
+icon), green affirmation on reconnect ("Back online. Your progress is
+syncing.") that fades after ~2.6s. Non-blocking by construction: pointer
+events none, no buttons, silent on a normal online boot, aria-live polite,
+reduced-motion gated (font-styles.js conn-pill block). Visual layer over the
+existing offline write queue + flushPendingSync. Verified both boot states
+via renderToString harness; gate green (31 tests + smoke + build).
