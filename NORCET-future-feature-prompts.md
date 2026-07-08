@@ -10593,3 +10593,40 @@ note-prompt bullet regex `[•·*\-–—]` (reverted — regex, not prose) and 
 
 Commits a11e735 (frontend) + functions commit, pushed to main. CLI note: the
 supabase CLI is a scoop shim reachable via the PowerShell tool, not Bash npx.
+
+---
+
+## 2026-07-09 — Rage-click detection: UX failures flagged before a ticket
+
+Owner request: detect rage clicks (rapid clustered taps, the "this button is
+broken" frustration signal) and surface them as UX failures before students
+give up or file feedback. Shipped 57f4c6e; all three surfaces live.
+
+- NEW src/lib/rage-click.js: PURE burst detector (4 pointerdowns within
+  1.5s and 32px of the burst anchor; 30s cooldown per tantrum; 6 reports
+  per session; thresholds are exported constants for quick tuning) + a
+  fail-safe document-level installer booted in main.jsx. The installer
+  LAZY-imports errorlog/umami (game-config.js idiom) so the Node contract
+  test can import the module without dragging in storage.js.
+- Reports RIDE THE EXISTING errlog pipeline: captureError with severity
+  'ux', message "[UX] Rage click on {screen}: {target} (dead zone |
+  unresponsive control)". They appear in the admin Crash-reports triage
+  list with group/resolve/delete for free, amber UX badge (admin deployed).
+  Position/click-count detail rides sampleStack. Umami 'rage-click' event
+  fires per report. Targets are PII-safe (tag + 40 chars text/aria-label,
+  never input values); untrusted (synthetic) events ignored.
+- EXCLUDED screens (legit rapid tapping): the 13 games/drills +
+  knowledge-map (double-tap zoom). Quiz INCLUDED by design: hammering a
+  locked option is a real UX signal.
+- kv-write: errlog SETs with severity 'ux' skip alertOwnerOnError so UX
+  noise can never consume the shared 2/hour crash-email budget (deployed).
+- Verification: contract test (rage-click.test.js, auto-discovered; 31
+  test files now) + an end-to-end Node harness that installed the real
+  listener, fired trusted synthetic bursts through the REAL handler ->
+  detector -> captureError -> flush and asserted the exact errlog record
+  (11 checks incl. cooldown, ward-boss exclusion, untrusted-event filter).
+  Full gate green (31 tests + 6-screen render smoke + build).
+
+Owner device check: spam-tap a blank area on Home ~5x fast, then open
+admin -> Crash reports: one amber [UX] group should appear. Spam-tapping in
+any Level Up drill or on the Knowledge Map must produce nothing.
