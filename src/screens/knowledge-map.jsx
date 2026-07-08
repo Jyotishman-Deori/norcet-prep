@@ -15,7 +15,6 @@ import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import { ArrowLeft, Volume2, VolumeX, Search, Sparkles, X, Plus, LayoutGrid, Maximize2, Minimize2, HelpCircle, AlertCircle, Compass } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
-import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { attemptStats } from '../lib/compact.js';
 import { clampNum, todayStr } from '../lib/utils.js';
@@ -29,6 +28,7 @@ import {
 } from '../lib/kmap.js';
 import { requestHelp, requestFeedback } from '../ui/primitives.jsx';
 import { useBackHandler } from '../lib/back-handler.js';
+import KmapDialog from '../ui/kmap-dialog.jsx';
 import MindmapNodePopup from './mindmap-node-popup.jsx';
 import MindmapNoteEditor from './mindmap-note-editor.jsx';
 
@@ -1597,15 +1597,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           </div>
         );
         return (
-          <div className="fixed inset-0 z-[95] flex items-center justify-center p-4 kmap-scrim-in"
-               style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.45), rgba(7,10,20,0.85))' }}
-               onClick={() => setGuideOpen(false)}>
-            {/* Centred, height-capped dialog (was a bottom sheet that cropped
-                under the status bar on tall tablets like the Realme Pad). */}
-            <div className="w-full max-w-md rounded-3xl anim-scalein"
-                 style={{ background: CMAP.surfaceSolid || CMAP.panelSolid, border: `1px solid ${CMAP.border}`,
-                          maxHeight: 'min(580px, calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px) - 40px))', overflowY: 'auto' }}
-                 onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="How the Knowledge Map works">
+          <KmapDialog zIndex={95} label="How the Knowledge Map works" onClose={() => setGuideOpen(false)}>
               <div className="px-5 pt-5 pb-5">
                 <div className="flex items-start justify-between gap-3 mb-1">
                   <div className="font-display text-xl font-semibold" style={{ color: CMAP.text }}>How the map works</div>
@@ -1676,8 +1668,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   Got it
                 </button>
               </div>
-            </div>
-          </div>
+          </KmapDialog>
         );
       })()}
 

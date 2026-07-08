@@ -1,17 +1,17 @@
 // =====================================================================
 // src/screens/mindmap-node-popup.jsx — knowledge-map node HUD (A1 slice 33)
-// #13 overhaul: reimagined as a game HUD that springs up from the bottom over
-// the dark constellation map (the map stays partly visible behind). Header with
-// state badge, a 4-segment progress JOURNEY track, a clean HUD stats row, a
-// mentor-voiced next-milestone challenge, a top-right note icon, and a big
-// "Practice — [Topic]" CTA. Mechanics/props unchanged; editing a note still
-// opens the existing editor (onEditNote).
+// #13 game HUD over the dark constellation map (the map stays partly visible
+// behind). Header with state badge, a 4-segment progress JOURNEY track, a
+// clean HUD stats row, a mentor-voiced next-milestone challenge, a top-right
+// note icon, and a big "Practice — [Topic]" CTA. Mechanics/props unchanged.
+// Map-revamp: the bottom sheet became a CENTRED fixed-size KmapDialog
+// (portaled, dvh-clamped) — same shell on every device, never cut off.
 // =====================================================================
 import React from 'react';
 import { Brain, Check, Edit3, X, StickyNote } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
-import { useFocusTrap } from '../lib/use-focus-trap.js';
+import KmapDialog from '../ui/kmap-dialog.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { relativeTimeShort } from '../lib/utils.js';
 import { KMAP_BONUS_COLOR, KMAP_STATE_LABEL, KMAP_STATES, mindmapStateRank } from '../lib/kmap.js';
@@ -60,22 +60,10 @@ function mentorChallenge(state, attempted, accuracy, name) {
 function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explorerEarned = false, onExplore, note = null, onEditNote = null }) {
   const { theme: T } = useTheme();
   const fgOnDark = useFgOnDark();
-  const trapRef = useFocusTrap(onClose);
 
+  // Centred fixed-size shell (portal + focus trap live in KmapDialog).
   const Sheet = ({ children, label }) => (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center kmap-scrim-in"
-         style={{ background: 'radial-gradient(ellipse at center, rgba(10,14,28,0.30), rgba(7,10,20,0.74))' }}
-         onClick={onClose}>
-      <div ref={trapRef} role="dialog" aria-modal="true" aria-label={label}
-           className="w-full max-w-md rounded-t-3xl kmap-sheet-up"
-           style={{ background: HUD.surface, borderTop: `1px solid ${HUD.border}`,
-                    boxShadow: '0 -12px 44px rgba(0,0,0,0.55)', maxHeight: '62vh', overflowY: 'auto',
-                    paddingBottom: 'env(safe-area-inset-bottom, 12px)' }}
-           onClick={(e) => e.stopPropagation()}>
-        <div className="flex justify-center pt-2.5 pb-1"><div style={{ width: 38, height: 4, borderRadius: 999, background: 'rgba(255,255,255,0.18)' }} /></div>
-        {children}
-      </div>
-    </div>
+    <KmapDialog label={label} onClose={onClose}>{children}</KmapDialog>
   );
 
   // ---- Bonus "beyond syllabus" node ----------------------------------
@@ -84,7 +72,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
     const markExplored = () => { if (onExplore) onExplore(b.id); onClose(); };
     return (
       <Sheet label={`${b.name} — bonus topic`}>
-        <div className="px-5 pb-5">
+        <div className="px-5 py-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-2.5 min-w-0">
               <span style={{ fontSize: 24, color: KMAP_BONUS_COLOR }}>{explorerEarned ? '\u2605' : '\u2727'}</span>
@@ -137,7 +125,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
 
   return (
     <Sheet label={`${name} details`}>
-      <div className="px-5 pb-5">
+      <div className="px-5 py-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
