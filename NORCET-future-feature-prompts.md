@@ -10419,3 +10419,52 @@ PII). The client ALREADY routes all six through the kv-read broker, so it's
 safe to apply supabase/secure-admin-read-policy.sql (locks those 4 + the 2)
 and then probe: with the anon key, `SELECT key FROM kv_shared WHERE key LIKE
 'adminlog:%'` should return 0 rows. Reversible.
+→ RESOLVED 2026-07-08: owner ran the v2 SQL ("sql run done") — SEC-034 CLOSED.
+
+# ---------------------------------------------------------------------
+# (2026-07-08) Knowledge Map premium revamp — responsive canvas, centred
+# popups, label declutter, micro-interactions
+# ---------------------------------------------------------------------
+
+Owner (tablet 960x1600 + laptop screenshots): map "feels completely rubbish"
+on big screens; popups misaligned to the current screen and size seemed to
+vary with the enlarged map; zoomed view = unreadable label soup; mid-zoom =
+"caterpillar" chains of overlapping circles. Wanted: simple, premium,
+micro-interactions, every mobile/tablet/PC.
+
+SHIPPED (5 commits, student app only — no Edge Fn / admin changes):
+
+1. test(kmap) 2de2140 — NEW src/lib/kmap.test.js locks mastery thresholds +
+   every radial-layout invariant BEFORE touching anything (kmap.js had no test).
+2. fix(kmap) e6827c2 — popups: NEW src/ui/kmap-dialog.jsx = ONE shell for the
+   node HUD + note editor + guide. Portaled to <body>, ALWAYS viewport-centred
+   on every breakpoint, FIXED size (420px wide, maxHeight min(620px,
+   100dvh - safe areas)) — cannot vary with map zoom/fullscreen. Root cause of
+   the "cut off / far down" popups: items-end bottom sheets sized 62vh (vh !=
+   visible height when mobile browser chrome retracts) rendered un-portaled.
+   The guide dialog had already been fixed to this pattern; now all three ride
+   it. Note editor deliberately restyled to the map's dark HUD shell.
+3. feat(kmap) d2cf2a3 — responsive canvas: column max-w-md → wide tier
+   (md:3xl/lg:6xl); surface height 460px → viewport-clamped on md/lg (phone
+   byte-identical); floating back/report/help row tracks the column; legend =
+   phone strip + glass pill overlay on canvas for md+/fullscreen; starfield
+   domain widened for letterbox bands; suggested-today/minimap lg bumps;
+   knowledge-map added to NOTE_FAB_HIDDEN.
+4. feat(kmap) d5157a7 — declutter/LOD: kmapLabelFont (counter-scaled,
+   constant ~11px screen labels, clamped so phone default = today) +
+   kmapFocusSubjectId (only the wedge under the viewport centre shows sub
+   labels; other subjects' labels fade to 0.35) + 3-step radial stagger
+   (j%3 * 34, was j%2 * 30) + plain-dot subs below Topic zoom (fog/glow/crown/
+   badges gate on subDetail ≥2.1) + zoomed-out "★ mastered/total" per subject.
+   Both new helpers unit-tested; reveal thresholds unchanged.
+5. feat(kmap) d1445ec — micro-interactions (ALL reduced-motion-gated): node
+   hover brightness + press scale; eased +/-/Fit/double-tap camera glides via
+   the existing animateView (wheel/pinch stay instant); legend chips ping an
+   expanding ring on every star of the tapped tier; suggested-today slides in;
+   bottom-left controls unified into one glass panel.
+
+Verified: npm test (30 files incl. new kmap tests) + vite build green per
+commit; all 5 map modules transform cleanly through the live dev server.
+⚠ Owner device check recommended: popup opens pixel-identical at any zoom /
+fullscreen / mid-pan; celebration tour after a quiz; search reveal; long-press
+note; reduced-motion setting.
