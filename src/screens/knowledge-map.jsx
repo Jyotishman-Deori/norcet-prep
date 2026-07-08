@@ -871,16 +871,48 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
   const fitView = useCallback(() => setView({ k: 1, x: 0, y: 0 }), []);
 
-  // Centre + zoom onto a node (double-tap / double-click).
+  // Centre + zoom onto a node (double-tap / double-click) — eased camera
+  // glide (instant under reduced motion, matching the celebration tour).
   const focusNode = useCallback((node) => {
     if (!node) return;
     const k = 1.9;
-    setView({ k, x: KMAP_VIEW / 2 - node.x * k, y: KMAP_VIEW / 2 - node.y * k });
-  }, []);
+    const target = { k, x: KMAP_VIEW / 2 - node.x * k, y: KMAP_VIEW / 2 - node.y * k };
+    if (prefersReducedMotion()) setView(target); else animateView(target, 360);
+  }, [animateView]);
 
   // Targets reusing the focusNode/fitView transform model (no react-flow).
   const focusTargetFor = (node) => { const k = 1.9; return { k, x: KMAP_VIEW / 2 - node.x * k, y: KMAP_VIEW / 2 - node.y * k }; };
   const FIT_TARGET = { k: 1, x: 0, y: 0 };
+
+  // Eased +/- buttons: same centre-focal math as zoomAt, tweened. Wheel and
+  // pinch stay INSTANT — direct manipulation must never lag behind a finger.
+  const zoomButton = useCallback((factor) => {
+    const v = viewRef.current;
+    const k = clampNum(v.k * factor, Z_MIN, Z_MAX);
+    const f = KMAP_VIEW / 2;
+    const target = { k, x: f - ((f - v.x) / v.k) * k, y: f - ((f - v.y) / v.k) * k };
+    if (prefersReducedMotion()) setView(target); else animateView(target, 240);
+  }, [animateView]);
+  const fitEased = useCallback(() => {
+    if (prefersReducedMotion()) fitView(); else animateView(FIT_TARGET, 320);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateView, fitView]);
+
+  // Legend tier ping — tapping a legend chip pulses every star of that tier
+  // (additive ring; never touches the reveal/dim/fog opacity systems).
+  const [pulseTier, setPulseTier] = useState(null);
+  const pulseTimer = useRef(null);
+  const pingTier = useCallback((tier) => {
+    if (prefersReducedMotion()) return;
+    if (pulseTimer.current) clearTimeout(pulseTimer.current);
+    setPulseTier(null);
+    // re-arm on the next frame so tapping the same tier twice re-pings
+    requestAnimationFrame(() => {
+      setPulseTier(tier);
+      pulseTimer.current = setTimeout(() => setPulseTier(null), 1700);
+    });
+  }, []);
+  useEffect(() => () => { if (pulseTimer.current) clearTimeout(pulseTimer.current); }, []);
 
   // P11 Feature B — on mount, diff the live model against the persisted prior
   // snapshot to find nodes that JUST upgraded (i.e. since the last time the map
@@ -1155,7 +1187,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             language, on a dark strip so the glows read the same as the map. */}
         <div className="flex md:hidden flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
              style={{ background: CMAP.panelSolid, border: `1px solid ${CMAP.border}`, color: CMAP.muted }}>
-          <KmapLegendChips />
+          <KmapLegendChips onTierTap={pingTier} />
         </div>
 
         {/* The map surface — a dark "constellation" canvas. In fullscreen mode
@@ -1170,7 +1202,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           {/* P11 Feature A — "Suggested for you today" floating panel (top-right
               overlay), restyled to the dark game aesthetic. */}
           {suggestions.length > 0 && !suggestDismissed && !intro && (
-            <div className="absolute right-2 z-10 rounded-xl anim-fadeup w-[200px] lg:w-[240px]"
+            <div className="absolute right-2 z-10 rounded-xl kmap-panel-in w-[200px] lg:w-[240px]"
                  style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 8,
                           background: CMAP.panel, border: `1px solid ${CMAP.border}`,
                           boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
@@ -1292,7 +1324,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   const ly = node.y + Math.sin(node.angle) * (r + 5);
                   const anchor = Math.cos(node.angle) > 0.3 ? 'start' : Math.cos(node.angle) < -0.3 ? 'end' : 'middle';
                   return (
-                    <g key={node.id} className="kmap-bonus-reveal"
+                    <g key={node.id} className="kmap-bonus-reveal kmap-node"
                        style={{ cursor: 'pointer', opacity: 0.3 + 0.7 * subReveal, pointerEvents: subsInteractive ? 'auto' : 'none' }}
                        onClick={() => activateNode(node)}
                        role="button" tabIndex={0}
@@ -1321,7 +1353,8 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   const hit = matchSet && matchSet.has(node.id);
                   const fog = fogSet.get(node.id);
                   return (
-                    <g key={node.id} style={{ cursor: 'pointer', opacity: dimmed ? 0.18 : 1, transition: 'opacity 160ms ease' }}
+                    <g key={node.id} className="kmap-node"
+                       style={{ cursor: 'pointer', opacity: dimmed ? 0.18 : 1, transition: 'opacity 160ms ease, transform 120ms cubic-bezier(0.34,1.56,0.64,1), filter 150ms ease' }}
                        onClick={() => activateNode(node)}
                        {...noteGestureProps(node)}
                        role="button" tabIndex={0}
@@ -1334,6 +1367,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                       )}
                       {hit && (
                         <circle cx={node.x} cy={node.y} r={r + 8} fill="none" stroke={T.accent} strokeWidth={3} strokeDasharray="4 4" opacity={0.95} />
+                      )}
+                      {pulseTier === s.state && (
+                        <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke={cs.ring} strokeWidth={2.5} className="kmap-tier-ping" />
                       )}
                       {/* state glow (radiance / pulse) behind the core */}
                       {cs.glow && (
@@ -1401,10 +1437,10 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 // viewport centre (search overrides) — the label-soup fix.
                 const labelOn = matchSet ? true : (view.k >= KMAP_FOCUS_K && focusSubjectId === node.parent);
                 return (
-                  <g key={node.id}
+                  <g key={node.id} className="kmap-node"
                      style={{ cursor: 'pointer', opacity: (subDimmed ? 0.18 : 1) * reveal,
                               pointerEvents: (subsInteractive || matchSet) ? 'auto' : 'none',
-                              transition: 'opacity 200ms ease' }}
+                              transition: 'opacity 200ms ease, transform 120ms cubic-bezier(0.34,1.56,0.64,1), filter 150ms ease' }}
                      onClick={() => activateNode(node)}
                      {...noteGestureProps(node)}
                      role="button" tabIndex={0}
@@ -1420,6 +1456,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                     )}
                     {subHit && (
                       <circle cx={node.x} cy={node.y} r={r + 5} fill="none" stroke={T.accent} strokeWidth={2.5} strokeDasharray="3 3" opacity={0.95} />
+                    )}
+                    {pulseTier === s.state && (
+                      <circle cx={node.x} cy={node.y} r={r + 4} fill="none" stroke={cs.ring} strokeWidth={2} className="kmap-tier-ping" />
                     )}
                     {subDetail && cs.glow && (
                       <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
@@ -1563,18 +1602,20 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           )}
 
           {/* Zoom controls (replacing react-flow <Controls/>) + fullscreen */}
-          <div className="absolute left-3 flex flex-col gap-1.5"
-               style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : 12 }}>
+          <div className="absolute left-3 flex flex-col gap-0.5 p-1 rounded-2xl"
+               style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 12px)' : 12,
+                        background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.35)', backdropFilter: 'blur(8px)' }}>
             {[
               { lbl: 'How this works', sign: <Compass size={16} />, fn: () => setGuideOpen(true) },
               { lbl: fullscreen ? 'Exit fullscreen' : 'Fullscreen', sign: fullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />, fn: toggleFullscreen },
-              { lbl: 'Zoom in', sign: <Plus size={16} />, fn: () => zoomAt(view.k * 1.25) },
-              { lbl: 'Zoom out', sign: <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 700 }}>{'\u2212'}</span>, fn: () => zoomAt(view.k / 1.25) },
-              { lbl: 'Fit to screen', sign: <LayoutGrid size={15} />, fn: fitView }
+              { lbl: 'Zoom in', sign: <Plus size={16} />, fn: () => zoomButton(1.25) },
+              { lbl: 'Zoom out', sign: <span style={{ fontSize: 18, lineHeight: 1, fontWeight: 700 }}>{'\u2212'}</span>, fn: () => zoomButton(1 / 1.25) },
+              { lbl: 'Fit to screen', sign: <LayoutGrid size={15} />, fn: fitEased }
             ].map(b => (
               <button key={b.lbl} onClick={b.fn} aria-label={b.lbl} title={b.lbl}
-                      className="no-tap-highlight w-9 h-9 rounded-xl flex items-center justify-center active:scale-95"
-                      style={{ background: CMAP.panel, border: `1px solid ${CMAP.border}`, color: b.fn === toggleFullscreen && fullscreen ? CMAP.sun : CMAP.text, backdropFilter: 'blur(6px)' }}>
+                      className="no-tap-highlight w-9 h-9 rounded-xl flex items-center justify-center active:scale-90 active:bg-white/10 transition-transform"
+                      style={{ background: 'transparent', color: b.fn === toggleFullscreen && fullscreen ? CMAP.sun : CMAP.text }}>
                 {b.sign}
               </button>
             ))}
@@ -1609,7 +1650,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 14px)' : 14,
                         background: CMAP.panel, border: `1px solid ${CMAP.border}`,
                         boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', color: CMAP.muted }}>
-            <KmapLegendChips />
+            <KmapLegendChips onTierTap={pingTier} />
           </div>
 
           {/* #13 — first-time cinematic welcome (deferred #15 banner). Shows once

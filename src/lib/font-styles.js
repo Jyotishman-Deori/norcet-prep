@@ -222,10 +222,29 @@ export const fontStyles = `
 .kmap-sheet-up { animation: kmapSheetUp 0.34s cubic-bezier(0.22,1,0.36,1) both; }
 @keyframes kmapScrimIn { from { opacity: 0; } to { opacity: 1; } }
 .kmap-scrim-in { animation: kmapScrimIn 0.25s ease-out both; }
+/* Map-revamp micro-interactions. Node hover/press: pointer-fine devices get a
+   brightness lift on hover and every device gets a soft press-scale (house
+   spring). Brightness doesn't fight the map's inline reveal/dim opacities. */
+.kmap-node { transform-box: fill-box; transform-origin: center;
+             transition: transform 120ms cubic-bezier(0.34,1.56,0.64,1), filter 150ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .kmap-node:hover { filter: brightness(1.35); }
+}
+.kmap-node:active { transform: scale(0.94); }
+/* Legend tier ping — one expanding ring on every star of the tapped tier. */
+@keyframes kmapTierPing { 0% { opacity: 0.9; transform: scale(0.9); } 100% { opacity: 0; transform: scale(1.5); } }
+.kmap-tier-ping { animation: kmapTierPing 0.8s ease-out 2 both; transform-box: fill-box; transform-origin: center; }
+/* Suggested-today panel slides in from the right edge of the canvas. */
+@keyframes kmapPanelIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+.kmap-panel-in { animation: kmapPanelIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
 @media (prefers-reduced-motion: reduce) {
   .kmap-pulse-slow, .kmap-pulse-warm, .kmap-radiance, .kmap-sun-glow,
   .kmap-fog-shimmer, .kmap-fog-shimmer-strong, .kmap-orbit, .kmap-float-up { animation: none !important; }
   .kmap-sheet-up { animation: none !important; }
+  .kmap-tier-ping, .kmap-panel-in { animation: none !important; }
+  .kmap-node { transition: none !important; }
+  .kmap-node:hover { filter: none !important; }
+  .kmap-node:active { transform: none !important; }
 }
 
 /* Custom scrollbars — subtle, rounded, and theme-aware. The thumb colour is
