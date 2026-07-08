@@ -10541,3 +10541,24 @@ use-before-declaration TDZ is invisible to builds; only rendering catches it.
 LESSON (process): a "verified" ship must include a RUNTIME render of the
 changed screen, not just tests + build. The round-2 dev-server checks only
 confirmed modules transform — they never executed a render.
+
+---
+
+## 2026-07-08 — Render-smoke gate extended to all high-traffic screens
+
+`scripts/smoke/` now server-renders SIX screens on every `npm test` (was
+knowledge-map only): home, quiz (5 real SEED_QUESTIONS), settings, level-up,
+learn-topics, knowledge-map. Any first-render crash in any of them now fails
+the gate before a push can reach users.
+
+Harness upgrades: stub `useData` now feeds the app's REAL `DEFAULT_DATA` +
+`SEED_QUESTIONS` shapes; `createPortal` is no-op'd in the smoke bundle only
+(react-dom/server can't traverse portals — the component bodies that CALL it
+still execute, which is the coverage that matters); `import.meta.env` is
+defined empty (modules guard for missing VITE_ values, mirroring a build
+without env). To cover a new screen: add one entry to SCREENS in
+scripts/smoke/entry.jsx with props mirroring its App.jsx dispatch site.
+
+Known limits (documented, acceptable): effects never run (loading states
+render, async crashes not covered), portal contents (open dialogs/toasts)
+not traversed, admin app not covered.
