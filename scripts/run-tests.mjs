@@ -29,9 +29,16 @@ if (failed) {
   process.exit(1);
 }
 
+// Runtime render smoke (scripts/smoke) — server-renders the real Knowledge
+// Map screen, catching first-render crashes (e.g. TDZ in memo deps) that the
+// compile gate can't see. See scripts/smoke/build.mjs for the incident note.
+console.log('\n> knowledge-map render smoke');
+const smoke = spawnSync(process.execPath, [join(root, 'scripts', 'smoke', 'build.mjs')], { stdio: 'inherit', cwd: root });
+if (smoke.status !== 0) process.exit(1);
+
 console.log('\n> vite build (compile gate)');
 const viteBin = join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 const build = spawnSync(process.execPath, [viteBin, 'build'], { stdio: 'inherit', cwd: root });
 if (build.status !== 0) process.exit(1);
 
-console.log(`\nAll ${tests.length} test file(s) + compile gate passed.`);
+console.log(`\nAll ${tests.length} test file(s) + render smoke + compile gate passed.`);

@@ -10515,3 +10515,29 @@ SHIPPED (5 commits a7cc53e..e46a155, student surface only):
 map zooms, PAGE must not; popup 420px at every zoom; Practice → confirm →
 quiz; pan smoothness on the tablet; celebration tour after a quiz still
 plays; long-press note + search + fullscreen + minimap regressions.
+
+---
+
+## 2026-07-08 — HOTFIX: Knowledge Map crashed in production (fogSet TDZ)
+
+Round-2 commit ed54fc2 added `fogSet` to the new kmapScene useMemo deps but
+left its declaration ~300 lines BELOW the memo. Evaluating the deps array on
+first render threw `Cannot access 'fogSet' before initialization` (minified:
+'qe') → every Knowledge Map open hit the error boundary in production.
+`npm test`'s compile gate passed — bundlers don't execute code, so
+use-before-declaration TDZ is invisible to builds; only rendering catches it.
+
+1. fix af3a87b — hoisted the fogSet memo above kmapScene (comment added
+   explaining the ordering constraint). Deployed to prod (Vercel READY).
+2. NEW PERMANENT GATE — `scripts/smoke/` server-renders the REAL
+   knowledge-map.jsx with react-dom/server (stubs: app-context hooks +
+   low-level storage only). Reproduced the crash on the broken code, passes
+   on the fix. Wired into `npm test` between the unit tests and the vite
+   build: `> knowledge-map render smoke`.
+3. Static sweep: python TDZ scan over the component found no other
+   use-before-declaration (two hits were false positives: a setTimeout
+   closure and a JSX prop name).
+
+LESSON (process): a "verified" ship must include a RUNTIME render of the
+changed screen, not just tests + build. The round-2 dev-server checks only
+confirmed modules transform — they never executed a render.
