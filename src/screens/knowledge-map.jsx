@@ -27,7 +27,7 @@ import {
   kmapLabelFont, kmapFocusSubjectId,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
-import { requestHelp, requestFeedback } from '../ui/primitives.jsx';
+import { requestHelp, requestFeedback, requestConfirm } from '../ui/primitives.jsx';
 import { useBackHandler } from '../lib/back-handler.js';
 import KmapDialog from '../ui/kmap-dialog.jsx';
 import MindmapNodePopup from './mindmap-node-popup.jsx';
@@ -1261,7 +1261,13 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   <div key={sug.id} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-xs font-semibold truncate" style={{ color: CMAP.text }}>{sug.name}</span>
-                      <button onClick={() => onPracticeTopic && onPracticeTopic(sug.id)}
+                      {/* Same enter-a-test caution as the node popup's CTA. */}
+                      <button onClick={() => requestConfirm({
+                                title: `Start practice — ${sug.name}?`,
+                                body: `This begins a 10-question practice test on ${sug.name}. Your answers count toward this star's progress.`,
+                                confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
+                                onConfirm: () => { if (onPracticeTopic) onPracticeTopic(sug.id); },
+                              })}
                               className="no-tap-highlight text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0 active:scale-95"
                               style={{ background: T.primary, color: '#fff' }}
                               aria-label={`Start a ${sug.name} quiz`}>

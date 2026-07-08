@@ -11,6 +11,7 @@ import React from 'react';
 import { Brain, Check, Edit3, X, StickyNote } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFgOnDark } from '../lib/theme-helpers.js';
+import { requestConfirm } from '../ui/primitives.jsx';
 import KmapDialog from '../ui/kmap-dialog.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
 import { relativeTimeShort } from '../lib/utils.js';
@@ -116,12 +117,24 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
   const tone = stateTone(state, fgOnDark(color));
   const rank = mindmapStateRank(state);
 
-  const practice = () => {
-    if (isSub) { if (onPracticeSub) onPracticeSub(node.parent, d.sub); }
-    else { if (onPracticeTopic) onPracticeTopic(node.id); }
-    onClose();
-  };
   const ptName = name.length > 22 ? name.slice(0, 21) + '\u2026' : name;
+  // Owner spec: never throw the user straight into a test \u2014 confirm first.
+  // The app-root ConfirmDialog portals AFTER this open KmapDialog, so it
+  // stacks on top; Esc/cancel returns to this intact popup. The
+  // "10-question" copy mirrors count:10 in App.jsx's startQuiz wiring.
+  const practice = () => {
+    requestConfirm({
+      icon: <Brain size={20} style={{ color: T.primary }} />,
+      title: `Start practice \u2014 ${ptName}?`,
+      body: `This begins a 10-question practice test on ${name}. Your answers count toward this star's progress.`,
+      confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
+      onConfirm: () => {
+        if (isSub) { if (onPracticeSub) onPracticeSub(node.parent, d.sub); }
+        else if (onPracticeTopic) onPracticeTopic(node.id);
+        onClose();
+      },
+    });
+  };
 
   return (
     <Sheet label={`${name} details`}>
