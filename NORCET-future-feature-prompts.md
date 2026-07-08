@@ -10562,3 +10562,34 @@ scripts/smoke/entry.jsx with props mirroring its App.jsx dispatch site.
 Known limits (documented, acceptable): effects never run (loading states
 render, async crashes not covered), portal contents (open dialogs/toasts)
 not traversed, admin app not covered.
+
+---
+
+## 2026-07-09 — Removed ALL em dashes from user-facing copy (anti-"AI tell")
+
+Owner rule (now in CLAUDE.md "User-facing text — NO em dashes"): users must
+NEVER see an em dash (—) or double hyphen (--); they read as AI-generated and
+erode student trust in the question bank.
+
+Built a comment/glyph/regex-aware transformer (scratchpad dedash.py) that
+replaces em dashes in DISPLAY text only, choosing punctuation per grammar:
+period (two independent clauses), comma (appended/dependent), colon
+(label→definition). It skips code comments, JSX `{/* */}` comments, the '—'
+placeholder glyph, regex char-classes, and en dashes in numeric ranges
+(60–100 bpm stays).
+
+Scope cleaned (all human-reviewed, all green through npm test = 30 tests +
+6-screen render smoke + build):
+- src/data (question banks, seed-explanations, ECG/caliper/crash-cart etc.)
+- src/screens + src/ui (all UI copy, incl. admin)
+- src/lib (legal, profiles/auth errors, nav-registry, pacing, prompts, etc.)
+- public/data JSON (reference/dosage/concept-cards/help) → CONTENT_VERSION 13→14
+- supabase/functions (auth/staff errors, kv-write push body, waitlist msg,
+  content-staging Gemini prompt) — DEPLOYED with --no-verify-jwt (admin-manage
+  v22, content-staging v12, kv-write v27, push-broadcast v9, waitlist v15).
+~160 files, ~1660 lines. Two bugs the review caught before shipping: the
+note-prompt bullet regex `[•·*\-–—]` (reverted — regex, not prose) and the
+'₹—' price placeholder (→ '₹–' en dash; premium.test.js updated).
+
+Commits a11e735 (frontend) + functions commit, pushed to main. CLI note: the
+supabase CLI is a scoop shim reachable via the PowerShell tool, not Bash npx.
