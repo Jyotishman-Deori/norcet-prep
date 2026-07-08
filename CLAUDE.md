@@ -154,6 +154,23 @@ change go together, ship the **frontend first** (so the UI is gone before the se
 rejecting), then deploy the broker. Doing it in reverse opens a "broken window" where live
 users hit 403s on a still-visible button.
 
+### ⚠ Pre-push verification gate (MANDATORY — a crash in prod = owner's reputation)
+
+A production crash shipped on 2026-07-08 (fogSet TDZ: tests + build green, every
+Knowledge Map open crashed live). "It compiles" is NOT verification. Before ANY push
+to `main` that touches `src/`:
+
+1. `npm test` must pass — it now includes a **render smoke** (`scripts/smoke/`) that
+   server-renders the real Knowledge Map screen; first-render crashes fail the gate.
+2. Any changed **screen** must be **rendered at runtime** before pushing: drive it in
+   `npm run dev`, or clone the `scripts/smoke` harness for that screen (stub only
+   `app-context` hooks + `src/storage`). A memoized component's **deps array is
+   executed code** — every name in it must be declared above it.
+3. For risky/large changes, verify on the dev-branch Vercel preview
+   (`norcet-prep-git-dev-*.vercel.app`) **before** promoting `dev` → `main`.
+4. After every production push, check the **admin panel error log** (`errlog:`) for
+   new entries instead of waiting for the owner to report a broken screen.
+
 ---
 
 ## Agent workflow (this project's sub-agents)
