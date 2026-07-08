@@ -496,7 +496,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
 
           {topicTrends.topics.length === 0 ? (
             <div className="text-sm text-center py-6" style={{ color: T.muted }}>
-              Not enough data in this window yet. Practise a topic across at least two periods of the selected range to see its trend — or pick a longer range.
+              Not enough data in this window yet. Practise a topic across at least two periods of the selected range to see its trend, or pick a longer range.
             </div>
           ) : (() => {
             const visible = showAllTrends ? topicTrends.topics : topicTrends.topics.slice(0, 6);
@@ -663,7 +663,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               onClick={() => requestConfirm({
                 icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,
                 title: "Reset this profile's data?",
-                body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone — consider downloading a backup first (Settings → Backup).",
+                body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone, consider downloading a backup first (Settings → Backup).",
                 confirmLabel: 'Reset data',
                 cancelLabel: 'Cancel',
                 tone: 'danger',

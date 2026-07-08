@@ -17,7 +17,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { haptic } from '../lib/juice.js';
 
 const PERKS = [
-  'Every mistake saved forever — nothing slips away after a session',
+  'Every mistake saved forever, nothing slips away after a session',
   'A smart review queue that resurfaces mistakes until you fix them',
   'A coach note on every mistake: why your pick was wrong, why the answer is right',
 ];
@@ -71,7 +71,7 @@ export default function PremiumCribSheetModal({ open, count = 0, onClose, onUpgr
             </div>
           ) : (
             <div className="text-sm mt-2 leading-relaxed" style={{ color: T.inkSoft }}>
-              Premium keeps your full mistake history and crib sheets — permanently.
+              Premium keeps your full mistake history and crib sheets, permanently.
             </div>
           )}
         </div>

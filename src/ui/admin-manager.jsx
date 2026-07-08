@@ -92,7 +92,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
       }
     } catch (e) {
       setRows([]);
-      setErr(e && e.status === 403 ? 'Your role can’t manage staff.' : 'Couldn’t load the staff list — are you online?');
+      setErr(e && e.status === 403 ? 'Your role can’t manage staff.' : 'Couldn’t load the staff list. Are you online?');
     }
   }, []);
   useEffect(() => { load(); }, [load]);
@@ -113,7 +113,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
 
   const msgFor = (e, fallback) => (e && e.status === 401 ? 'Wrong passphrase (or session expired)' : (e && e.message) || fallback);
   const needPass = () => {
-    if (!pass.trim()) { setErr('Enter the admin passphrase first — every change requires it.'); return true; }
+    if (!pass.trim()) { setErr('Enter the admin passphrase first, every change requires it.'); return true; }
     return false;
   };
 
@@ -158,7 +158,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
       setOk(doneMsg);
       setPending(null); setReason('');
       await load();
-    } catch (e) { setErr(msgFor(e, 'That didn’t go through — try again.')); }
+    } catch (e) { setErr(msgFor(e, 'That didn’t go through, try again.')); }
     setBusy(false);
   };
 
@@ -225,7 +225,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
     try {
       await navigator.clipboard.writeText(id);
       setCopiedId(id); setTimeout(() => setCopiedId(null), 1500);
-    } catch (e) { setErr('Copy failed — long-press the id to copy manually.'); }
+    } catch (e) { setErr('Copy failed, long-press the id to copy manually.'); }
   };
 
   const inputStyle = { background: T.surface, border: `1px solid ${T.border}`, color: T.ink };
@@ -319,7 +319,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
               {' '}This is recorded in the audit log.
             </div>
             <input value={reason} onChange={(e) => setReason(e.target.value)}
-                   placeholder="Reason (logged — e.g. 'left the team')"
+                   placeholder="Reason (logged: e.g. 'left the team')"
                    className="w-full rounded-xl px-3 py-2 mb-2 text-sm" style={inputStyle} />
             <div className="flex gap-2">
               <button onClick={() => { if (needPass()) return; pending.kind === 'remove' ? confirmRemove(g) : confirmRole(g, pending.toRole); }}
@@ -383,13 +383,13 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
           <Lock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
           <input value={pass} onChange={e => setPass(e.target.value)} type="password"
                  placeholder={myRole === 'admin'
-                   ? 'Owner passphrase — required for any change'
-                   : 'Staff passphrase — required for any change'}
+                   ? 'Owner passphrase: required for any change'
+                   : 'Staff passphrase: required for any change'}
                  className="w-full rounded-xl pl-9 pr-3 py-3 text-sm" style={inputStyle} />
         </div>
 
         <Section title="Owner" list={owners}
-                 empty="No owner row found — run supabase/admin-roles.sql to assign roles." />
+                 empty="No owner row found. Run supabase/admin-roles.sql to assign roles." />
 
         {/* Ownership transfer — owner only, needs a Co-Admin to hand over to */}
         {myRole === 'admin' && coadmins.length > 0 && (
@@ -432,9 +432,9 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
         )}
 
         <Section title="Co-Admins" list={coadmins}
-                 empty="No co-admins yet — promote someone you trust with the day-to-day." />
+                 empty="No co-admins yet, promote someone you trust with the day-to-day." />
         <Section title="Moderators" list={moderators}
-                 empty="No moderators yet — they handle feedback, FAQs and content drafts." />
+                 empty="No moderators yet, they handle feedback, FAQs and content drafts." />
 
         {/* Add form with live username preview + role dropdown */}
         {grantable.length > 0 && (
@@ -480,7 +480,7 @@ export default function AdminManager({ onBack, staffRole = 'admin' }) {
             </div>
 
             <input value={newNote} onChange={e => setNewNote(e.target.value)}
-                   placeholder="Note (optional — e.g. their real name)"
+                   placeholder="Note (optional: e.g. their real name)"
                    className="w-full rounded-xl px-3 py-2.5 mb-3 text-sm" style={inputStyle} />
 
             <Button onClick={onAddClick} disabled={busy || !newId.trim()} className="w-full"

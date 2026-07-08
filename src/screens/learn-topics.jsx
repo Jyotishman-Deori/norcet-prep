@@ -168,7 +168,7 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Learn topic wise" onBack={onBack} feedback={{ screen: "Learn — topics" }} />
+      <TopBar title="Learn topic wise" onBack={onBack} feedback={{ screen: "Learn: topics" }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
@@ -178,7 +178,7 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
             {mode === 'quick'
               ? 'A fast, smart sweep of the points that matter most for you right now.'
               : mode === 'path'
-              ? 'Units in study order — foundations first. Rings fill as you practise; nothing is locked, the pulse just shows your best next step.'
+              ? 'Units in study order, foundations first. Rings fill as you practise; nothing is locked, the pulse just shows your best next step.'
               : `Bite-sized notes across ${topicsWithCards.length} topics · ${totalCards} cards. Open a topic to pick a module, or read it top-to-bottom.`}
           </div>
         </div>

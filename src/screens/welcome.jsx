@@ -67,10 +67,10 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // Mirrors the current IA: tests are consolidated under Drill Tests (#11) and
   // the Knowledge Map (#13, the USP) gets a constellation hero treatment.
   const items = [
-    { icon: <Network size={18} />,   title: 'Knowledge Map',     desc: 'Your syllabus as a constellation — practise to light up every star.',      color: '#8A6D1F',                darkColor: '#FFD27A',               nav: { screen: 'knowledge-map' },  helpKey: 'Knowledge Map', hero: true },
-    { icon: <Dumbbell size={18} />,  title: 'Drill Tests',       desc: 'All six test modes — quick warm-ups to full exam simulation, one place.',   color: LIGHT_THEME.sec.mock,     darkColor: DARK_THEME.sec.mock,     nav: { screen: 'drill-tests' },    helpKey: 'Drill tests' },
-    { icon: <Brain size={18} />,     title: 'Learn topic wise',  desc: 'Bite-sized concept cards instead of passive video.',                        color: LIGHT_THEME.sec.learn,    darkColor: DARK_THEME.sec.learn,    nav: { screen: 'learn-topics' },   helpKey: 'Learn — topics' },
-    { icon: <GraduationCap size={18} />, title: 'Study Methods', desc: 'Six science-backed ways to study — and how to use each one here.',          color: LIGHT_THEME.primary,      darkColor: DARK_THEME.primary,      nav: { screen: 'study-methods' },  helpKey: 'Study methods' },
+    { icon: <Network size={18} />,   title: 'Knowledge Map',     desc: 'Your syllabus as a constellation, practise to light up every star.',      color: '#8A6D1F',                darkColor: '#FFD27A',               nav: { screen: 'knowledge-map' },  helpKey: 'Knowledge Map', hero: true },
+    { icon: <Dumbbell size={18} />,  title: 'Drill Tests',       desc: 'All six test modes, quick warm-ups to full exam simulation, one place.',   color: LIGHT_THEME.sec.mock,     darkColor: DARK_THEME.sec.mock,     nav: { screen: 'drill-tests' },    helpKey: 'Drill tests' },
+    { icon: <Brain size={18} />,     title: 'Learn topic wise',  desc: 'Bite-sized concept cards instead of passive video.',                        color: LIGHT_THEME.sec.learn,    darkColor: DARK_THEME.sec.learn,    nav: { screen: 'learn-topics' },   helpKey: 'Learn: topics' },
+    { icon: <GraduationCap size={18} />, title: 'Study Methods', desc: 'Six science-backed ways to study, and how to use each one here.',          color: LIGHT_THEME.primary,      darkColor: DARK_THEME.primary,      nav: { screen: 'study-methods' },  helpKey: 'Study methods' },
     { icon: <FileText size={18} />,  title: 'Revision Sheet',    desc: 'Bookmarks digested into one printable page.',                               color: LIGHT_THEME.sec.revision, darkColor: DARK_THEME.sec.revision, nav: { screen: 'revision-sheet' }, helpKey: 'Revision sheet' },
     { icon: <Flag size={18} />,      title: 'My Doubts',         desc: 'Flag anything unclear while you learn; clear it all up in one place.',       color: '#B3413A',                darkColor: '#E0726B',               nav: { screen: 'doubts' },         helpKey: 'Doubts' },
     { icon: <Layers size={18} />,    title: 'Question Bank Library', desc: 'Browse shared banks and import questions.',                             color: LIGHT_THEME.sec.library,  darkColor: DARK_THEME.sec.library,  nav: { screen: 'library' },        helpKey: 'Library' }
@@ -173,7 +173,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
     const points = [
       { icon: <Target size={18} />, color: T.error, title: 'Most aspirants drown in PDFs', body: 'Endless notes, no idea where they actually stand or what to fix next.' },
       { icon: <Brain size={18} />, color: T.primary, title: 'This app makes prep deliberate', body: 'Spaced revision, weak-area targeting, real exam-style timing and a clear map of your syllabus.' },
-      { icon: <Sparkles size={18} />, color: T.accent, title: 'Built to feel like exam day', body: 'Negative marking, sectional pacing and topper benchmarks — so the real CBT feels familiar.' },
+      { icon: <Sparkles size={18} />, color: T.accent, title: 'Built to feel like exam day', body: 'Negative marking, sectional pacing and topper benchmarks, so the real CBT feels familiar.' },
     ];
     return (
       <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
@@ -212,8 +212,8 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- NEW-01 page 2: Library & question-bank explainer ----
   if (step === 'library') {
     const rows = [
-      { icon: <Layers size={18} />, color: T.sec.library, title: 'The Library holds question banks', body: 'Curated sets of questions grouped by topic and source — the heart of your practice pool.' },
-      { icon: <Download size={18} />, color: T.primary, title: 'Download the sets you want', body: 'Add a bank and its questions join your tests, stats and revision — and work offline after.' },
+      { icon: <Layers size={18} />, color: T.sec.library, title: 'The Library holds question banks', body: 'Curated sets of questions grouped by topic and source, the heart of your practice pool.' },
+      { icon: <Download size={18} />, color: T.primary, title: 'Download the sets you want', body: 'Add a bank and its questions join your tests, stats and revision, and work offline after.' },
       { icon: <PlusCircle size={18} />, color: T.accent, title: 'Or build your own', body: 'Create custom question sets (Add question / Library) to drill exactly what you need.' },
     ];
     return (
@@ -257,21 +257,21 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
     const cfg = {
       gender: { icon: Users, color: T.primary, kicker: 'A quick calibration',
         title: 'Where do you stand?',
-        trust: 'AIIMS applies a strict 80:20 gender quota. We use this only to calibrate your simulated leaderboard rank in your pool — never to limit content.',
+        trust: 'AIIMS applies a strict 80:20 gender quota. We use this only to calibrate your simulated leaderboard rank in your pool. Never to limit content.',
         field: 'gender', kind: 'gender', options: GENDER_OPTIONS },
       qualification: { icon: GraduationCap, color: T.accent, kicker: 'Your background',
         title: 'Your highest qualification?',
-        trust: 'Lets us frame examples for your training — GNM nurses get bedside-to-theory drills.',
+        trust: 'Lets us frame examples for your training. GNM nurses get bedside-to-theory drills.',
         field: 'qualification', kind: 'qualification', options: QUALIFICATION_OPTIONS },
       employment: { icon: Clock, color: T.sec.revision || T.primary, kicker: 'Your schedule',
         title: 'How does prep fit your day?',
-        trust: 'We adapt your dashboard — a working nurse can’t sit a 3-hour mock on a Tuesday afternoon.',
+        trust: 'We adapt your dashboard. A working nurse can’t sit a 3-hour mock on a Tuesday afternoon.',
         field: 'employment', kind: 'employment', options: EMPLOYMENT_OPTIONS },
       // Duty Roster — the Day-1 "when do you study?" commitment. Seeds the daily
       // reminder time so the nudge lands in the user's own window.
       window: { icon: Bell, color: T.sec.mock || T.primary, kicker: 'Your rhythm',
         title: 'When do you study best?',
-        trust: 'We’ll time your daily nudge to this window — a reminder that lands when you’re actually free beats one you ignore. Change it anytime.',
+        trust: 'We’ll time your daily nudge to this window, a reminder that lands when you’re actually free beats one you ignore. Change it anytime.',
         field: 'studyWindow', kind: 'window', options: STUDY_WINDOW_OPTIONS, unlockIcon: Bell },
     }[step];
     const Icon = cfg.icon;
@@ -366,7 +366,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           <div className="text-[11px] uppercase tracking-[0.22em] mb-1.5 relative" style={{ color: T.muted }}>One last thing</div>
           <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>What's your reason why?</h1>
           <div className="text-[13px] leading-relaxed relative px-3" style={{ color: T.muted }}>
-            Your <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span> — the deeper reason you want to become a Nursing Officer. What makes all this worth it?
+            Your <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span>: the deeper reason you want to become a Nursing Officer. What makes all this worth it?
           </div>
         </div>
 
@@ -383,14 +383,14 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                     style={{ color: '#F3EEE3', caretColor: '#E0245E' }} />
           <div className="flex items-center justify-between mt-2 pt-2.5 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
             <div className="text-[11px] flex items-center gap-1.5" style={{ color: 'rgba(243,238,227,0.62)' }}>
-              <Lock size={12} /> Private — only you will ever see this.
+              <Lock size={12} /> Private. Only you will ever see this.
             </div>
             <div className="text-[10px] tabular-nums" style={{ color: ikigaiText.length >= IKIGAI_MAX ? '#FF9A9A' : 'rgba(243,238,227,0.55)' }}>{ikigaiText.length}/{IKIGAI_MAX}</div>
           </div>
         </div>
 
         <div className="text-[12px] leading-relaxed text-center px-3 mb-4" style={{ color: T.muted }}>
-          On your hardest days, NurseHolic will bring this back to you — in your own words.
+          On your hardest days, NurseHolic will bring this back to you, in your own words.
         </div>
 
         <Button onClick={saveIkigai} size="lg" className="w-full" icon={<Heart size={17} fill="#FFF" />}>
@@ -411,13 +411,13 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   if (step === 'tips') {
     const tips = [
       { icon: <MousePointerClick size={20} />, title: 'Press & hold any card',
-        body: 'On the home screen, the menu or in settings, press and hold a card for a moment to peek a quick description of what it does — without opening it.',
+        body: 'On the home screen, the menu or in settings, press and hold a card for a moment to peek a quick description of what it does, without opening it.',
         color: T.primary },
       { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: 'Swipe to open the menu',
         body: 'On the home screen, swipe right from anywhere to slide the menu open, and swipe left to close it. Works the same on phone, tablet and iPhone.',
         color: T.accent },
       { icon: <Heart size={20} fill="#FFF" />, title: 'Heart your favourites',
-        body: 'Tap the heart on any section — Stats, a drill mode, the leaderboard — to pin it. Your favourites then sit one tap away on the home screen.',
+        body: 'Tap the heart on any section. Stats, a drill mode, the leaderboard, to pin it. Your favourites then sit one tap away on the home screen.',
         color: '#E0245E' },
     ];
     return (

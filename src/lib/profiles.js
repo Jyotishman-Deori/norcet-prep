@@ -476,14 +476,14 @@ export async function createProfile({ displayName, password, securityQuestion, s
   const normDob = isGoogle ? null : normalizeDob(dob);
   if (!isGoogle) {
     if (!sq && !normDob) {
-      throw new Error('Pick a security question and answer — used to recover your password if you forget it');
+      throw new Error('Pick a security question and answer, used to recover your password if you forget it');
     }
     if (sq && !sa.trim()) {
       throw new Error('Type an answer to your security question');
     }
   }
   const existing = await loadProfile(id);
-  if (existing) throw new Error('That display name is already taken — pick another, or log in instead');
+  if (existing) throw new Error('That display name is already taken, pick another, or log in instead');
   const uid = genUid();  // permanent, name-independent handle (survives renames)
 
   // Phase-2 — read the pending referral + a device fingerprint up front so the
@@ -531,19 +531,19 @@ export async function createProfile({ displayName, password, securityQuestion, s
       throw new Error("Please complete the 'I'm human' check and try again");
     }
     if (reg && reg.reason === 'exists') {
-      throw new Error('That display name is already taken — pick another, or log in instead');
+      throw new Error('That display name is already taken, pick another, or log in instead');
     }
     if (reg && reg.reason === 'bad-answer') {
       throw new Error('Type an answer to your security question');
     }
     if (reg && reg.reason === 'waitlist') {
-      throw new Error("This invite isn't valid anymore — open your waitlist status for a fresh link, or join the waitlist to get in line.");
+      throw new Error("This invite isn't valid anymore, open your waitlist status for a fresh link, or join the waitlist to get in line.");
     }
     if (reg && reg.reason === 'email-exists') {
-      throw new Error('That email is already linked to another profile — try logging in instead, or leave email blank.');
+      throw new Error('That email is already linked to another profile, try logging in instead, or leave email blank.');
     }
     if (reg && reg.reason === 'google-exists') {
-      throw new Error('This Google account is already linked to a profile — try "Continue with Google" from the log-in tab instead.');
+      throw new Error('This Google account is already linked to a profile, try "Continue with Google" from the log-in tab instead.');
     }
     if (reg && reg.reason === 'google-failed') {
       throw new Error('Google sign-in could not be verified. Please try again.');
@@ -670,9 +670,9 @@ export async function googleLink(idToken, password) {
   if (!password) throw new Error("Enter that profile's password");
   const res = await callAuthFn('google-link', { idToken, password });
   if (!res || res.ok !== true) {
-    if (res && res.reason === 'bad-password') throw new Error("That's not this profile's password — try again");
+    if (res && res.reason === 'bad-password') throw new Error("That's not this profile's password, try again");
     if (res && res.reason === 'already-linked') throw new Error('This profile is already linked to a different Google account.');
-    if (res && res.reason === 'google-failed') throw new Error('Google sign-in expired — close this and tap the Google button again.');
+    if (res && res.reason === 'google-failed') throw new Error('Google sign-in expired, close this and tap the Google button again.');
     throw new Error('Could not link your Google account. Please try again.');
   }
   await persistAuthToken(res.token);
@@ -790,7 +790,7 @@ export async function setSecurityQuestion(displayName, password, securityQuestio
   if (!res || res.ok !== true) {
     if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
     if (res && res.reason === 'already-set') throw new Error('A recovery question is already set and cannot be changed');
-    throw new Error('Could not set your recovery question — please try again');
+    throw new Error('Could not set your recovery question, please try again');
   }
   return true;
 }
@@ -805,7 +805,7 @@ export async function updateRecoveryEmail(displayName, password, email) {
     if (res && res.reason === 'bad-password') throw new Error("That's not your current password");
     if (res && res.reason === 'bad-email') throw new Error('Enter a valid email address');
     if (res && res.reason === 'email-exists') throw new Error('That email is already linked to another profile.');
-    throw new Error('Could not update your email — please try again');
+    throw new Error('Could not update your email, please try again');
   }
   return true;
 }
@@ -827,7 +827,7 @@ export async function changePassword(displayName, currentPassword, newPassword) 
     if (res && res.reason === 'weak-password') throw new Error('New password must be at least 8 characters');
     if (res && res.reason === 'same-password') throw new Error('Your new password must be different from your current one');
     if (res && res.reason === 'no-account') throw new Error('No profile is signed in');
-    throw new Error('Could not change your password — please try again');
+    throw new Error('Could not change your password, please try again');
   }
   return true;
 }
@@ -837,7 +837,7 @@ export async function renameCredentials(oldId, newId, displayName) {
     if (res && res.reason === 'exists') {
       throw new Error('That name is already taken by another profile. Pick a different name.');
     }
-    throw new Error('Could not move your account credentials. Rename cancelled — please try again.');
+    throw new Error('Could not move your account credentials. Rename cancelled: please try again.');
   }
   return true;
 }

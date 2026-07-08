@@ -18,7 +18,7 @@ function ShareAppScreen({ onBack }) {
       <TopBar title="Share NurseHolic" onBack={onBack} feedback={{ screen: 'Share app' }} />
       <div className="max-w-md mx-auto px-4 pt-3 pb-24">
         <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
-          Pick who you're sending it to — the message carries the link <b>and</b> the
+          Pick who you're sending it to, the message carries the link <b>and</b> the
           exact setup steps for your friend's device.
         </div>
         <ShareAppCard page />

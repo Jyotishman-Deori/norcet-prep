@@ -82,7 +82,7 @@ function HighYieldView({ concepts, years, T }) {
         </div>
         <p className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
           <b style={{ color: T.ink }}>{concepts.length} concepts</b> the exam has asked {HIGH_YIELD_MIN}+ times
-          {years.length ? ` across ${yearSpanLabel(years)}` : ''}. Study these first — most marks per hour.
+          {years.length ? ` across ${yearSpanLabel(years)}` : ''}. Study these first: most marks per hour.
         </p>
       </Card>
 

@@ -19,10 +19,10 @@ const QUEST_IMPROVE_EPS = 0.02;
 
 // Per-dimension one-liner for the Alignment nudge (what to actually do).
 const ALIGN_COPY = {
-  passion:    'Show up today — a short session keeps your streak and widens your reach.',
-  profession: 'Sharpen accuracy — a focused Quick Test will lift this fastest.',
-  mission:    'Drill the must-knows — foundational survival questions are what NORCET rewards.',
-  vocation:   'Train your pace — turn on The Pulse and practise answering under the clock.',
+  passion:    'Show up today: a short session keeps your streak and widens your reach.',
+  profession: 'Sharpen accuracy: a focused Quick Test will lift this fastest.',
+  mission:    'Drill the must-knows. Foundational survival questions are what NORCET rewards.',
+  vocation:   'Train your pace: turn on The Pulse and practise answering under the clock.',
 };
 
 function Dim({ d, score, sub, T }) {
@@ -71,10 +71,10 @@ function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, 
   };
 
   const overallPct = Math.round(overall * 100);
-  const verdict = master ? 'Ikigai Master — every circle aligned.'
-    : overallPct >= 70 ? 'Beautifully balanced — keep it converging.'
-    : overallPct >= 40 ? 'Taking shape — close the gaps below.'
-    : hasData ? 'Early days — each session pulls the circles closer.'
+  const verdict = master ? 'Ikigai Master: every circle aligned.'
+    : overallPct >= 70 ? 'Beautifully balanced: keep it converging.'
+    : overallPct >= 40 ? 'Taking shape: close the gaps below.'
+    : hasData ? 'Early days: each session pulls the circles closer.'
     : 'Begin practising to bring your Ikigai to life.';
 
   const subFor = (key) => {
@@ -90,7 +90,7 @@ function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, 
       <TopBar title="Ikigai Compass" onBack={onBack} feedback={{ screen: 'Ikigai Compass' }} />
       <div className="max-w-md mx-auto px-4 pb-24 pt-2">
         <div className="text-[12px] leading-relaxed mb-2 px-1 text-center" style={{ color: T.muted }}>
-          <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span> — your reason for being. Four sides of readiness,
+          <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span>: your reason for being. Four sides of readiness,
           drifting together as you practise.
         </div>
 
@@ -134,7 +134,7 @@ function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, 
             {activeQuest && activeQuest.key === weakest.key ? (
               <>
                 <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>
-                  Quest active on <b style={{ color: T.ink }}>{activeQuest.short}</b>. Keep practising — lift this circle and the <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coin</b> bonus is yours.
+                  Quest active on <b style={{ color: T.ink }}>{activeQuest.short}</b>. Keep practising: lift this circle and the <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coin</b> bonus is yours.
                 </div>
                 <Button onClick={startQuest} size="md" className="w-full" icon={<ArrowRight size={15} />}>
                   Continue the quest
@@ -144,7 +144,7 @@ function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, 
               <>
                 <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>
                   Your <b style={{ color: T.ink }}>{weakest.short}</b> circle is furthest out. {ALIGN_COPY[weakest.key]}
-                  {' '}Take the quest — lift it and earn <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coins</b>.
+                  {' '}Take the quest, lift it and earn <b style={{ color: '#B45309' }}>+{ALIGNMENT_QUEST_BONUS} coins</b>.
                 </div>
                 <Button onClick={startQuest} size="md" className="w-full" icon={<ArrowRight size={15} />}>
                   Take the quest

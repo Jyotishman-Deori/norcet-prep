@@ -304,7 +304,7 @@ function NotificationCenter({ onBack, onNavigate }) {
     rows.push({ k: 'due', icon: RotateCcw,
       label: dueCount > 0
         ? `${dueCount} spaced revision question${dueCount === 1 ? '' : 's'} waiting`
-        : 'No revisions due — you’re caught up' });
+        : 'No revisions due: you’re caught up' });
     if (doubtCount > 0) {
       rows.push({ k: 'doubt', icon: Flag,
         label: `${doubtCount} unresolved doubt${doubtCount === 1 ? '' : 's'}` });
@@ -359,7 +359,7 @@ function NotificationCenter({ onBack, onNavigate }) {
           {filter === 'all'
             ? 'Reminders, achievements and insights will appear here as you study.'
             : filter === 'reminders' ? 'Reminders show up when reviews, doubts or your exam date need attention.'
-            : filter === 'achievements' ? 'Keep studying — milestones and wins land here.'
+            : filter === 'achievements' ? 'Keep studying: milestones and wins land here.'
             : filter === 'insights' ? 'As patterns emerge in your study, observations show up here.'
             : 'Announcements and content updates appear here.'}
         </div>
@@ -479,7 +479,7 @@ function NotificationCenter({ onBack, onNavigate }) {
               Clear all {notifications.length} notifications?
             </div>
             <div className="text-sm leading-relaxed mb-5" style={{ color: T.muted }}>
-              This empties the whole inbox — reminders, achievements, insights and updates. It can't be undone.
+              This empties the whole inbox, reminders, achievements, insights and updates. It can't be undone.
             </div>
             <div className="flex gap-2">
               <button onClick={() => setConfirmClear(false)}

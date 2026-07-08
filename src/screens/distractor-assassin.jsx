@@ -114,7 +114,7 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
               </div>
               <div style={{ color: '#FFF' }}>
                 <div className="font-display text-xl font-bold leading-tight">Hunt the wrong answers</div>
-                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Take out every distractor — but never strike the correct one. Learn why each is wrong.</div>
+                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Take out every distractor. But never strike the correct one. Learn why each is wrong.</div>
               </div>
             </div>
           </Card>
@@ -148,7 +148,7 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
 
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each question gets a countdown — run out and it locks.
+            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each question gets a countdown. Run out and it locks.
             <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
           </div>
         </div>
@@ -277,11 +277,11 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
                 : hitCorrect ? <Skull size={16} style={{ color: T.error }} />
                 : <TimerOff size={16} style={{ color: T.accent }} />}
               <div className="font-display text-sm font-semibold" style={{ color: perfect ? T.success : hitCorrect ? T.error : T.accent }}>
-                {perfect ? 'Perfect kill — every distractor down!' : hitCorrect ? 'You struck the correct answer' : 'Time’s up'}
+                {perfect ? 'Perfect kill: every distractor down!' : hitCorrect ? 'You struck the correct answer' : 'Time’s up'}
               </div>
             </div>
             <div className="text-[12.5px] leading-relaxed" style={{ color: T.inkSoft }}>
-              <b style={{ color: T.success }}>Correct: </b>{q.options[correctIdx]}{q.exp ? ` — ${q.exp}` : ''}
+              <b style={{ color: T.success }}>Correct: </b>{q.options[correctIdx]}{q.exp ? `: ${q.exp}` : ''}
             </div>
           </Card>
         )}

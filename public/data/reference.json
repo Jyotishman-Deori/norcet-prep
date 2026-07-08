@@ -63,7 +63,7 @@
     "section": "Electrolytes",
     "label": "Potassium (K⁺)",
     "value": "3.5 – 5.0 mEq/L",
-    "note": "Critical <2.5 or >6.5 — cardiac risk"
+    "note": "Critical <2.5 or >6.5, cardiac risk"
   },
   {
     "cat": "labs",
@@ -492,7 +492,7 @@
     "cat": "vitals",
     "section": "Oxygen / Pulse Ox",
     "label": "Below 90 %",
-    "value": "Hypoxaemia — urgent"
+    "value": "Hypoxaemia: urgent"
   },
   {
     "cat": "vitals",
@@ -505,7 +505,7 @@
     "section": "GCS (Glasgow Coma Scale)",
     "label": "Severe head injury",
     "value": "≤8",
-    "note": "\"GCS 8 — intubate\""
+    "note": "\"GCS 8: intubate\""
   },
   {
     "cat": "vitals",

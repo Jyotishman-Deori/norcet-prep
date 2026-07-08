@@ -13,7 +13,7 @@ export const REASON_LABELS = {
   doubt: 'You flagged this as unclear', // reserved for F-D's successor (F-E)
   weak: 'Weak area',
   due: 'Due for review',
-  highyield: 'High yield — exam soon',
+  highyield: 'High yield: exam soon',
   broad: 'Broad coverage',
   recent: 'Recently studied',
 };

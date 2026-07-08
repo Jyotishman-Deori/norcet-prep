@@ -73,11 +73,11 @@ function buildVerdict(m, gapDays) {
 
   if (improved) {
     return { kind: 'up', title: 'You’re levelling up',
-      line: `Against your Ghost from ${gapDays} days ago — ${highlight}. Keep blooming at your own pace.` };
+      line: `Against your Ghost from ${gapDays} days ago, ${highlight}. Keep blooming at your own pace.` };
   }
   if (dipped) {
     return { kind: 'down', title: 'The climb continues',
-      line: `A step under your Ghost from ${gapDays} days ago. Every topper has off days — this is data, not a verdict.` };
+      line: `A step under your Ghost from ${gapDays} days ago. Every topper has off days. This is data, not a verdict.` };
   }
   return { kind: 'steady', title: 'Holding your ground',
     line: `Neck-and-neck with your Ghost from ${gapDays} days ago. Steady is its own kind of progress.` };

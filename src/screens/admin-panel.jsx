@@ -293,9 +293,9 @@ function AdminPanel({
       await onSaveAnnouncement(annText.trim(), annLevel, annExpiry === 'never' ? null : Number(annExpiry));
       logAdminAction({ action: 'announcement.post', detail: { title: annText.trim().slice(0, 60), level: annLevel }, actorName: profile && profile.displayName });
       if (onLoadAnnHistory) setAnnHistory(await onLoadAnnHistory());
-      setAnnMsg({ ok: true, text: 'Posted — all users will see it on their home screen.' });
+      setAnnMsg({ ok: true, text: 'Posted: all users will see it on their home screen.' });
     } catch (e) {
-      setAnnMsg({ ok: false, text: 'Could not post — server rejected the write (are you online and using the admin profile?).' });
+      setAnnMsg({ ok: false, text: 'Could not post: server rejected the write (are you online and using the admin profile?).' });
     } finally {
       setAnnBusy(false);
     }
@@ -307,10 +307,10 @@ function AdminPanel({
     try {
       await onClearAnnouncement();
       logAdminAction({ action: 'announcement.clear', actorName: profile && profile.displayName });
-      setAnnMsg({ ok: true, text: 'Stopped — users no longer see it. The text is kept here so you can edit and re-post.' });
+      setAnnMsg({ ok: true, text: 'Stopped: users no longer see it. The text is kept here so you can edit and re-post.' });
     } catch (e) {
       preserveTextRef.current = false;
-      setAnnMsg({ ok: false, text: 'Could not stop it — are you online and using the admin profile?' });
+      setAnnMsg({ ok: false, text: 'Could not stop it. Are you online and using the admin profile?' });
     } finally {
       setAnnBusy(false);
     }
@@ -386,14 +386,14 @@ function AdminPanel({
     const confirmClearOne = (r) => requestConfirm({
       icon: <Trash2 size={20} style={{ color: T.error }} />,
       title: "Clear this question's votes?",
-      body: 'Resets the helpful / not-helpful tally for this one question so it drops off the list. Users can rate it again later — nothing is permanently deleted.',
+      body: 'Resets the helpful / not-helpful tally for this one question so it drops off the list. Users can rate it again later. Nothing is permanently deleted.',
       confirmLabel: 'Clear votes', cancelLabel: 'Cancel', tone: 'danger',
       onConfirm: () => runClear([r.id]),
     });
     const confirmClearSelected = () => requestConfirm({
       icon: <Trash2 size={20} style={{ color: T.error }} />,
       title: `Clear votes for ${selCount} question${selCount === 1 ? '' : 's'}?`,
-      body: 'Resets the helpful / not-helpful tally for each selected question so they drop off the list. Users can rate them again later — nothing is permanently deleted.',
+      body: 'Resets the helpful / not-helpful tally for each selected question so they drop off the list. Users can rate them again later. Nothing is permanently deleted.',
       confirmLabel: `Clear ${selCount}`, cancelLabel: 'Cancel', tone: 'danger',
       onConfirm: () => runClear([...helpfulSel]),
     });
@@ -419,7 +419,7 @@ function AdminPanel({
                 } />
         <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-28 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            How users rate explanations. Only questions with at least one response appear — silent users are intentionally excluded. A high <span style={{ color: T.error, fontWeight: 600 }}>✕</span> count flags an explanation worth rewriting. Tap a row to read the full question and explanation.
+            How users rate explanations. Only questions with at least one response appear. Silent users are intentionally excluded. A high <span style={{ color: T.error, fontWeight: 600 }}>✕</span> count flags an explanation worth rewriting. Tap a row to read the full question and explanation.
           </div>
 
           {/* Summary band + Select / Clear-history actions */}
@@ -483,7 +483,7 @@ function AdminPanel({
           ) : sorted.length === 0 ? (
             <AdminEmpty icon={Lightbulb} accent={T.primary}
               title="No ratings yet"
-              what="Every explanation users mark “helpful” or “not helpful” lands here, sorted so the weakest ones rise to the top — your shortlist of explanations to rewrite."
+              what="Every explanation users mark “helpful” or “not helpful” lands here, sorted so the weakest ones rise to the top, your shortlist of explanations to rewrite."
               when="It fills in as members tap the 👍 / 👎 on an explanation after answering. Questions no one has rated stay hidden."
               collecting />
           ) : (
@@ -678,7 +678,7 @@ function AdminPanel({
                   {sortedReferrers.length === 0 ? (
                     <AdminEmpty icon={Award} accent={T.accent}
                       title="No referrals attributed yet"
-                      what="Your word-of-mouth leaderboard — who has invited the most friends, and how many of those actually stuck around."
+                      what="Your word-of-mouth leaderboard. Who has invited the most friends, and how many of those actually stuck around."
                       when="It populates when someone joins through a user’s share link (Settings → Share). Direct sign-ups don’t count as referrals."
                       collecting />
                   ) : sortedReferrers.map((r, i) => {
@@ -800,7 +800,7 @@ function AdminPanel({
                 } />
         <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            Reports and suggestions from users, newest first. Tap a <span style={{ color: T.primary, fontWeight: 600 }}>Q:</span> chip to view the exact question. Set a status or reply — the user sees it in "My feedback". Resolved items (Fixed / Won't fix / Thanks) move to their own filter.
+            Reports and suggestions from users, newest first. Tap a <span style={{ color: T.primary, fontWeight: 600 }}>Q:</span> chip to view the exact question. Set a status or reply, the user sees it in "My feedback". Resolved items (Fixed / Won't fix / Thanks) move to their own filter.
           </div>
 
           {/* Content quality gate — questions reported by multiple readers.
@@ -882,7 +882,7 @@ function AdminPanel({
           ) : feedback.length === 0 ? (
             <AdminEmpty icon={AlertCircle} accent={T.accent}
               title="No reports yet"
-              what="Bug reports and feature ideas users send via the report icon on any screen — each one tagged with the exact screen and question."
+              what="Bug reports and feature ideas users send via the report icon on any screen, each one tagged with the exact screen and question."
               when="As soon as someone submits feedback it shows here, where you can reply (they see it in “My feedback”) and set a status."
               collecting />
           ) : shown.length === 0 ? (
@@ -892,7 +892,7 @@ function AdminPanel({
                 {fbFilter === 'open' ? 'All caught up' : 'Nothing here'}
               </div>
               <div className="text-sm" style={{ color: T.muted }}>
-                {fbFilter === 'open' ? 'No open reports — every item has been handled.' : 'No reports match this filter.'}
+                {fbFilter === 'open' ? 'No open reports: every item has been handled.' : 'No reports match this filter.'}
               </div>
             </Card>
           ) : (
@@ -929,14 +929,14 @@ function AdminPanel({
         <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1 flex items-start gap-1.5" style={{ color: T.muted }}>
             <EyeOff size={13} className="flex-shrink-0 mt-0.5" />
-            <span>Tap a member for stats & coin tools. Personal answers and passwords stay private — never shown.</span>
+            <span>Tap a member for stats & coin tools. Personal answers and passwords stay private. Never shown.</span>
           </div>
           {usersLoading ? (
             <Card className="p-4"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>
           ) : users.length === 0 ? (
             <AdminEmpty icon={User} accent={T.primary}
               title="No members yet"
-              what="A high-level roster of everyone who has signed up — display name, when they joined, and when they were last active. Personal answers and progress are never shown."
+              what="A high-level roster of everyone who has signed up, display name, when they joined, and when they were last active. Personal answers and progress are never shown."
               when="The first person to create an account appears here. Guests (who never sign up) are not listed." />
           ) : (() => {
             const q = userSearch.trim().toLowerCase();
@@ -1050,7 +1050,7 @@ function AdminPanel({
             )}
             <div className="mb-3">
               <RichTextEditor value={annText} onChange={v => { setAnnText(v); setAnnMsg(null); }}
-                              placeholder="e.g. New Pharmacology bank added — give it a try!" rows={3} maxLength={280} />
+                              placeholder="e.g. New Pharmacology bank added. Give it a try!" rows={3} maxLength={280} />
             </div>
 
             {/* Urgency level toggle */}
@@ -1058,7 +1058,7 @@ function AdminPanel({
             <div className="grid grid-cols-2 gap-2 mb-3 p-1 rounded-xl" style={{ background: T.surfaceWarm }}>
               {[
                 { id: 'info',      label: 'Info',      color: T.primary, hint: 'Routine notice' },
-                { id: 'important', label: 'Important', color: T.accent,  hint: 'Stands out — for time-sensitive items' }
+                { id: 'important', label: 'Important', color: T.accent,  hint: 'Stands out: for time-sensitive items' }
               ].map(lv => {
                 const active = annLevel === lv.id;
                 return (
@@ -1155,7 +1155,7 @@ function AdminPanel({
                         <button onClick={() => requestConfirm({
                                   icon: <Trash2 size={20} style={{ color: T.error }} />,
                                   title: 'Delete this announcement?',
-                                  body: 'Removes it from the history record only — if it is currently live, users keep seeing it until you stop it above.',
+                                  body: 'Removes it from the history record only. If it is currently live, users keep seeing it until you stop it above.',
                                   confirmLabel: 'Delete', cancelLabel: 'Cancel', tone: 'danger',
                                   onConfirm: async () => setAnnHistory(await onDeleteAnnHistoryItem(a.id)),
                                 })}
@@ -1225,13 +1225,13 @@ function AdminPanel({
             <AdminEmpty icon={Check} accent={T.success} tone={T.success}
               title="No crashes recorded"
               what="Uncaught errors, promise rejections and render crashes from across the app, grouped by signature so you can fix the worst first."
-              when="An empty list is the goal — nothing has thrown. If a crash happens anywhere, it lands here automatically with its stack and a hit count."
+              when="An empty list is the goal. Nothing has thrown. If a crash happens anywhere, it lands here automatically with its stack and a hit count."
               collecting />
           ) : shown.length === 0 ? (
             <Card className="p-8 text-center">
               <Check size={28} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.6 }} />
               <div className="font-display text-base mb-0.5" style={{ color: T.ink }}>{errFilter === 'open' ? 'All clear' : 'Nothing here'}</div>
-              <div className="text-sm" style={{ color: T.muted }}>{errFilter === 'open' ? 'No open crashes — every group is resolved.' : 'No groups match this filter.'}</div>
+              <div className="text-sm" style={{ color: T.muted }}>{errFilter === 'open' ? 'No open crashes: every group is resolved.' : 'No groups match this filter.'}</div>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -1296,7 +1296,7 @@ function AdminPanel({
         <TopBar title="Bank health" onBack={backToDash} />
         <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-24 pt-2">
           <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
-            Supply (questions in each bank) vs demand (how heavily the exam tests that topic). Topics the exam emphasises but your bank is thin on get used up fastest — add questions there first. {demand.total} questions total.
+            Supply (questions in each bank) vs demand (how heavily the exam tests that topic). Topics the exam emphasises but your bank is thin on get used up fastest, add questions there first. {demand.total} questions total.
           </div>
 
           {demand.highCount > 0 ? (
@@ -1322,7 +1322,7 @@ function AdminPanel({
           {demand.rows.length === 0 ? (
             <AdminEmpty icon={Layers} accent={T.primary}
               title="No questions in the pool yet"
-              what="A supply-vs-demand map of every topic — how many questions you have against how heavily the exam tests it, so you know where to write next."
+              what="A supply-vs-demand map of every topic. How many questions you have against how heavily the exam tests it, so you know where to write next."
               when="It appears once a question bank is loaded. Upload or add a bank from the Banks section to begin." />
           ) : (
           <div className="space-y-2.5">

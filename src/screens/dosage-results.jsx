@@ -140,7 +140,7 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
       <div className="space-y-2">
         {onCribSheet && (
           <Button variant="ghost" onClick={onCribSheet} size="lg" className="w-full" icon={<ClipboardList size={16} />}>
-            Review answers — Crib Sheet
+            Review answers: Crib Sheet
           </Button>
         )}
         <ShareScoreButton correct={correct} total={total} quizType="Dosage Drill"

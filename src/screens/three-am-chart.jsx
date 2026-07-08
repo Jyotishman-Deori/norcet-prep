@@ -287,7 +287,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
               <Coins size={15} /> +{coins} Coins
             </div>
           ) : (
-            <div className="text-[13px] mb-7" style={{ color: T.muted }}>No lines cleared this time — chip away at a row or column next round.</div>
+            <div className="text-[13px] mb-7" style={{ color: T.muted }}>No lines cleared this time, chip away at a row or column next round.</div>
           )}
           <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
             Finish
@@ -311,7 +311,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
       <div className="max-w-md mx-auto px-4 pb-40 pt-2">
         <div className="flex items-center gap-1.5 text-[12px] leading-snug mb-3" style={{ color: T.muted }}>
           <Moon size={13} style={{ color: T.primary }} />
-          Drag a piece onto the chart. Fill a row or column to clear it. No timer — pure chill.
+          Drag a piece onto the chart. Fill a row or column to clear it. No timer: pure chill.
         </div>
 
         {/* fact flash */}
@@ -416,7 +416,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
               <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Brain-Rot Lifeline</div>
             </div>
             <div className="text-[12px] leading-relaxed mb-3" style={{ color: T.muted }}>
-              No room left. Answer this and the bottom half of the chart clears — keep your shift going.
+              No room left. Answer this and the bottom half of the chart clears, keep your shift going.
             </div>
             <div className="font-display text-[15px] leading-snug mb-3" style={{ color: T.ink }}>{lifeline.q.q}</div>
             <div className="space-y-2">

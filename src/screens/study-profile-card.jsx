@@ -86,7 +86,7 @@ export default function StudyProfileCard({ demographics, onSave }) {
         <div style={{ overflow: 'hidden', minHeight: 0 }}>
           <div className="px-4 pb-4">
             <div className="text-[11px] leading-relaxed mb-3" style={{ color: T.muted }}>
-              All optional and private — used only to personalise your simulated rank and study pacing, never to gate content or shared with advertisers. Tap a choice again to clear it.
+              All optional and private, used only to personalise your simulated rank and study pacing, never to gate content or shared with advertisers. Tap a choice again to clear it.
             </div>
             <PillGroup T={T} label="Gender" options={GENDER_OPTIONS} value={d.gender}
                        hint="Calibrates your simulated leaderboard rank for the AIIMS 80:20 pool."
@@ -117,7 +117,7 @@ export default function StudyProfileCard({ demographics, onSave }) {
                         style={{ background: T.surface, border: `1.5px solid ${ikigaiSaved ? T.success : T.border}`, color: T.ink, transition: 'border-color 0.3s' }} />
               <div className="flex items-center justify-between mt-1">
                 <div className="text-[10px] flex items-center gap-1" style={{ color: T.muted }}>
-                  <Lightbulb size={11} /> Private — only you ever see this. Saves when you tap away.
+                  <Lightbulb size={11} /> Private, only you ever see this. Saves when you tap away.
                 </div>
                 <div className="text-[10px]" style={{ color: ikigai.length >= IKIGAI_MAX ? T.error : T.muted }}>{ikigai.length}/{IKIGAI_MAX}</div>
               </div>
@@ -126,7 +126,7 @@ export default function StudyProfileCard({ demographics, onSave }) {
             {filled === 3 && (
               <div className="rounded-xl px-3 py-2.5 flex items-center gap-2 mt-1" style={{ background: T.successSoft, border: `1px solid ${T.success}33` }}>
                 <Check size={14} style={{ color: T.success }} />
-                <div className="text-[12px]" style={{ color: T.success }}>Study profile complete — your dashboard is tuned to you.</div>
+                <div className="text-[12px]" style={{ color: T.success }}>Study profile complete. Your dashboard is tuned to you.</div>
               </div>
             )}
           </div>

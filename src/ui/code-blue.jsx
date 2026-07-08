@@ -125,7 +125,7 @@ export default function CodeBlue({ open, questions = [], onResolve, onExit }) {
           <div className="text-[11px] font-bold uppercase tracking-[0.2em] mb-2" style={{ color: RED }}>Code Blue</div>
           <div className="font-display text-2xl font-semibold mb-3" style={{ color: '#FFF' }}>Let's resuscitate your concepts</div>
           <div className="text-[14px] leading-relaxed mb-8" style={{ color: 'rgba(255,255,255,0.78)' }}>
-            Your accuracy is crashing — and that's okay. Stop worrying about the score. The timer is paused.
+            Your accuracy is crashing. And that's okay. Stop worrying about the score. The timer is paused.
             Let's do a calm, focused deep-dive on your {total} priority {total === 1 ? 'mistake' : 'mistakes'}, then get back to it.
           </div>
           <button onClick={() => setPhase('drill')}
@@ -150,7 +150,7 @@ export default function CodeBlue({ open, questions = [], onResolve, onExit }) {
           </div>
           <div className="font-display text-2xl font-semibold mb-2" style={{ color: '#FFF' }}>Code Blue resolved</div>
           <div className="text-[14px] leading-relaxed mb-1.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-            You stabilised the patient. That's what recovery looks like — facing the gap and closing it.
+            You stabilised the patient. That's what recovery looks like, facing the gap and closing it.
           </div>
           <div className="text-[12px] mb-8" style={{ color: '#22C55E' }}>+1 Heart restored · keep going.</div>
           <button onClick={onResolve}
@@ -203,7 +203,7 @@ export default function CodeBlue({ open, questions = [], onResolve, onExit }) {
             {/* miss → gentle explanation + try again */}
             {checked && !wasRight && (
               <div className="rounded-xl px-3.5 py-3 mb-4 anim-fadeup" style={{ background: 'rgba(255,255,255,0.05)', border: `1px solid ${BORDER}` }}>
-                <div className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Not yet — here's why</div>
+                <div className="text-[11px] font-semibold uppercase tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>Not yet, here's why</div>
                 <div className="text-[13px] leading-relaxed" style={{ color: 'rgba(255,255,255,0.8)' }}>{q.exp || 'Review and try again.'}</div>
               </div>
             )}

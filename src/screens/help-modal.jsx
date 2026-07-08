@@ -44,7 +44,7 @@ function HelpModal({ screen, onClose }) {
   if (!c) c = {
     title: 'Help',
     what: 'This is one of the app\u2019s sections.',
-    how: 'Explore the controls on screen — they\u2019re labelled to guide you.',
+    how: 'Explore the controls on screen, they\u2019re labelled to guide you.',
     why: 'Everything here is built to help you prepare efficiently.'
   };
   const sections = [

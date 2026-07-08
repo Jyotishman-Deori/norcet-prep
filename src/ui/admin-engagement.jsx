@@ -113,10 +113,10 @@ export default function AdminEngagement({ onBack }) {
                 <span className="font-display text-[15px] font-bold" style={{ color: T.ink }}>Quiet lately</span>
               </div>
               <div className="text-[11px] mb-3" style={{ color: T.muted }}>
-                Not seen for 14+ days — the most winnable-back first. A friendly announcement or new content push reaches them on their next open.
+                Not seen for 14+ days, the most winnable-back first. A friendly announcement or new content push reaches them on their next open.
               </div>
               {eng.dormant.length === 0 ? (
-                <div className="text-sm py-2" style={{ color: T.success }}>Nobody is dormant — the whole roster is active. 🎉</div>
+                <div className="text-sm py-2" style={{ color: T.success }}>Nobody is dormant. The whole roster is active. 🎉</div>
               ) : (
                 <div className="space-y-1.5">
                   {eng.dormant.map((m, i) => (

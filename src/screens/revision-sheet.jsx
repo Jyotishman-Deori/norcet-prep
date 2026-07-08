@@ -197,7 +197,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
             <div className="text-xs leading-relaxed flex-1 pt-1" style={{ color: T.muted }}>
               {tab === 'digest'
                 ? 'Everything visible at once for fast revision. Save or print it for offline study.'
-                : 'Test reviews you chose to keep — dated, reopenable and printable.'}
+                : 'Test reviews you chose to keep, dated, reopenable and printable.'}
             </div>
             {tab === 'digest' && (
               <button onClick={handlePrint}
@@ -240,8 +240,8 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
                 </div>
                 <div className="font-display text-lg mb-1" style={{ color: T.ink }}>Your crib history is Premium</div>
                 <div className="text-sm leading-relaxed px-2 mb-1" style={{ color: T.muted }}>
-                  Right after any test, the Crib Sheet review is always free. Keeping every sheet —
-                  {cribs.length > 0 ? ` including the ${cribs.length} already saved —` : ''} and your
+                  Right after any test, the Crib Sheet review is always free. Keeping every sheet, 
+                  {cribs.length > 0 ? ` including the ${cribs.length} already saved: ` : ''} and your
                   full mistake history is a Premium perk.
                 </div>
                 {unresolvedMistakes > 0 && (
@@ -268,7 +268,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
                 <FileText size={36} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
                 <div className="font-display text-lg mb-1" style={{ color: T.ink }}>No saved Crib Sheets yet</div>
                 <div className="text-sm leading-relaxed px-4" style={{ color: T.muted }}>
-                  Finish any test, open its Crib Sheet and tap "Add to Revision" — it lands here, dated and ready to revisit.
+                  Finish any test, open its Crib Sheet and tap "Add to Revision", it lands here, dated and ready to revisit.
                 </div>
               </div>
             ) : (
@@ -276,7 +276,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
                 {cribs.map((c, ci) => {
                   const right = Math.round((c.items.filter(i => i.status === 'correct').length / Math.max(1, c.items.length)) * 100);
                   return (
-                    <Tip key={c.id} title={c.title} text="A saved test review — tap to reopen with every answer and explanation, or print it.">
+                    <Tip key={c.id} title={c.title} text="A saved test review, tap to reopen with every answer and explanation, or print it.">
                     <div role="button" tabIndex={0}
                          onClick={() => onOpenCrib && onOpenCrib(c)}
                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpenCrib && onOpenCrib(c); } }}

@@ -69,7 +69,7 @@ export default function VitalsCheck({ open, question, minSeconds, onResume }) {
             </div>
           </div>
           <div className="text-[13px] leading-relaxed mt-3" style={{ color: T.inkSoft }}>
-            We've paused here on purpose. This is a foundational survival protocol — the kind a Nursing Officer can't
+            We've paused here on purpose. This is a foundational survival protocol, the kind a Nursing Officer can't
             afford to miss on the floor. Take a moment to lock in the <i>why</i>, then carry on.
           </div>
         </div>
@@ -97,7 +97,7 @@ export default function VitalsCheck({ open, question, minSeconds, onResume }) {
                     ? { background: ACCENT, color: '#FFF', boxShadow: `0 10px 24px ${ACCENT}55` }
                     : { background: T.surfaceWarm, color: T.muted, cursor: 'default' }}>
             {ready
-              ? (<span className="inline-flex items-center gap-2"><ShieldCheck size={16} /> I understand — resume</span>)
+              ? (<span className="inline-flex items-center gap-2"><ShieldCheck size={16} /> I understand, resume</span>)
               : `Read the rationale · resume in ${left}s`}
           </button>
         </div>

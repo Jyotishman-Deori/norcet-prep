@@ -173,7 +173,7 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
                 : timedOut ? <TimerOff size={16} style={{ color: T.error }} />
                 : <Activity size={16} style={{ color: T.accent }} />}
               <div className="font-display text-sm font-semibold" style={{ color: isExact ? T.success : timedOut ? T.error : T.accent }}>
-                {isExact ? 'Perfect sequence!' : timedOut ? 'Time’s up — here’s the correct order' : 'Not quite — here’s the correct order'}
+                {isExact ? 'Perfect sequence!' : timedOut ? 'Time’s up: here’s the correct order' : 'Not quite: here’s the correct order'}
               </div>
             </div>
             {!isExact && (

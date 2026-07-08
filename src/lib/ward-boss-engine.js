@@ -383,7 +383,7 @@ export function applyTimeout(scenario, state) {
     stability: state.stability - HESITATE_PENALTY,
     log: [...state.log, logRow(state, phase, {
       actionId: null, label: 'Hesitation', cat: 'assess', kind: 'neutral',
-      ok: false, points: 0, note: 'You froze — precious seconds lost while the patient deteriorated.',
+      ok: false, points: 0, note: 'You froze: precious seconds lost while the patient deteriorated.',
     })],
   };
   s = { ...s, turn: s.turn + 1, _phaseTurns: s._phaseTurns + 1 };

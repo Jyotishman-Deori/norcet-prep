@@ -219,7 +219,7 @@ function GuestSavePrompt({ onSignIn }) {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold" style={{ color: T.ink }}>Keep this result?</div>
           <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-            You're a guest — this progress is saved on this device only. Sign in to keep your streak and history safe and synced.
+            You're a guest: this progress is saved on this device only. Sign in to keep your streak and history safe and synced.
           </div>
           <div className="flex items-center gap-2 mt-2.5">
             <Button size="sm" onClick={onSignIn}>Sign in to save</Button>
@@ -290,7 +290,7 @@ function MotivationCard({ pct = 50, label = 'session' }) {
       <div className="font-display text-xl font-semibold mb-1">{config.headline}</div>
       <div className="text-xs mb-3" style={{ color: config.mutedColor }}>{config.sub}</div>
       <div className="font-display text-base leading-snug mb-2">“{quote.t}”</div>
-      <div className="text-xs" style={{ color: config.mutedColor }}>— {quote.a}</div>
+      <div className="text-xs" style={{ color: config.mutedColor }}>: {quote.a}</div>
     </div>
   );
 }
@@ -585,7 +585,7 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
       </Button>
       {status === 'downloaded' && (
         <div className="text-xs text-center mt-2 anim-fadeup" role="status" aria-live="polite" style={{ color: T.muted }}>
-          Image saved — share it on WhatsApp or Instagram.
+          Image saved: share it on WhatsApp or Instagram.
         </div>
       )}
       {status === 'error' && (
@@ -618,10 +618,10 @@ function TimeQuadrant({ items, slowSec, idealSec, totalSec, mode }) {
   const { theme: T } = useTheme();
 
 const QUADRANT_META = {
-  mastered: { name: 'Mastered',            rec: 'Solid — no action needed.',           tone: () => T.success },
-  misread:  { name: 'Misread / guessed',   rec: 'Fast but wrong — slow down & read.',  tone: () => T.accent  },
-  shaky:    { name: 'Shaky understanding', rec: 'Right but slow — drill for fluency.', tone: () => T.primary },
-  gap:      { name: 'Concept gap',         rec: 'Slow & wrong — study, then drill.',   tone: () => T.error   },
+  mastered: { name: 'Mastered',            rec: 'Solid: no action needed.',           tone: () => T.success },
+  misread:  { name: 'Misread / guessed',   rec: 'Fast but wrong: slow down & read.',  tone: () => T.accent  },
+  shaky:    { name: 'Shaky understanding', rec: 'Right but slow: drill for fluency.', tone: () => T.primary },
+  gap:      { name: 'Concept gap',         rec: 'Slow & wrong: study, then drill.',   tone: () => T.error   },
 };
 
 
@@ -652,7 +652,7 @@ const QUADRANT_META = {
         You spent <span className="font-semibold" style={{ color: T.ink }}>{fmtSec(totalSec)}</span> on this {mode === 'mock' ? 'test' : 'round'}.{' '}
         Average <span className="font-semibold" style={{ color: T.ink }}>{avgSec}s</span> per question{idealSec
           ? <>, ideal pace was <span className="font-semibold" style={{ color: T.ink }}>{Math.round(idealSec)}s</span></>
-          : ' (no time limit — baseline 60s)'}.{' '}
+          : ' (no time limit, baseline 60s)'}.{' '}
         <span className="font-semibold" style={{ color: overCount > 0 ? T.accent : T.muted }}>{overCount}</span> question{overCount === 1 ? '' : 's'} over {Math.round(slowSec)}s.
       </div>
 
@@ -692,7 +692,7 @@ const QUADRANT_META = {
             <ChevronDown size={14} style={{ color: T.muted, transform: open === 'na' ? 'rotate(180deg)' : 'none', transition: 'transform .2s' }} />
           </div>
           <div className="text-[10px] mt-1" style={{ color: T.muted }}>
-            {mode === 'mock' ? 'Left blank — not scored as wrong here.' : 'Revealed without answering — not scored as wrong here.'}
+            {mode === 'mock' ? 'Left blank: not scored as wrong here.' : 'Revealed without answering: not scored as wrong here.'}
           </div>
         </Card>
       )}
@@ -823,7 +823,7 @@ function ShareNudge({ pct = 0, totalAttempted = 0, sessionAttempted = 0, streak 
       </button>
       {status === 'done' && (
         <div className="text-[11px] text-center mt-2" role="status" aria-live="polite" style={{ color: T.success }}>
-          Card ready — share it on WhatsApp or Instagram.
+          Card ready: share it on WhatsApp or Instagram.
         </div>
       )}
       {status === 'error' && (

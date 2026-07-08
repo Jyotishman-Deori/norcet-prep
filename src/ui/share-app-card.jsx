@@ -235,7 +235,7 @@ export default function ShareAppCard() {
             Free &amp; ad-free AIIMS NORCET prep
           </div>
           <div className="text-xs leading-relaxed mb-3.5 px-1" style={{ color: T.inkSoft }}>
-            Mock tests, PYQs, revision notes and dosage drills — all in one app. Point any camera at the code to install.
+            Mock tests, PYQs, revision notes and dosage drills, all in one app. Point any camera at the code to install.
           </div>
           <div className="grid grid-cols-2 gap-2 w-full">
             <Tip text="Saves the QR card as an image to your device">
@@ -255,7 +255,7 @@ export default function ShareAppCard() {
           </div>
           {imgStatus === 'done' && (
             <div className="text-[11px] mt-2" role="status" aria-live="polite" style={{ color: T.success }}>
-              Image ready — share it on WhatsApp or save it to print.
+              Image ready: share it on WhatsApp or save it to print.
             </div>
           )}
           {imgStatus === 'error' && (
@@ -317,7 +317,7 @@ export default function ShareAppCard() {
             </button>
             </Tip>
           )}
-          <Tip text="Copies the whole message — paste it into any chat">
+          <Tip text="Copies the whole message, paste it into any chat">
           <button onClick={copy}
                   className={"no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition" + (canShare ? '' : ' col-span-2')}
                   style={{ background: copied ? T.success + '18' : T.primary + '14', color: copied ? T.success : T.primary, border: `1px solid ${copied ? T.success + '50' : T.primary + '40'}` }}>

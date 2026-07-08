@@ -68,7 +68,7 @@ function InfoBox({ T, children }) {
 function scorePassword(pw) {
   const len = pw ? pw.length : 0;
   if (len === 0) return { level: 'none', label: '', ok: false };
-  if (len < 8) return { level: 'weak', label: 'Too short — use at least 8 characters', ok: false };
+  if (len < 8) return { level: 'weak', label: 'Too short: use at least 8 characters', ok: false };
   let s = 0;
   if (/[a-z]/.test(pw)) s++;
   if (/[A-Z]/.test(pw)) s++;
@@ -232,7 +232,7 @@ export default function AccountSecurityCard({ profile }) {
       setEmailKnown(true);
       setEmailEditing(false);
       setEmMsg(next
-        ? { ok: true, text: 'Email saved — you can now log in with it too.' }
+        ? { ok: true, text: 'Email saved: you can now log in with it too.' }
         : { ok: true, text: 'Email removed from this profile.' });
     } catch (e) {
       setEmMsg({ ok: false, text: (e && e.message) || 'Could not save. Try again.' });
@@ -269,7 +269,7 @@ export default function AccountSecurityCard({ profile }) {
              className="w-full rounded-xl px-3 py-2.5 text-sm mb-2" style={inputStyle} />
       {emailLooksOff && (
         <div className="text-[11px] mb-2" style={{ color: T.error }}>
-          This doesn't look like a valid email — double-check before saving.
+          This doesn't look like a valid email, double-check before saving.
         </div>
       )}
       <div className="relative mb-2">
@@ -327,7 +327,7 @@ export default function AccountSecurityCard({ profile }) {
           </div>
         ) : !hasPassword ? (
           <InfoBox T={T}>
-            You sign in with Google, so there's no password to recover — your Google account keeps this profile safe. No question needed.
+            You sign in with Google, so there's no password to recover, your Google account keeps this profile safe. No question needed.
           </InfoBox>
         ) : (
           <>
@@ -355,7 +355,7 @@ export default function AccountSecurityCard({ profile }) {
             </button>
             <div className="text-[10px] mt-2" style={{ color: T.muted }}>
               You can only set this once. The answer is checked case-insensitively and ignores extra
-              spaces — avoid emojis or unusual symbols you might not retype the same way later.
+              spaces: avoid emojis or unusual symbols you might not retype the same way later.
             </div>
           </>
         )}
@@ -383,11 +383,11 @@ export default function AccountSecurityCard({ profile }) {
                 <div className="min-w-0 flex-1">
                   <div className="text-[13px] font-medium break-all" style={{ color: T.success }}>{emailOnFile}</div>
                   <div className="text-[11px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>
-                    Linked to this profile — you can use it to log in{hasPassword ? ' instead of your username' : ''}.
+                    Linked to this profile. You can use it to log in{hasPassword ? ' instead of your username' : ''}.
                   </div>
                   {hasGoogle && (
                     <div className="text-[11px] mt-1.5 inline-flex items-center gap-1 font-medium" style={{ color: T.success }}>
-                      <ShieldCheck size={12} /> Google sign-in connected — one tap logs you in
+                      <ShieldCheck size={12} /> Google sign-in connected, one tap logs you in
                     </div>
                   )}
                 </div>
@@ -407,7 +407,7 @@ export default function AccountSecurityCard({ profile }) {
           </>
         ) : !hasPassword ? (
           <InfoBox T={T}>
-            You sign in with Google — your Google email identifies this profile automatically.
+            You sign in with Google, your Google email identifies this profile automatically.
           </InfoBox>
         ) : (
           emailEditor
@@ -423,7 +423,7 @@ export default function AccountSecurityCard({ profile }) {
         open={pOpen} onToggle={() => setPOpen(o => !o)}>
         {!hasPassword ? (
           <InfoBox T={T}>
-            You sign in with Google — this profile has no password. Nothing to change here.
+            You sign in with Google. This profile has no password. Nothing to change here.
           </InfoBox>
         ) : (
         <>

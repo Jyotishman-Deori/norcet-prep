@@ -13,7 +13,7 @@ import { KEYS } from './keys.js';
 
 export const QUOTES = [
   // Marcus Aurelius — Meditations
-  { text: "You have power over your mind — not outside events. Realize this, and you will find strength.", source: "Marcus Aurelius, Meditations" },
+  { text: "You have power over your mind, not outside events. Realize this, and you will find strength.", source: "Marcus Aurelius, Meditations" },
   { text: "The impediment to action advances action. What stands in the way becomes the way.", source: "Marcus Aurelius, Meditations" },
   { text: "Waste no more time arguing what a good person should be. Be one.", source: "Marcus Aurelius, Meditations" },
   { text: "Confine yourself to the present.", source: "Marcus Aurelius, Meditations" },

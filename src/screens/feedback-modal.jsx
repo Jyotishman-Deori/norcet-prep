@@ -102,7 +102,7 @@ function FeedbackModal({ screen, questionId, profileId, profileName, source, onC
               <Check size={24} style={{ color: T.success }} />
             </div>
             <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>Sent</div>
-            <div className="text-sm" style={{ color: T.muted }}>Thanks — the admin will see it.</div>
+            <div className="text-sm" style={{ color: T.muted }}>Thanks: the admin will see it.</div>
           </div>
         ) : (
           <>

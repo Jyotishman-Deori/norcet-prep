@@ -359,7 +359,7 @@ function ShiftSurvival({ onBack, onComplete }) {
               <div className="font-display text-sm font-semibold" style={{ color: D.ink }}>Malpractice review</div>
             </div>
             {failed.length === 0 ? (
-              <div className="text-[12.5px] leading-relaxed" style={{ color: D.muted }}>No protocol breaches logged — you were simply buried by complications. Clear lines faster next shift.</div>
+              <div className="text-[12.5px] leading-relaxed" style={{ color: D.muted }}>No protocol breaches logged. You were simply buried by complications. Clear lines faster next shift.</div>
             ) : (
               <div className="space-y-2.5">
                 {failed.map((f, i) => (
@@ -493,7 +493,7 @@ function ShiftSurvival({ onBack, onComplete }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: D.bg + 'F2', borderTop: `1px solid ${D.slotBorder}` }}>
         <div className="max-w-md mx-auto flex items-center gap-3">
           <div className="text-[11px] leading-tight flex-1" style={{ color: D.muted }}>
-            Drag a supply onto the board. Don’t stall — clots spawn. Drop antidotes on their condition row.
+            Drag a supply onto the board. Don’t stall: clots spawn. Drop antidotes on their condition row.
           </div>
           <Button variant="ghost" onClick={die} className="flex-shrink-0">End shift</Button>
         </div>
@@ -505,7 +505,7 @@ function ShiftSurvival({ onBack, onComplete }) {
           <Card className="w-full max-w-md anim-scalein p-4" style={{ background: D.panel, border: `1px solid ${D.red}55` }}>
             <div className="flex items-center gap-2 mb-2">
               <Brain size={17} color={D.red} />
-              <div className="font-display text-base font-semibold" style={{ color: D.ink }}>Crisis — solve it fast</div>
+              <div className="font-display text-base font-semibold" style={{ color: D.ink }}>Crisis: solve it fast</div>
             </div>
             <div className="mb-3"><TimerBar runKey={mathKey} seconds={MATH_SECONDS} paused={false} color={D.amber} /></div>
             <div className="font-display text-[15px] leading-snug mb-3" style={{ color: D.ink }}>{math.q}</div>

@@ -46,10 +46,10 @@ export default function AdminFaqManager({ onBack, actorName }) {
 
   const failText = (e) => {
     const m = String((e && e.message) || e || '');
-    if (/401/.test(m)) return 'Your admin session expired — log out and back in, then try again.';
+    if (/401/.test(m)) return 'Your admin session expired, log out and back in, then try again.';
     if (/403/.test(m)) return 'This profile is not authorised to publish FAQs (admin only).';
-    if (/429|rate/i.test(m)) return 'Too many admin writes for now — wait a little and try again.';
-    return 'Could not save — are you online and using the admin profile? Please try again.';
+    if (/429|rate/i.test(m)) return 'Too many admin writes for now, wait a little and try again.';
+    return 'Could not save. Are you online and using the admin profile? Please try again.';
   };
 
   const save = async () => {
@@ -62,11 +62,11 @@ export default function AdminFaqManager({ onBack, actorName }) {
         const existing = (faqs || []).find(x => x.id === form.id);
         await updateFaq(existing, { question: form.question.trim(), answer: form.answer.trim(), category });
         logAdminAction({ action: 'faq.update', target: form.id, targetName: form.question.trim().slice(0, 60), actorName });
-        setOkMsg('FAQ updated — changes are live for students.');
+        setOkMsg('FAQ updated: changes are live for students.');
       } else {
         await createFaq({ question: form.question, answer: form.answer, category });
         logAdminAction({ action: 'faq.create', targetName: form.question.trim().slice(0, 60), actorName });
-        setOkMsg('FAQ published — it’s live at the top of the FAQ screen.');
+        setOkMsg('FAQ published: it’s live at the top of the FAQ screen.');
       }
       setForm(null);
       await refresh();
@@ -101,7 +101,7 @@ export default function AdminFaqManager({ onBack, actorName }) {
             <label className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Answer</label>
             <div className="mt-1">
               <RichTextEditor value={form.answer} onChange={v => setForm(f => ({ ...f, answer: v }))} rows={6}
-                              placeholder="Write the answer, then format it with the toolbar — bold, headings, lists, links, highlight…" />
+                              placeholder="Write the answer, then format it with the toolbar, bold, headings, lists, links, highlight…" />
             </div>
           </div>
           <div>
@@ -158,7 +158,7 @@ export default function AdminFaqManager({ onBack, actorName }) {
           <AdminEmpty icon={MessageCircle} accent={T.primary}
             title="No FAQs yet"
             what="The questions and answers shown on the public FAQ screen. You author them here; the newest appears first for students."
-            when="Tap “Add a FAQ” above — it appears instantly in the FAQ screen for everyone." />
+            when="Tap “Add a FAQ” above, it appears instantly in the FAQ screen for everyone." />
         ) : (
           <div className="space-y-2.5">
             {faqs.map(f => (

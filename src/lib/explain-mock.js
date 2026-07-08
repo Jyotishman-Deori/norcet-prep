@@ -16,7 +16,7 @@
 
 export const EXPLAIN_DELAY_MS = 1200;
 export const EXPLAIN_DISCLOSURE =
-  'Coach notes are assembled from this app’s authored explanations — no AI, works offline.';
+  'Coach notes are assembled from this app’s authored explanations, no AI, works offline.';
 
 // composeExplanation({ question, pick }) → plain-text tutoring note.
 // `pick` = the option indices the user chose on their last wrong attempt
@@ -37,7 +37,7 @@ export function composeExplanation({ question, pick } = {}) {
     const why = q.wrong && q.wrong[firstWrong];
     if (why) parts.push(`WHY YOUR PICK IS WRONG\n${why}`);
   } else if (picked.length === 0) {
-    parts.push(`Let's review this one! You didn't lock in an answer last time — the correct answer is "${correctText}".`);
+    parts.push(`Let's review this one! You didn't lock in an answer last time. The correct answer is "${correctText}".`);
   } else {
     // Picked something, but all picked options were correct (partial MSQ miss)
     // or the pick can't be resolved — keep it encouraging and factual.

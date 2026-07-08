@@ -39,7 +39,7 @@ export default function WhatIfCard({ correct = 0, wrong = 0, blank = 0, count = 
           <div className="font-display text-sm font-semibold" style={{ color: '#16A34A' }}>No marks lost to negatives</div>
         </div>
         <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-          You didn't give a single wrong answer — zero negative penalty. That discipline is exactly what protects rank in NORCET.
+          You didn't give a single wrong answer. Zero negative penalty. That discipline is exactly what protects rank in NORCET.
         </div>
       </Card>
     );

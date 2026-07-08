@@ -50,7 +50,7 @@ export const QUALIFICATION_UNLOCK = {
 export const EMPLOYMENT_UNLOCK = {
   working: 'We know juggling a job and prep is exhausting. We’re leaning on Hands-Free Audio Mode and 5-minute micro-drills so you can study on commutes and breaks.',
   shifts:  'Long shifts are brutal. We’ll prioritise Hands-Free Audio Mode and 5-minute micro-drills so you can study in the gaps.',
-  fulltime:'Great — you’ve got time to build stamina. We’ll surface full-length mock simulations so you’re ready for exam-day marathons.',
+  fulltime:'Great: you’ve got time to build stamina. We’ll surface full-length mock simulations so you’re ready for exam-day marathons.',
 };
 
 // "Duty Roster" (Upgrade 8) — a Day-1 commitment to WHEN they study. The single

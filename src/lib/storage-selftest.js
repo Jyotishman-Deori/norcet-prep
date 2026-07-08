@@ -45,10 +45,10 @@ export const SHARED_WRITE_FEATURES = [
 // Turn a broker error into a short, admin-readable reason.
 export function writeFailHint(e) {
   const m = String((e && e.message) || e || '');
-  if (/401/.test(m)) return 'Admin session expired — log out and back in.';
-  if (/403/.test(m)) return 'Broker rejected the write (not admin, or the deployed kv-write is missing this key — redeploy it).';
-  if (/429|rate/i.test(m)) return 'Rate-limited — wait a moment and retry.';
-  return 'Write failed — are you online and using the admin profile?';
+  if (/401/.test(m)) return 'Admin session expired, log out and back in.';
+  if (/403/.test(m)) return 'Broker rejected the write (not admin, or the deployed kv-write is missing this key, redeploy it).';
+  if (/429|rate/i.test(m)) return 'Rate-limited, wait a moment and retry.';
+  return 'Write failed: are you online and using the admin profile?';
 }
 
 // runStorageSelfTest(io, now?) — io = {
@@ -79,14 +79,14 @@ export async function runStorageSelfTest(io, now = Date.now()) {
   if (val == null) {
     result.read = 'blocked';
     result.verdict = 'rls-read-blocked';
-    result.hint = 'Saved, but not anon-readable — the RLS SELECT policy is hiding new keys. Apply supabase/fix-anon-read-policy.sql.';
+    result.hint = 'Saved, but not anon-readable. The RLS SELECT policy is hiding new keys. Apply supabase/fix-anon-read-policy.sql.';
   } else {
     let matched = false;
     try { matched = JSON.parse(val).token === token; } catch (_) { matched = false; }
     result.read = matched ? 'ok' : 'stale';
     if (!matched) {
       result.verdict = 'read-mismatch';
-      result.hint = 'Read back a different value than written — stale cache or a routing bug.';
+      result.hint = 'Read back a different value than written, stale cache or a routing bug.';
     }
   }
 

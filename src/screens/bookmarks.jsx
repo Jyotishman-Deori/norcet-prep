@@ -423,7 +423,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
 
         {items.length === 0 && itemIds.size > 0 && (
           <div className="text-center py-10 text-sm" style={{ color: T.muted }}>
-            No bookmarks in this topic — try another filter.
+            No bookmarks in this topic, try another filter.
           </div>
         )}
       </div>

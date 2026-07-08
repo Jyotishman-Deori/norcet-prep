@@ -149,7 +149,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
 
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each set gets a countdown — run out and it auto-checks.
+            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each set gets a countdown. Run out and it auto-checks.
             <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
           </div>
         </div>
@@ -257,7 +257,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
               {picked ? 'Now tap a bin above ↑' : 'Tap an item to pick it up'}
             </div>
             <div className="flex flex-wrap gap-2 min-h-[40px]">
-              {tray.length === 0 && <div className="text-[13px] italic" style={{ color: T.muted }}>All items placed — tap Check.</div>}
+              {tray.length === 0 && <div className="text-[13px] italic" style={{ color: T.muted }}>All items placed, tap Check.</div>}
               {tray.map((it) => {
                 const on = picked === it.id;
                 return (
@@ -279,7 +279,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
             <div className="flex items-center gap-2 mb-2.5">
               {timedOut ? <TimerOff size={16} style={{ color: T.error }} /> : <Lightbulb size={16} style={{ color: T.accent }} />}
               <div className="font-display text-sm font-semibold" style={{ color: timedOut ? T.error : T.ink }}>
-                {timedOut ? 'Time’s up — review' : `${caseCorrect} / ${items.length} correct`}
+                {timedOut ? 'Time’s up: review' : `${caseCorrect} / ${items.length} correct`}
               </div>
             </div>
             <div className="space-y-2">

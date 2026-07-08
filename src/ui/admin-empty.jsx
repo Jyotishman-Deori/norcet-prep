@@ -26,7 +26,7 @@ export default function AdminEmpty({ icon: Icon, accent, title, what, when, coll
         <div className="inline-flex items-center gap-1.5 mt-4 px-2.5 py-1 rounded-full text-[11px] font-semibold"
              style={{ background: T.success + '14', color: T.success }}>
           <span className="w-1.5 h-1.5 rounded-full" style={{ background: T.success }} />
-          Live — results appear here automatically
+          Live: results appear here automatically
         </div>
       )}
     </div>

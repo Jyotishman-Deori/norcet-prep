@@ -23,7 +23,7 @@ function ContentGate({ loading, error, onRetry, label = 'content' }) {
           </div>
           <div className="text-sm font-medium" style={{ color: T.inkSoft }}>Couldn’t load {label}</div>
           <div className="text-xs mt-1 mb-4" style={{ color: T.muted }}>
-            Connect to the internet once to download it — then it works offline.
+            Connect to the internet once to download it, then it works offline.
           </div>
           {onRetry && <Button onClick={onRetry} variant="soft" size="sm">Try again</Button>}
         </>

@@ -137,7 +137,7 @@ export default function AdminWaitlist({ onBack }) {
         const r = await waitlistAdminApprove(ids);
         setBusy(false);
         if (r && r.ok) {
-          setMsg({ ok: true, text: `Approved ${r.approved.length} — open the Approved tab and send each WhatsApp nudge.` });
+          setMsg({ ok: true, text: `Approved ${r.approved.length}: open the Approved tab and send each WhatsApp nudge.` });
           clearSel();
           setTab('approved');
           load();
@@ -191,12 +191,12 @@ export default function AdminWaitlist({ onBack }) {
     const r = await waitlistAdminTestInvite(em);
     setTestBusy(false);
     if (r && r.ok && r.sent) {
-      setTestResult({ ok: true, text: `Sent ✓ Check ${r.to} — it should arrive from ${r.from}.` });
+      setTestResult({ ok: true, text: `Sent ✓ Check ${r.to}: it should arrive from ${r.from}.` });
     } else if (r && r.ok && !r.sent) {
       const why = r.reason === 'email-not-configured'
         ? 'RESEND_API_KEY isn’t set on the server.'
         : (r.reason && r.reason.startsWith('http-4'))
-          ? `Resend rejected it (${r.reason}) — the sending domain isn’t verified yet, or EMAIL_FROM points at an unverified address.`
+          ? `Resend rejected it (${r.reason}): the sending domain isn’t verified yet, or EMAIL_FROM points at an unverified address.`
           : `Not sent (${r.reason || 'unknown'}).`;
       setTestResult({ ok: false, text: why });
     } else {
@@ -259,7 +259,7 @@ export default function AdminWaitlist({ onBack }) {
                   ))}
                 </div>
                 <div className="text-[11px] mt-2 leading-relaxed" style={{ color: T.muted }}>
-                  Same device/network inside a referral group usually means self-invites. Reject the fakes — rejected rows stop counting as referrals.
+                  Same device/network inside a referral group usually means self-invites. Reject the fakes: rejected rows stop counting as referrals.
                 </div>
               </Card>
             )}

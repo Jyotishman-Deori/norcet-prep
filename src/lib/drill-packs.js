@@ -78,7 +78,7 @@ function validateItem(kind, it, i) {
 export function validatePack(raw) {
   let obj = raw;
   if (typeof raw === 'string') {
-    try { obj = JSON.parse(raw); } catch (e) { return { ok: false, error: 'Not valid JSON — check for a stray comma or quote.' }; }
+    try { obj = JSON.parse(raw); } catch (e) { return { ok: false, error: 'Not valid JSON: check for a stray comma or quote.' }; }
   }
   if (!obj || typeof obj !== 'object') return { ok: false, error: 'Empty or invalid pack.' };
   if (!PACK_KINDS[obj.kind]) return { ok: false, error: `"kind" must be one of: ${Object.keys(PACK_KINDS).join(', ')}.` };

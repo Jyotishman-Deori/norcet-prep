@@ -86,7 +86,7 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
               </div>
               <div style={{ color: '#FFF' }}>
                 <div className="font-display text-xl font-bold leading-tight">Which comes first?</div>
-                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Both answers are right — pick the priority. Master ABC, Maslow & safety-first.</div>
+                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Both answers are right, pick the priority. Master ABC, Maslow & safety-first.</div>
               </div>
             </div>
           </Card>
@@ -120,7 +120,7 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
 
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each round gets a countdown — run out and it locks.
+            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each round gets a countdown. Run out and it locks.
             <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
           </div>
         </div>

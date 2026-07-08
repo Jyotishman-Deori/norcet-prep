@@ -72,7 +72,7 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
               <div className="flex items-start gap-2.5">
                 <Sigma size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />
                 <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                  Each order is a real ward scenario — work it out, type your answer, and the full calculation is shown
+                  Each order is a real ward scenario, work it out, type your answer, and the full calculation is shown
                   the moment you check. Answers count as correct within the stated tolerance.
                 </div>
               </div>

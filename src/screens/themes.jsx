@@ -118,7 +118,7 @@ function ThemesScreen({ themeMode, onSetColorTheme, onBack }) {
         ) : (
           <Card className="p-4" style={{ background: T.surfaceWarm }}>
             <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
-              Colour themes are a light-mode feature — switch to Light above to pick a palette.
+              Colour themes are a light-mode feature, switch to Light above to pick a palette.
             </div>
           </Card>
         )}

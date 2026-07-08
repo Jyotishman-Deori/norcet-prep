@@ -324,7 +324,7 @@ function BriefView({ T, scenario, flashpoint, onBack, onStart }) {
 
         {flashpoint && (
           <div className="flex items-center gap-2 text-[11.5px] mt-3 px-1" style={{ color: '#B45309' }}>
-            <Zap size={13} /> Flashpoint shift — the crash comes faster and pays double.
+            <Zap size={13} /> Flashpoint shift, the crash comes faster and pays double.
           </div>
         )}
       </div>
@@ -866,7 +866,7 @@ function BossPanel({ T, scenario, phase, state, options, bossLeft, bossSec, onAc
 // VIEW 4 — DEBRIEF: win celebration OR compassionate loss, log, exam tip.
 // =====================================================================
 const LOSS_LINE = {
-  stability: 'The patient decompensated — too many setbacks stacked up before you could stabilise them.',
+  stability: 'The patient decompensated: too many setbacks stacked up before you could stabilise them.',
   'boss-wrong': 'One step out of order in the crash. In a real code, sequence is everything.',
   'boss-timeout': 'The window closed before the sequence was complete. Hesitation costs seconds you did not have.',
 };

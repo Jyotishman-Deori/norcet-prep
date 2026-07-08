@@ -80,7 +80,7 @@ function WeakAreasScreen({ onBack, onStartWeakQuiz }) {
           <Check size={48} className="mx-auto mb-4" style={{ color: T.success, opacity: 0.6 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No weak areas right now</div>
           <div className="text-sm" style={{ color: T.muted }}>
-            Every topic you've attempted is at 80% accuracy or better. Keep going — broaden your coverage or revise to lock it in.
+            Every topic you've attempted is at 80% accuracy or better. Keep going: broaden your coverage or revise to lock it in.
           </div>
         </div>
       </div>
@@ -92,7 +92,7 @@ function WeakAreasScreen({ onBack, onStartWeakQuiz }) {
       <TopBar title="Weak areas" onBack={onBack} feedback={{ screen: "Weak areas" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
-          Topics where your accuracy is below 80%, worst first. Tap Start on any row to drill 5 questions — questions you've previously got wrong are prioritised.
+          Topics where your accuracy is below 80%, worst first. Tap Start on any row to drill 5 questions. Questions you've previously got wrong are prioritised.
         </div>
 
         <div className="space-y-2.5">

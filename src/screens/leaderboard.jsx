@@ -35,19 +35,19 @@ const DEFAULT_TAB = { study: 'growth', games: 'games-week' };
 const NOTE = {
   growth:        'Answer some questions this week to join the Growth board.',
   mastery:       'Master your first topic in the Knowledge Map to claim a spot here.',
-  streak:        'Start a streak — study today to appear here.',
+  streak:        'Start a streak: study today to appear here.',
   accuracy:      'Answer at least 50 questions to qualify for the accuracy board.',
   flashpoint:    'Play a test in Flashpoint pace to score points and rank here.',
   'games-week':  'Play a clinical game this week to rank on weekly XP.',
   'games-level': 'Play Level Up games to earn XP and climb the levels.',
 };
 const EMPTY = {
-  growth:        { title: 'Your name belongs on this board', text: 'Study this week to join the Growth board — it rewards effort and improvement, not just raw totals, and resets every Monday.' },
+  growth:        { title: 'Your name belongs on this board', text: 'Study this week to join the Growth board, it rewards effort and improvement, not just raw totals, and resets every Monday.' },
   mastery:       { title: 'Light up your first constellation', text: 'Master a topic in the Knowledge Map to appear here and compare your progress with other aspirants.' },
   streak:        { title: 'Start your streak', text: 'Study today to start a streak and appear on this board.' },
   accuracy:      { title: 'Earn your accuracy rank', text: 'Answer at least 50 questions to qualify for the accuracy board.' },
-  flashpoint:    { title: 'Ignite the Flashpoint board', text: 'Finish a test in Flashpoint pace — half the time, double the points — to claim your spot here.' },
-  'games-week':  { title: 'Play to rank this week', text: 'Finish a clinical game in Level Up to score weekly XP. Daily-capped and reset every Monday, so it rewards play — not grinding.' },
+  flashpoint:    { title: 'Ignite the Flashpoint board', text: 'Finish a test in Flashpoint pace, half the time, double the points, to claim your spot here.' },
+  'games-week':  { title: 'Play to rank this week', text: 'Finish a clinical game in Level Up to score weekly XP. Daily-capped and reset every Monday, so it rewards play, not grinding.' },
   'games-level': { title: 'Climb the levels', text: 'Earn XP in Level Up games to raise your level and tier, and rank on the all-time Level board.' },
 };
 
@@ -118,10 +118,10 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
   };
 
   const contextLine = {
-    growth:        <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>weekly growth</span> — effort, accuracy, and improvement vs your own recent baseline. Resets every Monday, so it never locks.</>,
-    flashpoint:    <>Ranked by lifetime <span style={{ color: T.ink, fontWeight: 600 }}>Flashpoint points</span> — correct answers in Flashpoint pace score 2×.</>,
-    mastery:       <>Ranked by topics mastered in your <span style={{ color: T.ink, fontWeight: 600 }}>Knowledge Map</span> — see how your constellation compares.</>,
-    'games-week':  <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>XP earned this week</span> — daily-capped and reset every Monday, so it rewards play, not grinding.</>,
+    growth:        <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>weekly growth</span>, effort, accuracy, and improvement vs your own recent baseline. Resets every Monday, so it never locks.</>,
+    flashpoint:    <>Ranked by lifetime <span style={{ color: T.ink, fontWeight: 600 }}>Flashpoint points</span>, correct answers in Flashpoint pace score 2×.</>,
+    mastery:       <>Ranked by topics mastered in your <span style={{ color: T.ink, fontWeight: 600 }}>Knowledge Map</span>, see how your constellation compares.</>,
+    'games-week':  <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>XP earned this week</span>, daily-capped and reset every Monday, so it rewards play, not grinding.</>,
     'games-level': <>Ranked by all-time <span style={{ color: T.ink, fontWeight: 600 }}>level</span> across the Level Up games.</>,
   }[tab];
   const contextIcon = tab === 'flashpoint' ? <Zap size={12} style={{ color: '#F59E0B' }} />

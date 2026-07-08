@@ -178,7 +178,7 @@ function IntroView({ T, pace, onSetPace, flashpoint, onBack, onStart }) {
             </div>
             <div className="text-[12px] mt-3 leading-relaxed" style={{ color: M.muted }}>
               Set the patient weight, drag the dose, and watch the pump rate and vitals respond.
-              Over-titrate and the crisis alarm sounds — hold the drip in the green to win the round.
+              Over-titrate and the crisis alarm sounds. Hold the drip in the green to win the round.
             </div>
           </div>
         </Card>
@@ -510,7 +510,7 @@ function RoundView({ T, drug, roundNo, total, flashpoint, soundOn, setSoundOn, o
           {crisis === 'alarm' && (
             <div className="flex items-start gap-1.5 text-[11.5px] mt-2 leading-snug" style={{ color: '#FCA5A5' }}>
               <AlertTriangle size={13} className="flex-shrink-0 mt-0.5" />
-              <span>Over-titrated — back off now or the patient will crash.</span>
+              <span>Over-titrated: back off now or the patient will crash.</span>
             </div>
           )}
         </div>

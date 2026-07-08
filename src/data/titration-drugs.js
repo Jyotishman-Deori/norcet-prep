@@ -78,18 +78,18 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [0.05, 0.15],
     holdSec: 10,
-    goal: 'Septic shock — raise the MAP to >= 65 mmHg and hold it there.',
+    goal: 'Septic shock: raise the MAP to >= 65 mmHg and hold it there.',
     tracks: [
       { key: 'map', label: 'MAP', unit: 'mmHg', base: 55, target: 72, overSlope: 250, alarmLow: 60, alarmHigh: 110 },
       { key: 'hr', label: 'Heart Rate', unit: 'bpm', base: 118, target: 96, overSlope: 60, alarmLow: 50, alarmHigh: 150 },
     ],
     zoneLabels: {
       under: 'PERSISTENT HYPOTENSIVE SHOCK',
-      therapeutic: 'STABLE — MAP >= 65',
+      therapeutic: 'STABLE: MAP >= 65',
       over: 'HYPERTENSIVE CRISIS',
     },
-    rationale: 'Norepinephrine is a potent alpha-1 vasoconstrictor with modest beta-1 inotropy. In fluid-refractory septic shock it is titrated in small mcg/kg/min steps against MAP, not against a fixed rate — too little leaves tissue hypoperfused, too much drives dangerous vasoconstriction, reflex bradycardia territory, and a hypertensive spike that itself risks end-organ injury. The nurse\'s job is to find the lowest dose that sustains the MAP goal, then hold there.',
-    examTip: 'NORCET favourite: norepinephrine is the first-line vasopressor for septic shock (over dopamine), titrated to MAP >= 65 mmHg. Give it through a central line to avoid extravasation necrosis, and when weaning, taper the dose gradually — never stop a vasopressor abruptly, or the pressure can crash.',
+    rationale: 'Norepinephrine is a potent alpha-1 vasoconstrictor with modest beta-1 inotropy. In fluid-refractory septic shock it is titrated in small mcg/kg/min steps against MAP, not against a fixed rate, too little leaves tissue hypoperfused, too much drives dangerous vasoconstriction, reflex bradycardia territory, and a hypertensive spike that itself risks end-organ injury. The nurse\'s job is to find the lowest dose that sustains the MAP goal, then hold there.',
+    examTip: 'NORCET favourite: norepinephrine is the first-line vasopressor for septic shock (over dopamine), titrated to MAP >= 65 mmHg. Give it through a central line to avoid extravasation necrosis, and when weaning, taper the dose gradually. Never stop a vasopressor abruptly, or the pressure can crash.',
   },
 
   // ---------------------------------------------------------------------
@@ -109,7 +109,7 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [3, 6],
     holdSec: 10,
-    goal: 'Diabetic ketoacidosis — steadily lower the blood glucose without crashing it into hypoglycemia.',
+    goal: 'Diabetic ketoacidosis: steadily lower the blood glucose without crashing it into hypoglycemia.',
     tracks: [
       {
         key: 'glucose',
@@ -123,12 +123,12 @@ const CORE_TITRATION_DRUGS = [
       },
     ],
     zoneLabels: {
-      under: 'KETOACIDOSIS UNCORRECTED — GLUCOSE STILL SOARING',
-      therapeutic: 'GLUCOSE FALLING SAFELY — HOLD THE RATE',
+      under: 'KETOACIDOSIS UNCORRECTED: GLUCOSE STILL SOARING',
+      therapeutic: 'GLUCOSE FALLING SAFELY: HOLD THE RATE',
       over: 'HYPOGLYCEMIC CRASH',
     },
-    rationale: 'Insulin is the one drip in this set where the danger direction is LOW, not high. In DKA the goal is a steady, controlled fall in glucose — roughly 50-75 mg/dL per hour on a low-dose continuous infusion — because the real treatment target is clearing the ketoacidosis, not crashing the number. Push the rate past the window and glucose keeps plunging toward hypoglycemia, which in an already-sick DKA patient can mean seizures and death faster than the ketosis ever would. Titrate down gently, and remember the potassium: insulin drives K+ into the cells with the glucose.',
-    examTip: 'NORCET tests the DKA insulin trap hard: never start insulin before confirming potassium is above 3.3 mEq/L (insulin drives K+ into cells and can trigger a fatal arrhythmia), infuse as a steady low-dose continuous drip around 0.1 unit/kg/hr — never a bolus — and add dextrose to the fluids once glucose falls to 200-250 mg/dL so the infusion can keep running to clear ketones without causing hypoglycemia.',
+    rationale: 'Insulin is the one drip in this set where the danger direction is LOW, not high. In DKA the goal is a steady, controlled fall in glucose, roughly 50-75 mg/dL per hour on a low-dose continuous infusion. Because the real treatment target is clearing the ketoacidosis, not crashing the number. Push the rate past the window and glucose keeps plunging toward hypoglycemia, which in an already-sick DKA patient can mean seizures and death faster than the ketosis ever would. Titrate down gently, and remember the potassium: insulin drives K+ into the cells with the glucose.',
+    examTip: 'NORCET tests the DKA insulin trap hard: never start insulin before confirming potassium is above 3.3 mEq/L (insulin drives K+ into cells and can trigger a fatal arrhythmia), infuse as a steady low-dose continuous drip around 0.1 unit/kg/hr. Never a bolus, and add dextrose to the fluids once glucose falls to 200-250 mg/dL so the infusion can keep running to clear ketones without causing hypoglycemia.',
   },
 
   // ---------------------------------------------------------------------
@@ -148,7 +148,7 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [15, 20],
     holdSec: 10,
-    goal: 'Acute PE / ACS — anticoagulate into the therapeutic aPTT band and hold it there without tipping into bleeding risk.',
+    goal: 'Acute PE / ACS: anticoagulate into the therapeutic aPTT band and hold it there without tipping into bleeding risk.',
     tracks: [
       {
         key: 'aptt',
@@ -162,11 +162,11 @@ const CORE_TITRATION_DRUGS = [
       },
     ],
     zoneLabels: {
-      under: 'SUBTHERAPEUTIC — CLOT RISK PERSISTS',
+      under: 'SUBTHERAPEUTIC: CLOT RISK PERSISTS',
       therapeutic: 'aPTT IN THERAPEUTIC RANGE',
-      over: 'BLEEDING RISK — aPTT CRITICALLY HIGH',
+      over: 'BLEEDING RISK: aPTT CRITICALLY HIGH',
     },
-    rationale: 'Heparin has a narrow, weight-based therapeutic window and a famously unpredictable dose-response curve, which is exactly why it is titrated by protocol (usually via a weight-based nomogram) against serial aPTT rather than a fixed rate. This track stylises that as an "aPTT trend" climbing from a subtherapeutic baseline (1x control) toward a therapeutic band (roughly 1.5-2.5x control) — push the rate too high for too long and the trend climbs into bleeding-risk territory instead of plateauing.',
+    rationale: 'Heparin has a narrow, weight-based therapeutic window and a famously unpredictable dose-response curve, which is exactly why it is titrated by protocol (usually via a weight-based nomogram) against serial aPTT rather than a fixed rate. This track stylises that as an "aPTT trend" climbing from a subtherapeutic baseline (1x control) toward a therapeutic band (roughly 1.5-2.5x control), push the rate too high for too long and the trend climbs into bleeding-risk territory instead of plateauing.',
     examTip: 'NORCET tests the heparin monitoring pair: aPTT (or anti-Xa) for unfractionated heparin dose-response, and platelet counts trended for heparin-induced thrombocytopenia (HIT). Protamine sulfate is the reversal agent for heparin overdose/bleeding, given at roughly 1 mg per 100 units of heparin recently infused.',
   },
 
@@ -187,7 +187,7 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 65,
     safeWindow: [1000, 2000],
     holdSec: 10,
-    goal: 'Severe pre-eclampsia / eclampsia — maintain the seizure-prophylaxis infusion without tipping into magnesium toxicity.',
+    goal: 'Severe pre-eclampsia / eclampsia, maintain the seizure-prophylaxis infusion without tipping into magnesium toxicity.',
     tracks: [
       {
         key: 'rr',
@@ -202,10 +202,10 @@ const CORE_TITRATION_DRUGS = [
     ],
     zoneLabels: {
       under: 'INADEQUATE SEIZURE PROPHYLAXIS',
-      therapeutic: 'MAINTENANCE RANGE — REFLEXES INTACT',
-      over: 'RESPIRATORY DEPRESSION — MgSO4 TOXICITY',
+      therapeutic: 'MAINTENANCE RANGE: REFLEXES INTACT',
+      over: 'RESPIRATORY DEPRESSION: MgSO4 TOXICITY',
     },
-    rationale: 'Magnesium sulfate\'s margin between the therapeutic anticonvulsant level and toxicity is narrow, and the classic bedside monitoring is clinical, not just numeric: deep tendon (patellar) reflexes, respiratory rate, and urine output. This track uses respiratory rate as the visible proxy — a mild, expected slowing at maintenance dose, sliding toward dangerous respiratory depression if the rate is pushed too high. In real practice the patellar reflex disappears before respiratory depression sets in, so a nurse who checks reflexes hourly should never actually reach this track\'s "over" zone.',
+    rationale: 'Magnesium sulfate\'s margin between the therapeutic anticonvulsant level and toxicity is narrow, and the classic bedside monitoring is clinical, not just numeric: deep tendon (patellar) reflexes, respiratory rate, and urine output. This track uses respiratory rate as the visible proxy, a mild, expected slowing at maintenance dose, sliding toward dangerous respiratory depression if the rate is pushed too high. In real practice the patellar reflex disappears before respiratory depression sets in, so a nurse who checks reflexes hourly should never actually reach this track\'s "over" zone.',
     examTip: 'NORCET loves the MgSO4 toxicity ladder in order of onset: loss of deep tendon (patellar) reflexes first, then respiratory depression (RR < 12/min), then cardiac arrest at very high levels. Always keep calcium gluconate 10% at the bedside as the antidote, and hold/stop the infusion if reflexes are absent, urine output is < 30 mL/hr, or RR < 12/min.',
   },
 
@@ -226,18 +226,18 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [5, 10],
     holdSec: 10,
-    goal: 'Cardiogenic shock — dial into the inotropic dose band to support the MAP and heart rate without tipping into tachyarrhythmia.',
+    goal: 'Cardiogenic shock: dial into the inotropic dose band to support the MAP and heart rate without tipping into tachyarrhythmia.',
     tracks: [
       { key: 'hr', label: 'Heart Rate', unit: 'bpm', base: 62, target: 92, overSlope: 7, alarmLow: 50, alarmHigh: 160 },
       { key: 'map', label: 'MAP', unit: 'mmHg', base: 52, target: 70, overSlope: 4, alarmLow: 55, alarmHigh: 120 },
     ],
     zoneLabels: {
       under: 'INOTROPIC SUPPORT INADEQUATE',
-      therapeutic: 'INOTROPIC RANGE — PERFUSION SUPPORTED',
-      over: 'TACHYARRHYTHMIA — ALPHA-DOMINANT OVERDRIVE',
+      therapeutic: 'INOTROPIC RANGE: PERFUSION SUPPORTED',
+      over: 'TACHYARRHYTHMIA: ALPHA-DOMINANT OVERDRIVE',
     },
-    rationale: 'Dopamine is the classic dose-dependent-receptor teaching drug: low "renal" doses (~1-3 mcg/kg/min) mainly hit dopaminergic receptors, the mid inotropic band (~5-10 mcg/kg/min) recruits beta-1 effects that raise heart rate and contractility, and high doses (>10 mcg/kg/min) become increasingly alpha-1 vasoconstrictive and pro-arrhythmic. This round\'s safe window sits in the inotropic band on purpose — under-dosing leaves the pump unsupported, over-dosing drives the heart into a dangerous tachyarrhythmia instead of more useful output.',
-    examTip: 'NORCET tests the three dopamine dose bands by name — low/renal, intermediate/inotropic (beta-1), high/vasopressor (alpha-1) — and that dopamine causes more tachyarrhythmias than norepinephrine, which is why current sepsis guidelines prefer norepinephrine as first-line.',
+    rationale: 'Dopamine is the classic dose-dependent-receptor teaching drug: low "renal" doses (~1-3 mcg/kg/min) mainly hit dopaminergic receptors, the mid inotropic band (~5-10 mcg/kg/min) recruits beta-1 effects that raise heart rate and contractility, and high doses (>10 mcg/kg/min) become increasingly alpha-1 vasoconstrictive and pro-arrhythmic. This round\'s safe window sits in the inotropic band on purpose, under-dosing leaves the pump unsupported, over-dosing drives the heart into a dangerous tachyarrhythmia instead of more useful output.',
+    examTip: 'NORCET tests the three dopamine dose bands by name, low/renal, intermediate/inotropic (beta-1), high/vasopressor (alpha-1), and that dopamine causes more tachyarrhythmias than norepinephrine, which is why current sepsis guidelines prefer norepinephrine as first-line.',
   },
 
   // ---------------------------------------------------------------------
@@ -257,7 +257,7 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [20, 40],
     holdSec: 10,
-    goal: 'Hypertensive emergency — lower the MAP in a CONTROLLED step (no more than ~15% in the first hour), not a crash.',
+    goal: 'Hypertensive emergency: lower the MAP in a CONTROLLED step (no more than ~15% in the first hour), not a crash.',
     tracks: [
       {
         key: 'map',
@@ -272,11 +272,11 @@ const CORE_TITRATION_DRUGS = [
     ],
     zoneLabels: {
       under: 'HYPERTENSIVE EMERGENCY UNCONTROLLED',
-      therapeutic: 'CONTROLLED REDUCTION — ON TARGET',
-      over: 'OVERSHOOT HYPOTENSION — PERFUSION RISK',
+      therapeutic: 'CONTROLLED REDUCTION: ON TARGET',
+      over: 'OVERSHOOT HYPOTENSION: PERFUSION RISK',
     },
-    rationale: 'The trap in hypertensive-emergency titration is not reaching a lower pressure — it is reaching it too fast. Combined alpha/beta-blockade with labetalol is titrated to bring the MAP down gradually; overshooting drops perfusion pressure to organs that have auto-regulated to the higher baseline (brain especially, in stroke), which can convert a controlled emergency into a hypoperfusion injury. The window here rewards a measured step down, not the fastest possible drop.',
-    examTip: 'NORCET\'s hypertensive-emergency rule: lower MAP by no more than ~10-15% in the first hour (then more gradually thereafter) — a "controlled descent," never a crash. In ischemic stroke specifically, BP is treated only if it exceeds ~185/110 mmHg (the tPA eligibility threshold) and is titrated with a short-acting agent like labetalol or nicardipine.',
+    rationale: 'The trap in hypertensive-emergency titration is not reaching a lower pressure. It is reaching it too fast. Combined alpha/beta-blockade with labetalol is titrated to bring the MAP down gradually; overshooting drops perfusion pressure to organs that have auto-regulated to the higher baseline (brain especially, in stroke), which can convert a controlled emergency into a hypoperfusion injury. The window here rewards a measured step down, not the fastest possible drop.',
+    examTip: 'NORCET\'s hypertensive-emergency rule: lower MAP by no more than ~10-15% in the first hour (then more gradually thereafter). A "controlled descent," never a crash. In ischemic stroke specifically, BP is treated only if it exceeds ~185/110 mmHg (the tPA eligibility threshold) and is titrated with a short-acting agent like labetalol or nicardipine.',
   },
 
   // ---------------------------------------------------------------------
@@ -296,17 +296,17 @@ const CORE_TITRATION_DRUGS = [
     weightDefault: 70,
     safeWindow: [20, 60],
     holdSec: 10,
-    goal: 'Flash pulmonary edema / ACS — reduce preload and afterload to ease the heart\'s workload without crashing the pressure.',
+    goal: 'Flash pulmonary edema / ACS, reduce preload and afterload to ease the heart\'s workload without crashing the pressure.',
     tracks: [
       { key: 'map', label: 'MAP', unit: 'mmHg', base: 118, target: 92, overSlope: -0.5, alarmLow: 60, alarmHigh: 120 },
       { key: 'hr', label: 'Heart Rate', unit: 'bpm', base: 108, target: 88, overSlope: 0.3, alarmLow: 50, alarmHigh: 150 },
     ],
     zoneLabels: {
       under: 'PULMONARY CONGESTION UNRELIEVED',
-      therapeutic: 'PRELOAD REDUCED — WORK OF BREATHING EASING',
-      over: 'HYPOTENSION — REFLEX TACHYCARDIA',
+      therapeutic: 'PRELOAD REDUCED: WORK OF BREATHING EASING',
+      over: 'HYPOTENSION: REFLEX TACHYCARDIA',
     },
-    rationale: 'Nitroglycerin is primarily a venodilator at lower doses (reducing preload, which is exactly what a congested, fluid-backed-up heart in flash pulmonary edema needs) and increasingly an arterial dilator at higher doses. Titrating past the therapeutic window drops the MAP too far, and the body\'s reflex response to that sudden drop is a compensatory tachycardia — counterproductive in a heart that is already working too hard. The safe window models the "just enough preload reduction, without stealing perfusion pressure" target.',
+    rationale: 'Nitroglycerin is primarily a venodilator at lower doses (reducing preload, which is exactly what a congested, fluid-backed-up heart in flash pulmonary edema needs) and increasingly an arterial dilator at higher doses. Titrating past the therapeutic window drops the MAP too far, and the body\'s reflex response to that sudden drop is a compensatory tachycardia. Counterproductive in a heart that is already working too hard. The safe window models the "just enough preload reduction, without stealing perfusion pressure" target.',
     examTip: 'NORCET pairs nitroglycerin with two classic cautions: hold/avoid it in right-ventricular infarction (preload-dependent, so venodilation can cause profound hypotension) and in patients who have taken a PDE-5 inhibitor (e.g. sildenafil) within 24-48 hours, due to the risk of severe, refractory hypotension.',
   },
 ];

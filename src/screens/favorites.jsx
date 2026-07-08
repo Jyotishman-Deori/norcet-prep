@@ -132,7 +132,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
           <EmptyState
             icon={Heart}
             title="Nothing hearted yet"
-            text="Add any section — Quick Test, Stats, Bookmarks, Leaderboard, Reference, Dosage and more. They land here, in your order."
+            text="Add any section. Quick Test, Stats, Bookmarks, Leaderboard, Reference, Dosage and more. They land here, in your order."
             actionLabel="Add sections"
             onAction={() => setAdding(true)} />
         ) : (
@@ -206,7 +206,7 @@ function FavoritesScreen({ onBack, onNavigate, startInEdit = false, startInAdd =
 
         {sections.length > 0 && !editing && (
           <div className="text-[11px] leading-relaxed mt-4 px-2 text-center" style={{ color: T.muted }}>
-            Your order is the priority — top-left first. Tap Edit to rearrange or remove.
+            Your order is the priority, top-left first. Tap Edit to rearrange or remove.
           </div>
         )}
 

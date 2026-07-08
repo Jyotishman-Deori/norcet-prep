@@ -172,7 +172,7 @@ function LearnCards({ topicId, subFilter, onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title={subFilter ? `${topicName(topicId)} · ${subFilter}` : topicName(topicId)} onBack={onBack}
-              feedback={{ screen: 'Learn — cards' }}
+              feedback={{ screen: 'Learn: cards' }}
               right={<div className="text-xs font-semibold tabular-nums" style={{ color: T.muted }}>{index + 1} / {allCards.length}</div>} />
       <div className="max-w-md mx-auto px-4 pb-36 pt-4">
         {/* Progress — tappable segments jump to any card */}

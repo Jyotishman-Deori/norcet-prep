@@ -28,7 +28,7 @@ export default function SessionExpiredToast({ open, onSignIn, onClose }) {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-semibold leading-snug" style={{ color: T.ink }}>
-            Signed out — this account was opened on another device
+            Signed out: this account was opened on another device
           </div>
           <div className="text-[12px] mt-0.5 leading-snug" style={{ color: T.inkSoft }}>
             Your progress is safe. Sign in again to continue on this device.

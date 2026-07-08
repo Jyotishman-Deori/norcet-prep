@@ -21,7 +21,9 @@ import { safeStorage } from './safe-storage.js';
 // v12 (FEAT-02): renamed the "Exam date" help section to "Study plan" and
 //     expanded it (date + daily goal + the day-by-day plan now live together).
 // v13: rebrand — "NORCET Prep" → "NurseHolic" in help.json Share-app copy.
-const CONTENT_VERSION = 13;
+// v14: removed all em dashes from content JSON (reference/dosage/concept-cards/
+//      help) — user-facing copy must not read as AI-generated.
+const CONTENT_VERSION = 14;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

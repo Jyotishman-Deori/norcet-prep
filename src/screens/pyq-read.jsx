@@ -191,7 +191,7 @@ function PyqRead({ paper, bookmarks, onToggleBookmark, profileId, isAdmin = fals
             <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>
               You've read all {qs.length} question{qs.length === 1 ? '' : 's'}{topicFilter !== 'all' ? ' in this subject' : ' in this paper'}
             </div>
-            <div className="text-xs mb-4" style={{ color: T.muted }}>No score, no pressure — that was revision, and it counts.</div>
+            <div className="text-xs mb-4" style={{ color: T.muted }}>No score, no pressure. That was revision, and it counts.</div>
             <Button onClick={onBack} variant="ghost" className="w-full" icon={<ChevronLeft size={15} />}>
               Read another paper
             </Button>

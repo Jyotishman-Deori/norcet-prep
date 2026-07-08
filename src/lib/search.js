@@ -80,7 +80,7 @@ export function buildEntries({ questions, reference, dosage, conceptCards, faqs 
     for (const r of reference) {
       if (!r || !r.label) continue;
       push('reference', r.label,
-           clip(`${r.value || ''}${r.note ? ' — ' + r.note : ''}`),
+           clip(`${r.value || ''}${r.note ? ': ' + r.note : ''}`),
            [r.value, r.note, r.section, r.cat], r);
     }
   }

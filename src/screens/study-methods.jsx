@@ -19,7 +19,7 @@ import { KEYS } from '../lib/keys.js';
 import { STUDY_METHODS } from '../data/study-methods.js';
 
 const ICON = { sq3r: BookOpen, why: Lightbulb, recall: Brain, spaced: Repeat, interleave: Shuffle, testing: Target };
-const NOT_STARTED = 'Not started yet — tap to learn how';
+const NOT_STARTED = 'Not started yet, tap to learn how';
 
 // Map a method's statKind + the live progress numbers to its row label.
 // Returns { text, strong, dim } — dim = no real activity yet (muted styling).
@@ -39,7 +39,7 @@ function rowStat(kind, p) {
     case 'due': {
       const due = (p && p.dueCount) || 0;
       if (due > 0) return { text: `${due} due for review now`, strong: false, dim: false };
-      if (att > 0) return { text: 'All caught up — nothing due', strong: true, dim: false };
+      if (att > 0) return { text: 'All caught up: nothing due', strong: true, dim: false };
       return { text: NOT_STARTED, strong: false, dim: true };
     }
     case 'coverage': {
@@ -168,7 +168,7 @@ function StudyMethods({ onBack, onNavigate, progress }) {
             Study smarter, not just harder
           </div>
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>
-            Six proven methods, in order — from how to first open a book to how to lock it in for exam day. Tap any one.
+            Six proven methods, in order, from how to first open a book to how to lock it in for exam day. Tap any one.
           </div>
         </div>
 
@@ -215,7 +215,7 @@ function StudyMethods({ onBack, onNavigate, progress }) {
         </div>
 
         <div className="mt-5 text-center text-[11px]" style={{ color: T.muted }}>
-          These methods connect to the tools already in the app — each card links you straight to one.
+          These methods connect to the tools already in the app, each card links you straight to one.
         </div>
       </div>
     </div>

@@ -49,13 +49,13 @@ export function calibrationInsight(cal) {
   const sure = cal.buckets.sure;
   const guess = cal.buckets.guess;
   if (sure.n >= 3 && sure.acc !== null && sure.acc < 70) {
-    return { kind: 'overconfident', text: `You felt "Sure" but were right ${sure.acc}% of the time — those are the blind spots to hunt down.` };
+    return { kind: 'overconfident', text: `You felt "Sure" but were right ${sure.acc}% of the time. Those are the blind spots to hunt down.` };
   }
   if (guess.n >= 3 && guess.acc !== null && guess.acc >= 60) {
-    return { kind: 'underconfident', text: `Your "Guesses" landed ${guess.acc}% right — you know more than you give yourself credit for.` };
+    return { kind: 'underconfident', text: `Your "Guesses" landed ${guess.acc}% right: you know more than you give yourself credit for.` };
   }
   if (sure.n >= 3 && sure.acc !== null && sure.acc >= 85) {
-    return { kind: 'calibrated', text: `Your "Sure" answers are ${sure.acc}% right — nicely calibrated. Trust that instinct in the exam.` };
+    return { kind: 'calibrated', text: `Your "Sure" answers are ${sure.acc}% right: nicely calibrated. Trust that instinct in the exam.` };
   }
   return null;
 }

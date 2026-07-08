@@ -216,7 +216,7 @@ function rankStudySuggestions(model, lastTouchedById, nowMs, deps) {
     if (s.attempted >= 5 && s.accuracy < 0.5) {
       buckets.struggling.push({
         id: s.id, name: s.name, reason: SUGGEST_REASON.struggling,
-        detail: `You scored ${Math.round(s.accuracy * 100)}% here — worth another pass`
+        detail: `You scored ${Math.round(s.accuracy * 100)}% here: worth another pass`
       });
     }
   });
@@ -247,7 +247,7 @@ function rankStudySuggestions(model, lastTouchedById, nowMs, deps) {
     if (days >= SUGGEST_STALE_DAYS) {
       buckets.fading.push({
         id: s.id, name: s.name, reason: SUGGEST_REASON.fading,
-        detail: `Not practised in ${Math.floor(days)} days — keep it fresh`
+        detail: `Not practised in ${Math.floor(days)} days: keep it fresh`
       });
     }
   });
@@ -1582,7 +1582,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                       <span className="text-xs font-semibold truncate" style={{ color: CMAP.text }}>{sug.name}</span>
                       {/* Same enter-a-test caution as the node popup's CTA. */}
                       <button onClick={() => requestConfirm({
-                                title: `Start practice — ${sug.name}?`,
+                                title: `Start practice: ${sug.name}?`,
                                 body: `This begins a 10-question practice test on ${sug.name}. Your answers count toward this star's progress.`,
                                 confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
                                 onConfirm: () => { if (onPracticeTopic) onPracticeTopic(sug.id); },
@@ -1802,7 +1802,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   Your universe to conquer
                 </div>
                 <div className="text-[13px] leading-relaxed mb-4" style={{ color: CMAP.muted }}>
-                  Every topic is a star. Practise to light them up — from a first faint
+                  Every topic is a star. Practise to light them up, from a first faint
                   discovery to a fully mastered, crowned constellation.
                 </div>
                 <div className="flex gap-2">

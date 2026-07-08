@@ -48,7 +48,7 @@ export default function GhostShiftCard({ history }) {
           <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>No Ghost yet</div>
         </div>
         <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-          This score becomes your first <b>Ghost</b>. Come back in about two weeks and race it — your only opponent is the version of you from a fortnight ago.
+          This score becomes your first <b>Ghost</b>. Come back in about two weeks and race it. Your only opponent is the version of you from a fortnight ago.
         </div>
       </Card>
     );
@@ -80,7 +80,7 @@ export default function GhostShiftCard({ history }) {
       </div>
 
       <div className="text-[10.5px] mt-2 leading-snug" style={{ color: T.muted }}>
-        Oubaitori — bloom in your own time. This is your private benchmark; it never ranks you against anyone else.
+        Oubaitori: bloom in your own time. This is your private benchmark; it never ranks you against anyone else.
       </div>
     </Card>
   );

@@ -157,7 +157,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
               {/* XP to next level */}
               {atMax ? (
                 <div className="text-[12px] font-medium" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                  Maximum level reached — {prog.xp.toLocaleString()} XP. Legendary.
+                  Maximum level reached: {prog.xp.toLocaleString()} XP. Legendary.
                 </div>
               ) : (
                 <>
@@ -250,7 +250,7 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
         </div>
 
         {/* KNOWLEDGE MAP — the "world map" of Level Up, featured full-width */}
-        <Tip title="Knowledge Map" text="Your whole syllabus as a constellation — topics light up as you discover, practise and master them.">
+        <Tip title="Knowledge Map" text="Your whole syllabus as a constellation, topics light up as you discover, practise and master them.">
         <Card className="p-4 mb-4 cursor-pointer no-tap-highlight pressable press-safe" onClick={() => open('knowledge-map')}
               onContextMenu={(e) => e.preventDefault()}
               style={{ background: 'radial-gradient(120% 160% at 85% 0%, #1B2A4E 0%, #0A0E1C 55%, #070A14 100%)', border: '1px solid rgba(255,255,255,0.12)', boxShadow: '0 6px 18px rgba(7,10,20,0.40)' }}>

@@ -185,7 +185,7 @@ function IntroView({ T, pace, onSetPace, flashpoint, onBack, onStart }) {
             </div>
             <div className="text-[12px] mt-3 leading-relaxed" style={{ color: M.muted }}>
               Drag the two calipers to bracket the interval you&apos;re asked for, then Check. Count the
-              boxes — the paper never lies.
+              boxes: the paper never lies.
             </div>
           </div>
         </Card>
@@ -804,7 +804,7 @@ function RevealCard({ T, task, reduced, ok, timedOut, result, measuredSec, truth
         </div>
         {!ok && (
           <div className="text-[12px] leading-relaxed mt-2.5 pt-2.5" style={{ color: M.ink, borderTop: `1px solid ${M.border}` }}>
-            You measured {measuredSec.toFixed(2)} s — the true interval is {truthSec.toFixed(2)} s
+            You measured {measuredSec.toFixed(2)} s: the true interval is {truthSec.toFixed(2)} s
             {dir !== 'exact' ? ` (${dirWord} by ${errBoxes.toFixed(1)} ${errBoxes === 1 ? 'box' : 'boxes'})` : ''}.
             <span className="block mt-1" style={{ color: M.muted }}>
               Count the small boxes across the interval, then ×0.04 s.

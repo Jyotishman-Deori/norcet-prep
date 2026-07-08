@@ -66,7 +66,7 @@ function QuickPracticeSetup({ onStart, onBack, onSetPace }) {
         <Card className="p-3.5 mb-3" style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
           <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
             Questions are drawn at random across every subject, weighted the way
-            the real exam is — and you won't be served the same question twice
+            the real exam is. And you won't be served the same question twice
             until you've worked through the whole bank.
           </div>
         </Card>
@@ -76,7 +76,7 @@ function QuickPracticeSetup({ onStart, onBack, onSetPace }) {
         {!canStart && (
           <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}40` }}>
             <div className="text-xs" style={{ color: T.error }}>
-              Only {poolSize} question{poolSize === 1 ? '' : 's'} in your bank — reduce the count.
+              Only {poolSize} question{poolSize === 1 ? '' : 's'} in your bank, reduce the count.
             </div>
           </Card>
         )}

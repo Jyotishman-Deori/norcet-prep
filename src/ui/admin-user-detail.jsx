@@ -55,9 +55,9 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
   const failText = (e) => {
     const m = String((e && e.message) || e || '');
     if (/403/.test(m)) return 'Not authorised (admin only).';
-    if (/401/.test(m)) return 'Session expired — sign in again.';
-    if (/429/.test(m)) return 'Too many admin writes — wait a little.';
-    return 'Write failed — are you online?';
+    if (/401/.test(m)) return 'Session expired, sign in again.';
+    if (/429/.test(m)) return 'Too many admin writes, wait a little.';
+    return 'Write failed: are you online?';
   };
 
   const grant = async () => {
@@ -86,7 +86,7 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
       logAdminAction({ action: 'user.reset', target: meta.id, targetName: meta.displayName, actorName });
       setBlob(next);
       setResetArmed(false); setDangerOpen(false);
-      setMsg({ ok: true, text: 'Progress reset — account, name and sign-in kept. Their device picks it up on next open.' });
+      setMsg({ ok: true, text: 'Progress reset: account, name and sign-in kept. Their device picks it up on next open.' });
     } catch (e) { setMsg({ ok: false, text: failText(e) }); }
     finally { setBusy(false); }
   };
@@ -122,7 +122,7 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
         logAdminAction({ action: 'premium.grant', target: meta.id, targetName: meta.displayName,
                          detail: { tier: grantTier, billing: grantBilling, months: grantMonths }, actorName });
         setSubMsg({ ok: true, text: `${grantTier === 'MAX' ? 'Max' : 'Super'} granted. They'll see it on their next app open.` });
-      } else setSubMsg({ ok: false, text: 'Grant failed — check the subscription tables exist (subscriptions.sql).' });
+      } else setSubMsg({ ok: false, text: 'Grant failed: check the subscription tables exist (subscriptions.sql).' });
     } catch (e) { setSubMsg({ ok: false, text: failText(e) }); }
     finally { setSubBusy(false); }
   };
@@ -266,13 +266,13 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
                 )}
               </div>
               <div className="text-[11px] mb-3" style={{ color: T.muted }}>
-                Manual grant — the placeholder "payment" until a gateway lands.
+                Manual grant: the placeholder "payment" until a gateway lands.
                 {sub && sub.active && typeof sub.expiresAt === 'number'
                   ? ` Current plan runs until ${new Date(sub.expiresAt).toLocaleDateString()}.` : ''}
               </div>
               {sub && sub.active && sub.role === 'member' ? (
                 <div className="text-[12px]" style={{ color: T.inkSoft }}>
-                  Covered by someone else's family plan — grant/revoke on the plan owner instead.
+                  Covered by someone else's family plan, grant/revoke on the plan owner instead.
                 </div>
               ) : (
                 <>
@@ -357,7 +357,7 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
                     <button onClick={() => setResetArmed(true)}
                             className="no-tap-highlight px-3.5 py-2 rounded-xl text-[12px] font-bold"
                             style={{ background: T.error + '14', color: T.error, border: `1px solid ${T.error}40` }}>
-                      I understand — arm the reset
+                      I understand: arm the reset
                     </button>
                   )}
                 </div>
@@ -366,7 +366,7 @@ export default function AdminUserDetail({ meta, onBack, selfId, actorName }) {
 
             <div className="text-center text-[10.5px] px-4 flex items-start gap-1.5 justify-center" style={{ color: T.muted }}>
               <User size={12} className="flex-shrink-0 mt-0.5" />
-              <span>If they're using the app right now, their session may overwrite a change on their next save — refresh here to re-check. Answers and personal notes are never shown.</span>
+              <span>If they're using the app right now, their session may overwrite a change on their next save, refresh here to re-check. Answers and personal notes are never shown.</span>
             </div>
           </>
         )}

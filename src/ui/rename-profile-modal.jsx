@@ -48,7 +48,7 @@ function RenameProfileModal({ profile, onRename, onClose }) {
     if (!newId) { setError('Name needs at least one letter or number'); return; }
     // Community moderation: display names show on the leaderboard and FAQ —
     // profanity (en/hi/hinglish/assamese) is blocked here like everywhere else.
-    if (containsProfanity(trimmed).hit) { setError('That name contains a word we can’t show publicly — pick another.'); return; }
+    if (containsProfanity(trimmed).hit) { setError('That name contains a word we can’t show publicly, pick another.'); return; }
     if (trimmed === profile.displayName) { onClose(); return; }
     setBusy(true);
     try {
@@ -102,7 +102,7 @@ function RenameProfileModal({ profile, onRename, onClose }) {
                            style={{ color: T.accent }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
                 <span className="font-semibold" style={{ color: T.accent }}>You'll log in with this new name from now on.</span>{' '}
-                Make sure you remember it — your password and date of birth are unchanged.
+                Make sure you remember it, your password and date of birth are unchanged.
               </div>
             </div>
           </Card>

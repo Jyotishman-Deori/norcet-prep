@@ -126,7 +126,7 @@ export default function InstallNudge() {
                 Installing… 📲
               </div>
               <div className="text-[12.5px] mt-0.5 leading-snug" style={{ color: T.inkSoft }}>
-                NurseHolic is landing on your home screen — open it from there for the
+                NurseHolic is landing on your home screen, open it from there for the
                 full-screen, offline-ready app.
               </div>
             </div>
@@ -143,7 +143,7 @@ export default function InstallNudge() {
               </div>
               <div className="text-[12.5px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>
                 {ios
-                  ? 'Full screen, works offline, one tap from your home screen — and study reminders only work from the installed app.'
+                  ? 'Full screen, works offline, one tap from your home screen, and study reminders only work from the installed app.'
                   : 'Full screen, works offline, opens in one tap from your home screen. No app store, no download size.'}
               </div>
               {ios ? (

@@ -14,16 +14,16 @@ import { drillFeatureOn, setDrillFeature } from '../lib/drill-settings.js';
 const FEATURES = [
   { key: 'vitalsCheck', label: 'Vitals Check', icon: HeartPulse, accent: '#DC2626',
     where: 'Quick · Topic · Mock',
-    desc: 'Miss a must-know survival protocol and the test pauses briefly so you review why — the kind you can’t afford to get wrong on the floor.' },
+    desc: 'Miss a must-know survival protocol and the test pauses briefly so you review why. The kind you can’t afford to get wrong on the floor.' },
   { key: 'codeBlue', label: 'Code Blue', icon: Activity, accent: '#1D4ED8',
     where: 'Quick · Topic · Mock',
     desc: 'Three wrong in a row switches to a short recovery drill of your own mistakes, then drops you back in. Reframes a slump as a comeback.' },
   { key: 'ghostShift', label: 'Ghost Shift', icon: Ghost, accent: '#16A34A',
     where: 'Advanced Test results',
-    desc: 'After an Advanced Test, see how you did against your own self from about two weeks ago — your only opponent.' },
+    desc: 'After an Advanced Test, see how you did against your own self from about two weeks ago, your only opponent.' },
   { key: 'whatIf', label: 'Negative-marking what-if', icon: Scale, accent: '#B8791A',
     where: 'Advanced · PYQ · Mock results',
-    desc: 'See what your wrong answers would cost under NORCET’s 1/3 negative marking — an interactive simulator on Advanced/PYQ, a one-line reminder on Mock.' },
+    desc: 'See what your wrong answers would cost under NORCET’s 1/3 negative marking, an interactive simulator on Advanced/PYQ, a one-line reminder on Mock.' },
 ];
 
 function Toggle({ on, accent }) {
@@ -54,7 +54,7 @@ function DrillSettings({ onBack }) {
           <div className="flex items-start gap-2.5">
             <Sparkles size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />
             <div className="text-[12px] leading-relaxed" style={{ color: T.inkSoft }}>
-              Smart-coaching touches for your tests. All on by default — switch off anything you’d rather not see.
+              Smart-coaching touches for your tests. All on by default, switch off anything you’d rather not see.
               These apply across every Drill-Tests section.
             </div>
           </div>

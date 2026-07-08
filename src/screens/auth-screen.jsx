@@ -313,7 +313,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
       // Community moderation: names show on the leaderboard and FAQ threads —
       // profanity (en/hi/hinglish/assamese) is blocked at the door.
       if (containsProfanity(displayName.trim()).hit) {
-        setError('That display name contains a word we can’t show publicly — pick another.');
+        setError('That display name contains a word we can’t show publicly, pick another.');
         return;
       }
       if (!googleNewUser) {
@@ -459,7 +459,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="flex items-center gap-2.5">
               <Check size={16} className="flex-shrink-0" style={{ color: T.success }} />
               <div className="flex-1 min-w-0 text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                Signed in with Google as <span className="font-medium" style={{ color: T.ink }}>{googleNewUser.email}</span> — pick a display name below to finish.
+                Signed in with Google as <span className="font-medium" style={{ color: T.ink }}>{googleNewUser.email}</span>: pick a display name below to finish.
               </div>
               <button type="button" onClick={cancelGoogleNewUser}
                       className="no-tap-highlight text-xs underline flex-shrink-0" style={{ color: T.muted }}>
@@ -489,7 +489,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="flex items-start gap-2.5">
               <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                Password reset. Log in with your new password — we've pre-filled it for you.
+                Password reset. Log in with your new password, we've pre-filled it for you.
               </div>
             </div>
           </Card>
@@ -551,7 +551,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           {mode === 'create' && !recovering && displayName.trim() && /[^\p{L}\p{N}\s\-_.'’]/u.test(displayName.trim()) && (
             <div className="mt-2 text-xs flex items-start gap-1.5" style={{ color: T.accent }}>
               <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
-              <span>Emojis and symbols may not display correctly on the leaderboard or in backups — letters, numbers and spaces are safest.</span>
+              <span>Emojis and symbols may not display correctly on the leaderboard or in backups. Letters, numbers and spaces are safest.</span>
             </div>
           )}
         </div>
@@ -756,9 +756,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
                 {mode === 'create'
                   ? (googleNewUser
-                      ? <>Your Google account keeps this profile secure — there's no separate password to remember.</>
-                      : <>Remember your display name and password — you'll need both to log in. Your security question is the only way to recover access if you forget.</>)
-                  : <>This is a study app, not a secure account — don't reuse a password you use elsewhere.</>}
+                      ? <>Your Google account keeps this profile secure, there's no separate password to remember.</>
+                      : <>Remember your display name and password. You'll need both to log in. Your security question is the only way to recover access if you forget.</>)
+                  : <>This is a study app, not a secure account. Don't reuse a password you use elsewhere.</>}
               </div>
             </div>
           </Card>
@@ -841,9 +841,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
               {mode === 'create'
                 ? (googleNewUser
-                    ? 'Profiles sync across devices. Your Google account keeps you signed in — no password needed.'
+                    ? 'Profiles sync across devices. Your Google account keeps you signed in, no password needed.'
                     : 'Profiles sync across devices. Remember your display name and password, and your security answer.')
-                : 'Forgot your password? Use the link above — you can reset it with your security question.'}
+                : 'Forgot your password? Use the link above. You can reset it with your security question.'}
             </div>
           )}
         </div>
@@ -905,7 +905,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <div className="text-[12.5px] leading-relaxed text-center mb-4" style={{ color: T.inkSoft }}>
                 <span className="font-medium" style={{ color: T.ink }}>{linkGoogle.email}</span> is already on the profile{' '}
                 <span className="font-semibold" style={{ color: T.primary }}>{linkGoogle.displayName}</span>.
-                Enter that profile's password once to connect Google — after this, one tap signs you in.
+                Enter that profile's password once to connect Google, after this, one tap signs you in.
               </div>
               <div className="relative mb-2">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />

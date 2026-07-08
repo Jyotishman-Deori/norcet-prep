@@ -238,20 +238,20 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   // ---- Category 1 — Study ----
   const study = [
-    { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today — plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
+    { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today, plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
     { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse and import question banks curated by the team.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
     { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', tip: 'Every question you saved, grouped by topic, ready to re-read or retest.', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
     { key: 'mistake-vault', icon: Target, color: T.error, label: 'Mistake Vault', tip: 'Every question you got wrong, kept until you answer it right twice in a row.', sub: 'Fix what you got wrong', action: () => go('mistake-vault', null, 'mistake-vault') },
-    { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear — resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
+    { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear, resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
     // Adding questions is now ADMIN ONLY (content authority) — hidden for users.
     ...(isAdmin ? [{ key: 'addq', icon: Plus, color: T.primary, label: 'Add question', tip: 'Upload and write the question sets students practise.', sub: 'Admin · question sets', action: () => go('add-question', null, 'addq') }] : []),
   ];
   // ---- Category 2 — Progress ----
   const progress = [
-    { key: 'ikigai',      fav: 'ikigai', icon: Compass,   color: '#9333EA',   label: 'Ikigai Compass', badge: 'New', tip: 'Your living 4-circle readiness map — Passion, Profession, Mission and Vocation drift together as you practise.', sub: 'Your readiness, balanced', action: () => go('ikigai', null, 'ikigai') },
+    { key: 'ikigai',      fav: 'ikigai', icon: Compass,   color: '#9333EA',   label: 'Ikigai Compass', badge: 'New', tip: 'Your living 4-circle readiness map. Passion, Profession, Mission and Vocation drift together as you practise.', sub: 'Your readiness, balanced', action: () => go('ikigai', null, 'ikigai') },
     { key: 'stats',       fav: 'stats', icon: BarChart3, color: T.sec.stats, label: 'Stats', tip: 'Accuracy, streaks and progress, broken down topic by topic.',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
     { key: 'leaderboard', fav: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard', tip: 'See how your week stacks up against other aspirants.',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
-    { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: 'Exam weightage', tip: 'How many marks each subject carries — study where the marks are.', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
+    { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: 'Exam weightage', tip: 'How many marks each subject carries. Study where the marks are.', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
     { key: 'activity-log', icon: History, color: T.sec.stats, label: 'History', tip: 'A newest-first timeline of your level-ups, streak milestones, mastery moments and test attempts.', sub: 'Achievements & study timeline', action: () => go('activity-log', null, 'activity-log') },
   ];
   // ---- Category 3 — Tools ----
@@ -264,7 +264,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     // Premium — a preview of upcoming plans/perks. Gated on the contract flag
     // the same way the admin-only "Add question" row is conditionally spread;
     // nothing in the app is gated, everything is free during the test phase.
-    ...(isPremiumEnabled() ? [{ key: 'premium', icon: Crown, color: '#D97706', label: 'Premium', badge: 'New', tip: 'See what Premium will include — everything is free during the test phase.', sub: 'Plans & perks preview', action: () => go('premium', null, 'premium') }] : []),
+    ...(isPremiumEnabled() ? [{ key: 'premium', icon: Crown, color: '#D97706', label: 'Premium', badge: 'New', tip: 'See what Premium will include. Everything is free during the test phase.', sub: 'Plans & perks preview', action: () => go('premium', null, 'premium') }] : []),
   ];
   // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as
   // every other section so spacing + sizing stay perfectly symmetric.)

@@ -44,7 +44,7 @@ export default function AdminPushComposer({ onBack, actorName }) {
       setResult(j);
       setTitle(''); setText('');
     } catch (e) {
-      setResult({ error: 'Network error — are you online?' });
+      setResult({ error: 'Network error: are you online?' });
     } finally { setBusy(false); setConfirming(false); }
   };
 
@@ -67,7 +67,7 @@ export default function AdminPushComposer({ onBack, actorName }) {
             </div>
             <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
               Sends a notification to <b>every subscribed device</b>, even with the app closed.
-              Use it sparingly — announcements inside the app are gentler. Capped at 4 per hour.
+              Use it sparingly: announcements inside the app are gentler. Capped at 4 per hour.
             </div>
           </div>
         </Card>
@@ -89,7 +89,7 @@ export default function AdminPushComposer({ onBack, actorName }) {
               <span className="text-[10px] tabular-nums" style={{ color: bB.color }}>{bB.text}</span>
             </div>
             <textarea value={text} maxLength={BODY_MAX} onChange={e => { setText(e.target.value); setResult(null); }}
-                      rows={3} placeholder="One or two short lines — it shows on lock screens."
+                      rows={3} placeholder="One or two short lines, it shows on lock screens."
                       className="w-full text-sm rounded-xl px-3 py-2.5 resize-none outline-none" style={input} />
           </div>
         </Card>

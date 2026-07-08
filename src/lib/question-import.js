@@ -159,7 +159,7 @@ export const EXAMPLE_QUESTIONS_JSON = JSON.stringify([
     image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='120'%3E%3Crect width='240' height='120' rx='10' fill='%23e9e2d4'/%3E%3Ctext x='120' y='66' font-size='15' text-anchor='middle' fill='%23555' font-family='sans-serif'%3ESample figure%3C/text%3E%3C/svg%3E",
     options: ["Sample figure", "ECG strip", "Chest X-ray", "Suction catheter"],
     correct: [0],
-    exp: "This is a placeholder figure — replace `image` with your hosted PYQ image URL.",
+    exp: "This is a placeholder figure, replace `image` with your hosted PYQ image URL.",
     difficulty: "easy",
     source: "Image demo"
   }

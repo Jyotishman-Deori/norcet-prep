@@ -86,7 +86,7 @@ const CORE_CALIPER_TASKS = [
     windowSec: 2.4,
     beatIndex: 1,
     verdict: { normal: [0.12, 0.20], label: 'Normal PR: 0.12-0.20 s (3-5 small boxes)' },
-    rationale: 'The PR interval is the time from the start of atrial depolarisation (P wave) to the start of ventricular depolarisation (QRS) — it represents conduction through the atria, the AV node, and the His-Purkinje system. Count the small boxes between your two calipers and multiply by 0.04 s per box; here that lands at 4 small boxes, 0.16 s, comfortably inside the normal 3-5 box window.',
+    rationale: 'The PR interval is the time from the start of atrial depolarisation (P wave) to the start of ventricular depolarisation (QRS). It represents conduction through the atria, the AV node, and the His-Purkinje system. Count the small boxes between your two calipers and multiply by 0.04 s per box; here that lands at 4 small boxes, 0.16 s, comfortably inside the normal 3-5 box window.',
     examTip: 'NORCET box math: 1 small box = 0.04 s at standard 25 mm/s paper speed. Normal PR interval is 0.12-0.20 s (3-5 small boxes). A PR under 0.12 s suggests pre-excitation (e.g. WPW); a PR over 0.20 s is first-degree AV block.',
   },
 
@@ -103,8 +103,8 @@ const CORE_CALIPER_TASKS = [
     windowSec: 2.4,
     beatIndex: 1,
     verdict: { normal: [0.12, 0.20], label: 'Normal PR: 0.12-0.20 s (3-5 small boxes); this strip measures 0.28 s' },
-    rationale: 'This PR interval is fixed and prolonged at 0.28 s (7 small boxes) — every P wave still conducts to a QRS, just slower than normal through the AV node. That combination (long but constant PR, 1:1 conduction, no dropped beats) is the definition of first-degree AV block. It is usually benign and often needs no treatment, but it is worth documenting and watching, especially if AV-nodal-blocking drugs are on board.',
-    examTip: 'NORCET distinguishes first-degree block (PR > 0.20 s, fixed, every beat conducts) from Wenckebach/Mobitz I (PR progressively lengthens until a beat is dropped) and Mobitz II (PR is constant but some beats are dropped without warning) — first-degree is the "always conducts, just slow" pattern.',
+    rationale: 'This PR interval is fixed and prolonged at 0.28 s (7 small boxes), every P wave still conducts to a QRS, just slower than normal through the AV node. That combination (long but constant PR, 1:1 conduction, no dropped beats) is the definition of first-degree AV block. It is usually benign and often needs no treatment, but it is worth documenting and watching, especially if AV-nodal-blocking drugs are on board.',
+    examTip: 'NORCET distinguishes first-degree block (PR > 0.20 s, fixed, every beat conducts) from Wenckebach/Mobitz I (PR progressively lengthens until a beat is dropped) and Mobitz II (PR is constant but some beats are dropped without warning). First-degree is the "always conducts, just slow" pattern.',
   },
 
   // ---------------------------------------------------------------------
@@ -121,7 +121,7 @@ const CORE_CALIPER_TASKS = [
     beatIndex: 1,
     verdict: { normal: [0.06, 0.10], label: 'Normal QRS: 0.06-0.10 s (up to 2.5 small boxes)' },
     rationale: 'The QRS duration reflects how long it takes an impulse to spread through the ventricles. A narrow QRS (here, 2 small boxes, 0.08 s) means the impulse travelled down the normal His-Purkinje pathway rather than spreading slowly cell-to-cell through ventricular muscle. Narrow-complex rhythms point you toward a supraventricular origin (SA node, atria, or AV node) for the beat.',
-    examTip: 'NORCET box math: normal QRS is 0.06-0.10 s (up to about 2.5 small boxes). QRS 0.10-0.12 s is borderline/incomplete bundle branch block; QRS > 0.12 s (3+ small boxes) is a wide complex — think bundle branch block, ventricular origin, or a metabolic cause like hyperkalemia.',
+    examTip: 'NORCET box math: normal QRS is 0.06-0.10 s (up to about 2.5 small boxes). QRS 0.10-0.12 s is borderline/incomplete bundle branch block; QRS > 0.12 s (3+ small boxes) is a wide complex. Think bundle branch block, ventricular origin, or a metabolic cause like hyperkalemia.',
   },
 
   // ---------------------------------------------------------------------
@@ -136,9 +136,9 @@ const CORE_CALIPER_TASKS = [
     tolSec: 0.04,
     windowSec: 2.4,
     beatIndex: 1,
-    verdict: { normal: [0.06, 0.10], label: 'Normal QRS: 0.06-0.10 s; this strip measures 0.16 s (4 small boxes) — wide' },
-    rationale: 'This strip has three red flags stacked together: the QRS is wide (0.16 s, 4 small boxes), the rate is fast (R-R of 0.4 s = 150 bpm), and there are no visible P waves. A wide-complex tachycardia with no discernible P waves must be treated as ventricular tachycardia (VT) until proven otherwise — it is never safe to assume "probably just SVT with a bundle branch block" at the bedside without expert confirmation.',
-    examTip: 'NORCET\'s wide-complex tachycardia rule: assume VT until proven otherwise, especially with hemodynamic instability. Look for AV dissociation, fusion/capture beats, and a QRS wider than 0.16 s as clues favouring VT over aberrantly-conducted SVT — but the safe default answer on the exam and at the bedside is the same: treat it as VT.',
+    verdict: { normal: [0.06, 0.10], label: 'Normal QRS: 0.06-0.10 s; this strip measures 0.16 s (4 small boxes), wide' },
+    rationale: 'This strip has three red flags stacked together: the QRS is wide (0.16 s, 4 small boxes), the rate is fast (R-R of 0.4 s = 150 bpm), and there are no visible P waves. A wide-complex tachycardia with no discernible P waves must be treated as ventricular tachycardia (VT) until proven otherwise. It is never safe to assume "probably just SVT with a bundle branch block" at the bedside without expert confirmation.',
+    examTip: 'NORCET\'s wide-complex tachycardia rule: assume VT until proven otherwise, especially with hemodynamic instability. Look for AV dissociation, fusion/capture beats, and a QRS wider than 0.16 s as clues favouring VT over aberrantly-conducted SVT, but the safe default answer on the exam and at the bedside is the same: treat it as VT.',
   },
 
   // ---------------------------------------------------------------------
@@ -154,8 +154,8 @@ const CORE_CALIPER_TASKS = [
     windowSec: 2.4,
     beatIndex: 1,
     verdict: { normal: [0.6, 1.0], label: '60-100 bpm = normal sinus rate (R-R 0.6-1.0 s)' },
-    rationale: 'The R-R interval is the gold-standard way to find the heart rate directly off the strip: measure the distance between two consecutive R-wave peaks, convert it to seconds using the 0.04 s-per-small-box calibration, then divide it into 60 to get beats per minute. Here the R-R is 0.8 s (20 small boxes), giving 60/0.8 = 75 bpm — squarely in the normal sinus range.',
-    examTip: 'NORCET\'s fastest rate trick: rate = 1500 divided by the number of small boxes between two consecutive R waves. It works because 1500 small boxes pass in exactly one minute at 25 mm/s. Sanity-check it against 60/R-R(seconds) — both should agree.',
+    rationale: 'The R-R interval is the gold-standard way to find the heart rate directly off the strip: measure the distance between two consecutive R-wave peaks, convert it to seconds using the 0.04 s-per-small-box calibration, then divide it into 60 to get beats per minute. Here the R-R is 0.8 s (20 small boxes), giving 60/0.8 = 75 bpm, squarely in the normal sinus range.',
+    examTip: 'NORCET\'s fastest rate trick: rate = 1500 divided by the number of small boxes between two consecutive R waves. It works because 1500 small boxes pass in exactly one minute at 25 mm/s. Sanity-check it against 60/R-R(seconds). Both should agree.',
   },
 
   // ---------------------------------------------------------------------
@@ -171,8 +171,8 @@ const CORE_CALIPER_TASKS = [
     windowSec: 3.5,
     beatIndex: 1,
     verdict: { normal: [0.6, 1.0], label: '60-100 bpm = normal sinus rate; this strip runs about 45 bpm (R-R 1.33 s)' },
-    rationale: 'A wider caliper span here is expected and correct — the R-R interval is 1.33 s, about 33 small boxes, which by the 1500 rule (1500 / 33 ≈ 45) gives a rate around 45 bpm. That is sinus bradycardia. On a slow strip like this, the 1500-box method gets fiddly with large box counts; many nurses cross-check it by counting R waves across a longer strip and multiplying, or simply confirm with 60/R-R.',
-    examTip: 'NORCET: sinus bradycardia is a rate under 60 bpm with a normal P-QRS-T pattern in the correct order. It can be normal in athletes and during sleep, or pathological (sick sinus syndrome, beta-blocker/digoxin effect, hypothyroidism, raised ICP) — always correlate the number with the patient\'s symptoms, not the monitor alone.',
+    rationale: 'A wider caliper span here is expected and correct. The R-R interval is 1.33 s, about 33 small boxes, which by the 1500 rule (1500 / 33 ≈ 45) gives a rate around 45 bpm. That is sinus bradycardia. On a slow strip like this, the 1500-box method gets fiddly with large box counts; many nurses cross-check it by counting R waves across a longer strip and multiplying, or simply confirm with 60/R-R.',
+    examTip: 'NORCET: sinus bradycardia is a rate under 60 bpm with a normal P-QRS-T pattern in the correct order. It can be normal in athletes and during sleep, or pathological (sick sinus syndrome, beta-blocker/digoxin effect, hypothyroidism, raised ICP). Always correlate the number with the patient\'s symptoms, not the monitor alone.',
   },
 
   // ---------------------------------------------------------------------
@@ -188,7 +188,7 @@ const CORE_CALIPER_TASKS = [
     windowSec: 2.0,
     beatIndex: 1,
     verdict: { normal: [0.6, 1.0], label: '60-100 bpm = normal sinus rate; this strip runs about 188 bpm (R-R 0.32 s)' },
-    rationale: 'The R-R interval measures out to 0.32 s, just 8 small boxes, which by the 1500 rule (1500 / 8 ≈ 188) gives a rate near 190 bpm. The complexes are narrow and the rhythm is perfectly regular, but there is no visible P wave to march out separately — it is buried in the preceding T wave. Narrow-complex, regular, very fast, with no discernible P wave is the classic signature of supraventricular tachycardia (SVT), most often AV nodal re-entrant tachycardia.',
+    rationale: 'The R-R interval measures out to 0.32 s, just 8 small boxes, which by the 1500 rule (1500 / 8 ≈ 188) gives a rate near 190 bpm. The complexes are narrow and the rhythm is perfectly regular, but there is no visible P wave to march out separately. It is buried in the preceding T wave. Narrow-complex, regular, very fast, with no discernible P wave is the classic signature of supraventricular tachycardia (SVT), most often AV nodal re-entrant tachycardia.',
     examTip: 'NORCET\'s SVT bedside ladder: vagal manoeuvres first (Valsalva, carotid sinus massage), then IV adenosine as a rapid push followed immediately by a saline flush (it has a half-life of seconds) if vagal manoeuvres fail, reserving synchronised cardioversion for hemodynamic instability.',
   },
 
@@ -204,9 +204,9 @@ const CORE_CALIPER_TASKS = [
     tolSec: 0.05,
     windowSec: 2.7,
     beatIndex: 1,
-    verdict: { normal: [0.35, 0.44], label: 'Normal QT: roughly 0.35-0.44 s (rate-dependent); this strip measures 0.52 s — prolonged' },
-    rationale: 'The QT interval spans the start of ventricular depolarisation to the end of ventricular repolarisation — essentially, how long the ventricles take to "reset" before they can safely fire again. A fast bedside gut-check is whether the QT looks longer than half the R-R interval: here R-R is 0.9 s, so half of that is 0.45 s, and the measured QT of 0.52 s already exceeds it — a red flag for a prolonged QT even before formal rate-correction (QTc) is calculated.',
-    examTip: 'NORCET causes of long QT to know cold: drugs (certain antiarrhythmics, some antipsychotics/antiemetics, some antibiotics), electrolyte derangements (hypokalemia, hypomagnesemia, hypocalcemia), and congenital long QT syndrome. The danger is torsades de pointes, a polymorphic VT that can degenerate into cardiac arrest — IV magnesium sulfate is the go-to emergency treatment.',
+    verdict: { normal: [0.35, 0.44], label: 'Normal QT: roughly 0.35-0.44 s (rate-dependent); this strip measures 0.52 s, prolonged' },
+    rationale: 'The QT interval spans the start of ventricular depolarisation to the end of ventricular repolarisation, essentially, how long the ventricles take to "reset" before they can safely fire again. A fast bedside gut-check is whether the QT looks longer than half the R-R interval: here R-R is 0.9 s, so half of that is 0.45 s, and the measured QT of 0.52 s already exceeds it, a red flag for a prolonged QT even before formal rate-correction (QTc) is calculated.',
+    examTip: 'NORCET causes of long QT to know cold: drugs (certain antiarrhythmics, some antipsychotics/antiemetics, some antibiotics), electrolyte derangements (hypokalemia, hypomagnesemia, hypocalcemia), and congenital long QT syndrome. The danger is torsades de pointes, a polymorphic VT that can degenerate into cardiac arrest. IV magnesium sulfate is the go-to emergency treatment.',
   },
 
   // ---------------------------------------------------------------------
@@ -216,13 +216,13 @@ const CORE_CALIPER_TASKS = [
     id: 'pr-wenckebach',
     ask: 'pr',
     title: 'The Vanishing Beat',
-    question: 'Measure the LONGEST PR interval on this strip — the beat just before the dropped QRS. Place the first caliper at the start of that P wave and the second caliper at the start of its QRS.',
+    question: 'Measure the LONGEST PR interval on this strip, the beat just before the dropped QRS. Place the first caliper at the start of that P wave and the second caliper at the start of its QRS.',
     strip: { prSeq: [0.20, 0.28, 0.36, null], rrSec: 0.8, qrsSec: 0.08 },
     tolSec: 0.04,
     windowSec: 3.5,
     beatIndex: 3,
     verdict: { normal: [0.12, 0.20], label: 'Normal PR: 0.12-0.20 s; this beat\'s PR has stretched to 0.36 s just before the drop' },
-    rationale: 'Walk the PR interval beat by beat across this strip and it grows: 0.20 s, then 0.28 s, then 0.36 s — each beat\'s AV node handoff gets a little slower than the last, until the fourth P wave fails to conduct at all and no QRS follows it. That progressive lengthening followed by a dropped beat is Wenckebach (Mobitz type I) second-degree AV block. The pattern then typically resets and repeats ("group beating").',
+    rationale: 'Walk the PR interval beat by beat across this strip and it grows: 0.20 s, then 0.28 s, then 0.36 s, each beat\'s AV node handoff gets a little slower than the last, until the fourth P wave fails to conduct at all and no QRS follows it. That progressive lengthening followed by a dropped beat is Wenckebach (Mobitz type I) second-degree AV block. The pattern then typically resets and repeats ("group beating").',
     examTip: 'NORCET\'s clean way to tell the second-degree blocks apart: Mobitz I (Wenckebach) has a PR interval that lengthens progressively before a beat drops, and it usually has a good prognosis at the AV-node level. Mobitz II has a constant PR interval with an unpredictable dropped beat, is infra-nodal (His-Purkinje) disease, and is the one more likely to need a pacemaker.',
   },
 
@@ -238,9 +238,9 @@ const CORE_CALIPER_TASKS = [
     tolSec: 0.04,
     windowSec: 2.4,
     beatIndex: 1,
-    verdict: { normal: [0.06, 0.10], label: 'Normal QRS: 0.06-0.10 s; this strip measures 0.14 s (3.5 small boxes) — widening' },
-    rationale: 'A QRS of 0.14 s is well past the normal 0.06-0.10 s window. In a patient with kidney disease, this widening QRS pattern (alongside tall, tented T waves and a lengthening PR interval seen at earlier, milder stages) is the ECG telling you potassium is dangerously high before the labs even come back — the complex widens as rising extracellular potassium slows conduction through the ventricular muscle itself, heading toward a sine-wave pattern and cardiac arrest if untreated.',
-    examTip: 'NORCET\'s hyperkalemia ECG ladder in order of severity: peaked/tented T waves, then a flattened P wave and prolonged PR, then a widening QRS, then a sine-wave pattern preceding arrest. The nurse\'s first drug at the bedside is IV calcium gluconate — it stabilises the cardiac membrane immediately but does NOT lower the potassium itself; insulin+dextrose and salbutamol shift potassium into cells, and dialysis is what actually removes it (same ladder as the Ward Boss "Missed Dialysis" case).',
+    verdict: { normal: [0.06, 0.10], label: 'Normal QRS: 0.06-0.10 s; this strip measures 0.14 s (3.5 small boxes), widening' },
+    rationale: 'A QRS of 0.14 s is well past the normal 0.06-0.10 s window. In a patient with kidney disease, this widening QRS pattern (alongside tall, tented T waves and a lengthening PR interval seen at earlier, milder stages) is the ECG telling you potassium is dangerously high before the labs even come back. The complex widens as rising extracellular potassium slows conduction through the ventricular muscle itself, heading toward a sine-wave pattern and cardiac arrest if untreated.',
+    examTip: 'NORCET\'s hyperkalemia ECG ladder in order of severity: peaked/tented T waves, then a flattened P wave and prolonged PR, then a widening QRS, then a sine-wave pattern preceding arrest. The nurse\'s first drug at the bedside is IV calcium gluconate. It stabilises the cardiac membrane immediately but does NOT lower the potassium itself; insulin+dextrose and salbutamol shift potassium into cells, and dialysis is what actually removes it (same ladder as the Ward Boss "Missed Dialysis" case).',
   },
 ];
 

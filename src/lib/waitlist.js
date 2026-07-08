@@ -268,7 +268,7 @@ export function buildWaitlistShareMessage({ code, url } = {}) {
 export function buildApprovalNudgeMessage({ claimUrl, expiresAt } = {}) {
   const when = formatIstTime(expiresAt);
   return `Your NurseHolic seat is ready 🎉 Claim it here: ${claimUrl}` +
-    (when ? ` — your seat is held until ${when}, after that it goes to the next student in line.` : '');
+    (when ? `: your seat is held until ${when}, after that it goes to the next student in line.` : '');
 }
 
 // wa.me deep link. With a 10-digit number → direct chat; without → share picker.

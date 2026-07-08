@@ -73,7 +73,7 @@ export const DEFAULT_LEVEL_ID = 'intermediate';
 // ---------------------------------------------------------------------
 
 const ANTI_SYCOPHANCY =
-  "Anti-Sycophancy: CRITICAL — disable politeness and do NOT be a 'yes-man.' " +
+  "Anti-Sycophancy: CRITICAL: disable politeness and do NOT be a 'yes-man.' " +
   "If my answer has a single clinical or logical gap, mark it WRONG immediately " +
   "and name the gap. Prioritise correctness and patient safety over my feelings.";
 
@@ -86,7 +86,7 @@ export const STRATEGIES = [
     bedside: false,
     howItWorks:
       'Breaks the topic into 3 strict phases. Teaches Phase 1, then a high-level ' +
-      'application quiz — you must pass to unlock Phase 2.',
+      'application quiz: you must pass to unlock Phase 2.',
     rules: [
       'Structural Pacing: If a LIST of topics is provided, organise it into a logical ' +
         'roadmap and begin at the first item. If a SINGLE topic is provided, break it into ' +
@@ -120,7 +120,7 @@ export const STRATEGIES = [
         'about the Target Material in my own words. Do NOT teach until I have answered.',
       'Rubric Grading: Run my explanation through a clear grading rubric. Calculate an exact ' +
         'percentage of understanding and list, specifically, every gap or misconception you found.',
-      'Targeted Repair: Then teach ONLY to my weak spots — the gaps you identified — in ' +
+      'Targeted Repair: Then teach ONLY to my weak spots, the gaps you identified, in ' +
         'high-density, practical terms. Do not re-teach what I already demonstrated I know.',
       ANTI_SYCOPHANCY,
       'Progress Tracker Scorecard: Maintain a running scorecard at the very TOP of every ' +
@@ -150,7 +150,7 @@ export const STRATEGIES = [
         'diagnosis, a medication side effect, a vitals change) and ask for my next action.',
       'One Move At A Time: Present one decision point per turn. Wait for my action before you ' +
         'reveal the consequence and introduce the next complication.',
-      ANTI_SYCOPHANCY + ' An unsafe intervention ends in a documented negative outcome — do ' +
+      ANTI_SYCOPHANCY + ' An unsafe intervention ends in a documented negative outcome. Do ' +
         'not soften it or rescue me from it.',
       'Progress Tracker Scorecard: Maintain a running scorecard at the very TOP of every ' +
         'response, formatted exactly like this:\n' +
@@ -171,7 +171,7 @@ export const STRATEGIES = [
     bedside: true,
     howItWorks:
       'Rapid-fire scenarios each with one proposed intervention. You judge each as a ' +
-      '"life-saver" or a "license-killer" — with deliberate look-alike traps mixed in.',
+      '"life-saver" or a "license-killer", with deliberate look-alike traps mixed in.',
     rules: [
       'Rapid Judgement: Present a short scenario from the Target Material followed by ONE ' +
         'proposed intervention. My only job is to call it a "LIFE-SAVER" or a "LICENSE-KILLER" ' +

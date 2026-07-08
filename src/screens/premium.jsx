@@ -71,7 +71,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
             Premium is not available right now
           </div>
           <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-            Everything in the app is free to use. Check back later — we'll share plans here when there's something to show.
+            Everything in the app is free to use. Check back later: we'll share plans here when there's something to show.
           </div>
         </div>
       </div>
@@ -140,7 +140,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
                 <div className="text-[12px] mt-0.5" style={{ color: T.inkSoft }}>
                   {profile && profile.premium && typeof profile.premium.expiresAt === 'number'
                     ? `Active until ${new Date(profile.premium.expiresAt).toLocaleDateString()}`
-                    : 'Active — no expiry set'}
+                    : 'Active: no expiry set'}
                 </div>
               </div>
             </div>
@@ -352,7 +352,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
               Payments open soon
             </h2>
             <p className="text-sm mt-2 leading-relaxed" style={{ color: T.inkSoft }}>
-              During the test phase everything is already unlocked — enjoy! When we launch, you'll subscribe right here.
+              During the test phase everything is already unlocked, enjoy! When we launch, you'll subscribe right here.
             </p>
             <button onClick={() => setShowSheet(false)}
                     className="no-tap-highlight w-full mt-5 py-3.5 rounded-xl text-sm font-semibold active:scale-95 transition"

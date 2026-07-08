@@ -40,10 +40,10 @@ export default function FamilyPlanCard({ profile, onChanged }) {
   }, [isFamily, premium.role]);
 
   const reasonText = (reason) => ({
-    'family-full': 'All seats are taken — remove a member first.',
-    'too-many-invites': 'Too many open invites — wait for one to expire.',
-    'rate-limited': 'Too many invites right now — try again in a bit.',
-  }[reason] || 'That didn’t work — are you online?');
+    'family-full': 'All seats are taken, remove a member first.',
+    'too-many-invites': 'Too many open invites, wait for one to expire.',
+    'rate-limited': 'Too many invites right now, try again in a bit.',
+  }[reason] || 'That didn’t work. Are you online?');
 
   const mintInvite = async () => {
     if (busy) return;
@@ -52,7 +52,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
       const r = await createFamilyInvite();
       if (r && r.link) setInvite(r);
       else setMsg({ ok: false, text: reasonText(r && r.reason) });
-    } catch (e) { setMsg({ ok: false, text: 'Couldn’t create the invite — are you online?' }); }
+    } catch (e) { setMsg({ ok: false, text: 'Couldn’t create the invite. Are you online?' }); }
     finally { setBusy(false); }
   };
 
@@ -62,7 +62,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
       if (navigator.share) { await navigator.share({ title: 'Join my NurseHolic family plan', url: invite.link }); return; }
     } catch (e) { /* fall through to clipboard */ }
     try { await navigator.clipboard.writeText(invite.link); setCopied(true); setTimeout(() => setCopied(false), 2000); }
-    catch (e) { setMsg({ ok: false, text: 'Copy failed — long-press the link to copy it.' }); }
+    catch (e) { setMsg({ ok: false, text: 'Copy failed: long-press the link to copy it.' }); }
   };
 
   const removeMember = async (id) => {
@@ -72,9 +72,9 @@ export default function FamilyPlanCard({ profile, onChanged }) {
       const r = await removeFamilyMember(id);
       if (r.ok) {
         setFam(f => f ? { ...f, members: (f.members || []).filter(m => m.id !== id), seatsUsed: Math.max(1, (f.seatsUsed || 1) - 1) } : f);
-        setMsg({ ok: true, text: 'Member removed — their seat is free again. Their own progress is untouched.' });
+        setMsg({ ok: true, text: 'Member removed: their seat is free again. Their own progress is untouched.' });
       } else setMsg({ ok: false, text: reasonText(r.reason) });
-    } catch (e) { setMsg({ ok: false, text: 'Remove failed — are you online?' }); }
+    } catch (e) { setMsg({ ok: false, text: 'Remove failed: are you online?' }); }
     finally { setBusy(false); }
   };
 
@@ -86,7 +86,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
       const r = await leaveFamily();
       if (r.ok) { setLeaveArmed(false); if (onChanged) onChanged(); }
       else setMsg({ ok: false, text: reasonText(r.reason) });
-    } catch (e) { setMsg({ ok: false, text: 'Leave failed — are you online?' }); }
+    } catch (e) { setMsg({ ok: false, text: 'Leave failed: are you online?' }); }
     finally { setBusy(false); }
   };
 
@@ -102,7 +102,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
           <div className="min-w-0">
             <div className="font-display text-[15px] font-semibold" style={{ color: T.ink }}>Family plan</div>
             <div className="text-[13px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>
-              One subscription, up to <b>{FAMILY_SEATS} separate accounts</b> — each nurse keeps their own
+              One subscription, up to <b>{FAMILY_SEATS} separate accounts</b>, each nurse keeps their own
               progress, streaks and mistakes. No shared passwords, ever. Available when payments open.
             </div>
           </div>
@@ -197,7 +197,7 @@ export default function FamilyPlanCard({ profile, onChanged }) {
         ))}
         {members.length === 0 && (
           <div className="text-[12px] px-1" style={{ color: T.muted }}>
-            No members yet — send an invite link below.
+            No members yet: send an invite link below.
           </div>
         )}
       </div>

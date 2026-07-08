@@ -13,7 +13,7 @@ export const TIE_BREAKERS = [
     a: 'Check the airway & breathing',
     b: 'Assess the surgical wound for bleeding',
     answer: 'a',
-    why: 'Airway and breathing (A & B) always outrank circulation/wound checks. Restlessness is an early sign of hypoxia — clear the airway and assess breathing before anything else.',
+    why: 'Airway and breathing (A & B) always outrank circulation/wound checks. Restlessness is an early sign of hypoxia, clear the airway and assess breathing before anything else.',
   },
   {
     id: 't2', principle: 'ABC',
@@ -29,7 +29,7 @@ export const TIE_BREAKERS = [
     a: 'Apply firm direct pressure to the bleed',
     b: 'Administer the prescribed analgesia',
     answer: 'a',
-    why: 'Active haemorrhage is a circulation (C) emergency — control it with direct pressure first. Pain relief, though important, is never prioritised over stopping a significant bleed.',
+    why: 'Active haemorrhage is a circulation (C) emergency, control it with direct pressure first. Pain relief, though important, is never prioritised over stopping a significant bleed.',
   },
   {
     id: 't4', principle: 'Maslow',
@@ -61,7 +61,7 @@ export const TIE_BREAKERS = [
     a: 'Give a PRN GTN tablet straight away',
     b: 'Take vital signs & a 12-lead ECG first',
     answer: 'b',
-    why: 'Assessment precedes intervention. You need vitals and an ECG to know what you are treating (and whether GTN is even safe — it can crash the BP in an inferior MI).',
+    why: 'Assessment precedes intervention. You need vitals and an ECG to know what you are treating (and whether GTN is even safe. It can crash the BP in an inferior MI).',
   },
   {
     id: 't8', principle: 'Unstable first',
@@ -69,7 +69,7 @@ export const TIE_BREAKERS = [
     a: 'A patient with new fever, rigors and low back pain mid-transfusion',
     b: 'A patient asking for help to the toilet',
     answer: 'a',
-    why: 'A possible acute haemolytic reaction is life-threatening — stop the transfusion and act immediately. The unstable, deteriorating patient is always seen first.',
+    why: 'A possible acute haemolytic reaction is life-threatening. Stop the transfusion and act immediately. The unstable, deteriorating patient is always seen first.',
   },
   {
     id: 't9', principle: 'Do then delegate',
@@ -77,7 +77,7 @@ export const TIE_BREAKERS = [
     a: 'Start chest compressions / call for the arrest team',
     b: 'Leave to find the doctor and explain',
     answer: 'a',
-    why: 'In an arrest, begin CPR and trigger the emergency call simultaneously — never abandon the patient to go fetch someone. Act first, delegate the call.',
+    why: 'In an arrest, begin CPR and trigger the emergency call simultaneously. Never abandon the patient to go fetch someone. Act first, delegate the call.',
   },
   {
     id: 't10', principle: 'Airway in trauma',
@@ -85,7 +85,7 @@ export const TIE_BREAKERS = [
     a: 'Reposition / suction to protect the airway',
     b: 'Document the GCS in the notes',
     answer: 'a',
-    why: 'A gurgling, unprotected airway in an unconscious patient is an emergency — position and suction now. Documentation, while required, never precedes a threatened airway.',
+    why: 'A gurgling, unprotected airway in an unconscious patient is an emergency, position and suction now. Documentation, while required, never precedes a threatened airway.',
   },
   {
     id: 't11', principle: 'Airway',
@@ -93,7 +93,7 @@ export const TIE_BREAKERS = [
     a: 'Encourage them to keep coughing',
     b: 'Start back blows immediately',
     answer: 'a',
-    why: 'An effective (forceful) cough is the best airway clearance — do not interfere. Back blows / abdominal thrusts are only for an INEFFECTIVE or silent cough.',
+    why: 'An effective (forceful) cough is the best airway clearance. Do not interfere. Back blows / abdominal thrusts are only for an INEFFECTIVE or silent cough.',
   },
   {
     id: 't12', principle: 'Breathing',
@@ -101,7 +101,7 @@ export const TIE_BREAKERS = [
     a: 'Apply oxygen and reassess breathing',
     b: 'Carry out the scheduled dressing change',
     answer: 'a',
-    why: 'Oxygenation (B) is the immediate need — correct the hypoxia first. The dressing change is routine and can wait until breathing is stable.',
+    why: 'Oxygenation (B) is the immediate need, correct the hypoxia first. The dressing change is routine and can wait until breathing is stable.',
   },
   {
     id: 't13', principle: 'Circulation',
@@ -109,7 +109,7 @@ export const TIE_BREAKERS = [
     a: 'A patient whose surgical drain has rapidly filled with fresh blood',
     b: 'A patient who wants the television remote',
     answer: 'a',
-    why: 'Brisk fresh bleeding is a circulation emergency — assess and act now. Comfort requests are always deferred behind an unstable, bleeding patient.',
+    why: 'Brisk fresh bleeding is a circulation emergency, assess and act now. Comfort requests are always deferred behind an unstable, bleeding patient.',
   },
   {
     id: 't14', principle: 'Maslow',
@@ -125,7 +125,7 @@ export const TIE_BREAKERS = [
     a: 'Stop the infusion and assess for bleeding',
     b: 'Give paracetamol for the headache',
     answer: 'a',
-    why: 'A new severe headache on heparin may be an intracranial bleed — stop the anticoagulant and assess. Masking it with analgesia could be catastrophic.',
+    why: 'A new severe headache on heparin may be an intracranial bleed. Stop the anticoagulant and assess. Masking it with analgesia could be catastrophic.',
   },
   {
     id: 't16', principle: 'Acute over chronic',
@@ -149,7 +149,7 @@ export const TIE_BREAKERS = [
     a: 'Check the probe and look at the patient',
     b: 'Immediately crank up the oxygen',
     answer: 'a',
-    why: 'Confirm the reading is real (waveform, probe position, the patient) before treating a number — a poor trace is common. Assessment precedes intervention.',
+    why: 'Confirm the reading is real (waveform, probe position, the patient) before treating a number. A poor trace is common. Assessment precedes intervention.',
   },
   {
     id: 't19', principle: 'Least invasive first',
@@ -173,7 +173,7 @@ export const TIE_BREAKERS = [
     a: 'Assess and protect the airway',
     b: 'Start large-bore IV fluid resuscitation',
     answer: 'a',
-    why: 'Inhalation injury threatens the airway (it can swell shut) — secure it first. Fluid resuscitation is vital but follows airway in the ABC order.',
+    why: 'Inhalation injury threatens the airway (it can swell shut). Secure it first. Fluid resuscitation is vital but follows airway in the ABC order.',
   },
   {
     id: 't22', principle: 'Asepsis / self-protection',
@@ -181,7 +181,7 @@ export const TIE_BREAKERS = [
     a: 'Don the correct PPE before entering',
     b: 'Pop in quickly to take the vitals first',
     answer: 'a',
-    why: 'Protect yourself and prevent transmission by donning PPE before contact — never skip it to save time. Infection control precedes the routine task.',
+    why: 'Protect yourself and prevent transmission by donning PPE before contact. Never skip it to save time. Infection control precedes the routine task.',
   },
   {
     id: 't23', principle: 'Do, then delegate',
@@ -197,7 +197,7 @@ export const TIE_BREAKERS = [
     a: 'Potassium 6.8 mmol/L with ECG changes',
     b: 'Sodium 132 mmol/L, asymptomatic',
     answer: 'a',
-    why: 'Hyperkalaemia with ECG changes can cause fatal arrhythmia within minutes — act first. The mild, asymptomatic hyponatraemia is far less urgent.',
+    why: 'Hyperkalaemia with ECG changes can cause fatal arrhythmia within minutes, act first. The mild, asymptomatic hyponatraemia is far less urgent.',
   },
   {
     id: 't25', principle: 'Safety first',
@@ -205,7 +205,7 @@ export const TIE_BREAKERS = [
     a: 'Remove the means of self-harm and ensure observation',
     b: 'Complete the admission paperwork',
     answer: 'a',
-    why: 'Immediate physical safety — removing means and providing close observation — comes before documentation or process. Protect life first.',
+    why: 'Immediate physical safety: removing means and providing close observation, comes before documentation or process. Protect life first.',
   },
   {
     id: 't26', principle: 'Newborn priorities',
@@ -213,7 +213,7 @@ export const TIE_BREAKERS = [
     a: 'Dry, stimulate and keep the baby warm',
     b: 'Weigh and measure the baby',
     answer: 'a',
-    why: 'The initial steps of newborn resuscitation — warmth, drying, stimulation, airway — come first. Routine measurements wait until the baby is stable.',
+    why: 'The initial steps of newborn resuscitation, warmth, drying, stimulation, airway, come first. Routine measurements wait until the baby is stable.',
   },
   {
     id: 't27', principle: 'Assess / ABC',
@@ -221,7 +221,7 @@ export const TIE_BREAKERS = [
     a: 'Sit them up, give oxygen and assess (?PE)',
     b: 'Give the prescribed analgesia and carry on',
     answer: 'a',
-    why: 'Sudden breathlessness + pleuritic pain post-op suggests a pulmonary embolism — assess and support breathing first. Don’t simply medicate the pain and move on.',
+    why: 'Sudden breathlessness + pleuritic pain post-op suggests a pulmonary embolism, assess and support breathing first. Don’t simply medicate the pain and move on.',
   },
   {
     id: 't28', principle: 'Unstable first',
@@ -229,7 +229,7 @@ export const TIE_BREAKERS = [
     a: 'The patient with new fever, rigors and back pain mid-transfusion',
     b: 'The patient whose IV infusion has stopped dripping',
     answer: 'a',
-    why: 'A suspected acute haemolytic reaction is life-threatening — stop the transfusion and respond immediately. The stalled drip is a minor problem by comparison.',
+    why: 'A suspected acute haemolytic reaction is life-threatening. Stop the transfusion and respond immediately. The stalled drip is a minor problem by comparison.',
   },
   {
     id: 't29', principle: 'Airway',
@@ -237,7 +237,7 @@ export const TIE_BREAKERS = [
     a: 'Reposition and open the airway',
     b: 'Fetch the patient a glass of water',
     answer: 'a',
-    why: 'Snoring means partial airway obstruction in a drowsy patient — open and protect the airway at once. Everything else waits.',
+    why: 'Snoring means partial airway obstruction in a drowsy patient, open and protect the airway at once. Everything else waits.',
   },
   {
     id: 't30', principle: 'Treat the patient, not the machine',

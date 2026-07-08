@@ -17,11 +17,11 @@ import { acceptFamilyInvite } from '../lib/subscription.js';
 
 const REASON_TEXT = {
   'invalid-invite': 'This invite link is invalid, already used, or expired. Ask for a fresh one.',
-  'family-full': 'That family plan is full — all seats are taken.',
+  'family-full': 'That family plan is full. All seats are taken.',
   'already-member': 'You are already on this family plan.',
   'already-in-family': 'This account is already on another family plan. Leave it first (Premium → Family plan).',
-  'own-plan': 'You own this plan — invites are for the other five seats.',
-  'rate-limited': 'Too many attempts — wait a little and tap Accept again.',
+  'own-plan': 'You own this plan. Invites are for the other five seats.',
+  'rate-limited': 'Too many attempts: wait a little and tap Accept again.',
 };
 
 export default function JoinFamilySheet({ token, isGuest, onSignIn, onJoined, onClose }) {
@@ -36,8 +36,8 @@ export default function JoinFamilySheet({ token, isGuest, onSignIn, onJoined, on
     try {
       const r = await acceptFamilyInvite(token);
       if (r.ok) { setDone(true); if (onJoined) onJoined(r.premium); }
-      else setErr(REASON_TEXT[r.reason] || 'That didn’t work — check your connection and try again.');
-    } catch (e) { setErr('Couldn’t reach the server — check your connection and try again.'); }
+      else setErr(REASON_TEXT[r.reason] || 'That didn’t work, check your connection and try again.');
+    } catch (e) { setErr('Couldn’t reach the server, check your connection and try again.'); }
     finally { setBusy(false); }
   };
 
@@ -66,7 +66,7 @@ export default function JoinFamilySheet({ token, isGuest, onSignIn, onJoined, on
             <div className="font-display text-lg font-bold" style={{ color: T.ink }}>You're in! 🎉</div>
             <p className="text-sm mt-2 leading-relaxed" style={{ color: T.inkSoft }}>
               Premium is now active on this account. Your progress, streaks and mistakes stay
-              completely your own — only the bill is shared.
+              completely your own: only the bill is shared.
             </p>
             <button onClick={onClose}
                     className="no-tap-highlight w-full mt-5 py-3 rounded-xl text-sm font-bold"
@@ -81,12 +81,12 @@ export default function JoinFamilySheet({ token, isGuest, onSignIn, onJoined, on
             </div>
             <p className="text-sm mt-2 leading-relaxed" style={{ color: T.inkSoft }}>
               Accepting links <b>this account</b> to the inviter's premium subscription.
-              Nothing else is shared — no passwords, no progress, no logs.
+              Nothing else is shared, no passwords, no progress, no logs.
             </p>
             {isGuest ? (
               <>
                 <p className="text-[13px] mt-3 leading-relaxed" style={{ color: T.muted }}>
-                  You'll need an account first — the invite stays saved while you sign in.
+                  You'll need an account first. The invite stays saved while you sign in.
                 </p>
                 <button onClick={onSignIn}
                         className="no-tap-highlight w-full mt-4 py-3 rounded-xl text-sm font-bold"

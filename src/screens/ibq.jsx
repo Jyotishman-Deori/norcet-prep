@@ -91,7 +91,7 @@ function Ibq({ onBack, onComplete, onSetPace }) {
               </div>
               <div style={{ color: '#FFF' }}>
                 <div className="font-display text-xl font-bold leading-tight">Tap what you see</div>
-                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Find the structure on the diagram — ECG waves, heart sounds, abdominal regions & more.</div>
+                <div className="text-[12.5px] mt-0.5" style={{ color: 'rgba(255,255,255,0.85)' }}>Find the structure on the diagram. ECG waves, heart sounds, abdominal regions & more.</div>
               </div>
             </div>
           </Card>
@@ -121,7 +121,7 @@ function Ibq({ onBack, onComplete, onSetPace }) {
 
           <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How it works</div>
           <div className="rounded-2xl p-3.5 mb-5 space-y-2" style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
-            {['Read the prompt above the diagram', 'Tap the matching structure on the image', 'Correct taps stay pinned — learn the rest'].map((s, i) => (
+            {['Read the prompt above the diagram', 'Tap the matching structure on the image', 'Correct taps stay pinned, learn the rest'].map((s, i) => (
               <div key={i} className="flex items-start gap-2.5">
                 <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5" style={{ background: CYAN + '18', color: CYAN }}>{i + 1}</span>
                 <span className="text-[12.5px] leading-snug" style={{ color: T.inkSoft }}>{s}</span>
@@ -131,7 +131,7 @@ function Ibq({ onBack, onComplete, onSetPace }) {
 
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each prompt gets a countdown — run out and it reveals.
+            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each prompt gets a countdown. Run out and it reveals.
             <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
           </div>
         </div>

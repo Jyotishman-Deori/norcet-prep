@@ -43,7 +43,7 @@ export default function FlashpointIntro({ open, onClose }) {
         </div>
         <div className="px-5 py-4 space-y-3.5">
           <Row icon={Clock} title="Timers are cut in half"
-               body="Every question's clock is halved — and it counts. Run out and the question locks." />
+               body="Every question's clock is halved. And it counts. Run out and the question locks." />
           <Row icon={Trophy} title="Points are doubled"
                body="Each correct answer scores 2× into a separate Flashpoint leaderboard." />
         </div>

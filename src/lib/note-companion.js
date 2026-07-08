@@ -50,9 +50,9 @@ export function pickSuggestion(rnd = Math.random) {
 const GREETINGS = [
   (n) => `${n} reporting for duty 🫡`,
   (n) => `Back at it, partner? ${n}'s ready.`,
-  (n) => `${n} here — what are we cracking today?`,
+  (n) => `${n} here: what are we cracking today?`,
   (n) => `Good to see you. ${n}'s got your back.`,
-  (n) => `Let's make it count — ${n} standing by.`,
+  (n) => `Let's make it count, ${n} standing by.`,
   (n) => `${n} at your service. Drop your notes.`,
   (n) => `Round two? ${n}'s all ears.`,
   (n) => `${n} missed you. Let's learn something.`,
@@ -70,15 +70,15 @@ export function greetingFor(name, rnd = Math.random) {
 export const GUIDE = [
   {
     heading: 'What this is',
-    body: 'A quick scratchpad for the important stuff — up to 10 short notes (a topic, a word, a question) while you study. {name} keeps them safe on this device so you can come back to them.',
+    body: 'A quick scratchpad for the important stuff, up to 10 short notes (a topic, a word, a question) while you study. {name} keeps them safe on this device so you can come back to them.',
   },
   {
     heading: 'How it helps',
-    body: 'When you are ready to go deeper, copy your notes and paste them into any AI chat (Gemini, ChatGPT, Claude). Instead of a plain list, {name} can wrap them into a focused study-coach prompt so the AI teaches you actively — not just summarises.',
+    body: 'When you are ready to go deeper, copy your notes and paste them into any AI chat (Gemini, ChatGPT, Claude). Instead of a plain list, {name} can wrap them into a focused study-coach prompt so the AI teaches you actively, not just summarises.',
   },
   {
     heading: 'Two ways to copy',
-    body: 'DIRECT copies your notes exactly as written. EFFECTIVE wraps them in a tailored learning prompt — you pick a Designation (the expert persona), your Level, and a Strategy, and {name} builds the rest.',
+    body: 'DIRECT copies your notes exactly as written. EFFECTIVE wraps them in a tailored learning prompt, you pick a Designation (the expert persona), your Level, and a Strategy, and {name} builds the rest.',
   },
   {
     heading: 'The techniques (Strategies)',
@@ -86,7 +86,7 @@ export const GUIDE = [
   },
   {
     heading: 'Good to know (limitations)',
-    body: 'Notes live only on THIS device and browser cache — they are not synced to any server, and clearing your browser storage (or long inactivity) can remove them, so keep anything vital elsewhere too. There is a Clear button when you want a fresh start. {name} prepares a prompt for an external AI — it is not itself a chatbot, and nothing you write ever leaves your device until you copy and paste it yourself. Max 10 notes at a time.',
+    body: 'Notes live only on THIS device and browser cache. They are not synced to any server, and clearing your browser storage (or long inactivity) can remove them, so keep anything vital elsewhere too. There is a Clear button when you want a fresh start. {name} prepares a prompt for an external AI. It is not itself a chatbot, and nothing you write ever leaves your device until you copy and paste it yourself. Max 10 notes at a time.',
   },
 ];
 

@@ -55,7 +55,7 @@ export default function UnitGuidebook({ open, topic, guidebook, onClose, onRead 
         <div className="overflow-y-auto px-5 py-4 flex-1">
           {!guidebook ? (
             <div className="text-sm text-center py-8" style={{ color: T.muted }}>
-              No summary content for this unit yet — open the full cards instead.
+              No summary content for this unit yet, open the full cards instead.
             </div>
           ) : guidebook.modules.map(m => (
             <div key={m.sub} className="mb-5">
@@ -79,7 +79,7 @@ export default function UnitGuidebook({ open, topic, guidebook, onClose, onRead 
                 <div key={i} className="rounded-2xl px-3.5 py-3 mb-2"
                      style={{ background: T.accentSoft, border: `1px solid ${T.accent}33` }}>
                   <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wide mb-1" style={{ color: T.accent }}>
-                    <Lightbulb size={11} /> Mnemonic — {mn.title}
+                    <Lightbulb size={11} /> Mnemonic, {mn.title}
                   </div>
                   <div className="text-[13px] leading-snug" style={{ color: T.inkSoft }}>{mn.body}</div>
                 </div>

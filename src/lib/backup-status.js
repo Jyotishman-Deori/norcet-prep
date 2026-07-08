@@ -28,7 +28,7 @@ export function describeSyncState(input) {
       state: 'guest',
       tone: 'warn',
       title: 'Not backed up yet',
-      detail: 'You’re signed out, so your progress lives only on this device. Sign in and it’s automatically backed up to the cloud — and restores on any device you sign in on.',
+      detail: 'You’re signed out, so your progress lives only on this device. Sign in and it’s automatically backed up to the cloud, and restores on any device you sign in on.',
       showBackupNow: false,
     };
   }
@@ -62,7 +62,7 @@ export function describeSyncState(input) {
 }
 
 function lastSyncedLine(lastSyncedAt, now) {
-  const base = 'Your progress restores automatically when you sign in on another device — no files needed.';
+  const base = 'Your progress restores automatically when you sign in on another device, no files needed.';
   const rel = relTimeShort(lastSyncedAt, now);
   return rel ? `Last backed up ${rel}. ${base}` : base;
 }

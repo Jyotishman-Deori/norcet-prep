@@ -232,7 +232,7 @@ function NoteModal({ onClose }) {
       copyTimer.current = setTimeout(() => setCopyState('idle'), 1500);
     } else {
       setManualCopy(payload);                // reveal a selectable fallback box
-      flash('Copy blocked — select the text below');
+      flash('Copy blocked: select the text below');
     }
   };
 
@@ -300,7 +300,7 @@ function NoteModal({ onClose }) {
     setVote(v);
     // Warm casual reply for the rest of THIS session; on the next open `vote`
     // is non-null so neither the survey nor this reply renders.
-    setVoteReply(v === 'up' ? 'Noted — thanks, friend! 🙌' : 'Fair enough — noted! 👍');
+    setVoteReply(v === 'up' ? 'Noted: thanks, friend! 🙌' : 'Fair enough: noted! 👍');
     buzz(8);
     saveAiInterest(profileId, v);
     // Only emit the shared signal when the vote actually CHANGED from the last
@@ -545,12 +545,12 @@ function NamingView({ T, onName, onClose }) {
         {/* headline */}
         <div className={"font-display text-[1.45rem] font-semibold leading-snug mb-2" + (reduced ? '' : ' naming-headline-enter')}
              style={{ color: T.ink }}>
-          First things first — name your study buddy.
+          First things first: name your study buddy.
         </div>
         <div className={"text-sm leading-relaxed mb-6" + (reduced ? '' : ' naming-body-enter')}
              style={{ color: T.muted }}>
           This little notebook is yours. Give it a name and it&apos;s your partner in crime for the grind.
-          Just between us — you can change it anytime.
+          Just between us: you can change it anytime.
         </div>
 
         {/* name field */}
@@ -781,11 +781,11 @@ function NotesView({
                }}
                role="menu" aria-label="Notebook settings">
             <SettingsRow T={T} reduced={reduced} icon={<Pencil size={15} />} label="Edit"
-                         sublabel={editing ? 'On — the notebook is editable' : 'Off — read-only until you turn this on'}
+                         sublabel={editing ? 'On: the notebook is editable' : 'Off: read-only until you turn this on'}
                          type="switch" on={editing}
                          onClick={() => { setEditing(!editing); setMenuOpen(false); }} />
             <SettingsRow T={T} reduced={reduced} icon={<Save size={15} />} label="Auto-save on close"
-                         sublabel={autoSave ? 'On — saves automatically when you close' : 'Off — use the Store button to save'}
+                         sublabel={autoSave ? 'On: saves automatically when you close' : 'Off: use the Store button to save'}
                          type="switch" on={autoSave}
                          onClick={onToggleAutoSave} />
             <SettingsRow T={T} reduced={reduced} icon={<Sparkles size={15} />} label="Set up AI study prompt"
@@ -797,14 +797,14 @@ function NotesView({
                          type="nav"
                          onClick={() => { setMenuOpen(false); onGuide(); }} />
             <SettingsRow T={T} reduced={reduced} icon={<Sparkle size={15} />} label="Floating button"
-                         sublabel={showFab ? 'On — a draggable shortcut floats on screen' : 'Off — open notes from the top bar only'}
+                         sublabel={showFab ? 'On: a draggable shortcut floats on screen' : 'Off: open notes from the top bar only'}
                          type="switch" on={showFab}
                          onClick={onToggleFab} />
             {/* informational row — not interactive, explains the fixed icon can't be hidden */}
             <div className="flex items-center gap-2.5 px-3.5 py-3" role="note" aria-label="Fixed button is always on">
               <Pin size={15} style={{ color: T.muted, flexShrink: 0 }} aria-hidden="true" />
               <div className="min-w-0 text-left">
-                <div className="text-xs font-medium" style={{ color: T.muted }}>Fixed button — always on</div>
+                <div className="text-xs font-medium" style={{ color: T.muted }}>Fixed button: always on</div>
                 <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted, opacity: 0.85 }}>
                   The top-bar note icon can&apos;t be turned off
                 </div>
@@ -821,7 +821,7 @@ function NotesView({
              style={{ background: T.surfaceWarm, color: T.muted, borderLeft: `3px solid ${T.border}` }}
              role="note" aria-label="Storage notice">
           <Info size={13} className="flex-shrink-0 mt-0.5" style={{ color: T.muted }} aria-hidden="true" />
-          <span>Saved on <strong style={{ color: T.inkSoft }}>this device only</strong> — never synced. Tap <strong style={{ color: T.inkSoft }}>Store</strong> to keep them; clearing browser storage or long inactivity can remove them.</span>
+          <span>Saved on <strong style={{ color: T.inkSoft }}>this device only</strong>. Never synced. Tap <strong style={{ color: T.inkSoft }}>Store</strong> to keep them; clearing browser storage or long inactivity can remove them.</span>
         </div>
 
         <div className="flex items-center justify-between mb-2">
@@ -863,7 +863,7 @@ function NotesView({
             aria-describedby={overCap ? 'notes-overcap-msg' : 'notes-bullet-hint'}
             placeholder={editing
               ? "Type or paste a topic, word, or question\nOne note per line\nUp to 10 notes"
-              : (text ? '' : 'No notes yet — turn on Edit in settings to start.')}
+              : (text ? '' : 'No notes yet: turn on Edit in settings to start.')}
             rows={7}
             className="note-ta-nosb relative w-full rounded-xl pr-3.5 py-3 text-sm resize-none leading-relaxed"
             style={{
@@ -917,7 +917,7 @@ function NotesView({
         {atCap && (
           <div className="text-xs mt-1.5 px-1 flex items-center gap-1" style={{ color: T.accent }}>
             <span aria-hidden="true">&#x26A0;</span>
-            All 10 used — remove one to add more.
+            All 10 used: remove one to add more.
           </div>
         )}
         <div id="notes-bullet-hint" className="text-[11px] mt-1.5 px-1" style={{ color: T.muted }}>

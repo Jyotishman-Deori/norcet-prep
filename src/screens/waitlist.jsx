@@ -216,8 +216,8 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
   const handleJoin = async () => {
     setError(null);
     const normEmail = normalizeWaitlistEmail(email);
-    if (!isValidEmail(normEmail)) { setError("That email doesn't look right — check for typos."); return; }
-    if (isTempMail(normEmail)) { setError('Please use your real email — temporary inboxes are not eligible for an invite.'); return; }
+    if (!isValidEmail(normEmail)) { setError("That email doesn't look right, check for typos."); return; }
+    if (isTempMail(normEmail)) { setError('Please use your real email. Temporary inboxes are not eligible for an invite.'); return; }
     const phone = normalizeWhatsapp(whatsapp);
     if (!phone) { setError('Enter a valid 10-digit Indian WhatsApp number.'); return; }
     if (!isValidState(stateId)) { setError('Pick your state.'); return; }
@@ -261,11 +261,11 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
     setError(
       reason === 'captcha' ? "Please complete the 'I'm human' check and try again." :
       reason === 'phone-exists' ? 'That WhatsApp number is already on the waitlist.' :
-      reason === 'invalid-email' ? "That email doesn't look right — check for typos." :
-      reason === 'temp-mail' ? 'Please use your real email — temporary inboxes are not eligible for an invite.' :
+      reason === 'invalid-email' ? "That email doesn't look right, check for typos." :
+      reason === 'temp-mail' ? 'Please use your real email. Temporary inboxes are not eligible for an invite.' :
       reason === 'invalid-phone' ? 'Enter a valid 10-digit Indian WhatsApp number.' :
       reason === 'invalid-state' ? 'Pick your state.' :
-      reason === 'rate-limited' ? 'Too many tries from your network — please wait a while and try again.' :
+      reason === 'rate-limited' ? 'Too many tries from your network, please wait a while and try again.' :
       reason === 'disabled' ? 'The waitlist is not accepting signups right now.' :
       'Could not reach the server. Check your connection and try again.'
     );
@@ -295,7 +295,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
     } catch (e) {}
   };
   const handleNativeShare = async () => {
-    try { await navigator.share({ title: 'NurseHolic — early access', text: shareMessage }); }
+    try { await navigator.share({ title: 'NurseHolic: early access', text: shareMessage }); }
     catch (e) { /* user cancelled */ }
   };
 
@@ -313,7 +313,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
       <p className="text-sm mt-2 leading-relaxed max-w-sm mx-auto" style={{ color: T.inkSoft }}>
         {view === 'claim'
           ? 'Your founding-member seat is waiting.'
-          : 'We open seats in small batches so every student gets a fast, stable app. Join the line — bring your batchmates to move up.'}
+          : 'We open seats in small batches so every student gets a fast, stable app. Join the line: bring your batchmates to move up.'}
       </p>
     </div>
   );
@@ -326,7 +326,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
         </div>
         <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>The waitlist isn't open yet</div>
         <div className="text-[13.5px] leading-relaxed" style={{ color: T.inkSoft }}>
-          Early-access signups haven't started. Keep studying — everything in the app is open right now.
+          Early-access signups haven't started. Keep studying: everything in the app is open right now.
         </div>
       </Card>
     </div>
@@ -368,7 +368,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
                        value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
               </div>
               <div className="text-[11.5px] mt-1" style={{ color: T.muted }}>
-                Your invite arrives on WhatsApp — we never share your number.
+                Your invite arrives on WhatsApp. We never share your number.
               </div>
             </div>
             <div>
@@ -490,7 +490,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
               </div>
               <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>Your group is being fast-tracked</div>
               <div className="text-[13px] leading-relaxed mt-1" style={{ color: T.inkSoft }}>
-                Your referral group hit 3 signups — it's in the review queue for the next batch.
+                Your referral group hit 3 signups. It's in the review queue for the next batch.
               </div>
             </>
           ) : effectiveStatus === 'onboarded' ? (
@@ -505,7 +505,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
             <>
               <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>Your seat expired</div>
               <div className="text-[13px] leading-relaxed mt-1" style={{ color: T.inkSoft }}>
-                The 48-hour claim window passed, so the seat went to the next student. You're back in line — share your code to move up for the next drop.
+                The 48-hour claim window passed, so the seat went to the next student. You're back in line, share your code to move up for the next drop.
               </div>
             </>
           ) : effectiveStatus === 'rejected' ? (
@@ -529,7 +529,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
             </div>
             <div className="font-display text-xl font-semibold" style={{ color: T.ink }}>Your seat is unlocked! 🎉</div>
             <div className="text-[13px] leading-relaxed mt-1 mb-3" style={{ color: T.inkSoft }}>
-              Create your account now — your seat is held until{' '}
+              Create your account now. Your seat is held until{' '}
               <b style={{ color: T.ink }}>{formatIstTime(status.claimExpiresAt) || 'the 48-hour window closes'}</b>, then it goes to the next student.
             </div>
             <Button variant="primary" size="lg" className="w-full" icon={<Sparkles size={18} />}
@@ -653,7 +653,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
         </div>
         <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>You're invited! 🎉</div>
         <div className="text-[13.5px] leading-relaxed mb-4 max-w-sm mx-auto" style={{ color: T.inkSoft }}>
-          This is a founding-member invite link. Create your account now — invite links are single-use and expire 48 hours after your seat opens.
+          This is a founding-member invite link. Create your account now. Invite links are single-use and expire 48 hours after your seat opens.
         </div>
         <Button variant="primary" size="lg" className="w-full" icon={<Sparkles size={18} />}
                 onClick={() => onClaim && onClaim(claimToken)}>
@@ -666,7 +666,7 @@ function WaitlistScreen({ gateMode = false, claimToken = null, onBack, onSignIn,
         )}
         {onLater && (
           <button type="button" onClick={onLater} className="no-tap-highlight block mx-auto mt-2 text-[12.5px] font-medium py-1" style={{ color: T.muted }}>
-            Maybe later — keep exploring
+            Maybe later: keep exploring
           </button>
         )}
       </Card>

@@ -76,7 +76,7 @@ export default function ActivityLog({ onBack }) {
             <div className="font-display text-lg mb-1" style={{ color: T.ink }}>Your story starts here</div>
             <div className="text-sm leading-relaxed px-6" style={{ color: T.muted }}>
               Level-ups, streak milestones, mastery moments and test attempts will all appear
-              here as a timeline — keep studying and watch it grow.
+              here as a timeline. Keep studying and watch it grow.
             </div>
           </div>
         ) : (

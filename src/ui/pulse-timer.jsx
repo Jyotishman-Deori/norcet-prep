@@ -16,27 +16,27 @@ import { HeartPulse, Activity, Zap, TimerOff, Check } from 'lucide-react';
 // Discrete zones drive only the TAG + the teasing copy. Colour is continuous.
 const ZONES = [
   { min: 0.60, tag: 'STABLE', lines: [
-    'Plenty of clock — read it like a topper.',
+    'Plenty of clock: read it like a topper.',
     'Cool head. The answer is in there.',
     'No rush… yet. 😏',
     'Breathe. You own this one.',
   ] },
   { min: 0.34, tag: 'WATCH', lines: [
-    'Half gone — start cutting options.',
+    'Half gone: start cutting options.',
     'Tick… tick… commit soon.',
     'The clock is watching you. 👀',
     "Don't fall in love with one option.",
   ] },
   { min: 0.12, tag: 'CRITICAL', lines: [
-    'Crunch time — trust your gut!',
+    'Crunch time: trust your gut!',
     'Now or never. Pick one!',
     'Heart-rate rising… decide!',
     'Instinct over second-guessing. Go!',
   ] },
   { min: 0.00, tag: 'CODE', lines: [
-    'Lock it in — anything beats a blank!',
+    'Lock it in: anything beats a blank!',
     'Final seconds! 🚨',
-    'Slam an answer — NOW!',
+    'Slam an answer: NOW!',
     'Do not freeze. Choose!',
   ] },
 ];
@@ -121,8 +121,8 @@ export default function PulseTimer({ budgetSec = 54, resetKey, paused = false, T
   const C = timedOut ? gradeColor(0) : cleared ? gradeColor(0.85) : gradeColor(frac);
 
   let tag = zone.tag, footLine = teaseLine, footColor = C.solid, FootIcon = null;
-  if (timedOut) { tag = "TIME'S UP"; footLine = 'The clock won this one — locked.'; footColor = C.solid; FootIcon = TimerOff; }
-  else if (cleared) { tag = 'CLEARED'; footLine = `Locked in with ${secs}s to spare — topper tempo.`; footColor = '#16A34A'; FootIcon = Check; }
+  if (timedOut) { tag = "TIME'S UP"; footLine = 'The clock won this one, locked.'; footColor = C.solid; FootIcon = TimerOff; }
+  else if (cleared) { tag = 'CLEARED'; footLine = `Locked in with ${secs}s to spare, topper tempo.`; footColor = '#16A34A'; FootIcon = Check; }
 
   // Heartbeat speeds up as it drains; glow intensifies; sheen sweeps the fill.
   const beat = paused || reduced.current ? '' : (frac <= 0.12 ? ' timer-beat-fast' : frac <= 0.30 ? ' timer-beat' : '');

@@ -38,7 +38,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Amiodarone 300 mg IV is the first-line antiarrhythmic for shock-refractory VF/pVT (after the 3rd shock); a 150 mg dose may follow. Adrenaline stays on its 3–5 min cycle — you do not double it. Adenosine is for SVT, never arrest.',
+    rationale: 'Amiodarone 300 mg IV is the first-line antiarrhythmic for shock-refractory VF/pVT (after the 3rd shock); a 150 mg dose may follow. Adrenaline stays on its 3–5 min cycle. You do not double it. Adenosine is for SVT, never arrest.',
   },
   {
     id: 'asystole',
@@ -54,13 +54,13 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Asystole is NON-shockable — defibrillation is useless and harmful. Give adrenaline 1 mg early and repeat every 3–5 min while hunting reversible causes (the H’s and T’s). Atropine was dropped from the asystole algorithm years ago.',
+    rationale: 'Asystole is NON-shockable. Defibrillation is useless and harmful. Give adrenaline 1 mg early and repeat every 3–5 min while hunting reversible causes (the H’s and T’s). Atropine was dropped from the asystole algorithm years ago.',
   },
   {
     id: 'brady',
     tag: 'ACLS · Bradycardia',
     vitals: 'HR 38 · BP 78/44 · clammy',
-    scenario: 'A patient is symptomatically bradycardic — heart rate 38, hypotensive, cool and confused. There is a pulse.',
+    scenario: 'A patient is symptomatically bradycardic, heart rate 38, hypotensive, cool and confused. There is a pulse.',
     prompt: 'First-line drug?',
     options: [
       { name: 'Atropine', dose: '0.6 mg IV (up to 3 mg)' },
@@ -70,7 +70,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'warning',
-    rationale: 'Unstable bradycardia → atropine 0.6 mg IV first (repeat to a max ~3 mg). If it fails, move to a transcutaneous pacing or an adrenaline/dopamine INFUSION — not a 1 mg push, which is an arrest dose. Adenosine would slow the heart further — dangerous here.',
+    rationale: 'Unstable bradycardia → atropine 0.6 mg IV first (repeat to a max ~3 mg). If it fails, move to a transcutaneous pacing or an adrenaline/dopamine INFUSION. Not a 1 mg push, which is an arrest dose. Adenosine would slow the heart further, dangerous here.',
   },
   {
     id: 'anaphylaxis',
@@ -86,7 +86,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Anaphylaxis is killed by IM adrenaline 0.5 mg (0.5 mL of 1:1000) into the anterolateral thigh, repeated every 5 min as needed. Steroids and antihistamines are SECOND-line and slow. IV adrenaline is only for trained peri-arrest use — giving the arrest dose here can cause fatal arrhythmia.',
+    rationale: 'Anaphylaxis is killed by IM adrenaline 0.5 mg (0.5 mL of 1:1000) into the anterolateral thigh, repeated every 5 min as needed. Steroids and antihistamines are SECOND-line and slow. IV adrenaline is only for trained peri-arrest use. Giving the arrest dose here can cause fatal arrhythmia.',
   },
   {
     id: 'hyperk',
@@ -102,7 +102,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'IV calcium stabilises the myocardium within minutes — it buys time but does NOT lower potassium. Insulin+dextrose and salbutamol then SHIFT potassium into cells; dialysis or resins truly REMOVE it. With ECG changes, calcium goes first.',
+    rationale: 'IV calcium stabilises the myocardium within minutes. It buys time but does NOT lower potassium. Insulin+dextrose and salbutamol then SHIFT potassium into cells; dialysis or resins truly REMOVE it. With ECG changes, calcium goes first.',
   },
   {
     id: 'opioid',
@@ -118,7 +118,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Pinpoint pupils + respiratory depression = opioid toxicity → naloxone, titrated to breathing (not full wakefulness, to avoid acute withdrawal). Flumazenil reverses benzodiazepines, NAC is for paracetamol — wrong toxidromes.',
+    rationale: 'Pinpoint pupils + respiratory depression = opioid toxicity → naloxone, titrated to breathing (not full wakefulness, to avoid acute withdrawal). Flumazenil reverses benzodiazepines, NAC is for paracetamol, wrong toxidromes.',
   },
   {
     id: 'eclampsia',
@@ -134,7 +134,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Magnesium sulphate is the proven drug of choice for eclamptic seizures (and prophylaxis in severe pre-eclampsia) — superior to diazepam and phenytoin. Labetalol controls the blood pressure but does NOT treat the seizure. Watch for Mg toxicity: lost reflexes, low RR — antidote is calcium gluconate.',
+    rationale: 'Magnesium sulphate is the proven drug of choice for eclamptic seizures (and prophylaxis in severe pre-eclampsia), superior to diazepam and phenytoin. Labetalol controls the blood pressure but does NOT treat the seizure. Watch for Mg toxicity: lost reflexes, low RR. Antidote is calcium gluconate.',
   },
   {
     id: 'paracetamol-od',
@@ -150,7 +150,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'N-acetylcysteine replenishes glutathione and is most effective within 8 h, but is still given late. Activated charcoal only helps within ~1 h of ingestion — useless at 14 h. Naloxone/flumazenil are for opioids/benzodiazepines.',
+    rationale: 'N-acetylcysteine replenishes glutathione and is most effective within 8 h, but is still given late. Activated charcoal only helps within ~1 h of ingestion. Useless at 14 h. Naloxone/flumazenil are for opioids/benzodiazepines.',
   },
   {
     id: 'organophosphate',
@@ -214,7 +214,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Glucagon bypasses the blocked β-receptor and raises heart rate and contractility via cAMP — the antidote for β-blocker (and partly calcium-channel-blocker) toxicity. Adenosine/amiodarone/digoxin would all slow the heart further.',
+    rationale: 'Glucagon bypasses the blocked β-receptor and raises heart rate and contractility via cAMP, the antidote for β-blocker (and partly calcium-channel-blocker) toxicity. Adenosine/amiodarone/digoxin would all slow the heart further.',
   },
   {
     id: 'tca-od',
@@ -262,7 +262,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'warning',
-    rationale: 'For STABLE SVT after failed vagal manoeuvres, adenosine 6 mg by rapid push (then 12 mg) is first-line. Synchronised cardioversion is reserved for UNSTABLE patients. Adrenaline is an arrest drug — never for a perfusing SVT.',
+    rationale: 'For STABLE SVT after failed vagal manoeuvres, adenosine 6 mg by rapid push (then 12 mg) is first-line. Synchronised cardioversion is reserved for UNSTABLE patients. Adrenaline is an arrest drug. Never for a perfusing SVT.',
   },
   {
     id: 'torsades',
@@ -294,7 +294,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Tension pneumothorax is a CLINICAL diagnosis — decompress immediately with a needle (2nd ICS mid-clavicular line, or 5th ICS anterior axillary), then a chest drain. Imaging first wastes fatal minutes; positive-pressure ventilation can enlarge the tension.',
+    rationale: 'Tension pneumothorax is a CLINICAL diagnosis. Decompress immediately with a needle (2nd ICS mid-clavicular line, or 5th ICS anterior axillary), then a chest drain. Imaging first wastes fatal minutes; positive-pressure ventilation can enlarge the tension.',
   },
   {
     id: 'severe-asthma',
@@ -326,7 +326,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'FLUIDS first — DKA patients are litres down; rehydration alone lowers glucose and restores perfusion. Insulin follows (after the first fluids and once K⁺ is known, as insulin drives K⁺ into cells). Bicarbonate is rarely needed; never give potassium blindly.',
+    rationale: 'FLUIDS first: DKA patients are litres down; rehydration alone lowers glucose and restores perfusion. Insulin follows (after the first fluids and once K⁺ is known, as insulin drives K⁺ into cells). Bicarbonate is rarely needed; never give potassium blindly.',
   },
   {
     id: 'addisonian-crisis',
@@ -374,7 +374,7 @@ export const CRASH_CASES = [
     ],
     answer: 0,
     severity: 'critical',
-    rationale: 'Lost reflexes + respiratory depression signal magnesium toxicity — STOP the infusion and give IV calcium gluconate, which antagonises magnesium at the neuromuscular junction. Increasing magnesium would be fatal; naloxone/atropine are for the wrong toxidromes.',
+    rationale: 'Lost reflexes + respiratory depression signal magnesium toxicity. STOP the infusion and give IV calcium gluconate, which antagonises magnesium at the neuromuscular junction. Increasing magnesium would be fatal; naloxone/atropine are for the wrong toxidromes.',
   },
   {
     id: 'warfarin-bleed',

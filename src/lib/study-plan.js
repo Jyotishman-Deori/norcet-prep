@@ -58,7 +58,7 @@ export function buildStudyPlan({ examDate, weakTopics = [], seenTopicIds = [], a
     // exam day → rest
     if (i === totalDays - 1) {
       days.push({ ...base, kind: PLAN_KINDS.REST, title: 'Exam day', focusTopics: [],
-        note: 'A light glance at your crib sheets, then rest. Trust your prep — you’ve got this.' });
+        note: 'A light glance at your crib sheets, then rest. Trust your prep: you’ve got this.' });
       continue;
     }
     // day before exam → final full mock (only if there's room)

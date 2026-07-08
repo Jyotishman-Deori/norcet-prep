@@ -126,9 +126,10 @@ export function cribVaultLocked(profile) {
 }
 
 // formatInr(n) → '₹' + n with Indian-style digit grouping (lakh system):
-// 999 → '₹999', 1499 → '₹1,499', 100000 → '₹1,00,000'. Non-finite → '₹—'.
+// 999 → '₹999', 1499 → '₹1,499', 100000 → '₹1,00,000'. Non-finite → '₹–'
+// (en dash 'no value' glyph; never an em dash in user-facing copy).
 export function formatInr(n) {
-  if (typeof n !== 'number' || !Number.isFinite(n)) return '₹—';
+  if (typeof n !== 'number' || !Number.isFinite(n)) return '₹–';
   const neg = n < 0;
   const abs = Math.abs(Math.trunc(n));
   const s = String(abs);

@@ -114,7 +114,7 @@ export function ExamDateEditor({ allQuestionsCount, onSave, onClear, onSaveTarge
           <Card className="p-4 mb-4 flex items-center gap-3" style={{ background: T.surfaceWarm }}>
             <CalendarDays size={18} className="flex-shrink-0" style={{ color: T.muted }} />
             <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-              Pick your exam date above first — then we'll work out a daily number for you.
+              Pick your exam date above first, then we'll work out a daily number for you.
             </div>
           </Card>
         )

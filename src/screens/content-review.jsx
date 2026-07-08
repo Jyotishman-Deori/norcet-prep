@@ -143,7 +143,7 @@ function ContentReview({ onBack, profile }) {
       setExpanded(prev => new Set(prev).add(genTopic)); // reveal the topic that just grew
       await refresh();
     } catch (e) {
-      setErr(e.message || 'Generation failed — try again');
+      setErr(e.message || 'Generation failed: try again');
     } finally { setGenerating(false); }
   };
 
@@ -182,7 +182,7 @@ function ContentReview({ onBack, profile }) {
     }
     const { valid: questions } = processQuestionInput(JSON.stringify(validRows), 'json', 'ai');
     setSetCtx({ questions, validRows, invalidRows });
-    setSetName(`${folderLabel(topic)} — AI set`);
+    setSetName(`${folderLabel(topic)}: AI set`);
     setSetDesc('');
     setSetVis('public');
     setSaveErr('');
@@ -208,7 +208,7 @@ function ContentReview({ onBack, profile }) {
       // Best-effort clear of the source drafts; any that fail stay in the queue.
       await Promise.allSettled(setCtx.validRows.map(r => deleteStaging(r.id)));
       const n = bank.questions.length;
-      setOkMsg(`Saved "${bank.name}" — ${n} question${n === 1 ? '' : 's'}${setVis === 'public' ? ' · live for students' : ' · private'}.`);
+      setOkMsg(`Saved "${bank.name}": ${n} question${n === 1 ? '' : 's'}${setVis === 'public' ? ' · live for students' : ' · private'}.`);
       setSetCtx(null);
       await refresh();
     } catch (e) {
@@ -231,7 +231,7 @@ function ContentReview({ onBack, profile }) {
 
           <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Set name</div>
           <input value={setName} onChange={e => setSetName(e.target.value)}
-                 placeholder="e.g. Medical-Surgical Nursing — AI set"
+                 placeholder="e.g. Medical-Surgical Nursing: AI set"
                  className="w-full rounded-xl px-4 py-3 mb-4 text-sm" style={inputStyle} />
 
           <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Description (optional)</div>

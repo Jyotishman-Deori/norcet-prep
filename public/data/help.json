@@ -1,315 +1,315 @@
 {
   "Share app": {
     "title": "Share NurseHolic",
-    "what": "Your personal invite to bring friends onto NurseHolic — a referral link, a scannable QR code, and a one-tap WhatsApp message, all tied to your profile.",
+    "what": "Your personal invite to bring friends onto NurseHolic, a referral link, a scannable QR code, and a one-tap WhatsApp message, all tied to your profile.",
     "how": "Tap to copy your link or QR, or share straight to WhatsApp. When a friend joins through it you’re both credited, and you can compare progress with them on the leaderboard.",
     "why": "Studying alongside friends keeps everyone consistent. Sharing is free and ad-free, and word of mouth is what keeps the app free for everyone.",
     "example": "You send your WhatsApp invite to your study group; three friends join through your link, appear on your leaderboard, and you push each other through the final month of prep."
   },
   "Settings · Backup": {
     "title": "Backup",
-    "what": "A complete export of everything on this profile — answers, scores, streaks, bookmarks, saved sheets, favourites, custom questions and settings — saved as a single file you can keep or move to another device.",
-    "how": "Tap “Download a backup” to save the file somewhere safe (phone, email or cloud). To restore, tap “Restore from a backup” and choose a file — it merges into your current profile without wiping what’s already there.",
+    "what": "A complete export of everything on this profile, answers, scores, streaks, bookmarks, saved sheets, favourites, custom questions and settings, saved as a single file you can keep or move to another device.",
+    "how": "Tap “Download a backup” to save the file somewhere safe (phone, email or cloud). To restore, tap “Restore from a backup” and choose a file, it merges into your current profile without wiping what’s already there.",
     "why": "Your progress is precious, especially close to the exam. A backup means a lost phone, a cleared browser, or a new device never costs you your streak, bookmarks or notes.",
-    "example": "Before switching phones you download a backup, install the app on the new one, sign in and restore — every streak, bookmark and stat lands exactly where you left it."
+    "example": "Before switching phones you download a backup, install the app on the new one, sign in and restore, every streak, bookmark and stat lands exactly where you left it."
   },
   "Settings · Topic notes": {
     "title": "Topic notes",
-    "what": "Export or import just the notes you’ve pinned to topics on the Knowledge Map — your mnemonics, shortcuts and reminders — separately from a full backup.",
+    "what": "Export or import just the notes you’ve pinned to topics on the Knowledge Map, your mnemonics, shortcuts and reminders, separately from a full backup.",
     "how": "Tap Export to save your notes as a file, or Import to merge notes from a file into your existing ones (nothing is overwritten). This works for guests too, so you can carry notes between devices without an account.",
     "why": "Notes are the most personal thing you build here. Keeping them portable means you can back them up, move them between devices, or share a polished set of mnemonics with a friend.",
-    "example": "You’ve written 40 drug-dosage mnemonics across the map. You export them before reformatting your phone, then import them back afterwards — all 40 return intact."
+    "example": "You’ve written 40 drug-dosage mnemonics across the map. You export them before reformatting your phone, then import them back afterwards, all 40 return intact."
   },
   "Settings · Legal": {
     "title": "Legal",
     "what": "The app’s two legal documents in one place: the Privacy Policy (what data is stored, where, and how it’s used) and the Terms of Use (the rules and expectations for using the app).",
-    "how": "Tap Privacy Policy or Terms of Use to read the full document — each opens as its own page with a back button. There’s nothing to accept or sign here; these are reference documents you can revisit any time.",
-    "why": "Even a free study app stores some data (your profile, your progress, and anything you sync). Being able to read exactly what’s kept and what the ground rules are means no surprises — you stay informed and in control.",
+    "how": "Tap Privacy Policy or Terms of Use to read the full document, each opens as its own page with a back button. There’s nothing to accept or sign here; these are reference documents you can revisit any time.",
+    "why": "Even a free study app stores some data (your profile, your progress, and anything you sync). Being able to read exactly what’s kept and what the ground rules are means no surprises. You stay informed and in control.",
     "example": "Before syncing your progress to a new phone you open Privacy Policy to confirm what actually leaves your device, then skim Terms of Use to see how shared features like the leaderboard work."
   },
   "Spaced revision": {
     "title": "Spaced revision",
-    "what": "A reminder for questions the app thinks you’re about to forget. Each time you answer a question, its next review date gets calculated — sooner if you got it wrong, much later as you keep getting it right.",
+    "what": "A reminder for questions the app thinks you’re about to forget. Each time you answer a question, its next review date gets calculated, sooner if you got it wrong, much later as you keep getting it right.",
     "how": "Tap the card to drill just the overdue questions. Tap the × to hide it for today (it returns tomorrow if you still have due work). To turn it off permanently, open Settings → Spaced revision reminders.",
     "why": "Spaced repetition is one of the best-proven ways to retain knowledge long-term. Reviewing right before you forget is far more effective than re-reading endlessly.",
-    "example": "Say on Monday you answer a question on insulin onset and get it wrong. The app schedules it for tomorrow. You get it right Tuesday, so it pushes to Friday; right again, and it jumps to next week. The card on Home only nags you on the day each question is actually due — clear it daily and nothing piles up."
+    "example": "Say on Monday you answer a question on insulin onset and get it wrong. The app schedules it for tomorrow. You get it right Tuesday, so it pushes to Friday; right again, and it jumps to next week. The card on Home only nags you on the day each question is actually due, clear it daily and nothing piles up."
   },
-  "Learn — topics": {
+  "Learn: topics": {
     "title": "Learn topic wise",
     "what": "Bite-sized concept cards across every topic, in two modes. Study mode lets you read a topic or module top-to-bottom (now with a read-time estimate and a “continue where you left off” resume). Quick Revision mode is an app-curated rapid sweep of the points that matter most for you right now.",
-    "how": "Use the Study / Quick-Revision toggle at the top. In Study mode, tap a topic to expand its modules and Read; the banner jumps you back to where you stopped. In Quick Revision, just scroll the prioritised stream — each card is tagged with why it surfaced, and “Read in context” opens it in the full reader.",
+    "how": "Use the Study / Quick-Revision toggle at the top. In Study mode, tap a topic to expand its modules and Read; the banner jumps you back to where you stopped. In Quick Revision, just scroll the prioritised stream. Each card is tagged with why it surfaced, and “Read in context” opens it in the full reader.",
     "why": "Quizzes test what you know; Learn is where you pick up and revise the actual concepts. Skimming a few cards before a topic-wise quiz dramatically improves how much sticks afterwards.",
-    "example": "With your exam three weeks away, you open Quick Revision: it leads with your weakest topic (tagged “Weak area”), then what’s due, then a high-yield sweep — so 15 minutes between shifts hits exactly what moves your score."
+    "example": "With your exam three weeks away, you open Quick Revision: it leads with your weakest topic (tagged “Weak area”), then what’s due, then a high-yield sweep, so 15 minutes between shifts hits exactly what moves your score."
   },
-  "Learn — cards": {
+  "Learn: cards": {
     "title": "Concept cards",
     "what": "A one-card-at-a-time reader. Cards come in four types: Concept (a short explanation), Mnemonic (a memory trick), Key Points (the must-know bullets) and Self-Check (a single question to test recall).",
     "how": "Swipe left/right, use the on-screen arrows, or use your keyboard arrow keys to move between cards. The dots below let you jump anywhere. On a Self-Check card, tap “Reveal answer” after you’ve formed your own answer in your head.",
-    "why": "Reading something short and sharp on its own page — then trying to recall it — sticks far better than skimming a long page of notes. The Self-Check cards force active recall, which is what really builds memory.",
-    "example": "You hit a Self-Check card asking “Which cranial nerves are purely sensory?”. You answer in your head — I, II, VIII — then tap Reveal to confirm. That half-second of effort before revealing is what cements it, far more than just reading the list."
+    "why": "Reading something short and sharp on its own page, then trying to recall it, sticks far better than skimming a long page of notes. The Self-Check cards force active recall, which is what really builds memory.",
+    "example": "You hit a Self-Check card asking “Which cranial nerves are purely sensory?”. You answer in your head. I, II, VIII. Then tap Reveal to confirm. That half-second of effort before revealing is what cements it, far more than just reading the list."
   },
   "Dosage calc": {
     "title": "Dosage calculation test",
-    "what": "A focused drill for the numeric drug-math questions in NORCET — tablet counts, mL doses, mg/kg conversions, IV drip rates, infusion times. You type the answer rather than picking from options, so there’s nowhere to guess from.",
-    "how": "Read the order carefully, type your numeric answer in the input and tap Check. If you’re stuck, Skip moves the question to later in the round; Show answer reveals the worked solution — neither hurts your accuracy stats since this is a learning drill. Each question has a worked explanation showing the formula and units.",
-    "why": "Calculation questions use a totally different skill from multiple-choice — setting up the equation and getting units right — and they’re where people most often lose easy marks. A separate drill builds the reflex of “read, set up, calculate, double-check units”.",
+    "what": "A focused drill for the numeric drug-math questions in NORCET, tablet counts, mL doses, mg/kg conversions, IV drip rates, infusion times. You type the answer rather than picking from options, so there’s nowhere to guess from.",
+    "how": "Read the order carefully, type your numeric answer in the input and tap Check. If you’re stuck, Skip moves the question to later in the round; Show answer reveals the worked solution, neither hurts your accuracy stats since this is a learning drill. Each question has a worked explanation showing the formula and units.",
+    "why": "Calculation questions use a totally different skill from multiple-choice, setting up the equation and getting units right, and they’re where people most often lose easy marks. A separate drill builds the reflex of “read, set up, calculate, double-check units”.",
     "example": "An order reads “Give 500 mg from 250 mg/5 mL syrup.” You set up (500 ÷ 250) × 5 = 10 mL, type 10, and Check confirms it with the worked steps. Get it wrong and the explanation shows exactly where the units slipped."
   },
   "Reference": {
     "title": "Reference",
-    "what": "A searchable lookup of lab values, vital signs, common drug doses, abbreviations and unit conversions. Think of it as a tiny clinical handbook built into the app — normal ranges, critical thresholds, and the everyday numbers that come up in questions.",
-    "how": "Use the search bar at the top for a quick keyword (“haemoglobin”, “digoxin”) or tap a category to browse. Values flagged in red are critical/dangerous thresholds you should recognise on sight — they’re the ones examiners love to test.",
+    "what": "A searchable lookup of lab values, vital signs, common drug doses, abbreviations and unit conversions. Think of it as a tiny clinical handbook built into the app, normal ranges, critical thresholds, and the everyday numbers that come up in questions.",
+    "how": "Use the search bar at the top for a quick keyword (“haemoglobin”, “digoxin”) or tap a category to browse. Values flagged in red are critical/dangerous thresholds you should recognise on sight, they’re the ones examiners love to test.",
     "why": "During practice you’ll constantly need to check a number. Having it here means you don’t lose 5 minutes flipping through notes, and the repeated lookups gradually drill the values into memory.",
-    "example": "Mid-quiz you blank on the normal potassium range. Instead of guessing, you open Reference, search “potassium,” and see 3.5–5.0 mmol/L with the critical >6.0 flagged in red — the exact threshold examiners test."
+    "example": "Mid-quiz you blank on the normal potassium range. Instead of guessing, you open Reference, search “potassium,” and see 3.5–5.0 mmol/L with the critical >6.0 flagged in red, the exact threshold examiners test."
   },
   "Revision sheet": {
     "title": "Revision",
-    "what": "A digest page that pulls together your bookmarked questions — and, if you choose, questions you’ve previously got wrong — into one clean, scrollable list with stems, correct answers and explanations all visible at once.",
+    "what": "A digest page that pulls together your bookmarked questions, and, if you choose, questions you’ve previously got wrong, into one clean, scrollable list with stems, correct answers and explanations all visible at once.",
     "how": "Turn on “Revise your mistakes” at the top to fold in questions you’ve previously got wrong. Filter by topic to focus a single subject. The date list shows past revision sessions so you can re-open exactly what you revised on, say, last Tuesday. Tap Print / PDF to export it for offline study.",
-    "why": "The last few days before an exam are not the time to read new material — they’re for re-reading what you already flagged as important. This is that cram sheet, built automatically from your own study history.",
-    "example": "Three days before the exam you turn on “Revise your mistakes,” filter to Pharmacology, and get one scrollable page of every drug question you bookmarked or missed — stems, answers and explanations together. Tap Print/PDF and revise it on the bus offline."
+    "why": "The last few days before an exam are not the time to read new material, they’re for re-reading what you already flagged as important. This is that cram sheet, built automatically from your own study history.",
+    "example": "Three days before the exam you turn on “Revise your mistakes,” filter to Pharmacology, and get one scrollable page of every drug question you bookmarked or missed, stems, answers and explanations together. Tap Print/PDF and revise it on the bus offline."
   },
   "Bookmarks": {
     "title": "Bookmarks",
-    "what": "An index of every question you’ve saved during practice, grouped by topic. It’s a fast lookup, not a quiz — each entry shows the question with its full answer and explanation so you can re-read without re-attempting.",
+    "what": "An index of every question you’ve saved during practice, grouped by topic. It’s a fast lookup, not a quiz, each entry shows the question with its full answer and explanation so you can re-read without re-attempting.",
     "how": "Tap any entry to open it. To add a bookmark in the first place, tap the bookmark icon at the top-right of any question while you’re practising. To remove one, open the entry and tap the bookmark icon to un-save it.",
-    "why": "Bookmarks become your personal “high-yield” list — the tricky questions, the ones with great explanations, the ones with mnemonics you want to re-read. Keeping them in one place means you actually revisit them.",
+    "why": "Bookmarks become your personal “high-yield” list, the tricky questions, the ones with great explanations, the ones with mnemonics you want to re-read. Keeping them in one place means you actually revisit them.",
     "example": "You bookmark a tricky question about magnesium-sulphate toxicity because its explanation finally made it click. A week later you open Bookmarks → Med-Surg, re-read just that one, and the “loss of reflexes first” point sticks."
   },
   "Bookmark detail": {
     "title": "Bookmark",
     "what": "The full read-only view of one saved question. Shows the stem, all options with the correct answer highlighted in green, the full explanation and any “why the other options are wrong” notes.",
     "how": "Read it, or tap the speaker icon to listen to it being read aloud (useful while commuting or doing chores). Tap the bookmark icon to remove it from your saved list. Tap back to return to the bookmarks index.",
-    "why": "A focused single-question view, optimised for re-reading and reflection — not for re-testing. The point of a bookmark is that you already attempted it; now you’re studying the explanation.",
-    "example": "You open a saved DKA question while commuting, tap the speaker icon, and listen to the stem and explanation read aloud — revising hands-free. Once you're sure you know it, tap the bookmark icon to drop it from your list."
+    "why": "A focused single-question view, optimised for re-reading and reflection, not for re-testing. The point of a bookmark is that you already attempted it; now you’re studying the explanation.",
+    "example": "You open a saved DKA question while commuting, tap the speaker icon, and listen to the stem and explanation read aloud, revising hands-free. Once you're sure you know it, tap the bookmark icon to drop it from your list."
   },
   "Study plan": {
     "title": "Study plan",
     "what": "One place to set your NORCET exam date and daily goal, and get a personalised day-by-day plan to exam day. Once a date is set you get a home-screen countdown, an automatic daily question target, and a schedule that front-loads your weak topics, drips in spaced reviews, and drops timed mocks as checkpoints.",
-    "how": "Open Study plan from the sidebar. Pick your exam date, then choose how to set the daily target: “Decide for me” works out a pace from how many questions are left and how many days remain, while “I’ll pick” lets you set your own. The day-by-day plan builds automatically below — tap a topic to practise it, start a mock on mock days, or jump into due reviews. Use “Edit” to change the date or goal, and the refresh icon to regenerate the schedule.",
-    "why": "A daily target turns a vague “I should study more” into a concrete “I need to finish 30 questions today,” and a dated plan turns the whole run-up into one tick-box-a-day path instead of guesswork. Most people fall behind because they don’t track pace — this stops that quietly.",
+    "how": "Open Study plan from the sidebar. Pick your exam date, then choose how to set the daily target: “Decide for me” works out a pace from how many questions are left and how many days remain, while “I’ll pick” lets you set your own. The day-by-day plan builds automatically below, tap a topic to practise it, start a mock on mock days, or jump into due reviews. Use “Edit” to change the date or goal, and the refresh icon to regenerate the schedule.",
+    "why": "A daily target turns a vague “I should study more” into a concrete “I need to finish 30 questions today,” and a dated plan turns the whole run-up into one tick-box-a-day path instead of guesswork. Most people fall behind because they don’t track pace. This stops that quietly.",
     "example": "You set your exam for 60 days away with 1,200 questions left and choose “Decide for me.” The app sets a 20-a-day target, shows “60 days left” on Home, and lays out a schedule: weak topics first, a mock every Sunday, spaced reviews daily."
   },
   "Stats": {
     "title": "Stats",
     "what": "Your progress dashboard. Total questions attempted, overall accuracy %, current streak, today’s count, plus a topic-by-topic breakdown showing accuracy and attempts for each subject.",
     "how": "Scroll through. The 14-day bar chart shows daily attempt counts so you can spot patterns (or gaps). The “By topic” list at the bottom is sorted alphabetically; each row’s accuracy bar makes weak vs strong subjects obvious at a glance.",
-    "why": "Without data, prep feels vague — “I’m doing OK, I think.” With it, you know exactly which topics need more work and whether your accuracy is trending up. It also makes streaks feel earned rather than abstract.",
-    "example": "Your dashboard shows 78% overall but the By-topic list reveals Community Health sitting at 54%. The 14-day chart also shows a three-day gap last week — so you know exactly what to fix and that consistency, not ability, was the issue."
+    "why": "Without data, prep feels vague. “I’m doing OK, I think.” With it, you know exactly which topics need more work and whether your accuracy is trending up. It also makes streaks feel earned rather than abstract.",
+    "example": "Your dashboard shows 78% overall but the By-topic list reveals Community Health sitting at 54%. The 14-day chart also shows a three-day gap last week, so you know exactly what to fix and that consistency, not ability, was the issue."
   },
   "Weak areas": {
     "title": "Weak areas",
-    "what": "A focused list of every topic where your accuracy is currently below 80% (and where you’ve done enough questions for the number to mean something). Sorted worst-first, with a severity badge — Critical, Weak, or Shaky — so you know which to prioritise.",
-    "how": "Each row has a Start button that launches a short 5-question drill on that topic, biased toward questions you’ve previously got wrong. Hints and Show answer are both available — this is for learning, not testing.",
+    "what": "A focused list of every topic where your accuracy is currently below 80% (and where you’ve done enough questions for the number to mean something). Sorted worst-first, with a severity badge. Critical, Weak, or Shaky, so you know which to prioritise.",
+    "how": "Each row has a Start button that launches a short 5-question drill on that topic, biased toward questions you’ve previously got wrong. Hints and Show answer are both available. This is for learning, not testing.",
     "why": "Most score improvements come from fixing the bottom 20% of your topics, not polishing the top. Spending 10 focused minutes on a Critical-rated topic shifts your overall accuracy noticeably faster than mixed practice.",
     "example": "Microbiology shows up with a red “Critical” badge at 48%. You tap Start, get a 5-question drill weighted toward the ones you missed before, use a hint on one, and watch that topic climb on your next Stats check."
   },
   "Coverage map": {
     "title": "Coverage",
-    "what": "How much of each topic’s questions you’ve attempted at least once — the breadth side of your prep, not the accuracy side. Each topic shows a progress bar, attempt count, and accuracy if you have one.",
-    "how": "Tap any topic row to expand it and see its sub-topics broken down separately (e.g. Anatomy splits into Cardiovascular, Renal, etc.). Each row has a coloured Start button that launches a quiz scoped exactly to that level — whole topic from the topic row, or just that sub-topic from the sub-row.",
-    "why": "It’s easy to keep revisiting the same comfortable topics and never touch the unfamiliar ones. Coverage makes the gaps visible — “0 / 28 in Pharmacology” is harder to ignore than a vague feeling that you should study more.",
+    "what": "How much of each topic’s questions you’ve attempted at least once, the breadth side of your prep, not the accuracy side. Each topic shows a progress bar, attempt count, and accuracy if you have one.",
+    "how": "Tap any topic row to expand it and see its sub-topics broken down separately (e.g. Anatomy splits into Cardiovascular, Renal, etc.). Each row has a coloured Start button that launches a quiz scoped exactly to that level, whole topic from the topic row, or just that sub-topic from the sub-row.",
+    "why": "It’s easy to keep revisiting the same comfortable topics and never touch the unfamiliar ones. Coverage makes the gaps visible. “0 / 28 in Pharmacology” is harder to ignore than a vague feeling that you should study more.",
     "example": "Coverage shows “Pharmacology 6 / 40 attempted.” That blunt number is harder to ignore than a vague hunch, so you tap the topic's Start button and begin closing the 34-question gap."
   },
   "Quick practice setup": {
     "title": "Quick test",
     "what": "The setup screen for a casual, untimed quiz. You choose how many questions and which topic (or all topics mixed). No time pressure, no negative marking, and study aids (hints, Skip, Show answer) are all available during the quiz.",
     "how": "Pick a count using the chips (5, 10, 20, 50). Optionally pick a topic or leave it as All. Then tap Start. The questions are smart-selected: unseen ones first, then ones you’ve struggled with, so practice always feels fresh.",
-    "why": "This is the everyday mode — something you can fit into 5 minutes between other things. The relaxed format encourages actually doing it, which compounds over weeks far more than occasional intense sessions.",
+    "why": "This is the everyday mode. Something you can fit into 5 minutes between other things. The relaxed format encourages actually doing it, which compounds over weeks far more than occasional intense sessions.",
     "example": "On a 5-minute break you tap the ‘10’ chip, leave the topic on ‘All’, and Start. The app serves unseen questions first, so it never feels like the same ten you saw yesterday."
   },
   "Topic select": {
     "title": "Topic wise test",
     "what": "A page listing every subject you can drill, with each topic showing how many questions are in its pool. Tapping a topic immediately starts a quiz scoped only to that subject.",
-    "how": "Scroll the list and tap a topic to start. The quiz uses the same rules as Quick test — untimed, with hints and Show answer available. Want to focus even tighter, on a sub-topic? Use Coverage instead and drill from there.",
+    "how": "Scroll the list and tap a topic to start. The quiz uses the same rules as Quick test, untimed, with hints and Show answer available. Want to focus even tighter, on a sub-topic? Use Coverage instead and drill from there.",
     "why": "When you’re actively studying one topic (say, you read about Cardiovascular this morning), a topic-scoped quiz right after is the best way to lock it in. Mixed practice is good for retention; focused practice is good for learning new material.",
-    "example": "You just finished reading the Cardiovascular module in Learn. You open Topic-wise test, tap ‘Cardiovascular (32)’, and drill only that subject while it’s fresh — locking in what you just read."
+    "example": "You just finished reading the Cardiovascular module in Learn. You open Topic-wise test, tap ‘Cardiovascular (32)’, and drill only that subject while it’s fresh, locking in what you just read."
   },
   "Mock setup": {
     "title": "Mock test",
     "what": "The setup screen for a timed test that imitates exam pressure but still gives you instant feedback on each question. Sits between Quick test (no pressure, all aids) and Advanced test (full exam, no feedback).",
-    "how": "Pick how many questions, then how long — Sprint (30s/Q), Normal (1 min/Q), Relaxed (90s/Q), or a custom number of minutes. During the test, the timer counts down; Skip is allowed so you can defer hard questions; Show answer is disabled to keep things honest. Auto-submits when time runs out.",
-    "why": "Real exams have a clock. Practising under a clock teaches you when to commit to an answer and move on — a separate skill from knowing content. Mock builds that pacing without going to the full no-feedback rigour of Advanced.",
+    "how": "Pick how many questions, then how long. Sprint (30s/Q), Normal (1 min/Q), Relaxed (90s/Q), or a custom number of minutes. During the test, the timer counts down; Skip is allowed so you can defer hard questions; Show answer is disabled to keep things honest. Auto-submits when time runs out.",
+    "why": "Real exams have a clock. Practising under a clock teaches you when to commit to an answer and move on, a separate skill from knowing content. Mock builds that pacing without going to the full no-feedback rigour of Advanced.",
     "example": "You pick 20 questions on ‘Normal’ (1 min each), giving a 20-minute timed run. The clock teaches you to commit to an answer in about a minute and move on, instead of agonising over one question."
   },
   "Advanced test setup": {
     "title": "Advanced test",
     "what": "The most exam-realistic mode in the app. Unlike Mock test (where you check each answer one at a time), Advanced test runs like the real NORCET: 50 or 100 questions, no instant feedback, a question palette to jump around, and negative marking (−⅓ per wrong answer).",
     "how": "Choose 50 or 100 questions, pick a difficulty if you want to focus, optionally restrict to past-year questions (PYQ), set a time limit, then tap Start. During the test you can flag questions and revisit them via the palette before submitting.",
-    "why": "To rehearse the full exam experience — pacing, second-guessing, deciding when to skip a hard question rather than waste time. That mental conditioning is as important as knowing the content.",
-    "example": "You choose 100 questions, restrict to past-year questions (PYQ), and set 120 minutes. With negative marking on (−⅓ per wrong) you have to decide, just like the real exam, whether a shaky guess is worth the risk — and flag the doubtful ones to revisit via the palette."
+    "why": "To rehearse the full exam experience, pacing, second-guessing, deciding when to skip a hard question rather than waste time. That mental conditioning is as important as knowing the content.",
+    "example": "You choose 100 questions, restrict to past-year questions (PYQ), and set 120 minutes. With negative marking on (−⅓ per wrong) you have to decide, just like the real exam, whether a shaky guess is worth the risk, and flag the doubtful ones to revisit via the palette."
   },
   "Advanced test results": {
     "title": "Test results",
     "what": "Your score and full breakdown from the Advanced test you just finished. Shows net score (after negative marking), per-topic accuracy, time spent per question, and a question-by-question review with explanations.",
-    "how": "Scroll the topic breakdown to find your weakest sections — those are where the next study session should focus. Tap any question to see what you picked, the correct answer, and the explanation. Bookmark the ones you want to re-read later.",
-    "why": "The score itself is just a number. The real value of a full test is in the review afterwards — understanding why you got specific questions wrong is where the lift in your next score comes from.",
-    "example": "Your net score is 62 after negative marking, but the topic breakdown shows Obstetrics dragged you down at 40%. You tap three OBG questions you got wrong, read why, and bookmark them — that review is where your next attempt's points come from."
+    "how": "Scroll the topic breakdown to find your weakest sections. Those are where the next study session should focus. Tap any question to see what you picked, the correct answer, and the explanation. Bookmark the ones you want to re-read later.",
+    "why": "The score itself is just a number. The real value of a full test is in the review afterwards, understanding why you got specific questions wrong is where the lift in your next score comes from.",
+    "example": "Your net score is 62 after negative marking, but the topic breakdown shows Obstetrics dragged you down at 40%. You tap three OBG questions you got wrong, read why, and bookmark them. That review is where your next attempt's points come from."
   },
   "Quiz": {
     "title": "Quiz",
-    "what": "The active question screen. Each card shows one question — the stem at the top, options below, and any topic / type tags. Your job: read the stem carefully, pick the option(s) you think are right, then tap Check answer.",
+    "what": "The active question screen. Each card shows one question, the stem at the top, options below, and any topic / type tags. Your job: read the stem carefully, pick the option(s) you think are right, then tap Check answer.",
     "how": "Tap an option to select it. For multi-select questions (marked “Multi-select” in the tag row) you can pick more than one. Use the bookmark icon at the top to save a question for later review. Skip and Show answer (where available) sit above the main Check button.",
-    "why": "Active recall — answering questions yourself, not reading the answer first — is the single most-proven way to make information stick. Even getting one wrong builds the memory more than re-reading would.",
+    "why": "Active recall: answering questions yourself, not reading the answer first. Is the single most-proven way to make information stick. Even getting one wrong builds the memory more than re-reading would.",
     "example": "A question is tagged ‘Multi-select’, so you pick both ‘Right dose’ and ‘Right route’ before tapping Check. If it were single-select, picking a second option would simply swap your choice."
   },
   "Quiz · quick": {
     "title": "Quick test in progress",
     "what": "A casual, untimed quiz drawn from your practice pool. Hints, Skip and Show answer are all available, and a wrong answer just shows the explanation rather than penalising you.",
-    "how": "Pick an option and tap Check. If a Hint button is visible, tap it for a nudge before answering — it doesn’t affect your score. Stuck? Show answer reveals the correct option and the explanation (it does count as wrong, so the question reappears later for review). Skip moves a question to the end of the round so you can come back to it.",
-    "why": "No timer, no negative marking — this mode is for learning, not for measuring your exam score. The freedom to use hints and reveal answers means you spend more time understanding why something is right, instead of guessing under pressure.",
+    "how": "Pick an option and tap Check. If a Hint button is visible, tap it for a nudge before answering, it doesn’t affect your score. Stuck? Show answer reveals the correct option and the explanation (it does count as wrong, so the question reappears later for review). Skip moves a question to the end of the round so you can come back to it.",
+    "why": "No timer, no negative marking. This mode is for learning, not for measuring your exam score. The freedom to use hints and reveal answers means you spend more time understanding why something is right, instead of guessing under pressure.",
     "example": "You’re unsure on a question, so you tap Hint for a nudge (no score penalty), still aren’t certain, and tap Show answer to read the explanation. It counts as wrong, so the question quietly returns later for another go."
   },
   "Quiz · mock": {
     "title": "Mock test in progress",
     "what": "A timed quiz that mimics exam pressure. A countdown timer runs at the top of the screen and turns red in the final minute; the test auto-submits when it hits zero.",
-    "how": "Pick an answer and Check. Skip is available — it defers a question to the end of the round, useful for tough ones you want to come back to. Show answer is disabled here on purpose; if you don’t know, just pick your best guess and move on. The timer keeps running whether you’re reading the explanation or not, so don’t linger.",
-    "why": "Exams aren’t lost on content gaps — they’re lost on running out of time. Practising under a real clock teaches your brain when to commit and move on, which is a separate skill from knowing the material.",
+    "how": "Pick an answer and Check. Skip is available: it defers a question to the end of the round, useful for tough ones you want to come back to. Show answer is disabled here on purpose; if you don’t know, just pick your best guess and move on. The timer keeps running whether you’re reading the explanation or not, so don’t linger.",
+    "why": "Exams aren’t lost on content gaps, they’re lost on running out of time. Practising under a real clock teaches your brain when to commit and move on, which is a separate skill from knowing the material.",
     "example": "With 40 seconds left the timer turns red. You’re stuck on question 18, so you make your best guess and move on rather than letting the clock auto-submit with three questions blank."
   },
   "Quiz · topic": {
     "title": "Topic-wise test in progress",
     "what": "A focused drill on a single subject. The question pool is filtered to only that topic, so every question reinforces what you’re currently studying.",
-    "how": "Same controls as Quick test — pick an answer, optionally Skip or Show answer, use hints if shown. Read the explanation carefully after each one; topic-focused practice is most useful when you actually digest the explanation, not just the answer.",
+    "how": "Same controls as Quick test, pick an answer, optionally Skip or Show answer, use hints if shown. Read the explanation carefully after each one; topic-focused practice is most useful when you actually digest the explanation, not just the answer.",
     "why": "When you’ve just read a textbook chapter on, say, Cardiovascular, doing 10 questions on Cardiovascular right after is far more useful than mixed practice. Topic drills are where new material gets locked in before it slips away.",
     "example": "Right after reading about acid-base balance, you run a Renal topic drill, hit an ABG question, and the explanation’s “ROME” trick (Respiratory Opposite, Metabolic Equal) clicks because the theory is still fresh."
   },
   "Quiz · bookmarks": {
     "title": "Bookmarks quiz",
-    "what": "A quiz built entirely from questions you’ve bookmarked — the ones you previously flagged as important. The pool depends on what you’ve saved over time.",
+    "what": "A quiz built entirely from questions you’ve bookmarked, the ones you previously flagged as important. The pool depends on what you’ve saved over time.",
     "how": "Work through them like any other quiz. If you can now answer one confidently and don’t need to revisit it, tap the bookmark icon to remove it from your saved list. Bookmarks you keep will come back next time you run this mode.",
-    "why": "Re-testing the questions you flagged closes the loop — it tells you whether the concept actually stuck, or whether it’s still wobbly and needs another revision. A clean bookmark list is one you can trust.",
-    "example": "You bookmarked 12 tough questions over the month. Re-running them, you now answer 10 confidently and un-bookmark those — leaving a trustworthy short list of the 2 that still need work."
+    "why": "Re-testing the questions you flagged closes the loop, it tells you whether the concept actually stuck, or whether it’s still wobbly and needs another revision. A clean bookmark list is one you can trust.",
+    "example": "You bookmarked 12 tough questions over the month. Re-running them, you now answer 10 confidently and un-bookmark those, leaving a trustworthy short list of the 2 that still need work."
   },
   "Quiz · review-due": {
     "title": "Spaced revision quiz",
     "what": "A quiz of questions the app thinks you’re about to forget. Each question has a “next due” date set by the spaced-repetition engine; this mode pulls the ones whose date has passed.",
-    "how": "Answer the questions as you normally would. Getting one right pushes its next review further out (e.g. 7 days → 14 days → 30 days). Getting one wrong brings it back to tomorrow. The goal is to keep the queue manageable — ideally clear it daily.",
-    "why": "Forgetting is exponential: you lose most of what you learnt within a week unless you review. Spaced repetition slots a review right before the forgetting curve dives — the most efficient way to retain knowledge long-term.",
-    "example": "Five questions are due today. You clear them in three minutes: the four you get right slide to next week, and the one you miss is back tomorrow — keeping the forgetting curve in check with minimal effort."
+    "how": "Answer the questions as you normally would. Getting one right pushes its next review further out (e.g. 7 days → 14 days → 30 days). Getting one wrong brings it back to tomorrow. The goal is to keep the queue manageable, ideally clear it daily.",
+    "why": "Forgetting is exponential: you lose most of what you learnt within a week unless you review. Spaced repetition slots a review right before the forgetting curve dives, the most efficient way to retain knowledge long-term.",
+    "example": "Five questions are due today. You clear them in three minutes: the four you get right slide to next week, and the one you miss is back tomorrow, keeping the forgetting curve in check with minimal effort."
   },
   "Quiz · wrong": {
     "title": "Wrong-answer review",
-    "what": "A quiz of questions you’ve previously got wrong. The pool is built from your attempt history — every wrong answer earns a question a place in this queue.",
-    "how": "Work through them again. Getting one right this time doesn’t erase the past wrong attempt — your history records both — but it does show real improvement, and the question won’t reappear here again unless you get it wrong again later.",
+    "what": "A quiz of questions you’ve previously got wrong. The pool is built from your attempt history, every wrong answer earns a question a place in this queue.",
+    "how": "Work through them again. Getting one right this time doesn’t erase the past wrong attempt, your history records both. But it does show real improvement, and the question won’t reappear here again unless you get it wrong again later.",
     "why": "Your mistakes are the highest-yield study material you have. They’re hand-picked by your own brain as things you don’t know yet. Targeting them directly is far more efficient than random practice.",
     "example": "You bombed a batch of pharmacology questions last week. This mode pulls exactly those back. Getting the warfarin-antidote one right this time won't erase the old miss in your history, but it proves the gap is closing."
   },
   "Quiz · weak-topic": {
     "title": "Weak-area drill",
     "what": "A focused mini-drill, launched from the Weak Areas screen, on a topic where your accuracy is below 80%. Just 5 questions per drill, biased toward ones you’ve previously got wrong in that topic.",
-    "how": "Pick an answer, optionally Skip or Show answer. Hints stay visible — this is a learning drill, not an exam. After 5 questions you’re back at the Weak Areas list and can either drill the same topic again or move to the next weakest one.",
-    "why": "Five questions sounds small, but a focused mini-drill on one weak topic moves your accuracy on that topic faster than 30 mixed questions — because every one of those 5 is high-yield material your stats already identified as a gap.",
+    "how": "Pick an answer, optionally Skip or Show answer. Hints stay visible: this is a learning drill, not an exam. After 5 questions you’re back at the Weak Areas list and can either drill the same topic again or move to the next weakest one.",
+    "why": "Five questions sounds small, but a focused mini-drill on one weak topic moves your accuracy on that topic faster than 30 mixed questions. Because every one of those 5 is high-yield material your stats already identified as a gap.",
     "example": "From Weak Areas you launch a 5-question Microbiology drill. Each one is a question your own stats flagged as a gap, so five focused minutes here lifts that topic faster than 30 random mixed questions."
   },
   "Library": {
     "title": "Library",
-    "what": "A directory of question banks — collections of questions you can add to your practice pool. Banks can be public (anyone can use them) or private (only the person who uploaded them sees them). Each bank shows its name, owner, version and question count.",
+    "what": "A directory of question banks. Collections of questions you can add to your practice pool. Banks can be public (anyone can use them) or private (only the person who uploaded them sees them). Each bank shows its name, owner, version and question count.",
     "how": "Use the filter chips at the top to switch between All / Mine / From others. Tap a bank to see its full details. Tap “Upload a new bank” at the top to create your own. Once you’ve imported a bank, you can pause it any time to remove its questions from practice without deleting your progress.",
-    "why": "The Library lets you customise the question set beyond what’s built in — import a friend’s bank for an upcoming test, build your own from your notes, or pause one that’s not relevant right now. It’s how the app stays useful as your needs change.",
-    "example": "A classmate shares a bank of 200 PYQs before your state exam. You open Library → From others, import it, and those questions now appear everywhere — Quick test, mocks, topic drills. After the exam you simply pause it to clear them out without losing your stats."
+    "why": "The Library lets you customise the question set beyond what’s built in, import a friend’s bank for an upcoming test, build your own from your notes, or pause one that’s not relevant right now. It’s how the app stays useful as your needs change.",
+    "example": "A classmate shares a bank of 200 PYQs before your state exam. You open Library → From others, import it, and those questions now appear everywhere. Quick test, mocks, topic drills. After the exam you simply pause it to clear them out without losing your stats."
   },
   "Bank detail": {
     "title": "Question bank",
     "what": "The detail page for one question bank. Shows the name, description, version, who uploaded it, and a preview of every question inside. If you’ve already imported the bank, you also see a toggle to pause/resume its questions in your practice pool.",
-    "how": "Scroll the preview to see what’s inside before importing. Tap “Import” to add the bank’s questions to your pool (they’ll show up in Quick test, topic drills, mocks, everywhere). If you’ve already imported it, use the toggle to pause without deleting — your progress on those questions is kept.",
-    "why": "Importing without seeing the contents is risky — you might end up with bad or low-quality questions in your pool. This page is the “try before you commit” step, plus the on-off switch for when a bank stops being useful.",
-    "example": "Before importing a 150-question bank, you scroll its preview and spot that the explanations are thin. You decide to skip it — exactly the “try before you commit” check this page is for. For a good one, you tap Import and it merges into your pool."
+    "how": "Scroll the preview to see what’s inside before importing. Tap “Import” to add the bank’s questions to your pool (they’ll show up in Quick test, topic drills, mocks, everywhere). If you’ve already imported it, use the toggle to pause without deleting. Your progress on those questions is kept.",
+    "why": "Importing without seeing the contents is risky. You might end up with bad or low-quality questions in your pool. This page is the “try before you commit” step, plus the on-off switch for when a bank stops being useful.",
+    "example": "Before importing a 150-question bank, you scroll its preview and spot that the explanations are thin. You decide to skip it, exactly the “try before you commit” check this page is for. For a good one, you tap Import and it merges into your pool."
   },
   "Bank editor": {
     "title": "Question set editor",
     "what": "Where you create a new question bank or edit one you already own. Banks have a name, description, visibility setting (private or public), and a list of questions you paste in as JSON.",
     "how": "Fill in the name and description, paste your questions into the JSON box (an example is shown to copy the format), tap Check questions to see how many parsed successfully, then save. The visibility toggle decides whether only you see it or everyone in the app can.",
-    "why": "For building your own custom sets — questions from your college’s notes, a friend’s tough collection, or anything not covered by the built-in pool. Sharing publicly means others can benefit too.",
+    "why": "For building your own custom sets, questions from your college’s notes, a friend’s tough collection, or anything not covered by the built-in pool. Sharing publicly means others can benefit too.",
     "example": "You paste 30 questions from your college notes as JSON, tap Check questions, and see “28 parsed, 2 errors.” You fix the two malformed entries, set visibility to Private, and save your personal bank."
   },
   "Add question": {
     "title": "Add a question",
     "what": "A form to add a single question to your personal practice pool. You write the stem, 4 options, mark the correct one(s), pick a topic and difficulty, and write a short explanation that’ll show after the user answers.",
     "how": "Fill in the fields top to bottom. For multi-correct questions, tick more than one option. The Explanation field is the most important: it’s what you’ll read when you (or your future self) re-encounter the question. Save when done.",
-    "why": "Writing your own questions — from notes, lecture slides or textbook problems — is a powerful way to study: you have to actually understand the material to phrase a good distractor. Then you get to drill it later like any other question.",
-    "example": "From a lecture slide you add: “First-line drug for status epilepticus?” with four options, mark the correct one, tag it Pharmacology, and write a two-line explanation. Phrasing the wrong options forces you to actually understand the topic — and now you can drill it later."
+    "why": "Writing your own questions, from notes, lecture slides or textbook problems. Is a powerful way to study: you have to actually understand the material to phrase a good distractor. Then you get to drill it later like any other question.",
+    "example": "From a lecture slide you add: “First-line drug for status epilepticus?” with four options, mark the correct one, tag it Pharmacology, and write a two-line explanation. Phrasing the wrong options forces you to actually understand the topic. And now you can drill it later."
   },
   "Feedback inbox": {
     "title": "My reports",
     "what": "A list of every bug report and suggestion you’ve submitted via the Report button, with the admin’s reply status next to each one. New replies show a coloured badge so you don’t miss them.",
-    "how": "Tap a report to read its full thread — your original message and any reply. Once you’ve seen a reply, the badge goes away. Reports stay here permanently so you can refer back later.",
-    "why": "Reporting a wrong answer or a confusing UI is only useful if you can see what happens next. This is the loop — you tell the admin, the admin replies, and you know.",
-    "example": "You reported a question with a wrong answer key last week. Today a coloured badge appears here; you tap in and read the admin’s reply confirming it’s been fixed — closing the loop so you know your report mattered."
+    "how": "Tap a report to read its full thread, your original message and any reply. Once you’ve seen a reply, the badge goes away. Reports stay here permanently so you can refer back later.",
+    "why": "Reporting a wrong answer or a confusing UI is only useful if you can see what happens next. This is the loop, you tell the admin, the admin replies, and you know.",
+    "example": "You reported a question with a wrong answer key last week. Today a coloured badge appears here; you tap in and read the admin’s reply confirming it’s been fixed, closing the loop so you know your report mattered."
   },
   "Settings": {
     "title": "Settings",
-    "what": "Where everything app-wide lives: your account or guest profile, sharing the app, reminders (spaced revision + a daily nudge), notifications, what counts in your stats, sound, light / dark themes, sidebar swipe gestures, backups, your Knowledge-Map notes, the legal docs, and — if you’re the admin — admin tools.",
-    "how": "Scroll to the section you want and tap its control. Toggles like dark mode flip instantly. Focused areas — Profile, Backup, Topic notes, Sidebar gestures and Legal — open as their own page with a back arrow. Destructive actions (reset, log out) always confirm first. As a guest, an Account card at the top lets you create a profile to sync and back up.",
+    "what": "Where everything app-wide lives: your account or guest profile, sharing the app, reminders (spaced revision + a daily nudge), notifications, what counts in your stats, sound, light / dark themes, sidebar swipe gestures, backups, your Knowledge-Map notes, the legal docs, and, if you’re the admin, admin tools.",
+    "how": "Scroll to the section you want and tap its control. Toggles like dark mode flip instantly. Focused areas: Profile, Backup, Topic notes, Sidebar gestures and Legal, open as their own page with a back arrow. Destructive actions (reset, log out) always confirm first. As a guest, an Account card at the top lets you create a profile to sync and back up.",
     "why": "One predictable place for all the meta-app stuff, so the main study screens stay focused on practice. If you can’t find a setting, it’s here.",
-    "example": "You’re studying late, so you switch to Dark mode (it flips instantly), then turn on spaced-revision reminders. Later you tap ‘Reset progress’ by mistake — the confirmation prompt stops you before anything is deleted."
+    "example": "You’re studying late, so you switch to Dark mode (it flips instantly), then turn on spaced-revision reminders. Later you tap ‘Reset progress’ by mistake. The confirmation prompt stops you before anything is deleted."
   },
   "Knowledge Map": {
     "title": "Knowledge Map",
     "what": "An interactive mind-map of the whole NORCET syllabus. Every topic and sub-topic is a node that starts locked and lights up as you answer questions, so the map becomes a living picture of how much you’ve covered and how well. A small legend explains the node states, and a “Suggested today” panel points you to what’s worth practising next.",
-    "how": "Drag to pan and pinch (or use the +, − and fit buttons) to zoom. Tap a node to open it and practise that topic. Long-press a node (right-click on desktop) to pin a free-text note — a mnemonic, a doubt, a link — which you can back up or share via Settings → export notes. Use the “Start” button in the Suggested panel to jump straight into a recommended drill.",
+    "how": "Drag to pan and pinch (or use the +, − and fit buttons) to zoom. Tap a node to open it and practise that topic. Long-press a node (right-click on desktop) to pin a free-text note, a mnemonic, a doubt, a link. Which you can back up or share via Settings → export notes. Use the “Start” button in the Suggested panel to jump straight into a recommended drill.",
     "why": "Coverage is easy to misjudge by feel. Seeing locked branches next to lit ones makes your blind spots obvious, and watching nodes light up as you progress turns revision into visible momentum.",
-    "example": "After a Pharmacology quiz, that whole branch brightens. You long-press the “Insulin” node to pin “RApid = Right Away,” then tap Start on a topic the “Suggested today” panel flagged — closing a gap the map just made visible."
+    "example": "After a Pharmacology quiz, that whole branch brightens. You long-press the “Insulin” node to pin “RApid = Right Away,” then tap Start on a topic the “Suggested today” panel flagged, closing a gap the map just made visible."
   },
   "Previous year papers": {
     "title": "Previous Year Papers",
-    "what": "A list of full, official AIIMS NORCET papers you can sit exactly like the real thing — a real countdown, negative marking, and a question palette to jump around. Each card shows the paper, its question count and time limit, and your status (or your best score once you’ve attempted it).",
-    "how": "Tap a paper to begin; it launches the full exam engine with the timer running and the palette for flagging and revisiting questions before you submit. Your result is saved per paper, and your best net score shows on the card — so re-attempting a paper later is how you measure real improvement on it.",
-    "why": "Nothing rehearses the exam like the exam. Same length, same clock, same −⅓ penalty — so you practise pacing and the decision to skip or guess, which are separate skills from knowing the content.",
-    "example": "You sit “AIIMS NORCET 2023 (Mains)” — 69 questions in 70 minutes — and finish with a net 41.33 after negative marking. A few weeks later you retake it aiming to beat that best, and the card tracks both attempts."
+    "what": "A list of full, official AIIMS NORCET papers you can sit exactly like the real thing, a real countdown, negative marking, and a question palette to jump around. Each card shows the paper, its question count and time limit, and your status (or your best score once you’ve attempted it).",
+    "how": "Tap a paper to begin; it launches the full exam engine with the timer running and the palette for flagging and revisiting questions before you submit. Your result is saved per paper, and your best net score shows on the card, so re-attempting a paper later is how you measure real improvement on it.",
+    "why": "Nothing rehearses the exam like the exam. Same length, same clock, same −⅓ penalty, so you practise pacing and the decision to skip or guess, which are separate skills from knowing the content.",
+    "example": "You sit “AIIMS NORCET 2023 (Mains)”, 69 questions in 70 minutes, and finish with a net 41.33 after negative marking. A few weeks later you retake it aiming to beat that best, and the card tracks both attempts."
   },
   "Exam weightage": {
     "title": "Exam weightage",
-    "what": "Analytics showing how heavily each topic has been weighted across past papers — its typical share of the exam — set against your own accuracy and coverage, with year-on-year trends. A “High-leverage topics” list at the top flags subjects that are both heavily tested and where you’re currently weak.",
-    "how": "Scan the ranked bars — the longest carry the most exam weight. Rising weightage over the years shows in red, declining in blue. Begin with the High-leverage list: those topics give the biggest score return for the time you put in, because the app computes leverage as weightage × your remaining gap.",
-    "why": "Topics are not worth equal study time. Ten minutes on a high-weight topic you’re weak in moves your score far more than polishing a minor topic you already ace — this screen tells you exactly where that effort sits.",
-    "example": "Community Health makes up ~18% of the exam but you’re at 55% accuracy, so it tops the High-leverage list — a clear signal to study it before a low-weight topic you’re already scoring 90% on."
+    "what": "Analytics showing how heavily each topic has been weighted across past papers, its typical share of the exam, set against your own accuracy and coverage, with year-on-year trends. A “High-leverage topics” list at the top flags subjects that are both heavily tested and where you’re currently weak.",
+    "how": "Scan the ranked bars, the longest carry the most exam weight. Rising weightage over the years shows in red, declining in blue. Begin with the High-leverage list: those topics give the biggest score return for the time you put in, because the app computes leverage as weightage × your remaining gap.",
+    "why": "Topics are not worth equal study time. Ten minutes on a high-weight topic you’re weak in moves your score far more than polishing a minor topic you already ace, this screen tells you exactly where that effort sits.",
+    "example": "Community Health makes up ~18% of the exam but you’re at 55% accuracy, so it tops the High-leverage list, a clear signal to study it before a low-weight topic you’re already scoring 90% on."
   },
   "Study methods": {
     "title": "Study Methods",
-    "what": "A short, revisitable guide to six science-backed ways to study — how to read, understand, remember, and lock in material. It's a permanent reference, not a one-time tour, and each method links straight to the matching tool in the app.",
+    "what": "A short, revisitable guide to six science-backed ways to study, how to read, understand, remember, and lock in material. It's a permanent reference, not a one-time tour, and each method links straight to the matching tool in the app.",
     "how": "Scroll the numbered list (the order is a journey from first approach to long-term retention) and tap any method to open its card. Read the idea and the one key stat, then use “Go to feature” to jump into the tool that lets you actually do it, or “Next method” to keep moving. Rows you've opened get a checkmark.",
-    "why": "Most students study hard but were never taught how. These methods are the difference between re-reading (which feels productive but isn't) and retrieval (which actually builds memory) — small changes that move your score more than extra hours do.",
-    "example": "You open “How to Remember What You Read,” learn that active recall beats re-reading, then tap “Start a quick test” to close your notes and actually retrieve — turning the idea into practice in one tap."
+    "why": "Most students study hard but were never taught how. These methods are the difference between re-reading (which feels productive but isn't) and retrieval (which actually builds memory), small changes that move your score more than extra hours do.",
+    "example": "You open “How to Remember What You Read,” learn that active recall beats re-reading, then tap “Start a quick test” to close your notes and actually retrieve, turning the idea into practice in one tap."
   },
   "Doubts": {
     "title": "My Doubts",
     "what": "A review space for anything you flagged as unclear while reading concept cards. Each flagged point is saved here with its topic and age, split into Unresolved and Resolved, so nothing you struggled with quietly slips away.",
-    "how": "While reading, tap the small flag on any bullet or card that doesn't click — it lands here. Open this screen to re-read them (“Go to topic” jumps you back), then tap “Mark resolved” once it makes sense. Resolved doubts are archived, never deleted, as a record of progress.",
-    "why": "The things you half-understand are exactly what the exam catches. Flagging them in one tap — no typing, no friction — turns vague unease into a concrete list you can actually clear, and they jump to the top of Quick Revision until you do.",
+    "how": "While reading, tap the small flag on any bullet or card that doesn't click, it lands here. Open this screen to re-read them (“Go to topic” jumps you back), then tap “Mark resolved” once it makes sense. Resolved doubts are archived, never deleted, as a record of progress.",
+    "why": "The things you half-understand are exactly what the exam catches. Flagging them in one tap, no typing, no friction, turns vague unease into a concrete list you can actually clear, and they jump to the top of Quick Revision until you do.",
     "example": "Reading pharmacology, a line about insulin onset doesn't quite land, so you tap its flag. Two days later it's at the top of Quick Revision and listed here; you re-read, it clicks, and you mark it resolved."
   },
   "FAQ": {
     "title": "FAQ & Help",
-    "what": "Answers to common questions about the app and NORCET prep, in a chat-style layout. Under every answer is a public community thread where you can ask a follow-up and an admin replies — visible to everyone, so one student's question helps the rest.",
+    "what": "Answers to common questions about the app and NORCET prep, in a chat-style layout. Under every answer is a public community thread where you can ask a follow-up and an admin replies, visible to everyone, so one student's question helps the rest.",
     "how": "Filter by category if you like, then tap a question to open its answer. Tap the bulb to say whether it helped. Still stuck? Type a follow-up under that answer; admins reply with an “Admin” badge. Questions and replies here are public.",
-    "why": "Most doubts are shared — surfacing answers in one searchable place saves everyone time and keeps support out of scattered DMs. The helpful bulb tells the team which answers are landing and which need work.",
-    "example": "You wonder how negative marking works in mock tests, find that exact FAQ, tap the bulb because it helped — and ask a follow-up about partial marking, which an admin answers for everyone to see."
+    "why": "Most doubts are shared. Surfacing answers in one searchable place saves everyone time and keeps support out of scattered DMs. The helpful bulb tells the team which answers are landing and which need work.",
+    "example": "You wonder how negative marking works in mock tests, find that exact FAQ, tap the bulb because it helped, and ask a follow-up about partial marking, which an admin answers for everyone to see."
   },
   "Drill tests": {
-    "what": "One home for every way to test yourself — Quick Test, Topic Wise, Mock Test, Dosage Calc, Previous Year Papers, and the full exam-mode Advanced Test, arranged from casual warm-up to exam-hall intensity.",
+    "what": "One home for every way to test yourself. Quick Test, Topic Wise, Mock Test, Dosage Calc, Previous Year Papers, and the full exam-mode Advanced Test, arranged from casual warm-up to exam-hall intensity.",
     "how": "Pick a card that matches how serious you want this session to be. Start light at the top when you’re warming up; work down to Previous Year Papers and Advanced Test when you’re ready for real exam conditions with negative marking and a countdown.",
-    "why": "Different stages of prep need different kinds of testing. Putting all six modes on one ladder makes it obvious which drill fits today — and nudges you to climb toward exam-realistic practice as the exam gets closer."
+    "why": "Different stages of prep need different kinds of testing. Putting all six modes on one ladder makes it obvious which drill fits today, and nudges you to climb toward exam-realistic practice as the exam gets closer."
   },
   "Favourites": {
     "title": "Favourites",
-    "what": "Your one-stop shortcuts page. Any section of the app — Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart — can be pinned here as a tile, and your top favourites also surface on the home screen for instant access.",
-    "how": "Tap Add (top-right) to open a centred picker of every section you can pin, or tap the heart beside any section’s title anywhere in the app — both drop it in here as a tile. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them; the top-left tile is priority #1, and your top tiles also surface on the home screen. You can reopen this any time from Settings → Manage favourites.",
+    "what": "Your one-stop shortcuts page. Any section of the app. Stats, Leaderboard, Bookmarks, Reference, a Drill mode, anything with a heart. Can be pinned here as a tile, and your top favourites also surface on the home screen for instant access.",
+    "how": "Tap Add (top-right) to open a centred picker of every section you can pin, or tap the heart beside any section’s title anywhere in the app, both drop it in here as a tile. Tap a tile to jump straight to that section. Tap Edit to drag tiles into the order you want or remove them; the top-left tile is priority #1, and your top tiles also surface on the home screen. You can reopen this any time from Settings → Manage favourites.",
     "why": "Everyone uses the app differently. Favourites puts the handful of sections you actually open every day one tap away, instead of hunting through the menu each time.",
     "example": "In the last week before the exam you pin Bookmarks, Weak areas and Previous papers. They now sit at the top of your home screen, and you open each one with a single tap."
   },
   "Crib sheet": {
     "title": "Crib Sheet",
-    "what": "A post-test review sheet listing every question from the test you just finished — with the correct answer and explanation for each — and flags for which you got right, wrong, or skipped. Like a mini PYQ booklet built from your own attempt.",
-    "how": "It appears automatically after a test (you can turn that off in Settings → Tests). Scroll through to review each question — right, wrong and skipped are colour-coded. Tap “Add to Revision” to keep it on your Crib Sheets shelf (inside Revision), where it stays dated and ready to reopen or print, or share it to study with a friend.",
+    "what": "A post-test review sheet listing every question from the test you just finished, with the correct answer and explanation for each, and flags for which you got right, wrong, or skipped. Like a mini PYQ booklet built from your own attempt.",
+    "how": "It appears automatically after a test (you can turn that off in Settings → Tests). Scroll through to review each question. Right, wrong and skipped are colour-coded. Tap “Add to Revision” to keep it on your Crib Sheets shelf (inside Revision), where it stays dated and ready to reopen or print, or share it to study with a friend.",
     "why": "The fastest way to learn is to review immediately, while the questions are fresh. Seeing the right answer and the reasoning next to what you chose turns every test into a study session.",
     "example": "You finish a 25-question mock and score 16. The Crib Sheet shows the 9 you missed with full explanations, so you fix those gaps right away instead of repeating the same mistakes."
   },
   "PYQ read mode": {
     "title": "Read mode",
-    "what": "A calm, no-pressure way to go through a previous year’s paper — every question shown with its correct answer and explanation, with nothing timed and nothing scored.",
+    "what": "A calm, no-pressure way to go through a previous year’s paper, every question shown with its correct answer and explanation, with nothing timed and nothing scored.",
     "how": "Scroll through the paper top to bottom, reading each question and its explanation at your own pace. Switch to Attempt mode instead if you want to sit the paper under exam conditions and have it scored.",
-    "why": "Sometimes you want to learn from a paper, not be tested by it. Read mode lets you absorb how questions are framed and why each answer is right — ideal for a first pass or a relaxed revision session.",
+    "why": "Sometimes you want to learn from a paper, not be tested by it. Read mode lets you absorb how questions are framed and why each answer is right, ideal for a first pass or a relaxed revision session.",
     "example": "The night before your exam you don’t want the stress of a timed test, so you open last year’s paper in Read mode and read through all the questions and explanations to refresh the key facts."
   }
 }

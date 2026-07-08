@@ -130,7 +130,7 @@ export default function StudyPlan({ profileId, onBack, onStartTopic, onStartMock
               <p className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
                 {plan && plan.reason === 'past'
                   ? 'Set a new exam date below and we’ll build a fresh day-by-day plan.'
-                  : 'Set your exam date below and we’ll build a personalised schedule — weak topics first, spaced reviews daily, and timed mocks as checkpoints.'}
+                  : 'Set your exam date below and we’ll build a personalised schedule, weak topics first, spaced reviews daily, and timed mocks as checkpoints.'}
               </p>
             </div>
             <ExamDateEditor allQuestionsCount={allQuestionsCount}

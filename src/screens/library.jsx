@@ -125,7 +125,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           Browse banks and import them into your own practice.{' '}
           {isAdmin
             ? 'As admin you can upload banks and edit, delete, or change the visibility of any of them.'
-            : 'Banks are curated by the team. Browse any bank and import it into your own practice — only an admin can upload, edit, or delete banks.'}
+            : 'Banks are curated by the team. Browse any bank and import it into your own practice. Only an admin can upload, edit, or delete banks.'}
         </div>
 
         {/* Filter chips — quickly switch between everything, just mine, just others.
@@ -191,7 +191,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           <div className="text-center py-12">
             <Layers size={40} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
             <div className="font-display text-lg mb-1" style={{ color: T.ink }}>No banks yet</div>
-            <div className="text-sm" style={{ color: T.muted }}>{isAdmin ? 'Upload the first one above.' : 'Check back soon — the team is adding banks.'}</div>
+            <div className="text-sm" style={{ color: T.muted }}>{isAdmin ? 'Upload the first one above.' : 'Check back soon: the team is adding banks.'}</div>
           </div>
         ) : visibleBanks.length === 0 ? (
           /* Banks exist but the current filter rules them all out. */

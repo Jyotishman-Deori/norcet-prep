@@ -194,13 +194,13 @@ resetConfig();
   assert.equal(formatInr(1234567), '₹12,34,567');
   assert.equal(formatInr(10000000), '₹1,00,00,000');
   assert.equal(formatInr(-1499), '₹-1,499');
-  // Non-finite / non-number → '₹—'
-  assert.equal(formatInr(Infinity), '₹—');
-  assert.equal(formatInr(-Infinity), '₹—');
-  assert.equal(formatInr(NaN), '₹—');
-  assert.equal(formatInr('999'), '₹—');
-  assert.equal(formatInr(null), '₹—');
-  assert.equal(formatInr(undefined), '₹—');
+  // Non-finite / non-number → '₹–' (en dash 'no value' glyph; never an em dash)
+  assert.equal(formatInr(Infinity), '₹–');
+  assert.equal(formatInr(-Infinity), '₹–');
+  assert.equal(formatInr(NaN), '₹–');
+  assert.equal(formatInr('999'), '₹–');
+  assert.equal(formatInr(null), '₹–');
+  assert.equal(formatInr(undefined), '₹–');
 }
 
 // ---- feature gates: cribVault (default OFF; gate ∧ ¬premium = locked) ----

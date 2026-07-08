@@ -148,7 +148,7 @@ export function redactPII(text) {
 
 // ---- the submission policy ---------------------------------------------
 export const PROFANITY_BLOCK_MESSAGE =
-  'Please keep it respectful — remove the flagged word and try again.';
+  'Please keep it respectful, remove the flagged word and try again.';
 
 // sanitizeUserText(text) → { text, blocked, reasons }
 //   blocked=true  → do NOT submit; show PROFANITY_BLOCK_MESSAGE.

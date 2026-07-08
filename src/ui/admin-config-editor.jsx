@@ -73,7 +73,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
       savedTimer.current = setTimeout(() => setSaved(false), 2600);
     } catch (e) {
       const m = String((e && e.message) || e);
-      setErr(/403/.test(m) ? 'Not authorised (admin only).' : /401/.test(m) ? 'Session expired — sign in again.' : 'Could not save — check your connection.');
+      setErr(/403/.test(m) ? 'Not authorised (admin only).' : /401/.test(m) ? 'Session expired: sign in again.' : 'Could not save: check your connection.');
     } finally { setBusy(false); }
   };
 
@@ -86,7 +86,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
       setBaseline(base); setCfg(clone(base)); setConfirmReset(false); setSaved(true);
       if (savedTimer.current) clearTimeout(savedTimer.current);
       savedTimer.current = setTimeout(() => setSaved(false), 2600);
-    } catch (e) { setErr('Could not reset — check your connection.'); }
+    } catch (e) { setErr('Could not reset, check your connection.'); }
     finally { setBusy(false); }
   };
 
@@ -113,7 +113,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
               <SlidersHorizontal size={18} style={{ color: T.primary }} />
             </div>
             <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-              Tune the game economy live — no redeploy. Changes reach players on their next app open.
+              Tune the game economy live, no redeploy. Changes reach players on their next app open.
             </div>
           </div>
         </Card>
@@ -166,7 +166,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
         {getAtPath(cfg, 'xp.reqScale') < 1 && (
           <div className="text-xs rounded-xl px-3 py-2.5 flex items-start gap-2" style={{ background: T.accent + '14', border: `1px solid ${T.accent}40`, color: T.inkSoft }}>
             <AlertTriangle size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
-            <span>Level pace is below 1 (faster than normal) — the test setting. Set it to <b>1</b> before real launch.</span>
+            <span>Level pace is below 1 (faster than normal), the test setting. Set it to <b>1</b> before real launch.</span>
           </div>
         )}
       </div>
@@ -191,7 +191,7 @@ export default function AdminConfigEditor({ onBack, actorName }) {
               </button>
               <div className="flex-1 min-w-0">
                 {err ? <span className="text-[12px] font-medium" style={{ color: T.error }}>{err}</span>
-                     : saved ? <span className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: T.success }}><Check size={14} /> Saved — live on next open</span>
+                     : saved ? <span className="text-[12px] font-semibold inline-flex items-center gap-1" style={{ color: T.success }}><Check size={14} /> Saved, live on next open</span>
                      : <span className="text-[12px]" style={{ color: T.muted }}>{dirty ? `${changed.length} unsaved change${changed.length === 1 ? '' : 's'}` : 'All changes saved'}</span>}
               </div>
               <Button onClick={save} disabled={!dirty || busy || errors.length > 0}

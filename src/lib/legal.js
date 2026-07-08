@@ -32,7 +32,7 @@ export const LEGAL = {
     sections: [
       {
         h: 'What we store',
-        body: 'Your study data — answers, scores, streaks, bookmarks, saved revision/crib sheets, favourites and app settings. If you create an account, we also store the display name and password you choose, plus a security question and answer you pick so you can recover your password if you forget it. You can optionally add an email; we never require it and never ask for a phone number.',
+        body: 'Your study data: answers, scores, streaks, bookmarks, saved revision/crib sheets, favourites and app settings. If you create an account, we also store the display name and password you choose, plus a security question and answer you pick so you can recover your password if you forget it. You can optionally add an email; we never require it and never ask for a phone number.',
       },
       {
         h: 'Guest mode',
@@ -44,7 +44,7 @@ export const LEGAL = {
       },
       {
         h: 'How your data is used',
-        body: 'Only to run the app: to show your progress, power features like spaced review and the leaderboard, and to let the admin improve content (for example, spotting questions many people find confusing). We show aggregated, app-wide usage to the admin — not a feed of any one person’s activity.',
+        body: 'Only to run the app: to show your progress, power features like spaced review and the leaderboard, and to let the admin improve content (for example, spotting questions many people find confusing). We show aggregated, app-wide usage to the admin, not a feed of any one person’s activity.',
       },
       {
         h: 'Analytics',
@@ -56,7 +56,7 @@ export const LEGAL = {
       },
       {
         h: 'Notifications',
-        body: 'Study reminders and new-content alerts are strictly opt-in. If you turn them on, your browser creates a push subscription (a technical address for your device — not your phone number or email) which we store to deliver messages. You can switch notifications off anytime in Settings or in your browser/phone settings, and the subscription is discarded when it stops working.',
+        body: 'Study reminders and new-content alerts are strictly opt-in. If you turn them on, your browser creates a push subscription (a technical address for your device, not your phone number or email) which we store to deliver messages. You can switch notifications off anytime in Settings or in your browser/phone settings, and the subscription is discarded when it stops working.',
       },
       {
         h: 'Cookies and local storage',
@@ -64,7 +64,7 @@ export const LEGAL = {
       },
       {
         h: 'Payments',
-        body: 'Nothing in the app charges money today. If paid plans launch, payments will be processed by a payment provider under their own terms — we will never see or store your card or banking details. See the Cancellation & Refunds policy for how paid plans will work.',
+        body: 'Nothing in the app charges money today. If paid plans launch, payments will be processed by a payment provider under their own terms. We will never see or store your card or banking details. See the Cancellation & Refunds policy for how paid plans will work.',
       },
       {
         h: 'What we never do',
@@ -115,11 +115,11 @@ export const LEGAL = {
       },
       {
         h: 'Your account',
-        body: 'Your account is personal — one account per person. Keep your login details safe; you’re responsible for activity under your profile. Password recovery uses the security question and answer you choose at sign-up (there is no email-based reset), so pick an answer only you would know and remember it. To protect accounts, signing in on a new device may sign out older devices.',
+        body: 'Your account is personal, one account per person. Keep your login details safe; you’re responsible for activity under your profile. Password recovery uses the security question and answer you choose at sign-up (there is no email-based reset), so pick an answer only you would know and remember it. To protect accounts, signing in on a new device may sign out older devices.',
       },
       {
         h: 'Free today, paid plans later',
-        body: 'During the current test phase every feature is free. Paid plans (individual and family) are previewed in the app and may launch later; if they do, prices will be shown clearly before you pay, some features may become premium-only, and the Cancellation & Refunds policy will apply. A family plan links separate accounts to one subscription — it never shares your progress or password with anyone.',
+        body: 'During the current test phase every feature is free. Paid plans (individual and family) are previewed in the app and may launch later; if they do, prices will be shown clearly before you pay, some features may become premium-only, and the Cancellation & Refunds policy will apply. A family plan links separate accounts to one subscription. It never shares your progress or password with anyone.',
       },
       {
         h: 'Content and contributions',
@@ -146,11 +146,11 @@ export const LEGAL = {
     sections: [
       {
         h: 'Be respectful',
-        body: 'No insults, abuse, slurs or harassment — in any language. An automatic filter blocks abusive words in English, Hindi/Hinglish and Assamese in public posts and display names, and the admin moderates everything on top of that.',
+        body: 'No insults, abuse, slurs or harassment, in any language. An automatic filter blocks abusive words in English, Hindi/Hinglish and Assamese in public posts and display names, and the admin moderates everything on top of that.',
       },
       {
         h: 'Keep personal information out',
-        body: 'For your own safety, don’t share phone numbers, emails, payment handles or ID numbers in public posts — yours or anyone else’s. The app automatically hides contact details it detects, but treat that as a seatbelt, not an invitation.',
+        body: 'For your own safety, don’t share phone numbers, emails, payment handles or ID numbers in public posts, yours or anyone else’s. The app automatically hides contact details it detects, but treat that as a seatbelt, not an invitation.',
       },
       {
         h: 'Stay on topic',
@@ -158,7 +158,7 @@ export const LEGAL = {
       },
       {
         h: 'Play the leaderboard fair',
-        body: 'Scores, streaks and XP should reflect real practice. Don’t use scripts, multiple accounts or other tricks to inflate standings — it spoils the comparison for everyone and can lead to removal.',
+        body: 'Scores, streaks and XP should reflect real practice. Don’t use scripts, multiple accounts or other tricks to inflate standings, it spoils the comparison for everyone and can lead to removal.',
       },
       {
         h: 'Academic honesty',
@@ -173,7 +173,7 @@ export const LEGAL = {
   refunds: {
     title: 'Cancellation & Refunds',
     updated: LEGAL_UPDATED,
-    intro: 'Right now the app is in a free test phase — nothing charges money, so there is nothing to cancel or refund. This policy explains how paid plans will work when they launch, so there are no surprises.',
+    intro: 'Right now the app is in a free test phase. Nothing charges money, so there is nothing to cancel or refund. This policy explains how paid plans will work when they launch, so there are no surprises.',
     sections: [
       {
         h: 'Today: everything is free',
@@ -185,15 +185,15 @@ export const LEGAL = {
       },
       {
         h: 'Cancelling',
-        body: 'You’ll be able to cancel anytime from inside the app. Cancelling stops future renewals; your premium features stay active until the end of the period you already paid for. Your study data is never taken away — free accounts keep everything they’ve learned.',
+        body: 'You’ll be able to cancel anytime from inside the app. Cancelling stops future renewals; your premium features stay active until the end of the period you already paid for. Your study data is never taken away, free accounts keep everything they’ve learned.',
       },
       {
         h: 'Refunds',
-        body: 'If something went wrong — a duplicate charge, a billing error, or the app failed to deliver what you paid for — contact us within 7 days of the charge via Settings → Send feedback and we’ll make it right, including a refund where appropriate. Refunds for simple change-of-mind after extended use may not be possible; we’ll always tell you clearly either way.',
+        body: 'If something went wrong, a duplicate charge, a billing error, or the app failed to deliver what you paid for, contact us within 7 days of the charge via Settings → Send feedback and we’ll make it right, including a refund where appropriate. Refunds for simple change-of-mind after extended use may not be possible; we’ll always tell you clearly either way.',
       },
       {
         h: 'Family plans',
-        body: 'A family plan covers up to six separate accounts under one subscription. If the plan owner cancels or a member is removed, that member simply returns to the free tier — their account and progress remain untouched.',
+        body: 'A family plan covers up to six separate accounts under one subscription. If the plan owner cancels or a member is removed, that member simply returns to the free tier, their account and progress remain untouched.',
       },
       {
         h: 'How refunds are paid',

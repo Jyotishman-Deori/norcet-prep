@@ -132,7 +132,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
             </div>
             <div style={{ color: '#FFF' }}>
               <div className="font-display text-base font-bold leading-tight">Computer-Based Test mode</div>
-              <div className="text-[12px]" style={{ color: 'rgba(255,255,255,0.7)' }}>Sit it like the real exam — on phone, tablet or laptop.</div>
+              <div className="text-[12px]" style={{ color: 'rgba(255,255,255,0.7)' }}>Sit it like the real exam, on phone, tablet or laptop.</div>
             </div>
           </div>
           <div className="relative flex flex-wrap gap-1.5">
@@ -152,7 +152,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
           </div>
 
           <Row label="Questions"
-               hint={count === 200 ? 'Full-length — closest to the real paper' : undefined}>
+               hint={count === 200 ? 'Full-length: closest to the real paper' : undefined}>
             <Segmented value={count}
                        onChange={setCount}
                        options={[{ id: 50, label: '50' }, { id: 100, label: '100' },
@@ -181,7 +181,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
           </Row>
 
           <Row label="Strict mode"
-               hint={strict ? 'No exit until you submit — real exam conditions' : 'You can quit mid-test'}
+               hint={strict ? 'No exit until you submit. Real exam conditions' : 'You can quit mid-test'}
                last>
             <Segmented value={strict ? 'on' : 'off'}
                        onChange={(v) => setStrict(v === 'on')}
@@ -276,7 +276,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5" style={{ color: T.error }} />
               <div className="text-[11px] leading-relaxed" style={{ color: T.inkSoft }}>
                 <span style={{ color: T.error, fontWeight: 600 }}>
-                  Only {filtered.length} question{filtered.length === 1 ? '' : 's'} match your filters — you need {count}.
+                  Only {filtered.length} question{filtered.length === 1 ? '' : 's'} match your filters. You need {count}.
                 </span>{' '}
                 Switch difficulty back to All, turn off PYQ, or pick fewer questions.
               </div>
@@ -489,7 +489,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       <div className="sticky top-0 z-20" style={{ background: T.bg, borderBottom: `1px solid ${T.borderSoft}`, paddingTop: 'env(safe-area-inset-top, 0px)' }}>
         <div className="max-w-md mx-auto px-4 py-2.5 flex items-center justify-between gap-2">
           {strict ? (
-            <div className="p-1.5" title="Strict mode — finish the test to exit">
+            <div className="p-1.5" title="Strict mode, finish the test to exit">
               <Lock size={18} style={{ color: T.muted }} />
             </div>
           ) : (
@@ -545,7 +545,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             <span style={{ color: T.muted }}>
               <span style={{ fontWeight: 700, color: T.inkSoft }}>+1</span> correct
               {' · '}<span style={{ fontWeight: 700, color: T.error }}>−⅓</span> wrong
-              {' · '}<span style={{ fontWeight: 700, color: T.inkSoft }}>0</span> blank — can't narrow it to two? Blank beats a guess.
+              {' · '}<span style={{ fontWeight: 700, color: T.inkSoft }}>0</span> blank, can't narrow it to two? Blank beats a guess.
             </span>
           </div>
         </div>
@@ -593,7 +593,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             {isMarked && <Pill bg={PALETTE_MARKED + '20'} color={PALETTE_MARKED}><Flag size={10} />Marked</Pill>}
           </div>
           {onToggleBookmark && (
-            <Tip text={isBookmarked ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+            <Tip text={isBookmarked ? 'Bookmarked: tap to remove' : 'Save this question to Bookmarks for later review'}>
             <button onClick={toggleBookmark}
                     aria-pressed={isBookmarked}
                     aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this question'}
@@ -833,7 +833,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
 
   return (
     <div className="anim-fadeup">
-      <TopBar title={label ? `${label} — results` : "Test results"} onBack={onHome} feedback={{ screen: "Advanced test results" }} />
+      <TopBar title={label ? `${label}: results` : "Test results"} onBack={onHome} feedback={{ screen: "Advanced test results" }} />
       <div className="max-w-md mx-auto px-4 pt-2 pb-24">
         <MotivationCard pct={Math.max(0, pctOfMax)} label="test" />
         {isGuest && <GuestSavePrompt onSignIn={onGuestSignIn} />}
@@ -841,7 +841,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
           <Card className="p-3 mb-4" style={{ background: T.accent + '15', border: `1px solid ${T.accent}40` }}>
             <div className="flex items-center gap-2 text-sm" style={{ color: T.accent }}>
               <AlertTriangle size={16} />
-              <span className="font-medium">Time expired — auto-submitted</span>
+              <span className="font-medium">Time expired, auto-submitted</span>
             </div>
           </Card>
         )}
@@ -1036,7 +1036,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
               is off; App passes onCribSheet=null in that case). */}
           {onCribSheet && (
             <Button onClick={onCribSheet} size="lg" className="w-full">
-              Review answers — Crib Sheet
+              Review answers: Crib Sheet
             </Button>
           )}
           {wrongAndBlank.length > 0 && onReview && (

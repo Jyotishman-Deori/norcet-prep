@@ -317,7 +317,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     const daysLeft = Math.round((tgt - t0) / 86400000);
     if (daysLeft < 0 || daysLeft > 30) return;
     const line = daysLeft <= 7
-      ? 'The final stretch — trust your prep and keep the high-yield notes close.'
+      ? 'The final stretch: trust your prep and keep the high-yield notes close.'
       : daysLeft <= 14
         ? 'Two weeks to go. Tighten up your weak areas and lean on revision.'
         : 'Under a month left. Steady, focused revision now pays off most.';
@@ -392,7 +392,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const replies = unseenReplies || [];
   const fixedReply = replies.find(r => r.status === 'fixed');
   const replyMsg = fixedReply
-    ? `Your report${fixedReply.questionId ? ` on ${fixedReply.questionId}` : ''} was fixed — thank you!`
+    ? `Your report${fixedReply.questionId ? ` on ${fixedReply.questionId}` : ''} was fixed: thank you!`
     : (replies.length === 1
         ? 'An admin replied to your feedback.'
         : `An admin responded to ${replies.length} of your reports.`);
@@ -422,7 +422,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
     if (worstWeak) {
       tiles.push(
-        <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics — the questions you’ve got wrong come back first.">
+        <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics, the questions you’ve got wrong come back first.">
         <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
               onClick={() => onNavigate({ screen: 'weak-areas' })}
               onContextMenu={(e) => e.preventDefault()}
@@ -455,7 +455,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       const showWarning = untouchedCount > 0;
       const sc = showWarning ? T.accent : T.primary;
       tiles.push(
-        <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown — what you’ve started, what’s mastered, and what’s still untouched.">
+        <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown, what you’ve started, what’s mastered, and what’s still untouched.">
         <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
               onClick={() => onNavigate({ screen: 'coverage' })}
               onContextMenu={(e) => e.preventDefault()}
@@ -525,7 +525,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
           <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-2.5 max-w-md md:max-w-3xl lg:max-w-6xl mx-auto">
-            <Tip title="Menu" text="Every section of the app — study, progress, tools, learning and help — one swipe or tap away. On Home, swipe right anywhere to open it.">
+            <Tip title="Menu" text="Every section of the app, study, progress, tools, learning and help, one swipe or tap away. On Home, swipe right anywhere to open it.">
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
                       aria-label="Open menu">
@@ -538,7 +538,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   not the shared TopBar). Same leftmost slot as elsewhere. */}
               <NoteButton />
               {onOpenNotifications && (
-                <Tip title="Today" text="Your daily briefing — what's due for revision, reminders, fresh achievements and study insights.">
+                <Tip title="Today" text="Your daily briefing, what's due for revision, reminders, fresh achievements and study insights.">
                 <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
                         className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
                         aria-label="Notifications">
@@ -619,7 +619,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <div className="min-w-0 flex-1">
               <div className="text-sm font-semibold" style={{ color: T.ink }}>Invite-only launch is coming</div>
               <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-                Reserve your founding-member seat on the waitlist — early batches get everything free.
+                Reserve your founding-member seat on the waitlist, early batches get everything free.
               </div>
             </div>
             <ChevronRight size={16} className="flex-shrink-0" style={{ color: T.muted }} />
@@ -691,7 +691,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>Streak saved</div>
               <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>
-                You missed yesterday — your grace day covered it. Keep going today to keep the streak alive.
+                You missed yesterday: your grace day covered it. Keep going today to keep the streak alive.
               </div>
             </div>
             <button onClick={onDismissGrace}
@@ -716,7 +716,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>
                 {whatsNew.length === 1
                   ? `"${whatsNew[0].name}" updated to v${whatsNew[0].version}`
-                  : `${whatsNew.length} banks updated`} — tap to view
+                  : `${whatsNew.length} banks updated`}: tap to view
               </div>
             </div>
             <button onClick={(e) => { e.stopPropagation(); onDismissWhatsNew(); }}
@@ -755,7 +755,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 {dailyQuote.text}
               </p>
               <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
-                — {dailyQuote.source}
+, {dailyQuote.source}
               </p>
             </div>
           </div>
@@ -854,7 +854,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
             {weeklySummary.thisAnswered < 5 ? (
               <div className="text-sm" style={{ color: T.muted }}>
-                Keep going — answer a few questions each day to unlock your weekly summary.
+                Keep going: answer a few questions each day to unlock your weekly summary.
               </div>
             ) : (
               <>
@@ -1061,7 +1061,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                     </>
                   ) : daysLeft === 0 ? (
                     <>
-                      <div className="font-display text-base font-semibold">Exam day — good luck</div>
+                      <div className="font-display text-base font-semibold">Exam day, good luck</div>
                       <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>{niceDate}</div>
                     </>
                   ) : (
@@ -1130,7 +1130,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           tap-and-hold INFO tip is restored here (issues #2) — it is
           glitch-free now that the bubble carries no backdrop-filter and the
           card suppresses the native long-press chrome. */}
-      <Tip title="Drill Tests" text="All your test modes in one place — Quick, Topic Wise, Mock, Dosage and Advanced — plus previous-year papers.">
+      <Tip title="Drill Tests" text="All your test modes in one place. Quick, Topic Wise, Mock, Dosage and Advanced, plus previous-year papers.">
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${lightenHex(T.primary, 0.12)} 0%, ${T.primary} 60%, ${darkenHex(T.primary, 0.12)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.45)}38` }}>
@@ -1159,7 +1159,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           now shares the THEME PRIMARY as a tonal pair: Drill is the brighter
           tone, Learn the deeper one — cohesive with the theme grading in every
           palette, while staying clearly distinct from Drill. */}
-      <Tip title="Learn topic wise" text="Concept cards that teach each topic — learn the material before you test yourself on it.">
+      <Tip title="Learn topic wise" text="Concept cards that teach each topic, learn the material before you test yourself on it.">
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${T.primary} 0%, ${darkenHex(T.primary, 0.26)} 55%, ${darkenHex(T.primary, 0.42)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.5)}40` }}>
@@ -1184,7 +1184,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* Level Up — the gamification hub. A LIVE entry: current level, prestige
           tier and XP-to-next progress. Groups the clinical games + the Knowledge
           Map under one progression spine. */}
-      <Tip title="Level Up" text="Your progression hub — play the clinical games and the Knowledge Map to earn XP, climb levels and unlock prestige tiers.">
+      <Tip title="Level Up" text="Your progression hub, play the clinical games and the Knowledge Map to earn XP, climb levels and unlock prestige tiers.">
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'level-up' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(135deg, ${luTier.accent} 0%, ${luTier.accent}CC 50%, rgba(0,0,0,0.5) 130%)`,

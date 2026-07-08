@@ -86,7 +86,7 @@ function SkillSetup({ onStart, onBack, onSetPace }) {
         {/* Pace — same Off/Pulse/Flashpoint control as the tests */}
         <PaceSelector value={pace} onChange={onSetPace} T={T} />
         <div className="text-[11px] leading-relaxed px-1 mb-1" style={{ color: T.muted }}>
-          With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each patient gets a countdown — run out and the case locks.
+          With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each patient gets a countdown. Run out and the case locks.
           <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
         </div>
       </div>

@@ -26,7 +26,7 @@ export function levelUpMilestone(toLevel) {
   return { type: 'level-up', id: `level-up:${toLevel}`, label: `Reached Level ${toLevel}`, meta: { toLevel } };
 }
 export function masteryMilestone(nodeId, state, name) {
-  return { type: 'mastery', id: `mastery:${nodeId}:${state}`, label: `${name || nodeId} — ${state}`, meta: { nodeId, state } };
+  return { type: 'mastery', id: `mastery:${nodeId}:${state}`, label: `${name || nodeId}: ${state}`, meta: { nodeId, state } };
 }
 export function streakMilestone(days, dateStr) {
   return { type: 'streak', id: `streak:${days}:${dateStr}`, label: `${days}-day streak`, meta: { days } };

@@ -218,12 +218,12 @@ export default function MistakeVault({ onBack, onStartReview, onOpenPremium }) {
               <div className="text-center py-12">
                 <ShieldCheck size={36} className="mx-auto mb-3" style={{ color: T.success, opacity: 0.5 }} />
                 <div className="font-display text-lg mb-1" style={{ color: T.ink }}>
-                  {fixed.length > 0 ? 'Vault cleared — every mistake fixed!' : 'No mistakes recorded yet'}
+                  {fixed.length > 0 ? 'Vault cleared: every mistake fixed!' : 'No mistakes recorded yet'}
                 </div>
                 <div className="text-sm leading-relaxed px-6" style={{ color: T.muted }}>
                   {fixed.length > 0
                     ? 'New wrong answers will land here automatically so you can fix them too.'
-                    : 'Answer questions anywhere in the app — anything you get wrong is saved here to review until it sticks.'}
+                    : 'Answer questions anywhere in the app. Anything you get wrong is saved here to review until it sticks.'}
                 </div>
               </div>
             )}

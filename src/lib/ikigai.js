@@ -21,7 +21,7 @@ const clamp01 = (n) => Math.max(0, Math.min(1, n));
 const ramp = (n, full) => clamp01(n / full);          // 0→1 data-confidence ramp
 
 export const IKIGAI_DIMENSIONS = [
-  { key: 'passion',    label: 'What you love',     short: 'Passion',    color: '#E0245E', hint: 'How much you show up — streak, breadth, volume.' },
+  { key: 'passion',    label: 'What you love',     short: 'Passion',    color: '#E0245E', hint: 'How much you show up, streak, breadth, volume.' },
   { key: 'profession', label: "What you're good at", short: 'Profession', color: '#0B7285', hint: 'Your overall accuracy across everything you attempt.' },
   { key: 'mission',    label: 'What NORCET demands', short: 'Mission',    color: '#9333EA', hint: 'Mastery of the must-know, foundational questions.' },
   { key: 'vocation',   label: 'What gets you placed', short: 'Vocation',  color: '#16A34A', hint: 'Exam pacing + restraint against negative marking.' },

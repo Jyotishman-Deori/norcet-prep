@@ -110,6 +110,6 @@ export function describeEntry(e) {
     case 'faq.create': return `${who} created a FAQ${on ? `: “${on}”` : ''}`;
     case 'faq.update': return `${who} edited a FAQ${on ? `: “${on}”` : ''}`;
     case 'faq.delete': return `${who} deleted a FAQ`;
-    default: return `${who} — ${meta.label}`;
+    default: return `${who}: ${meta.label}`;
   }
 }

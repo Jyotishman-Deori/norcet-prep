@@ -185,7 +185,7 @@ function CompanionRenameModal({ profile, currentName, onRenamed, onClose }) {
                  }}>
               <AlertCircle size={13} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} aria-hidden="true" />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                Just a friendly name — up to {NAME_MAX} characters. Your saved notes stay exactly as they are.
+                Just a friendly name, up to {NAME_MAX} characters. Your saved notes stay exactly as they are.
               </div>
             </div>
 

@@ -181,8 +181,8 @@ export function pacingByTopic(entries, opts = {}) {
 // Headline verdict for the overall pace, exam-pace relative.
 export function paceVerdict(avgSec, targetSec = EXAM_PACE_SEC) {
   if (typeof avgSec !== 'number') return null;
-  if (avgSec <= targetSec * 0.7) return { kind: 'fast', text: `Averaging ${avgSec}s — well inside exam pace (~${targetSec}s). Make sure speed isn’t costing accuracy.` };
-  if (avgSec <= targetSec * 1.1) return { kind: 'onpace', text: `Averaging ${avgSec}s — right around exam pace (~${targetSec}s).` };
-  if (avgSec <= targetSec * 1.5) return { kind: 'slow', text: `Averaging ${avgSec}s — a bit over exam pace (~${targetSec}s). Tighten the slow topics below.` };
-  return { kind: 'verslow', text: `Averaging ${avgSec}s — well over exam pace (~${targetSec}s). Time management is the lever here.` };
+  if (avgSec <= targetSec * 0.7) return { kind: 'fast', text: `Averaging ${avgSec}s: well inside exam pace (~${targetSec}s). Make sure speed isn’t costing accuracy.` };
+  if (avgSec <= targetSec * 1.1) return { kind: 'onpace', text: `Averaging ${avgSec}s: right around exam pace (~${targetSec}s).` };
+  if (avgSec <= targetSec * 1.5) return { kind: 'slow', text: `Averaging ${avgSec}s: a bit over exam pace (~${targetSec}s). Tighten the slow topics below.` };
+  return { kind: 'verslow', text: `Averaging ${avgSec}s: well over exam pace (~${targetSec}s). Time management is the lever here.` };
 }

@@ -44,15 +44,15 @@ export default function PulseIntro({ open, onClose }) {
         </div>
         <div className="px-5 py-4 space-y-3.5">
           <Row icon={Clock} title="A live countdown on each question"
-               body="A colour-grading bar drains as you think — tuned per subject so it mirrors real exam pace (harder questions get more)." />
+               body="A colour-grading bar drains as you think, tuned per subject so it mirrors real exam pace (harder questions get more)." />
           <Row icon={Lock} title="Run out of time? It locks"
-               body="When the bar empties, the question auto-submits. It trains you to commit on instinct instead of dawdling — no points lost beyond the question itself." />
+               body="When the bar empties, the question auto-submits. It trains you to commit on instinct instead of dawdling, no points lost beyond the question itself." />
         </div>
         <div className="px-5 pb-5 pt-1">
           <button onClick={onClose}
                   className="no-tap-highlight w-full py-3.5 rounded-2xl text-sm font-semibold active:scale-[0.99]"
                   style={{ background: GREEN, color: '#FFF', boxShadow: `0 12px 28px ${GREEN}55` }}>
-            Got it — let's go
+            Got it: let's go
           </button>
         </div>
       </div>

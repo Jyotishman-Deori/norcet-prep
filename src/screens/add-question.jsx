@@ -177,7 +177,7 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
         {/* Memory tip */}
         <div className="text-xs uppercase tracking-wider font-semibold mb-2 mt-0" style={{ color: T.muted }}>Memory tip <span style={{ color: T.muted, fontWeight: 400, textTransform: 'none', letterSpacing: 0 }}>(optional)</span></div>
         <textarea value={memoryTip} onChange={e => setMemoryTip(e.target.value)}
-                  placeholder="A pattern, mnemonic, or clinical intuition that makes this stick — e.g. 'HIGH K = HIGH RISK: think of potassium as a volume knob on the heart'"
+                  placeholder="A pattern, mnemonic, or clinical intuition that makes this stick, e.g. 'HIGH K = HIGH RISK: think of potassium as a volume knob on the heart'"
                   rows={3}
                   className="w-full rounded-xl px-4 py-3 mb-4 text-sm resize-none" style={inputStyle} />
           </>

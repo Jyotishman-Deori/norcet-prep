@@ -107,6 +107,21 @@ from UI and from storage. Server/shared state is the source of truth, not the cl
 
 ---
 
+## User-facing text — NO em dashes (hard rule)
+
+- **Never** use an em dash (—) or a double hyphen (`--`) in any user-visible copy:
+  JSX/TSX text, display strings, `public/data/*.json` content, notification/reminder
+  messages, tooltips, toasts, placeholders. Em dashes read as "AI-generated" and erode
+  student trust in the question bank.
+- Use a **period** (two independent clauses), a **comma** (appended/dependent clause),
+  or a **colon** (label → definition) — whichever the sentence actually calls for. Don't
+  blind-swap to commas; that creates comma splices that look *more* AI-authored.
+- **Scope is display copy ONLY.** Do NOT touch code operators (`--i`), CLI flags
+  (`--no-verify-jwt`), CSS vars (`--dnav-h`), regex, or comments. En dashes (–) in
+  numeric ranges ("60–100 bpm", "3–5 min") are correct typography — leave them.
+- The `'—'` glyph used as an empty-value placeholder in tables (e.g. `loading ? '—' : n`)
+  is a UI symbol, not prose — leave it, or swap for a period/blank if restyling.
+
 ## Content authoring conventions
 
 - **Explanation format** (built-in and imported banks): plain text rendered with

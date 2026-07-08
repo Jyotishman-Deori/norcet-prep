@@ -78,7 +78,7 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
                 You've imported {alreadyImported.count} question{alreadyImported.count === 1 ? '' : 's'} from this bank
                 {alreadyImported.version && ` (v${alreadyImported.version})`}.
                 {alreadyImported.version && alreadyImported.version < bank.version &&
-                  <span style={{ color: T.accent, fontWeight: 600 }}> A newer version is available — tap "Update" to refresh.</span>}
+                  <span style={{ color: T.accent, fontWeight: 600 }}> A newer version is available, tap "Update" to refresh.</span>}
               </div>
             </div>
           </Card>
@@ -102,8 +102,8 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
                   </div>
                   <div className="text-[11px] mt-0.5 leading-snug" style={{ color: T.muted }}>
                     {isDisabled
-                      ? 'Paused — these questions are hidden from quizzes, drills, and stats. Your progress is kept.'
-                      : 'Active — questions appear across Quick test, topics, and stats.'}
+                      ? 'Paused: these questions are hidden from quizzes, drills, and stats. Your progress is kept.'
+                      : 'Active: questions appear across Quick test, topics, and stats.'}
                   </div>
                 </div>
               </div>
@@ -155,8 +155,8 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
                 <div className="font-medium text-sm" style={{ color: T.ink }}>Visibility</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {priv
-                    ? 'Private — only you' + (isAdmin && !isOwner ? ' (the owner)' : '') + ' can see and use it.'
-                    : 'Public — everyone can browse, import, and practise it.'}
+                    ? 'Private: only you' + (isAdmin && !isOwner ? ' (the owner)' : '') + ' can see and use it.'
+                    : 'Public: everyone can browse, import, and practise it.'}
                 </div>
               </div>
               <button onClick={toggleVis} disabled={visBusy}
@@ -203,7 +203,7 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
         {/* Owner (non-admin) note */}
         {isOwner && !isAdmin && (
           <div className="text-[11px] mt-3 leading-relaxed px-1" style={{ color: T.muted }}>
-            This is your bank — you can change its visibility above. Only an admin can edit its questions or delete it.
+            This is your bank. You can change its visibility above. Only an admin can edit its questions or delete it.
           </div>
         )}
       </div>
@@ -550,13 +550,13 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
               <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
               <div className="text-xs leading-relaxed flex-1" style={{ color: T.inkSoft }}>
                 <div className="font-medium" style={{ color: T.success }}>
-                  {lastAdded.replaced ? 'Done — set replaced.' : 'Added.'}{' '}
+                  {lastAdded.replaced ? 'Done: set replaced.' : 'Added.'}{' '}
                   {lastAdded.added} question{lastAdded.added === 1 ? '' : 's'} {lastAdded.replaced ? 'now in the set' : 'added'}.
                 </div>
                 {lastAdded.flagged > 0 && (
                   <div className="mt-1" style={{ color: T.muted }}>
                     {lastAdded.flagged} flagged as possible duplicate{lastAdded.flagged === 1 ? '' : 's'}
-                    {' — '}
+                    {': '}
                     <span style={{ color: T.success }}>{lastAdded.kept} kept</span>
                     {', '}
                     <span style={{ color: T.accent }}>{lastAdded.skipped} skipped</span>.
@@ -639,7 +639,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
               {dupReview.unique.length > 0
                 ? `${dupReview.unique.length} unique question${dupReview.unique.length === 1 ? '' : 's'} will be added. `
                 : ''}
-              {dupReview.duplicates.length} look{dupReview.duplicates.length === 1 ? 's' : ''} similar to existing question{dupReview.duplicates.length === 1 ? '' : 's'} — choose which to keep.
+              {dupReview.duplicates.length} look{dupReview.duplicates.length === 1 ? 's' : ''} similar to existing question{dupReview.duplicates.length === 1 ? '' : 's'}: choose which to keep.
             </div>
 
             <div className="space-y-2.5 mb-3">

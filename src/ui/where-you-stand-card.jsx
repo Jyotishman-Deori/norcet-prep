@@ -120,7 +120,7 @@ export default function WhereYouStandCard({ history, estimate, onStartAdvanced, 
         <div className="mt-2">
           <div className="text-[15px] font-semibold" style={{ color: T.ink }}>The official AIIMS qualifying bar</div>
           <p className="mt-1 text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
-            The real NORCET Mains cut-offs and recent Prelims percentiles — the exact targets you’re studying toward. A short Quick Test gives a first estimate of where <b style={{ color: T.ink }}>you</b> land.
+            The real NORCET Mains cut-offs and recent Prelims percentiles, the exact targets you’re studying toward. A short Quick Test gives a first estimate of where <b style={{ color: T.ink }}>you</b> land.
           </p>
         </div>
       )}
@@ -160,10 +160,10 @@ export default function WhereYouStandCard({ history, estimate, onStartAdvanced, 
       {/* Footnote — keep the claim honest */}
       <p className="mt-2 text-[10.5px] leading-snug" style={{ color: T.muted }}>
         {mode === 'real'
-          ? 'From your timed Advanced Tests, negative marking applied. Lines are official AIIMS Mains qualifying minimums (PwBD lines included) — your category is yours to read off; this isn’t a predicted rank.'
+          ? 'From your timed Advanced Tests, negative marking applied. Lines are official AIIMS Mains qualifying minimums (PwBD lines included). Your category is yours to read off; this isn’t a predicted rank.'
           : mode === 'estimate'
-            ? 'Estimate = your overall accuracy with 1/3 negative marking applied — a rough preview, not real marks. Take a timed Advanced Test for the true figure. Lines are official AIIMS Mains minimums (PwBD included).'
-            : 'Lines are official AIIMS Mains qualifying minimums (PwBD lines included) — your category is yours to read off. These are real cut-offs, not a predicted rank.'}
+            ? 'Estimate = your overall accuracy with 1/3 negative marking applied. A rough preview, not real marks. Take a timed Advanced Test for the true figure. Lines are official AIIMS Mains minimums (PwBD included).'
+            : 'Lines are official AIIMS Mains qualifying minimums (PwBD lines included). Your category is yours to read off. These are real cut-offs, not a predicted rank.'}
       </p>
 
       {/* Prelims percentile cut-offs — ALWAYS visible reference (both phases) */}
@@ -172,11 +172,11 @@ export default function WhereYouStandCard({ history, estimate, onStartAdvanced, 
       {/* Phase-appropriate CTAs — never a dead end. */}
       <div className="mt-4 flex flex-col items-center gap-2.5">
         {mode === 'real' && (<>
-          {onQuick && primaryBtn('Improve your score — practise now', onQuick)}
+          {onQuick && primaryBtn('Improve your score, practise now', onQuick)}
           {onStartAdvanced && quietBtn('Take another Advanced Test to refresh', onStartAdvanced)}
         </>)}
         {mode === 'estimate' && (<>
-          {onStartAdvanced && primaryBtn('Get your exact score — take an Advanced Test', onStartAdvanced)}
+          {onStartAdvanced && primaryBtn('Get your exact score, take an Advanced Test', onStartAdvanced)}
           {onQuick && quietBtn('Keep practising to sharpen the estimate', onQuick)}
         </>)}
         {mode === 'placeholder' && (<>
@@ -205,7 +205,7 @@ function Readout({ T, status }) {
   }
   if (status.clearsNone) {
     const n = status.nextUp;
-    return <>You’re just under the bar. Nearest is <b style={{ color: T.ink }}>{n?.pct}%</b> — <b>{status.gapToNext}%</b> to go.</>;
+    return <>You’re just under the bar. Nearest is <b style={{ color: T.ink }}>{n?.pct}%</b>: <b>{status.gapToNext}%</b> to go.</>;
   }
   const hc = status.highestCleared;
   const nu = status.nextUp;
@@ -350,7 +350,7 @@ function PrelimsSection({ T }) {
       )}
 
       <p className="text-[10.5px] leading-snug mt-2" style={{ color: T.muted }}>
-        Percentile (relative, cycle-specific) — not your marks %, shown for context only.
+        Percentile (relative, cycle-specific). Not your marks %, shown for context only.
       </p>
     </div>
   );

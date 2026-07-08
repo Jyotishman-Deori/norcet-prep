@@ -84,7 +84,7 @@ function DrillTests({ onBack, onNavigate }) {
 
         <Reveal delay={0}>
           <p className="text-[13px] leading-relaxed mb-4 px-0.5" style={{ color: T.muted }}>
-            Your exam-style tests — from a quick warm-up to full exam-hall mode. The
+            Your exam-style tests, from a quick warm-up to full exam-hall mode. The
             interactive clinical games now live in Level Up.
           </p>
         </Reveal>
@@ -96,16 +96,16 @@ function DrillTests({ onBack, onNavigate }) {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-3 items-stretch">
             <TopCard icon={Shuffle}    color={T.sec.quick} title="Quick Test"
                      sub="Pick count + topic" onClick={() => go('quick-setup')} fav="quick-setup"
-                     tip="A fast warm-up: choose how many questions and (optionally) a topic — instant feedback after every answer." />
+                     tip="A fast warm-up: choose how many questions and (optionally) a topic, instant feedback after every answer." />
             <TopCard icon={ListChecks} color={T.sec.topic} title="Topic Wise Test"
                      sub="Pick a subject" onClick={() => go('topic-select')} fav="topic-select"
-                     tip="Drill one subject at a time to turn weak areas into strong ones — feeds your topic accuracy stats." />
+                     tip="Drill one subject at a time to turn weak areas into strong ones, feeds your topic accuracy stats." />
             <TopCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
-                     tip="A timed run under exam pressure — fixed clock, no hints, score at the end." />
+                     tip="A timed run under exam pressure, fixed clock, no hints, score at the end." />
             <TopCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
                      sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
-                     tip="Type-in dosage calculations with step-by-step working shown after each answer — the NORCET drug-math staple." />
+                     tip="Type-in dosage calculations with step-by-step working shown after each answer, the NORCET drug-math staple." />
           </div>
         </Reveal>
 
@@ -116,7 +116,7 @@ function DrillTests({ onBack, onNavigate }) {
 
         {/* Bottom tier — Previous Year Papers (bold, official) */}
         <Reveal delay={170}>
-          <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers — sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
+          <Tip title="Previous Year Papers" text="Official AIIMS NORCET papers, sit the full timed simulation, or open Read Mode for calm question-and-answer revision.">
           <Card className="p-4 mb-3 relative h-full" onClick={() => go('previous-papers')}
                 style={{ background: T.sec.revision, border: 'none', boxShadow: '0 6px 18px rgba(0,0,0,0.18)' }}>
             <span className="absolute top-2 right-2"><FavHeart favId="previous-papers" inline /></span>
@@ -151,7 +151,7 @@ function DrillTests({ onBack, onNavigate }) {
 
         {/* Bottom tier — Advanced Test (the final boss: darkest + most elevated) */}
         <Reveal delay={210}>
-          <Tip title="Advanced Test" text="The full exam-hall experience: countdown clock, negative marking and a question palette to jump around — scores feed your best-net history.">
+          <Tip title="Advanced Test" text="The full exam-hall experience: countdown clock, negative marking and a question palette to jump around, scores feed your best-net history.">
           <Card className="p-5 relative h-full" onClick={() => go('advanced-setup')}
                 style={{
                   background: `linear-gradient(135deg, ${T.sec.advanced} 55%, rgba(0,0,0,0.22))`,

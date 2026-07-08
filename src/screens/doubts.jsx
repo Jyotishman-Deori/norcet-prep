@@ -80,7 +80,7 @@ function DoubtsScreen({ onBack, onNavigate }) {
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>Doubts</div>
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>
             {kind === 'concepts'
-              ? 'Points you flagged while reading. Re-read them, then mark resolved — they also jump to the top of Quick Revision.'
+              ? 'Points you flagged while reading. Re-read them, then mark resolved, they also jump to the top of Quick Revision.'
               : 'Explanations you flagged as unclear after answering. They resolve when you mark them, or automatically when you later get the question right.'}
           </div>
         </div>
@@ -193,7 +193,7 @@ function DoubtsScreen({ onBack, onNavigate }) {
             <EmptyState
               icon={Check}
               title="Nothing resolved yet"
-              text="Flags clear when you mark them resolved — or automatically, the moment you answer that question correctly." />
+              text="Flags clear when you mark them resolved, or automatically, the moment you answer that question correctly." />
           )
         ) : (
           <div className="space-y-2">

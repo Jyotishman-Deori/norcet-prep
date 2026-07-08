@@ -77,7 +77,7 @@ export default function FavHeart({ favId, inline = false, size = 18, emptyColor 
 
   return (
     <>
-      <Tip text={isFav ? 'In your favourites — tap to remove' : 'Add this section to your favourites for one-tap access from home'}>
+      <Tip text={isFav ? 'In your favourites: tap to remove' : 'Add this section to your favourites for one-tap access from home'}>
       <button onClick={(e) => { if (inline) { e.stopPropagation(); e.preventDefault(); } onTap(); }}
               aria-pressed={isFav}
               aria-label={isFav ? 'Remove from favourites' : 'Add to favourites'}
@@ -112,7 +112,7 @@ export default function FavHeart({ favId, inline = false, size = 18, emptyColor 
              role="status" aria-live="polite">
           <Heart size={14} fill="#E0245E" style={{ color: '#E0245E', flexShrink: 0 }} />
           <span style={{ color: '#FFF', fontSize: 12.5, lineHeight: 1.45 }}>
-            Saved to Favourites — turn on the <b>Favourites section</b> in Settings to see it on your home screen
+            Saved to Favourites: turn on the <b>Favourites section</b> in Settings to see it on your home screen
           </span>
         </div>
       )}

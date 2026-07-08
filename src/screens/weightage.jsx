@@ -161,7 +161,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
               <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.primary }}>High-leverage topics</div>
             </div>
             <div className="text-xs mb-3" style={{ color: T.muted }}>
-              Big share of the exam where you're not yet strong — the best return on study time.
+              Big share of the exam where you're not yet strong, the best return on study time.
             </div>
             <div className="space-y-2">
               {model.leverage.map(l => (
@@ -281,7 +281,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
                     ))}
                   </div>
                 ) : (
-                  <div className="text-xs text-center" style={{ color: T.muted }}>No topic shifted by 3% or more across these years — the mix has been stable.</div>
+                  <div className="text-xs text-center" style={{ color: T.muted }}>No topic shifted by 3% or more across these years. The mix has been stable.</div>
                 )}
               </>
             )}

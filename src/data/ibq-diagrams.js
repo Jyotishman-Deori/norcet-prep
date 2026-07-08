@@ -37,7 +37,7 @@ export const IBQ_DIAGRAMS = [
       { id: 't',  label: 'T wave',     shape: 'rect', x: 216, y: 84,  w: 72, h: 46 },
     ],
     prompts: [
-      { id: 'q1', ask: 'Tap the P wave',       answer: 'p',   exp: 'The P wave is atrial depolarisation — it should precede every QRS in sinus rhythm.' },
+      { id: 'q1', ask: 'Tap the P wave',       answer: 'p',   exp: 'The P wave is atrial depolarisation. It should precede every QRS in sinus rhythm.' },
       { id: 'q2', ask: 'Tap the QRS complex',  answer: 'qrs', exp: 'The QRS is ventricular depolarisation. A normal QRS is narrow (<0.12 s / 3 small squares).' },
       { id: 'q3', ask: 'Tap the T wave',       answer: 't',   exp: 'The T wave is ventricular repolarisation. Tall, tented T waves are a classic hyperkalaemia sign.' },
       { id: 'q4', ask: 'Tap the ST segment',   answer: 'st',  exp: 'The ST segment sits on the baseline. Elevation = STEMI; depression = ischaemia.' },
@@ -49,7 +49,7 @@ export const IBQ_DIAGRAMS = [
   // (Patient faces you, so the patient's RIGHT is on the viewer's LEFT.)
   {
     id: 'auscultation',
-    title: 'Heart Sounds — Where to Listen',
+    title: 'Heart Sounds: Where to Listen',
     viewBox: '0 0 240 260',
     art: [
       // chest / torso outline
@@ -67,10 +67,10 @@ export const IBQ_DIAGRAMS = [
       { id: 'mitral',    label: 'Mitral',    shape: 'circle', cx: 162, cy: 162, r: 15 },
     ],
     prompts: [
-      { id: 'q1', ask: 'Tap the AORTIC area',        answer: 'aortic',    exp: 'Aortic = right 2nd intercostal space, right sternal border. Mnemonic APE To Man — A is first.' },
+      { id: 'q1', ask: 'Tap the AORTIC area',        answer: 'aortic',    exp: 'Aortic = right 2nd intercostal space, right sternal border. Mnemonic APE To Man. A is first.' },
       { id: 'q2', ask: 'Tap the PULMONARY area',     answer: 'pulmonary', exp: 'Pulmonary = left 2nd intercostal space, left sternal border.' },
-      { id: 'q3', ask: "Tap ERB's point",            answer: 'erbs',      exp: "Erb's point = left 3rd intercostal space — best for hearing both heart sounds together." },
-      { id: 'q4', ask: 'Tap the MITRAL area (apex)', answer: 'mitral',    exp: 'Mitral/apex = left 5th intercostal space, mid-clavicular line — the apex beat.' },
+      { id: 'q3', ask: "Tap ERB's point",            answer: 'erbs',      exp: "Erb's point = left 3rd intercostal space, best for hearing both heart sounds together." },
+      { id: 'q4', ask: 'Tap the MITRAL area (apex)', answer: 'mitral',    exp: 'Mitral/apex = left 5th intercostal space, mid-clavicular line, the apex beat.' },
       { id: 'q5', ask: 'Tap the TRICUSPID area',     answer: 'tricuspid', exp: 'Tricuspid = left lower sternal border, 4th–5th intercostal space.' },
     ],
   },
@@ -104,11 +104,11 @@ export const IBQ_DIAGRAMS = [
       { id: 'lil', label: 'L. iliac',         shape: 'rect', x: 148, y: 180, w: 56, h: 70 },
     ],
     prompts: [
-      { id: 'q1', ask: 'Tap the EPIGASTRIC region',          answer: 'epi', exp: 'Epigastric — central upper region. Overlies the stomach, pancreas, duodenum.' },
-      { id: 'q2', ask: 'Tap the UMBILICAL region',           answer: 'umb', exp: 'Umbilical — the central region around the navel; small bowel, transverse colon.' },
-      { id: 'q3', ask: "Tap the patient's RIGHT iliac",      answer: 'ril', exp: "Right iliac (inguinal) — site of McBurney's point / appendicitis pain. (Patient's right = your left.)" },
-      { id: 'q4', ask: 'Tap the HYPOGASTRIC region',         answer: 'hyp', exp: 'Hypogastric (suprapubic) — overlies the bladder and, in women, the uterus.' },
-      { id: 'q5', ask: "Tap the patient's LEFT hypochondriac", answer: 'lhc', exp: "Left hypochondriac — overlies the spleen and stomach fundus. (Patient's left = your right.)" },
+      { id: 'q1', ask: 'Tap the EPIGASTRIC region',          answer: 'epi', exp: 'Epigastric: central upper region. Overlies the stomach, pancreas, duodenum.' },
+      { id: 'q2', ask: 'Tap the UMBILICAL region',           answer: 'umb', exp: 'Umbilical: the central region around the navel; small bowel, transverse colon.' },
+      { id: 'q3', ask: "Tap the patient's RIGHT iliac",      answer: 'ril', exp: "Right iliac (inguinal): site of McBurney's point / appendicitis pain. (Patient's right = your left.)" },
+      { id: 'q4', ask: 'Tap the HYPOGASTRIC region',         answer: 'hyp', exp: 'Hypogastric (suprapubic): overlies the bladder and, in women, the uterus.' },
+      { id: 'q5', ask: "Tap the patient's LEFT hypochondriac", answer: 'lhc', exp: "Left hypochondriac: overlies the spleen and stomach fundus. (Patient's left = your right.)" },
     ],
   },
 
@@ -131,7 +131,7 @@ export const IBQ_DIAGRAMS = [
     prompts: [
       { id: 'q1', ask: 'Tap the EPIDERMIS', answer: 'epi', exp: 'The avascular outer layer; its deepest stratum basale makes new keratinocytes.' },
       { id: 'q2', ask: 'Tap the DERMIS', answer: 'derm', exp: 'Vascular layer with collagen, nerves, glands and hair follicles.' },
-      { id: 'q3', ask: 'Tap the SUBCUTANEOUS layer', answer: 'subcut', exp: 'The hypodermis — fat and connective tissue; insulation and the SC injection site.' },
+      { id: 'q3', ask: 'Tap the SUBCUTANEOUS layer', answer: 'subcut', exp: 'The hypodermis: fat and connective tissue; insulation and the SC injection site.' },
       { id: 'q4', ask: 'Tap the HAIR FOLLICLE', answer: 'follicle', exp: 'The follicle and its arrector pili sit in the dermis/subcutis.' },
     ],
   },
@@ -155,7 +155,7 @@ export const IBQ_DIAGRAMS = [
       { id: 'q1', ask: 'Tap the EPIPHYSIS', answer: 'epiphysis', exp: 'The bulbous end; contains the growth plate in children.' },
       { id: 'q2', ask: 'Tap the DIAPHYSIS', answer: 'diaphysis', exp: 'The shaft of the bone.' },
       { id: 'q3', ask: 'Tap the METAPHYSIS', answer: 'metaphysis', exp: 'The flared region between epiphysis and diaphysis (the old growth-plate zone).' },
-      { id: 'q4', ask: 'Tap the MEDULLARY CAVITY', answer: 'medullary', exp: 'The central canal — holds bone marrow.' },
+      { id: 'q4', ask: 'Tap the MEDULLARY CAVITY', answer: 'medullary', exp: 'The central canal: holds bone marrow.' },
     ],
   },
 
@@ -177,10 +177,10 @@ export const IBQ_DIAGRAMS = [
       { id: 'rectus', label: 'Rectus femoris', shape: 'circle', cx: 124, cy: 196, r: 12 },
     ],
     prompts: [
-      { id: 'q1', ask: 'Tap the DELTOID site', answer: 'deltoid', exp: 'Upper arm — small volume (≤1 mL); common for vaccines.' },
-      { id: 'q2', ask: 'Tap the VENTROGLUTEAL site', answer: 'ventrogluteal', exp: 'The safest IM site — away from major nerves/vessels.' },
-      { id: 'q3', ask: 'Tap the VASTUS LATERALIS', answer: 'vastus', exp: 'Outer thigh — the preferred site in infants.' },
-      { id: 'q4', ask: 'Tap the RECTUS FEMORIS', answer: 'rectus', exp: 'Anterior thigh — usable for self-injection.' },
+      { id: 'q1', ask: 'Tap the DELTOID site', answer: 'deltoid', exp: 'Upper arm: small volume (≤1 mL); common for vaccines.' },
+      { id: 'q2', ask: 'Tap the VENTROGLUTEAL site', answer: 'ventrogluteal', exp: 'The safest IM site, away from major nerves/vessels.' },
+      { id: 'q3', ask: 'Tap the VASTUS LATERALIS', answer: 'vastus', exp: 'Outer thigh: the preferred site in infants.' },
+      { id: 'q4', ask: 'Tap the RECTUS FEMORIS', answer: 'rectus', exp: 'Anterior thigh: usable for self-injection.' },
     ],
   },
 
@@ -203,7 +203,7 @@ export const IBQ_DIAGRAMS = [
       { id: 'q1', ask: "Tap the RIGHT ATRIUM (patient's right = your left)", answer: 'ra', exp: 'Receives deoxygenated blood from the venae cavae.' },
       { id: 'q2', ask: 'Tap the LEFT ATRIUM', answer: 'la', exp: 'Receives oxygenated blood from the pulmonary veins.' },
       { id: 'q3', ask: 'Tap the RIGHT VENTRICLE', answer: 'rv', exp: 'Pumps blood to the lungs (pulmonary artery).' },
-      { id: 'q4', ask: 'Tap the LEFT VENTRICLE', answer: 'lv', exp: 'The thickest chamber — pumps to the whole body via the aorta.' },
+      { id: 'q4', ask: 'Tap the LEFT VENTRICLE', answer: 'lv', exp: 'The thickest chamber: pumps to the whole body via the aorta.' },
     ],
   },
 
@@ -225,7 +225,7 @@ export const IBQ_DIAGRAMS = [
     ],
     prompts: [
       { id: 'q1', ask: 'Tap the TRACHEA', answer: 'trachea', exp: 'The windpipe; bifurcates at the carina (~T4/T5).' },
-      { id: 'q2', ask: 'Tap the RIGHT MAIN BRONCHUS', answer: 'rbronchus', exp: 'Wider, shorter and more vertical — inhaled objects lodge here.' },
+      { id: 'q2', ask: 'Tap the RIGHT MAIN BRONCHUS', answer: 'rbronchus', exp: 'Wider, shorter and more vertical, inhaled objects lodge here.' },
       { id: 'q3', ask: 'Tap the LEFT MAIN BRONCHUS', answer: 'lbronchus', exp: 'Narrower and more horizontal than the right.' },
       { id: 'q4', ask: 'Tap the LUNG (alveoli)', answer: 'lung', exp: 'Gas exchange happens in the alveoli.' },
     ],
@@ -347,8 +347,8 @@ export const IBQ_DIAGRAMS = [
       { id: 'leg', label: 'Leg 18%', shape: 'rect', x: 102, y: 150, w: 24, h: 100 },
     ],
     prompts: [
-      { id: 'q1', ask: 'Tap a region worth 9% — the HEAD', answer: 'head', exp: 'Head & neck = 9% in the adult rule of nines.' },
-      { id: 'q2', ask: 'Tap a region worth 9% — an ARM', answer: 'arm', exp: 'Each entire upper limb = 9%.' },
+      { id: 'q1', ask: 'Tap a region worth 9%, the HEAD', answer: 'head', exp: 'Head & neck = 9% in the adult rule of nines.' },
+      { id: 'q2', ask: 'Tap a region worth 9%, an ARM', answer: 'arm', exp: 'Each entire upper limb = 9%.' },
       { id: 'q3', ask: 'Tap the ANTERIOR TRUNK (18%)', answer: 'trunk', exp: 'Front of the trunk = 18% (back of the trunk is another 18%).' },
       { id: 'q4', ask: 'Tap a LOWER LIMB (18%)', answer: 'leg', exp: 'Each entire lower limb = 18%. (Palm ≈ 1%.)' },
     ],
@@ -396,9 +396,9 @@ export const IBQ_DIAGRAMS = [
     ],
     prompts: [
       { id: 'q1', ask: 'Tap the SACRUM', answer: 'sacrum', exp: 'The commonest pressure-injury site in a supine patient.' },
-      { id: 'q2', ask: 'Tap the HEEL', answer: 'heel', exp: 'A high-risk bony prominence — offload with pillows/boots.' },
-      { id: 'q3', ask: 'Tap the OCCIPUT', answer: 'occiput', exp: 'Back of the head — at risk in immobile/supine patients.' },
-      { id: 'q4', ask: 'Tap the SCAPULA', answer: 'scapula', exp: 'Shoulder blade — a posterior pressure point when supine.' },
+      { id: 'q2', ask: 'Tap the HEEL', answer: 'heel', exp: 'A high-risk bony prominence. Offload with pillows/boots.' },
+      { id: 'q3', ask: 'Tap the OCCIPUT', answer: 'occiput', exp: 'Back of the head, at risk in immobile/supine patients.' },
+      { id: 'q4', ask: 'Tap the SCAPULA', answer: 'scapula', exp: 'Shoulder blade: a posterior pressure point when supine.' },
     ],
   },
 
@@ -441,10 +441,10 @@ export const IBQ_DIAGRAMS = [
       { id: 'llq', label: 'LLQ', shape: 'rect', x: 120, y: 125, w: 80, h: 95 },
     ],
     prompts: [
-      { id: 'q1', ask: "Tap the RIGHT UPPER quadrant (patient's right)", answer: 'ruq', exp: 'RUQ — liver and gallbladder. (Patient’s right = your left.)' },
-      { id: 'q2', ask: 'Tap the LEFT UPPER quadrant', answer: 'luq', exp: 'LUQ — stomach and spleen.' },
-      { id: 'q3', ask: 'Tap the RIGHT LOWER quadrant', answer: 'rlq', exp: 'RLQ — appendix (McBurney’s point).' },
-      { id: 'q4', ask: 'Tap the LEFT LOWER quadrant', answer: 'llq', exp: 'LLQ — sigmoid colon (diverticulitis).' },
+      { id: 'q1', ask: "Tap the RIGHT UPPER quadrant (patient's right)", answer: 'ruq', exp: 'RUQ: liver and gallbladder. (Patient’s right = your left.)' },
+      { id: 'q2', ask: 'Tap the LEFT UPPER quadrant', answer: 'luq', exp: 'LUQ: stomach and spleen.' },
+      { id: 'q3', ask: 'Tap the RIGHT LOWER quadrant', answer: 'rlq', exp: 'RLQ: appendix (McBurney’s point).' },
+      { id: 'q4', ask: 'Tap the LEFT LOWER quadrant', answer: 'llq', exp: 'LLQ: sigmoid colon (diverticulitis).' },
     ],
   },
 

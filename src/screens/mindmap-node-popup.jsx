@@ -72,7 +72,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
     const b = node.data;
     const markExplored = () => { if (onExplore) onExplore(b.id); onClose(); };
     return (
-      <Sheet label={`${b.name} — bonus topic`}>
+      <Sheet label={`${b.name}: bonus topic`}>
         <div className="px-5 py-5">
           <div className="flex items-start justify-between gap-3 mb-3">
             <div className="flex items-center gap-2.5 min-w-0">

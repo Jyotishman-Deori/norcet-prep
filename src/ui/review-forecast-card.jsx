@@ -49,7 +49,7 @@ export default function ReviewForecastCard({ history, onStartReview, className =
         <div>
           <div className="flex items-baseline gap-1.5">
             <span className="font-display font-semibold leading-none" style={{ fontSize: '2.2rem', color: T.ink }}>{f.dueNow}</span>
-            <span className="text-[13px]" style={{ color: T.muted }}>{f.dueNow === 0 ? 'due — all caught up' : 'due today'}</span>
+            <span className="text-[13px]" style={{ color: T.muted }}>{f.dueNow === 0 ? 'due: all caught up' : 'due today'}</span>
           </div>
           {f.overdue > 0 && <div className="text-[11px] mt-0.5 font-medium" style={{ color: T.accent }}>{f.overdue} overdue</div>}
         </div>

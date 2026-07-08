@@ -101,7 +101,7 @@ function RenameProfileModal({ profile, onRename, onClose }) {
                            style={{ color: T.accent }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
                 <span className="font-semibold" style={{ color: T.accent }}>You'll log in with this new name from now on.</span>{' '}
-                Make sure you remember it — your password and date of birth are unchanged.
+                Make sure you remember it, your password and date of birth are unchanged.
               </div>
             </div>
           </Card>

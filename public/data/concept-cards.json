@@ -6,8 +6,8 @@
         {
           "type": "concept",
           "title": "Normal Vital Sign Ranges (Adult)",
-          "body": "Pulse: 60–100 bpm\nRespiratory rate: 12–20 /min\nBP: <120/80 ideal\nTemperature: 36.5–37.5 °C orally\nSpO₂: 95–100%\n\nKnow the cut-offs — questions often hide on the borderline values.",
-          "clinicalNote": "Your post-op patient says they feel their heart racing. You count a pulse of 130 and BP 88/54. Don't chart it and move on — tachycardia plus a falling BP is early shock. Escalate before the numbers get worse."
+          "body": "Pulse: 60–100 bpm\nRespiratory rate: 12–20 /min\nBP: <120/80 ideal\nTemperature: 36.5–37.5 °C orally\nSpO₂: 95–100%\n\nKnow the cut-offs, questions often hide on the borderline values.",
+          "clinicalNote": "Your post-op patient says they feel their heart racing. You count a pulse of 130 and BP 88/54. Don't chart it and move on. Tachycardia plus a falling BP is early shock. Escalate before the numbers get worse."
         },
         {
           "type": "mnemonic",
@@ -25,12 +25,12 @@
             "Cold extremity → SpO₂ inaccurate",
             "White-coat HTN → patient nervous in clinic"
           ],
-          "clinicalNote": "An anxious patient in clinic reads 158/96. Before you flag hypertension, sit them quietly for five minutes and recheck on a properly sized cuff — white-coat effect and a small cuff both push the number up falsely."
+          "clinicalNote": "An anxious patient in clinic reads 158/96. Before you flag hypertension, sit them quietly for five minutes and recheck on a properly sized cuff, white-coat effect and a small cuff both push the number up falsely."
         },
         {
           "type": "quiz",
           "title": "Quick Self-Check",
-          "body": "Pulse 110 in a febrile patient — primary or compensatory tachycardia?\n\nAnswer: COMPENSATORY. Each 1°C above 38.3 °C raises HR by ~10 bpm. Treat the fever, recheck the pulse."
+          "body": "Pulse 110 in a febrile patient, primary or compensatory tachycardia?\n\nAnswer: COMPENSATORY. Each 1°C above 38.3 °C raises HR by ~10 bpm. Treat the fever, recheck the pulse."
         }
       ]
     },
@@ -66,7 +66,7 @@
         {
           "type": "concept",
           "title": "Device → FiO₂ → Flow",
-          "body": "Nasal cannula: 1–6 L/min → ~24–44% (each 1 L adds ~4%)\nSimple face mask: 5–8 L/min → ~40–60% (min 5 L to flush CO₂)\nVenturi mask: precise, fixed FiO₂ (24–60%) — best for COPD\nNon-rebreather: 10–15 L/min → up to ~90% — emergencies\n\nRule: the more precise the control needed, the more you favour a Venturi."
+          "body": "Nasal cannula: 1–6 L/min → ~24–44% (each 1 L adds ~4%)\nSimple face mask: 5–8 L/min → ~40–60% (min 5 L to flush CO₂)\nVenturi mask: precise, fixed FiO₂ (24–60%), best for COPD\nNon-rebreather: 10–15 L/min → up to ~90%, emergencies\n\nRule: the more precise the control needed, the more you favour a Venturi."
         },
         {
           "type": "keypoints",
@@ -89,12 +89,12 @@
         {
           "type": "concept",
           "title": "The Cardiac Cycle in 30 Seconds",
-          "body": "DIASTOLE (relaxation, filling):\n• Atria contract → push final 20–30% blood into ventricles\n• \"Atrial kick\" — lost in AFib\n\nSYSTOLE (contraction, ejection):\n• AV valves CLOSE → S1 (\"lub\")\n• Ventricles contract isovolumetrically\n• Aortic & pulmonary valves open\n• Blood ejects\n• Semilunar valves CLOSE → S2 (\"dub\")\n\nStroke Volume = End-Diastolic − End-Systolic Volume"
+          "body": "DIASTOLE (relaxation, filling):\n• Atria contract → push final 20–30% blood into ventricles\n• \"Atrial kick\", lost in AFib\n\nSYSTOLE (contraction, ejection):\n• AV valves CLOSE → S1 (\"lub\")\n• Ventricles contract isovolumetrically\n• Aortic & pulmonary valves open\n• Blood ejects\n• Semilunar valves CLOSE → S2 (\"dub\")\n\nStroke Volume = End-Diastolic − End-Systolic Volume"
         },
         {
           "type": "mnemonic",
           "title": "Heart Sounds",
-          "body": "S1 (\"lub\") — AV valves closing — beginning of systole\nS2 (\"dub\") — semilunar valves closing — end of systole\nS3 — early diastole rapid filling — normal in young, pathological in HF (ventricular gallop)\nS4 — late diastole atrial kick — pathological, ventricular stiffness (atrial gallop)\n\nMnemonic: \"Tennessee\" = S4 S1 S2 (a-S4-S1-S2 = ten-ne-ssee). \"Kentucky\" = S1 S2 S3."
+          "body": "S1 (\"lub\"): AV valves closing, beginning of systole\nS2 (\"dub\"), semilunar valves closing, end of systole\nS3, early diastole rapid filling, normal in young, pathological in HF (ventricular gallop)\nS4, late diastole atrial kick, pathological, ventricular stiffness (atrial gallop)\n\nMnemonic: \"Tennessee\" = S4 S1 S2 (a-S4-S1-S2 = ten-ne-ssee). \"Kentucky\" = S1 S2 S3."
         },
         {
           "type": "keypoints",
@@ -104,7 +104,7 @@
             "Normal: ~4–8 L/min",
             "SV depends on: Preload (filling), Afterload (resistance), Contractility",
             "Frank-Starling Law: more stretch = stronger contraction (up to a point)",
-            "In heart failure, the curve flattens — more preload no longer helps"
+            "In heart failure, the curve flattens, more preload no longer helps"
           ]
         }
       ]
@@ -114,7 +114,7 @@
       "cards": [
         {
           "type": "mnemonic",
-          "title": "ROME — Read an ABG Fast",
+          "title": "ROME: Read an ABG Fast",
           "body": "Step 1 – pH: <7.35 acidosis, >7.45 alkalosis\nStep 2 – ROME: Respiratory Opposite, Metabolic Equal\n  • pH and CO₂ move OPPOSITE → respiratory\n  • pH and HCO₃⁻ move the SAME way → metabolic\nStep 3 – Compensation: is the other value shifting to push pH back to normal?\n\nNormals: pH 7.35–7.45 · PaCO₂ 35–45 · HCO₃⁻ 22–26"
         },
         {
@@ -136,18 +136,18 @@
       "cards": [
         {
           "type": "concept",
-          "title": "DKA vs HHS — How To Tell Them Apart",
+          "title": "DKA vs HHS: How To Tell Them Apart",
           "body": "DKA (Type 1, younger, acute):\n• Glucose 250–600\n• Severe ketosis ↑↑\n• pH < 7.3 (acidosis)\n• Kussmaul breathing, fruity breath\n• Onset: hours to days\n\nHHS (Type 2, older, slower):\n• Glucose >600 (often >1000)\n• Minimal ketosis\n• pH > 7.3 (no acidosis)\n• Profound dehydration, altered mental state\n• Onset: days to weeks",
-          "clinicalNote": "A young Type 1 diabetic arrives drowsy, breathing deeply, with fruity breath. Think DKA first: check glucose, ketones and pH. The deep 'Kussmaul' breathing is the body dumping acid — never mistake it for simple anxiety."
+          "clinicalNote": "A young Type 1 diabetic arrives drowsy, breathing deeply, with fruity breath. Think DKA first: check glucose, ketones and pH. The deep 'Kussmaul' breathing is the body dumping acid. Never mistake it for simple anxiety."
         },
         {
           "type": "mnemonic",
           "title": "DKA Management Priorities",
-          "body": "F-I-K (in that order):\n\nFLUIDS first — NS 1L in first hour, then continue\nINSULIN second — regular insulin infusion 0.1 U/kg/hr\nPOTASSIUM third — replenish before serum K+ drops with insulin therapy (insulin drives K+ into cells)\n\nDO NOT give insulin first without fluids — risk of vascular collapse.\nDO NOT give insulin if K+ < 3.3 — give K+ first."
+          "body": "F-I-K (in that order):\n\nFLUIDS first: NS 1L in first hour, then continue\nINSULIN second, regular insulin infusion 0.1 U/kg/hr\nPOTASSIUM third, replenish before serum K+ drops with insulin therapy (insulin drives K+ into cells)\n\nDO NOT give insulin first without fluids, risk of vascular collapse.\nDO NOT give insulin if K+ < 3.3. Give K+ first."
         },
         {
           "type": "keypoints",
-          "title": "Hypoglycaemia — Rule of 15",
+          "title": "Hypoglycaemia: Rule of 15",
           "body": [
             "Conscious patient with BG < 70: give 15g fast carbs (e.g. 3 glucose tabs, 150mL juice)",
             "Recheck in 15 minutes",
@@ -175,7 +175,7 @@
             "Late signs: hypotension, weak pulse, oliguria (<30 mL/hr), altered consciousness",
             "Position: flat with legs raised (except cardiogenic → semi-Fowler)",
             "Hypovolaemic: stop bleeding + IV fluids; Anaphylactic: IM adrenaline first",
-            "Monitor urine output — the most sensitive bedside perfusion marker"
+            "Monitor urine output: the most sensitive bedside perfusion marker"
           ]
         }
       ]
@@ -189,12 +189,12 @@
           "type": "concept",
           "title": "The \"LASA\" Look-Alike Sound-Alike Drugs",
           "body": "Common dangerous confusions:\n• Hydralazine vs Hydroxyzine\n• Cefazolin vs Ceftazidime\n• Furosemide vs Torsemide\n• Insulin Humalog vs Humulin\n• Digoxin vs Doxepin\n\nDefences: read label THREE times (pulling, preparing, giving), use generic names, \"tall man\" lettering (HumALOG vs HumULIN), independent double-checks for high-alert drugs.",
-          "clinicalNote": "You're handed an order for 'hydroxyzine' but the chart context screams cardiac. Stop — hydralazine and hydroxyzine are a classic LASA pair. Read back the indication, not just the name, before you give it."
+          "clinicalNote": "You're handed an order for 'hydroxyzine' but the chart context screams cardiac. Stop: hydralazine and hydroxyzine are a classic LASA pair. Read back the indication, not just the name, before you give it."
         },
         {
           "type": "mnemonic",
-          "title": "\"High-Alert\" Categories — APINCH",
-          "body": "A — Anticoagulants (heparin, warfarin)\nP — Potassium concentrate (NEVER push IV undiluted — fatal!)\nI — Insulin\nN — Narcotics (opioids)\nC — Chemotherapy / Cytotoxics\nH — Heparin specifically (often listed twice)\n\nThese have the highest harm potential when given wrong. Always double-check."
+          "title": "\"High-Alert\" Categories: APINCH",
+          "body": "A: Anticoagulants (heparin, warfarin)\nP. Potassium concentrate (NEVER push IV undiluted, fatal!)\nI: Insulin\nN: Narcotics (opioids)\nC. Chemotherapy / Cytotoxics\nH. Heparin specifically (often listed twice)\n\nThese have the highest harm potential when given wrong. Always double-check."
         }
       ]
     },
@@ -218,8 +218,8 @@
         },
         {
           "type": "mnemonic",
-          "title": "High-Alert Drugs — A PINCH",
-          "body": "A – Anticoagulants (heparin, warfarin)\nP – Potassium (NEVER IV push undiluted — fatal)\nI – Insulin\nN – Narcotics (opioids)\nC – Chemotherapy / cytotoxics\nH – Heparin\n\nThese carry the highest harm if given wrong — independent double-check."
+          "title": "High-Alert Drugs: A PINCH",
+          "body": "A – Anticoagulants (heparin, warfarin)\nP – Potassium (NEVER IV push undiluted, fatal)\nI – Insulin\nN – Narcotics (opioids)\nC – Chemotherapy / cytotoxics\nH – Heparin\n\nThese carry the highest harm if given wrong, independent double-check."
         }
       ]
     }
@@ -247,7 +247,7 @@
           "type": "concept",
           "title": "General Danger Signs in a Sick Child",
           "body": "Refer URGENTLY if a child:\n• Is unable to drink or breastfeed\n• Vomits everything\n• Has had convulsions\n• Is lethargic or unconscious\n\nIMNCI uses a colour triage: PINK = urgent referral, YELLOW = treat at facility, GREEN = home care/advice.",
-          "clinicalNote": "A mother brings a toddler who 'won't drink and vomits everything'. That single sentence is two IMNCI danger signs. Don't wait for a fever spike — danger signs alone mean urgent referral."
+          "clinicalNote": "A mother brings a toddler who 'won't drink and vomits everything'. That single sentence is two IMNCI danger signs. Don't wait for a fever spike, danger signs alone mean urgent referral."
         },
         {
           "type": "keypoints",
@@ -270,7 +270,7 @@
         {
           "type": "concept",
           "title": "Four Stages of Labour",
-          "body": "STAGE 1: Onset of regular contractions → full cervical dilatation (10 cm).\n  • Latent phase: 0 → ~6 cm\n  • Active phase: 6 → 10 cm (~1 cm/hr primigravida)\n\nSTAGE 2: Full dilatation → birth of baby.\n  • Cardinal movements happen here\n\nSTAGE 3: Birth of baby → expulsion of placenta (typically <30 min)\n\nSTAGE 4: 1–2 hr observation post-placenta — watch for PPH"
+          "body": "STAGE 1: Onset of regular contractions → full cervical dilatation (10 cm).\n  • Latent phase: 0 → ~6 cm\n  • Active phase: 6 → 10 cm (~1 cm/hr primigravida)\n\nSTAGE 2: Full dilatation → birth of baby.\n  • Cardinal movements happen here\n\nSTAGE 3: Birth of baby → expulsion of placenta (typically <30 min)\n\nSTAGE 4: 1–2 hr observation post-placenta. Watch for PPH"
         },
         {
           "type": "mnemonic",
@@ -285,7 +285,7 @@
         {
           "type": "concept",
           "title": "The Four Stages",
-          "body": "FIRST: onset of true labour → full dilatation (10 cm)\n  • Latent (0–3 cm) then active (4–10 cm)\nSECOND: full dilatation → birth of the baby\nTHIRD: birth of baby → delivery of placenta (watch for the 3 signs of separation)\nFOURTH: ~1 hr after the placenta — immediate recovery, watch for PPH."
+          "body": "FIRST: onset of true labour → full dilatation (10 cm)\n  • Latent (0–3 cm) then active (4–10 cm)\nSECOND: full dilatation → birth of the baby\nTHIRD: birth of baby → delivery of placenta (watch for the 3 signs of separation)\nFOURTH: ~1 hr after the placenta. Immediate recovery, watch for PPH."
         },
         {
           "type": "keypoints",
@@ -308,11 +308,11 @@
         {
           "type": "concept",
           "title": "Mortality Indicators (India approx.)",
-          "body": "IMR (Infant Mortality Rate): ~28 per 1000 live births\nNMR (Neonatal): ~20 per 1000 live births\nU5MR (Under-5): ~32 per 1000 live births\nMMR (Maternal): ~97 per 100,000 live births\n\nKey definition trick — IMR/NMR/U5MR use /1000 LIVE BIRTHS. MMR uses /100,000 LIVE BIRTHS. Crude death rate uses /1000 POPULATION."
+          "body": "IMR (Infant Mortality Rate): ~28 per 1000 live births\nNMR (Neonatal): ~20 per 1000 live births\nU5MR (Under-5): ~32 per 1000 live births\nMMR (Maternal): ~97 per 100,000 live births\n\nKey definition trick. IMR/NMR/U5MR use /1000 LIVE BIRTHS. MMR uses /100,000 LIVE BIRTHS. Crude death rate uses /1000 POPULATION."
         },
         {
           "type": "mnemonic",
-          "title": "Levels of Prevention — Quick Mapping",
+          "title": "Levels of Prevention: Quick Mapping",
           "body": "PRIMORDIAL → eliminate the risk factor (e.g., healthy lifestyle in whole society)\nPRIMARY → prevent disease before onset (immunisation, sanitation)\nSECONDARY → early detection in asymptomatic (Pap smear, BP screening)\nTERTIARY → limit disability after disease (rehab, dialysis)"
         }
       ]
@@ -329,7 +329,7 @@
           "type": "keypoints",
           "title": "Quick Facts",
           "body": [
-            "DOTS = Directly Observed Treatment, Short-course — cornerstone of TB control",
+            "DOTS = Directly Observed Treatment, Short-course, cornerstone of TB control",
             "India aims to ELIMINATE TB ahead of the global 2030 SDG target",
             "ASHA = Accredited Social Health Activist, the village-level link worker",
             "Cold chain keeps vaccines viable from manufacturer to child",
@@ -350,8 +350,8 @@
         },
         {
           "type": "mnemonic",
-          "title": "Suicide Risk — SAD PERSONS Scale",
-          "body": "S — Sex (male higher)\nA — Age (<19 or >45)\nD — Depression\nP — Previous attempts\nE — Ethanol/drug abuse\nR — Rational thinking loss\nS — Social support lacking\nO — Organised plan\nN — No spouse\nS — Sickness (chronic illness)\n\n0–4 low, 5–6 moderate, 7–10 high risk. ASK directly — it does not plant ideas."
+          "title": "Suicide Risk: SAD PERSONS Scale",
+          "body": "S: Sex (male higher)\nA. Age (<19 or >45)\nD. Depression\nP. Previous attempts\nE. Ethanol/drug abuse\nR. Rational thinking loss\nS. Social support lacking\nO. Organised plan\nN. No spouse\nS. Sickness (chronic illness)\n\n0–4 low, 5–6 moderate, 7–10 high risk. ASK directly: it does not plant ideas."
         }
       ]
     },
@@ -392,7 +392,7 @@
       "cards": [
         {
           "type": "mnemonic",
-          "title": "Airborne — \"My Chicken Tastes Tasty\"",
+          "title": "Airborne: \"My Chicken Tastes Tasty\"",
           "body": "AIRBORNE (droplet nuclei <5 µm, negative-pressure room + N95):\n  • Measles\n  • Tuberculosis\n  • Varicella (chickenpox) / disseminated zoster\n\nDROPLET (>5 µm, surgical mask, ~1 m): influenza, pertussis, meningococcus, mumps, rubella\nCONTACT (gown + gloves): MRSA, C. difficile, scabies\n\nC. difficile and norovirus need SOAP-AND-WATER (alcohol rub doesn't kill spores)."
         },
         {
@@ -427,8 +427,8 @@
           "type": "keypoints",
           "title": "Fat- vs Water-Soluble",
           "body": [
-            "Fat-soluble = \"ADEK\" (A, D, E, K) — stored in body, toxicity possible",
-            "Water-soluble = B-complex + C — not stored, deficiency appears faster",
+            "Fat-soluble = \"ADEK\" (A, D, E, K), stored in body, toxicity possible",
+            "Water-soluble = B-complex + C, not stored, deficiency appears faster",
             "Vitamin A: night blindness, Bitot's spots",
             "Vitamin D: rickets (child) / osteomalacia (adult)",
             "Vitamin K: bleeding (clotting factors II, VII, IX, X)"
@@ -440,7 +440,7 @@
           "body": [
             "B1 (Thiamine): beriberi, Wernicke encephalopathy",
             "B2 (Riboflavin): angular stomatitis, glossitis",
-            "B3 (Niacin): pellagra — the 3 Ds (Dermatitis, Diarrhoea, Dementia)",
+            "B3 (Niacin): pellagra: the 3 Ds (Dermatitis, Diarrhoea, Dementia)",
             "B6 (Pyridoxine): peripheral neuropathy (esp. with isoniazid)",
             "B9/B12: megaloblastic anaemia; B12 also causes neuro signs",
             "Vitamin C: scurvy (bleeding gums, poor wound healing)"
@@ -456,13 +456,13 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "Number series questions test whether you can spot the rule linking a sequence of numbers and use it to predict the next term. It is pattern recognition under time pressure — not heavy calculation."
+          "body": "Number series questions test whether you can spot the rule linking a sequence of numbers and use it to predict the next term. It is pattern recognition under time pressure, not heavy calculation."
         },
         {
           "type": "method",
           "title": "Step-by-step method",
           "body": [
-            "Write the gaps between consecutive terms — the first differences.",
+            "Write the gaps between consecutive terms, the first differences.",
             "If the gaps are equal, the rule is +constant (arithmetic). If they grow or shrink steadily, look at the second differences.",
             "If differences don’t settle, test ratios (×constant), squares/cubes, or two interleaved series.",
             "Apply the confirmed rule to the last term, then check it fits the whole series."
@@ -471,7 +471,7 @@
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "Series: 2, 6, 12, 20, 30, ?\n\nStep 1 — First differences: 4, 6, 8, 10.\nStep 2 — The gaps rise by 2 each time, so the next gap is 12.\nStep 3 — Confirmed rule: add an increasing even number (equivalently term = n(n+1)).\nStep 4 — 30 + 12 = 42.\n\nAnswer: 42."
+          "body": "Series: 2, 6, 12, 20, 30, ?\n\nStep 1: First differences: 4, 6, 8, 10.\nStep 2: The gaps rise by 2 each time, so the next gap is 12.\nStep 3: Confirmed rule: add an increasing even number (equivalently term = n(n+1)).\nStep 4: 30 + 12 = 42.\n\nAnswer: 42."
         },
         {
           "type": "mistake",
@@ -492,7 +492,7 @@
           "type": "method",
           "title": "Step-by-step method",
           "body": [
-            "Read the sentence from the innermost phrase outward — resolve the smallest relation first.",
+            "Read the sentence from the innermost phrase outward, resolve the smallest relation first.",
             "Translate each phrase into a quick family tree (+ for male, − for female, lines for parent/child).",
             "Substitute each resolved person back into the outer phrase, step by step.",
             "State the final relation from the asked person’s point of view, watching the gender."
@@ -501,12 +501,12 @@
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "‘His mother is the only daughter of my mother’ — how is the speaker (a woman) related to him?\n\nStep 1 — Innermost: ‘the only daughter of my mother’.\nStep 2 — The only daughter of the speaker’s mother is the speaker herself.\nStep 3 — So ‘his mother’ = the speaker.\nStep 4 — She is his mother.\n\nAnswer: Mother."
+          "body": "‘His mother is the only daughter of my mother’. How is the speaker (a woman) related to him?\n\nStep 1: Innermost: ‘the only daughter of my mother’.\nStep 2: The only daughter of the speaker’s mother is the speaker herself.\nStep 3: So ‘his mother’ = the speaker.\nStep 4: She is his mother.\n\nAnswer: Mother."
         },
         {
           "type": "mistake",
           "title": "Common mistake to avoid",
-          "body": "The biggest trap is assuming the speaker’s gender or skipping ‘only’. ‘Only daughter’ forces that daughter to be the speaker herself — read those qualifiers literally."
+          "body": "The biggest trap is assuming the speaker’s gender or skipping ‘only’. ‘Only daughter’ forces that daughter to be the speaker herself, read those qualifiers literally."
         }
       ]
     },
@@ -524,19 +524,19 @@
           "body": [
             "Draw axes: North up, South down, East right, West left. Start at the origin.",
             "Plot each leg. ‘Turn right’ rotates your facing 90° clockwise; ‘turn left’ 90° anticlockwise.",
-            "Total the movement along each axis separately — net North–South and net East–West.",
+            "Total the movement along each axis separately, net North–South and net East–West.",
             "For distance, use Pythagoras on the two net legs; opposite legs of equal length cancel."
           ]
         },
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "Walk 5 km N, turn right 3 km, turn right 5 km. Distance from start?\n\nStep 1 — Origin, facing North.\nStep 2 — 5 km North; right → East 3 km; right → South 5 km.\nStep 3 — North 5 and South 5 cancel; net East = 3.\nStep 4 — One leg remains, so distance = 3 km.\n\nAnswer: 3 km."
+          "body": "Walk 5 km N, turn right 3 km, turn right 5 km. Distance from start?\n\nStep 1: Origin, facing North.\nStep 2: 5 km North; right → East 3 km; right → South 5 km.\nStep 3: North 5 and South 5 cancel; net East = 3.\nStep 4: One leg remains, so distance = 3 km.\n\nAnswer: 3 km."
         },
         {
           "type": "mistake",
           "title": "Common mistake to avoid",
-          "body": "Confusing ‘distance walked’ with ‘distance from start’. The question almost always wants displacement — cancel opposite legs before measuring."
+          "body": "Confusing ‘distance walked’ with ‘distance from start’. The question almost always wants displacement, cancel opposite legs before measuring."
         }
       ]
     },
@@ -546,7 +546,7 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "These test whether you can find the rule that turns a word into its code — usually a fixed letter shift, a reversal, or a position swap — and then apply the same rule to a new word."
+          "body": "These test whether you can find the rule that turns a word into its code, usually a fixed letter shift, a reversal, or a position swap, and then apply the same rule to a new word."
         },
         {
           "type": "method",
@@ -554,19 +554,19 @@
           "body": [
             "Line up the original word and its code, letter by letter.",
             "Find the change per letter: count the alphabet gap (C→D is +1) and check it is constant.",
-            "Watch for variations — alternating shifts, reversed order, or position-based shifts.",
+            "Watch for variations: alternating shifts, reversed order, or position-based shifts.",
             "Apply the confirmed rule to each letter of the target word independently."
           ]
         },
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "If CAT = DBU, then DOG = ?\n\nStep 1 — Align: C→D, A→B, T→U.\nStep 2 — Each letter moves +1 in the alphabet.\nStep 3 — Rule confirmed: shift every letter forward by one.\nStep 4 — D→E, O→P, G→H.\n\nAnswer: EPH."
+          "body": "If CAT = DBU, then DOG = ?\n\nStep 1: Align: C→D, A→B, T→U.\nStep 2: Each letter moves +1 in the alphabet.\nStep 3: Rule confirmed: shift every letter forward by one.\nStep 4: D→E, O→P, G→H.\n\nAnswer: EPH."
         },
         {
           "type": "mistake",
           "title": "Common mistake to avoid",
-          "body": "Forgetting to apply the rule to every letter — students shift the first letter then copy the rest. Process each letter on its own."
+          "body": "Forgetting to apply the rule to every letter, students shift the first letter then copy the rest. Process each letter on its own."
         }
       ]
     },
@@ -576,7 +576,7 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "Syllogisms test whether a conclusion necessarily follows from the given statements — pure logic, not real-world knowledge. ‘Necessarily’ is the key word."
+          "body": "Syllogisms test whether a conclusion necessarily follows from the given statements, pure logic, not real-world knowledge. ‘Necessarily’ is the key word."
         },
         {
           "type": "method",
@@ -585,13 +585,13 @@
             "Treat each statement as a set: ‘All A are B’ means A sits entirely inside B.",
             "Sketch overlapping circles (a Venn diagram) for the statements.",
             "A conclusion is valid only if it holds in EVERY possible diagram, not just one.",
-            "Reject any conclusion that could be false in some valid arrangement — ‘some’ and ‘all’ must be exact."
+            "Reject any conclusion that could be false in some valid arrangement. ‘some’ and ‘all’ must be exact."
           ]
         },
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "All cats are animals. All animals breathe. Conclusion?\n\nStep 1 — Cats sit inside Animals.\nStep 2 — Animals sit inside ‘things that breathe’.\nStep 3 — So Cats sit inside ‘things that breathe’ in every diagram.\nStep 4 — ‘All cats breathe’ always holds.\n\nAnswer: All cats breathe."
+          "body": "All cats are animals. All animals breathe. Conclusion?\n\nStep 1: Cats sit inside Animals.\nStep 2: Animals sit inside ‘things that breathe’.\nStep 3: So Cats sit inside ‘things that breathe’ in every diagram.\nStep 4: ‘All cats breathe’ always holds.\n\nAnswer: All cats breathe."
         },
         {
           "type": "mistake",
@@ -606,7 +606,7 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "These test the idea of a work rate — how much of a job someone does per day — and how rates add when people work together."
+          "body": "These test the idea of a work rate, how much of a job someone does per day, and how rates add when people work together."
         },
         {
           "type": "method",
@@ -621,12 +621,12 @@
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "A finishes in 10 days, B in 15 days. Together?\n\nStep 1 — Rates: A = 1/10, B = 1/15 per day.\nStep 2 — Combined = 1/10 + 1/15 = 3/30 + 2/30 = 5/30.\nStep 3 — 5/30 = 1/6 per day.\nStep 4 — Time = 1 ÷ (1/6) = 6 days.\n\nAnswer: 6 days."
+          "body": "A finishes in 10 days, B in 15 days. Together?\n\nStep 1: Rates: A = 1/10, B = 1/15 per day.\nStep 2: Combined = 1/10 + 1/15 = 3/30 + 2/30 = 5/30.\nStep 3: 5/30 = 1/6 per day.\nStep 4: Time = 1 ÷ (1/6) = 6 days.\n\nAnswer: 6 days."
         },
         {
           "type": "mistake",
           "title": "Common mistake to avoid",
-          "body": "Averaging the two times, e.g. (10+15)/2. Work rates add, times do not — always go via 1/n per day."
+          "body": "Averaging the two times, e.g. (10+15)/2. Work rates add, times do not. Always go via 1/n per day."
         }
       ]
     },
@@ -636,14 +636,14 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "Percentage questions test conversion between percentages and fractions, and how successive percentage changes combine — a frequent NORCET trap."
+          "body": "Percentage questions test conversion between percentages and fractions, and how successive percentage changes combine, a frequent NORCET trap."
         },
         {
           "type": "method",
           "title": "Step-by-step method",
           "body": [
             "Turn a percentage into a multiplier: +20% means ×1.20, −20% means ×0.80.",
-            "For successive changes, multiply the multipliers in order — never add the percentages.",
+            "For successive changes, multiply the multipliers in order. Never add the percentages.",
             "Compare the final multiplier to 1: above 1 is a net gain, below 1 a net loss.",
             "Convert the final multiplier back into a percentage change."
           ]
@@ -651,7 +651,7 @@
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "A value rises 20%, then falls 20%. Net change?\n\nStep 1 — +20% → ×1.20; −20% → ×0.80.\nStep 2 — Combined = 1.20 × 0.80 = 0.96.\nStep 3 — 0.96 is below 1, so it is a net loss.\nStep 4 — 0.96 = 96% of the original → 4% decrease.\n\nAnswer: 4% decrease."
+          "body": "A value rises 20%, then falls 20%. Net change?\n\nStep 1: +20% → ×1.20; −20% → ×0.80.\nStep 2: Combined = 1.20 × 0.80 = 0.96.\nStep 3: 0.96 is below 1, so it is a net loss.\nStep 4: 0.96 = 96% of the original → 4% decrease.\n\nAnswer: 4% decrease."
         },
         {
           "type": "mistake",
@@ -666,7 +666,7 @@
         {
           "type": "whatTests",
           "title": "What this tests",
-          "body": "These test whether you can scale and combine ratios — especially chaining two ratios that share a common term."
+          "body": "These test whether you can scale and combine ratios, especially chaining two ratios that share a common term."
         },
         {
           "type": "method",
@@ -681,12 +681,12 @@
         {
           "type": "worked",
           "title": "Worked example",
-          "body": "A : B = 2 : 3 and B : C = 4 : 5. Find A : C.\n\nStep 1 — Shared term is B (3 in the first, 4 in the second).\nStep 2 — LCM of 3 and 4 is 12: scale to A : B = 8 : 12 and B : C = 12 : 15.\nStep 3 — Combined A : B : C = 8 : 12 : 15.\nStep 4 — A : C = 8 : 15.\n\nAnswer: 8 : 15."
+          "body": "A : B = 2 : 3 and B : C = 4 : 5. Find A : C.\n\nStep 1: Shared term is B (3 in the first, 4 in the second).\nStep 2: LCM of 3 and 4 is 12: scale to A : B = 8 : 12 and B : C = 12 : 15.\nStep 3: Combined A : B : C = 8 : 12 : 15.\nStep 4: A : C = 8 : 15.\n\nAnswer: 8 : 15."
         },
         {
           "type": "mistake",
           "title": "Common mistake to avoid",
-          "body": "Equalise the shared term before reading across. Blindly multiplying across ratios is unreliable — make B common first."
+          "body": "Equalise the shared term before reading across. Blindly multiplying across ratios is unreliable, make B common first."
         }
       ]
     }

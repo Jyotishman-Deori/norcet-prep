@@ -24,10 +24,10 @@ function reasonStyle(reason, T) {
 }
 
 function headerNote(examDaysLeft) {
-  if (examDaysLeft != null && examDaysLeft <= 7) return 'Final week — only the most critical facts, nothing new.';
-  if (examDaysLeft != null && examDaysLeft <= 30) return 'Exam soon — a high-yield sweep across everything.';
+  if (examDaysLeft != null && examDaysLeft <= 7) return 'Final week, only the most critical facts, nothing new.';
+  if (examDaysLeft != null && examDaysLeft <= 30) return 'Exam soon, a high-yield sweep across everything.';
   if (examDaysLeft != null && examDaysLeft <= 60) return 'A mix of your weak spots and broad coverage.';
-  return 'A smart sweep — your weak spots and what is due, first.';
+  return 'A smart sweep. Your weak spots and what is due, first.';
 }
 
 export default function QuickRevisionView({ stream, examDaysLeft, onPick }) {

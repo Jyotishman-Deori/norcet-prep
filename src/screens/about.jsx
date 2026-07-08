@@ -66,13 +66,13 @@ function AboutScreen({ onBack, onNavigate }) {
 
   const APPROACH = [
     { Icon: RotateCcw, tone: T.sec ? T.sec.revision : T.primary, title: 'Spaced revision',
-      body: 'Questions come back exactly when you’re about to forget them — the single biggest lever for long-term memory.' },
+      body: 'Questions come back exactly when you’re about to forget them, the single biggest lever for long-term memory.' },
     { Icon: Target, tone: T.sec ? T.sec.stats : T.accent, title: 'Weak-area targeting',
-      body: 'Every answer maps your syllabus. The app always knows your weakest unit — and sends you there next.' },
+      body: 'Every answer maps your syllabus. The app always knows your weakest unit, and sends you there next.' },
     { Icon: Timer, tone: T.sec ? T.sec.mock : T.error, title: 'Exam-day realism',
       body: 'Negative marking, sectional pacing and topper benchmarks, so the real CBT feels familiar, not frightening.' },
     { Icon: Gamepad2, tone: T.sec ? T.sec.learn : T.success, title: 'Consistency that sticks',
-      body: 'Streaks, XP, clinical drills and a Knowledge Map that lights up as you master units — showing up daily stops being a chore.' },
+      body: 'Streaks, XP, clinical drills and a Knowledge Map that lights up as you master units. Showing up daily stops being a chore.' },
   ];
 
   const goLegal = (doc) => onNavigate && onNavigate({ screen: 'legal', doc });
@@ -93,7 +93,7 @@ function AboutScreen({ onBack, onNavigate }) {
               NurseHolic
             </h1>
             <p className="text-sm md:text-base mt-2 leading-relaxed max-w-md mx-auto" style={{ color: T.inkSoft }}>
-              Serious NORCET preparation — free, ad-free, and built to feel like exam day.
+              Serious NORCET preparation: free, ad-free, and built to feel like exam day.
             </p>
           </div>
         </div>
@@ -106,7 +106,7 @@ function AboutScreen({ onBack, onNavigate }) {
               Make deliberate practice free for every nursing aspirant.
             </div>
             <div className="text-[13.5px] leading-relaxed" style={{ color: T.inkSoft }}>
-              Most aspirants drown in PDFs — endless notes, no idea where they actually stand or
+              Most aspirants drown in PDFs, endless notes, no idea where they actually stand or
               what to fix next. NurseHolic replaces that with deliberate practice: real exam-style
               questions, a clear map of your syllabus, and revision that arrives exactly when your
               memory needs it.
@@ -168,13 +168,13 @@ function AboutScreen({ onBack, onNavigate }) {
                   Built by one person, for all of you
                 </div>
                 <div className="text-[13.5px] leading-relaxed whitespace-pre-line" style={{ color: T.inkSoft }}>
-                  NurseHolic isn’t a company — it’s one developer who watched nursing aspirants
+                  NurseHolic isn’t a company, it’s one developer who watched nursing aspirants
                   pay for coaching they couldn’t afford and decided the tools, at least, should be
                   free. Every question, drill and feature here exists because someone preparing for
                   NORCET asked for it.
                   {'\n\n'}
                   The app is free and ad-free, and it stays that way. If it helps you, the kindest
-                  things you can do are share it with a batchmate — or buy me a chai.
+                  things you can do are share it with a batchmate. Or buy me a chai.
                 </div>
                 <div className="flex flex-wrap gap-2 mt-3.5">
                   <button onClick={() => requestSupport()}
@@ -209,7 +209,7 @@ function AboutScreen({ onBack, onNavigate }) {
         <div {...stag(7)}>
           <Card className="p-0 overflow-hidden mb-4">
             {[
-              { Icon: MessageCircle, label: 'Send feedback', sub: 'Reach the developer directly — every message is read', act: () => requestFeedback({ screen: 'About' }) },
+              { Icon: MessageCircle, label: 'Send feedback', sub: 'Reach the developer directly. Every message is read', act: () => requestFeedback({ screen: 'About' }) },
               { Icon: Mail, label: 'Email us', sub: SUPPORT_EMAIL, act: () => { try { window.location.href = `mailto:${SUPPORT_EMAIL}`; } catch (e) {} } },
               { Icon: Sparkles, label: 'FAQ & help', sub: 'Answers to common questions, ask your own', act: () => onNavigate && onNavigate({ screen: 'faq' }) },
             ].map(({ Icon, label, sub, act }, i) => (

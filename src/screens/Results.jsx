@@ -134,7 +134,7 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null, w
               <b style={{ color: T.ink }}>Exam reality:</b>{' '}
               {wrongAttempts > 0
                 ? <>under NORCET's <b>1/3 negative marking</b>, your {wrongAttempts} wrong {wrongAttempts === 1 ? 'answer' : 'answers'} would cost <b style={{ color: T.accent }}>~{examPenalty.toFixed(2)} marks</b>. When you can't narrow it to two, leaving it blank often beats guessing.</>
-                : <>you lost <b style={{ color: T.success }}>nothing</b> to negative marking — that restraint is exactly what protects rank on exam day.</>}
+                : <>you lost <b style={{ color: T.success }}>nothing</b> to negative marking. That restraint is exactly what protects rank on exam day.</>}
             </div>
           </div>
         </Card>
@@ -197,7 +197,7 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null, w
             Settings toggle (#29) is off, so the prompt vanishes entirely. */}
         {onCribSheet && (
           <Button onClick={onCribSheet} size="lg" className="w-full">
-            Review answers — Crib Sheet
+            Review answers: Crib Sheet
           </Button>
         )}
         <div className={`grid gap-2.5 ${wrong.length > 0 ? 'grid-cols-2' : 'grid-cols-1'}`}>

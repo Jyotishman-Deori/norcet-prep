@@ -273,11 +273,11 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     const text = [...head, qBlocks.join('\n\n'), '', ...foot].join('\n');
     try {
       if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share({ title: `${title} — Crib Sheet`, text });
+        await navigator.share({ title: `${title}: Crib Sheet`, text });
         return;
       }
     } catch (e) { /* fall through to clipboard */ }
-    try { await navigator.clipboard.writeText(text); alert('Crib Sheet copied — paste it anywhere to share.'); } catch (e) {}
+    try { await navigator.clipboard.writeText(text); alert('Crib Sheet copied, paste it anywhere to share.'); } catch (e) {}
   };
 
   // Abandoned session — nothing attempted at all.
@@ -288,7 +288,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       <div className="sticky z-10 flex items-center gap-2 px-3 py-2 rounded-xl mb-2.5"
            style={{ top: 'calc(64px + env(safe-area-inset-top, 0px))', background: soft, border: `1px solid ${color}30` }}>
         {icon}
-        <span className="text-[12px] font-semibold" style={{ color }}>{label} — {list.length} question{list.length === 1 ? '' : 's'}</span>
+        <span className="text-[12px] font-semibold" style={{ color }}>{label}, {list.length} question{list.length === 1 ? '' : 's'}</span>
       </div>
       {list.length === 0 ? (
         <Card className="p-4 mb-5 text-[13px]" style={{ background: soft, border: `1px solid ${color}25`, color: T.inkSoft }}>
@@ -318,7 +318,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
                 right={
                   <div className="flex items-center gap-1">
                   {listen.supported && items.length > 0 && (
-                    <Tip text={listen.active ? 'Stop listening' : 'Listen — read this sheet aloud, hands-free'}>
+                    <Tip text={listen.active ? 'Stop listening' : 'Listen: read this sheet aloud, hands-free'}>
                     <button onClick={() => (listen.active ? listen.stop() : listen.start(0))}
                             aria-label={listen.active ? 'Stop listening' : 'Listen to this sheet'}
                             aria-pressed={listen.active}
@@ -404,7 +404,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
         {abandoned && (
           <Card className="p-5 text-center mb-5">
             <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-              Looks like this test wasn't completed — here are all the questions with their answers, whenever you're ready.
+              Looks like this test wasn't completed. Here are all the questions with their answers, whenever you're ready.
             </div>
           </Card>
         )}
@@ -412,15 +412,15 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
         <Section label="✓ Correct" color={T.success} soft={T.successSoft}
                  icon={<Check size={14} style={{ color: T.success }} />}
                  list={winCorrect} refEl={correctRef} startNum={1}
-                 empty="Nothing here this time — but the explanations below will change that." />
+                 empty="Nothing here this time. But the explanations below will change that." />
 
         <Section label="✕ Wrong" color={T.error} soft={T.errorSoft}
                  icon={<X size={14} style={{ color: T.error }} />}
                  list={winWrong} refEl={wrongRef} startNum={correct.length + 1}
-                 empty="Nothing here — you got everything right. Seriously impressive." />
+                 empty="Nothing here: you got everything right. Seriously impressive." />
 
         {na.length > 0 && (
-          <Section label="— Not attempted" color={T.muted} soft={T.surfaceWarm}
+          <Section label=": Not attempted" color={T.muted} soft={T.surfaceWarm}
                    icon={<Minus size={14} style={{ color: T.muted }} />}
                    list={winNa} refEl={naRef} startNum={correct.length + wrong.length + 1}
                    empty="" />

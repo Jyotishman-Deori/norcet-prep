@@ -49,7 +49,7 @@ function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
       <TopBar title="Mock test setup" onBack={onBack} feedback={{ screen: "Mock setup" }} solid />
       <PageContainer size="content" className="pt-4 pb-24">
         <div className="text-sm mb-6" style={{ color: T.muted }}>
-          Timed practice across all topics. The timer counts down — if it hits zero, the test ends with whatever you've answered.
+          Timed practice across all topics. The timer counts down, if it hits zero, the test ends with whatever you've answered.
         </div>
 
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>How many questions?</div>

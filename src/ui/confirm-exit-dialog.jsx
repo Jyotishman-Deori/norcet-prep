@@ -31,7 +31,7 @@ function ConfirmExitDialog({ mode, answered, total, onStay, onLeave }) {
           <div className="text-sm leading-relaxed mb-4 text-ink-soft">
             Your progress in this {mode === 'mock' ? 'test' : 'round'} won't be saved.
             {answered > 0 && (
-              <> You've answered <span style={{ color: T.ink, fontWeight: 600 }}>{answered} of {total}</span> so far — those answers will be lost.</>
+              <> You've answered <span style={{ color: T.ink, fontWeight: 600 }}>{answered} of {total}</span> so far. Those answers will be lost.</>
             )}
           </div>
           <div className="flex gap-2">

@@ -261,8 +261,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         <div className="p-6 text-center max-w-md mx-auto pt-16">
           <div className="font-display text-xl mb-2 text-ink">No questions available</div>
           <div className="text-sm text-muted">
-            {mode === 'bookmarks' && 'You have no bookmarked questions yet — bookmark a few during practice, then come back.'}
-            {mode === 'review-due' && 'Nothing is due for review yet — come back tomorrow.'}
+            {mode === 'bookmarks' && 'You have no bookmarked questions yet, bookmark a few during practice, then come back.'}
+            {mode === 'review-due' && 'Nothing is due for review yet, come back tomorrow.'}
             {mode === 'wrong' && 'No wrong answers to review.'}
             {!['bookmarks', 'review-due', 'wrong'].includes(mode) && 'Nothing to show here.'}
           </div>
@@ -467,7 +467,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
           <div className="flex items-center gap-2">
             {/* PHIL-03 — Accuracy Coins balance (premium, non-monetary). Pops
                 when a Why Bonus lands. */}
-            <Tip text="Accuracy Coins — earned by studying the 'why', not just guessing">
+            <Tip text="Accuracy Coins, earned by studying the 'why', not just guessing">
             <div className={"flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums" + (whyBonus ? ' q-pulse' : '')}
                  style={{ background: '#F59E0B18', color: '#B45309', border: '1px solid #F59E0B40' }}>
               <Coins size={12} />
@@ -488,7 +488,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               const bg = noTime ? T.errorSoft : (lowTime ? T.errorSoft : T.surfaceWarm);
               const fg = (lowTime || noTime) ? T.error : T.ink;
               return (
-                <Tip text={isCountdown ? 'Time remaining — the chip pulses in the final seconds' : 'Time elapsed on this session'}>
+                <Tip text={isCountdown ? 'Time remaining: the chip pulses in the final seconds' : 'Time elapsed on this session'}>
                 <div className={"flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums" + beatClass}
                      style={{ background: bg, color: fg }}>
                   <Timer size={12} />
@@ -553,7 +553,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             {/* P16 — provenance badge (Quick / Topic / Mock all render via Quiz) */}
             <PyqBadge q={q} />
           </div>
-          <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+          <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked: tap to remove' : 'Save this question to Bookmarks for later review'}>
           <button onClick={toggleBookmark}
                   aria-pressed={bookmarkedLocal.has(q.id)}
                   aria-label={bookmarkedLocal.has(q.id) ? 'Remove bookmark' : 'Bookmark this question'}
@@ -676,7 +676,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             <div className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-soft">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-accent" />
               <div>
-                Solution shown — this one stays neutral, so it won’t count for or
+                Solution shown: this one stays neutral, so it won’t count for or
                 against your accuracy. We’ll bring it back in your review queue so you can lock it in.
               </div>
             </div>
@@ -701,7 +701,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                   this question is later answered correctly. Hidden for guests
                   (no profile to store against). */}
               {profileId && (
-                <Tip text="Flagged questions are saved to My Doubts — find them in the sidebar.">
+                <Tip text="Flagged questions are saved to My Doubts, find them in the sidebar.">
                 <button onClick={toggleSolutionFlag}
                         aria-pressed={!!(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)}
                         className="no-tap-highlight w-full mt-3 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition"
@@ -712,7 +712,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                     <Flag size={12} fill={(qDoubts[q.id] && !qDoubts[q.id].resolvedAt) ? 'currentColor' : 'none'} />
                   </span>
                   {(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)
-                    ? 'Flagged — explanation unclear (tap to unflag)'
+                    ? 'Flagged: explanation unclear (tap to unflag)'
                     : 'Still confused? Flag this explanation'}
                 </button>
                 </Tip>

@@ -154,8 +154,8 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
             icon={MessageCircle}
             title="Questions incoming"
             text={isAdmin
-              ? 'No FAQs yet — add your first from the Admin panel → FAQ manager. It appears here instantly.'
-              : 'The FAQ section is being set up. Check back soon — answers to common questions will appear here.'} />
+              ? 'No FAQs yet: add your first from the Admin panel → FAQ manager. It appears here instantly.'
+              : 'The FAQ section is being set up. Check back soon: answers to common questions will appear here.'} />
         ) : (
           <>
             {/* Category chips */}

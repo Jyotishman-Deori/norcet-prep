@@ -165,7 +165,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
             </span>
             <div className="flex-1 text-left">
               <div className="text-sm font-semibold" style={{ color: T.ink }}>Monitor sound</div>
-              <div className="text-[11px]" style={{ color: T.muted }}>{soundOn ? 'Beep tracks the heart rate & oxygen' : 'Silent — visual only'}</div>
+              <div className="text-[11px]" style={{ color: T.muted }}>{soundOn ? 'Beep tracks the heart rate & oxygen' : 'Silent: visual only'}</div>
             </div>
             <span className="text-[11px] font-bold uppercase tracking-wide" style={{ color: soundOn ? TEAL : T.muted }}>{soundOn ? 'On' : 'Off'}</span>
           </button>
@@ -184,7 +184,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
           {/* Pace */}
           <PaceSelector value={pace} onChange={onSetPace} T={T} />
           <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each strip gets a countdown — run out and it locks.
+            With <b style={{ color: '#16A34A' }}>The Pulse</b> on, each strip gets a countdown. Run out and it locks.
             <b style={{ color: '#B45309' }}> Flashpoint</b> halves the clock and <b>doubles</b> the coins.
           </div>
         </div>

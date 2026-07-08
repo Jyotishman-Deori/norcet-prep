@@ -179,10 +179,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       const pend = await getPendingSync();
       const stillPending = profile.id in (pend || {});
       setSyncMsg(stillPending
-        ? { ok: false, text: 'Couldn’t reach the cloud just now — your progress is safe on this device and will back up automatically when you’re back online.' }
+        ? { ok: false, text: 'Couldn’t reach the cloud just now. Your progress is safe on this device and will back up automatically when you’re back online.' }
         : { ok: true, text: 'Backed up to the cloud just now.' });
     } catch (e) {
-      setSyncMsg({ ok: false, text: 'Backup didn’t go through — check your connection and try again.' });
+      setSyncMsg({ ok: false, text: 'Backup didn’t go through, check your connection and try again.' });
     } finally {
       setSyncBusy(false);
     }
@@ -229,7 +229,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         <button onClick={() => requestConfirm({
                   icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,
                   title: `Reset ${profile ? `${profile.displayName}'s` : "this profile's"} data?`,
-                  body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone — consider downloading a backup first (Settings → Backup).",
+                  body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone, consider downloading a backup first (Settings → Backup).",
                   confirmLabel: 'Reset data',
                   cancelLabel: 'Cancel',
                   tone: 'danger',
@@ -304,7 +304,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           <div className="flex items-start gap-2.5">
             <RefreshCw size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
             <div className="text-[12px] leading-relaxed" style={{ color: T.inkSoft }}>
-              <span className="font-semibold" style={{ color: T.ink }}>Backed up &amp; synced.</span> Your progress is saved to your account. On a new phone or laptop, just sign in with the same name &amp; password — everything restores automatically.
+              <span className="font-semibold" style={{ color: T.ink }}>Backed up &amp; synced.</span> Your progress is saved to your account. On a new phone or laptop, just sign in with the same name &amp; password, everything restores automatically.
             </div>
           </div>
         </Card>
@@ -371,7 +371,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 {gestures.close
                   ? 'Swipe left anywhere while the sidebar is open to close it'
-                  : 'Off — you can still close it by tapping the backdrop or the menu icon'}
+                  : 'Off: you can still close it by tapping the backdrop or the menu icon'}
               </div>
             </div>
           </div>
@@ -391,7 +391,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             <div className="min-w-0">
               <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Swipe right <b>anywhere on the home screen</b> to open the sidebar — phone, tablet and iOS.
+                Swipe right <b>anywhere on the home screen</b> to open the sidebar, phone, tablet and iOS.
               </div>
             </div>
           </div>
@@ -410,7 +410,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             </div>
             <div className="min-w-0">
               <div className="font-medium" style={{ color: T.ink }}>Tap backdrop to close</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on — cannot be disabled</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on: cannot be disabled</div>
             </div>
           </div>
           <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0" style={{ background: T.success, opacity: 0.5 }}>
@@ -473,7 +473,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             </Card>
           )}
           <div className="text-[11px] leading-relaxed px-1 mt-1" style={{ color: T.muted }}>
-            Backup is automatic — everything you do saves to the cloud on its own, including your Knowledge-Map notes. There are no files to download or lose. To move to a new phone, just install the app and sign in.
+            Backup is automatic: everything you do saves to the cloud on its own, including your Knowledge-Map notes. There are no files to download or lose. To move to a new phone, just install the app and sign in.
           </div>
         </>
       )}
@@ -540,7 +540,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {isGuest && (
           <>
             <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Account</div>
-            <Tip title="Create a profile" text="Right now you’re a guest — your progress lives only on this device. Create a free profile to back it up and sync across phones.">
+            <Tip title="Create a profile" text="Right now you’re a guest, your progress lives only on this device. Create a free profile to back it up and sync across phones.">
             <Card className="p-4 mb-6 cursor-pointer no-tap-highlight pressable"
                   style={{ background: T.primary, border: 'none' }}
                   onClick={onGuestSignIn}>
@@ -552,7 +552,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <div className="min-w-0 flex-1">
                   <div className="font-display text-lg font-semibold" style={{ color: '#FFF' }}>Sign in / Create account</div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                    You're a guest — save your progress &amp; sync across devices
+                    You're a guest: save your progress &amp; sync across devices
                   </div>
                 </div>
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
@@ -569,7 +569,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
             <SubPageCard icon={User} iconBg={T.primary} title="Profile"
                          sub={`${profile.displayName} · rename, switch, backup, reset`}
-                         tip="Rename yourself, switch to another profile on this device, back up your data, or reset this profile — all in one focused page."
+                         tip="Rename yourself, switch to another profile on this device, back up your data, or reset this profile, all in one focused page."
                          onClick={() => openSub('profile')} />
           </>
         )}
@@ -578,7 +578,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             separated from the Profile/Account card above (own header + section
             spacing). For guests the Reset action renders below this section. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share</div>
-        <Tip title="Share NurseHolic" text="Your personal invite — link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
+        <Tip title="Share NurseHolic" text="Your personal invite, link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
@@ -623,7 +623,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                       {data.preferences && data.preferences.reviewRemindersEnabled !== false
                         ? "Show the green 'Review due' card on Home when questions are ready for review"
-                        : "Hidden — the spaced-repetition engine still tracks dates, just doesn't nudge you"}
+                        : "Hidden: the spaced-repetition engine still tracks dates, just doesn't nudge you"}
                     </div>
                   </div>
                 </div>
@@ -658,7 +658,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                   <div className="min-w-0">
                     <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
                     <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.muted }}>
-                      iPhones only allow notifications from installed apps. Install first — it takes ten seconds:
+                      iPhones only allow notifications from installed apps. Install first: it takes ten seconds:
                     </div>
                     <div className="mt-2.5 space-y-1.5 text-xs" style={{ color: T.inkSoft }}>
                       <div className="flex items-center gap-2">
@@ -687,7 +687,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                       <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
                       <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                         {reminderOn
-                          ? `On — daily nudge at ${reminder.time || '20:00'}${reminder.contentPush === false ? '' : ' + new-content pings'}`
+                          ? `On: daily nudge at ${reminder.time || '20:00'}${reminder.contentPush === false ? '' : ' + new-content pings'}`
                           : 'One tap: a daily study nudge + a ping when new questions drop'}
                       </div>
                     </div>
@@ -722,7 +722,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                   <div className="min-w-0">
                     <div className="text-sm font-medium" style={{ color: T.ink }}>New content alerts</div>
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                      {reminder.contentPush === false ? 'Off — no pings about new question sets' : 'A ping when the team adds a new question set'}
+                      {reminder.contentPush === false ? 'Off: no pings about new question sets' : 'A ping when the team adds a new question set'}
                     </div>
                   </div>
                   <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0" style={{ background: reminder.contentPush !== false ? T.success : T.border }}>
@@ -795,7 +795,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                       {(data.preferences && data.preferences.includeGkInStats === true)
                         ? 'General Knowledge and Reasoning & Aptitude are included in your accuracy, coverage and weak areas'
-                        : 'Off — only nursing topics count toward accuracy, coverage and weak areas (recommended)'}
+                        : 'Off: only nursing topics count toward accuracy, coverage and weak areas (recommended)'}
                     </div>
                   </div>
                 </div>
@@ -813,7 +813,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* F-B — pull-to-refresh sound toggle. Local pref; respects the device
             media volume (a web app can't read the hardware mute switch). */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sound</div>
-        <Tip title="Pull-to-refresh sound" text="A soft confirmation sound when you pull down to refresh. Purely cosmetic — turn it off for silent refreshes.">
+        <Tip title="Pull-to-refresh sound" text="A soft confirmation sound when you pull down to refresh. Purely cosmetic: turn it off for silent refreshes.">
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}>
           <div className="flex items-center justify-between gap-3">
@@ -827,7 +827,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {soundOn
                     ? 'A soft sound plays when you pull down to refresh'
-                    : 'Off — refreshing is silent'}
+                    : 'Off: refreshing is silent'}
                 </div>
               </div>
             </div>
@@ -866,7 +866,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
         <SubPageCard icon={Hand} iconBg={T.primary} title="Sidebar gestures"
                      sub="Swipe to open or close the sidebar"
-                     tip="Choose how the sidebar opens and closes — swipe right anywhere on Home to open it, swipe left to close. Tapping the backdrop always closes."
+                     tip="Choose how the sidebar opens and closes, swipe right anywhere on Home to open it, swipe left to close. Tapping the backdrop always closes."
                      onClick={() => openSub('gestures')} />
 
         {/* Help */}
@@ -891,7 +891,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sync &amp; Backup</div>
         <SubPageCard icon={Cloud} iconBg={T.primary} title="Sync &amp; Backup"
                      sub={isGuest ? 'Sign in to back up to the cloud' : 'Your progress is backed up automatically'}
-                     tip="See your cloud-backup status and back up on demand. Your progress — including Knowledge-Map notes — syncs automatically and restores when you sign in on any device. No files to download."
+                     tip="See your cloud-backup status and back up on demand. Your progress: including Knowledge-Map notes, syncs automatically and restores when you sign in on any device. No files to download."
                      onClick={() => openSub('backup')} />
 
         {/* [admin-app separation] The Settings admin section (unlock admin +
@@ -912,8 +912,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <div className="font-medium" style={{ color: T.ink }}>Favourites</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {favs && favs.enabled
-                    ? `On — heart icons are visible across the app. ${favs.order.length === 0 ? 'Heart some sections to pin them to your home screen.' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen.`}`
-                    : 'Off — heart icons are hidden everywhere. Turn this on to show them and pin your favourite sections to home.'}
+                    ? `On: heart icons are visible across the app. ${favs.order.length === 0 ? 'Heart some sections to pin them to your home screen.' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen.`}`
+                    : 'Off: heart icons are hidden everywhere. Turn this on to show them and pin your favourite sections to home.'}
                 </div>
               </div>
             </div>
@@ -970,7 +970,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {cribOn
                     ? 'Review correct, wrong, and missed questions after every test'
-                    : 'Crib Sheet is hidden — results screen only after tests'}
+                    : 'Crib Sheet is hidden, results screen only after tests'}
                 </div>
               </div>
             </div>
@@ -982,7 +982,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           </div>
         </Card>
         <div className="text-[11px] leading-relaxed mb-3 px-2" style={{ color: T.muted }}>
-          The Crib Sheet shows every question with correct answers and explanations — like a PYQ booklet. You can also share it.
+          The Crib Sheet shows every question with correct answers and explanations. Like a PYQ booklet. You can also share it.
         </div>
 
         {/* #16 — Legal. Privacy Policy + Terms as sub-pages (rendered by the
@@ -990,7 +990,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* #8 — Legal opens in a focused sub-page listing Privacy + Terms. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Legal</div>
         <SubPageCard icon={Shield} iconBg={T.primary} title="Legal"
-                     tip="Read the Privacy Policy and Terms of Use — what's stored, how it's used, and the simple rules of the app."
+                     tip="Read the Privacy Policy and Terms of Use. What's stored, how it's used, and the simple rules of the app."
                      sub="Privacy Policy and Terms of Use"
                      onClick={() => openSub('legal')} />
 

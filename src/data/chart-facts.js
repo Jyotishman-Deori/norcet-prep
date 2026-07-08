@@ -32,7 +32,7 @@ export const CHART_FACTS = [
   'Insulin is stored in the fridge (2–8 °C) before use.',
   'Potassium is NEVER given as an IV push.',
   'Maslow: physiological needs before psychosocial.',
-  'Assess before you intervene — the ADPIE rule.',
+  'Assess before you intervene, the ADPIE rule.',
   'Z-track technique prevents IM medication leakage.',
   'Trendelenburg position: head down, feet up.',
   'Semi-Fowler’s is roughly a 30–45° head-up tilt.',

@@ -47,7 +47,7 @@ async function callStaging(body) {
   const token = getAuthToken();
   if (!token) {
     throw new Error(
-      'content-staging: no session token — log in to the admin app first.'
+      'content-staging: no session token: log in to the admin app first.'
     );
   }
 

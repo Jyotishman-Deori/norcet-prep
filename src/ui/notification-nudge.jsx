@@ -162,11 +162,11 @@ export default function NotificationNudge({ onEnable, reminderTime = '20:00' }) 
               </div>
               <div className="text-[12.5px] mt-1 leading-relaxed" style={{ color: T.inkSoft }}>
                 One tap: a gentle daily study nudge + a ping when new questions drop.
-                No spam — you control it in Settings.
+                No spam: you control it in Settings.
               </div>
               {phase === 'blocked' && (
                 <div className="text-[12px] mt-2 leading-snug" style={{ color: T.error || '#DC2626' }}>
-                  Notifications are blocked for this site — allow them in your browser
+                  Notifications are blocked for this site, allow them in your browser
                   settings, then flip the switch in Settings → Notifications.
                 </div>
               )}

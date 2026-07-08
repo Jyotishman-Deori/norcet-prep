@@ -16,29 +16,29 @@ export const SEED_EXPLANATIONS = {
 
   // ---- FUNDAMENTALS ----
   f1: {
-    exp: `ANSWER: 60–100 bpm — the normal resting heart rate for a healthy adult.
+    exp: `ANSWER: 60–100 bpm: the normal resting heart rate for a healthy adult.
 
-WHY: at rest the SA (sinoatrial) node — the heart's natural pacemaker — fires 60–100 times a minute. This range delivers enough cardiac output (CO = stroke volume × heart rate) without making the heart work harder than it needs to.
+WHY: at rest the SA (sinoatrial) node. The heart's natural pacemaker. Fires 60–100 times a minute. This range delivers enough cardiac output (CO = stroke volume × heart rate) without making the heart work harder than it needs to.
 
 OUT OF RANGE: below 60 = bradycardia (normal in trained athletes because their larger stroke volume does more per beat; otherwise think β-blockers, heart block, hypothyroidism, or raised intracranial pressure). Above 100 = tachycardia (fever, pain, anxiety, dehydration, hypoxia, blood loss, arrhythmia).
 
-EXAM TIP: NORCET loves the athlete exception — a resting pulse of 50 in a marathon runner is physiological, not pathological.`,
+EXAM TIP: NORCET loves the athlete exception, a resting pulse of 50 in a marathon runner is physiological, not pathological.`,
     wrong: {
-      0: `40–60 is tempting because very fit athletes sit here — but as a general "normal resting" figure it is bradycardia, which in most adults signals β-blockers, heart block, hypothyroidism or raised ICP.`,
-      2: `100–120 is mild tachycardia. Common with fever, pain, anxiety or dehydration — a reason to look for a cause, not a normal baseline.`,
-      3: `120–140 is marked tachycardia — never a normal resting range in an adult; needs evaluation for arrhythmia, sepsis, hypovolaemia, etc.`
+      0: `40–60 is tempting because very fit athletes sit here, but as a general "normal resting" figure it is bradycardia, which in most adults signals β-blockers, heart block, hypothyroidism or raised ICP.`,
+      2: `100–120 is mild tachycardia. Common with fever, pain, anxiety or dehydration, a reason to look for a cause, not a normal baseline.`,
+      3: `120–140 is marked tachycardia. Never a normal resting range in an adult; needs evaluation for arrhythmia, sepsis, hypovolaemia, etc.`
     }
   },
   f2: {
-    exp: `ANSWER: every option except "right colour of tablet" — the Rights of Medication Administration.
+    exp: `ANSWER: every option except "right colour of tablet", the Rights of Medication Administration.
 
 WHY: the Rights are a verification checklist that prevents medication error. The classic 5 are Patient, Drug, Dose, Route, Time. Modern frameworks extend to 10: add Documentation, Reason, Response, Refuse, and Education.
 
-KEY DISTINCTION: appearance (colour, shape) is NEVER a verification criterion — the same drug looks different across generics and brands, so relying on colour is exactly how errors slip through.
+KEY DISTINCTION: appearance (colour, shape) is NEVER a verification criterion, the same drug looks different across generics and brands, so relying on colour is exactly how errors slip through.
 
 EXAM TIP: if an option describes checking the drug by how it looks rather than by its label/order, it is the wrong one.`,
     wrong: {
-      1: `Tablet colour varies by manufacturer and between generic and brand. Using appearance to verify a drug is unsafe — always check the label against the order, never the colour.`
+      1: `Tablet colour varies by manufacturer and between generic and brand. Using appearance to verify a drug is unsafe. Always check the label against the order, never the colour.`
     }
   },
   f3: {
@@ -48,24 +48,24 @@ WHY: the 5 Moments are defined around the PATIENT and the care task, to interrup
 
 THE 5 MOMENTS: (1) before touching a patient, (2) before a clean/aseptic procedure, (3) after body-fluid exposure risk, (4) after touching a patient, (5) after touching the patient's surroundings.
 
-EXAM TIP: hand hygiene on entering the building is good general practice but is not one of the formal 5 Moments — the moments are tied to patient contact, not to the doorway.`,
+EXAM TIP: hand hygiene on entering the building is good general practice but is not one of the formal 5 Moments. The moments are tied to patient contact, not to the doorway.`,
     wrong: {
-      0: `"Before touching a patient" is Moment 1 — a genuine WHO moment, so it cannot be the answer to a "does NOT include" question.`,
-      1: `"After body-fluid exposure risk" is Moment 3 — a genuine moment.`,
-      3: `"After touching patient surroundings" is Moment 5 — a genuine moment.`
+      0: `"Before touching a patient" is Moment 1, a genuine WHO moment, so it cannot be the answer to a "does NOT include" question.`,
+      1: `"After body-fluid exposure risk" is Moment 3, a genuine moment.`,
+      3: `"After touching patient surroundings" is Moment 5, a genuine moment.`
     }
   },
   f4: {
-    exp: `ANSWER: High Fowler's — the best position for severe dyspnoea.
+    exp: `ANSWER: High Fowler's: the best position for severe dyspnoea.
 
 WHY: sitting upright at 60°–90° lets gravity pull the abdominal organs down, so the diaphragm can descend fully and the lungs expand maximally. That increases tidal volume and reduces the work of breathing.
 
-ADD-ON: pairing it with a pillow on an over-bed table to lean forward gives the orthopneic position, which recruits the accessory muscles — useful in COPD/asthma distress.
+ADD-ON: pairing it with a pillow on an over-bed table to lean forward gives the orthopneic position, which recruits the accessory muscles, useful in COPD/asthma distress.
 
 EXAM TIP: "breathless = sit them up." Lying flat is almost always the wrong answer for a dyspnoeic patient.`,
     wrong: {
-      0: `Supine worsens dyspnoea — lying flat lets the abdominal contents push the diaphragm up and reduces lung expansion.`,
-      1: `Trendelenburg (head-down tilt) is used for hypotension/shock to boost venous return — it would make breathlessness worse.`,
+      0: `Supine worsens dyspnoea: lying flat lets the abdominal contents push the diaphragm up and reduces lung expansion.`,
+      1: `Trendelenburg (head-down tilt) is used for hypotension/shock to boost venous return. It would make breathlessness worse.`,
       3: `Left lateral improves cardiac output in late pregnancy (relieves aortocaval compression) but does not specifically relieve dyspnoea.`
     }
   },
@@ -78,8 +78,8 @@ CLINICAL LINK (Spaulding): critical items entering sterile tissue (surgical inst
 
 EXAM TIP: "kills spores" is the single phrase that separates sterilisation from disinfection.`,
     wrong: {
-      1: `They differ in how COMPLETE the kill is, not merely in temperature — the defining issue is whether spores survive.`,
-      2: `This is backwards — sterilisation is the more thorough process, not disinfection.`,
+      1: `They differ in how COMPLETE the kill is, not merely in temperature. The defining issue is whether spores survive.`,
+      2: `This is backwards: sterilisation is the more thorough process, not disinfection.`,
       3: `The difference is highly significant clinically: it decides which reprocessing method an instrument needs (Spaulding classification).`
     }
   },
@@ -88,56 +88,56 @@ EXAM TIP: "kills spores" is the single phrase that separates sterilisation from 
 
 WHY: pain is subjective and private. McCaffery's classic definition: "pain is whatever the experiencing person says it is, existing whenever they say it does." No observer can measure it more accurately than the person feeling it.
 
-WHEN SELF-REPORT IS IMPOSSIBLE: use validated behavioural scales — FLACC (infants), PAINAD (advanced dementia), or observe an unconscious patient — but only as a fallback.
+WHEN SELF-REPORT IS IMPOSSIBLE: use validated behavioural scales. FLACC (infants), PAINAD (advanced dementia), or observe an unconscious patient, but only as a fallback.
 
 EXAM TIP: if "patient's self-report" is an option in any pain-assessment question, it is almost always the answer.`,
     wrong: {
-      0: `Vital-sign changes are unreliable — they often stay normal in chronic pain and can rise for unrelated reasons (anxiety, fever).`,
+      0: `Vital-sign changes are unreliable. They often stay normal in chronic pain and can rise for unrelated reasons (anxiety, fever).`,
       1: `Facial expression varies by culture and personality; a stoic patient may hide severe pain.`,
-      3: `Activity level misleads — patients may push through activity despite pain, and inactivity has many causes.`
+      3: `Activity level misleads: patients may push through activity despite pain, and inactivity has many causes.`
     }
   },
 
   // ---- ANATOMY & PHYSIOLOGY ----
   a1: {
-    exp: `ANSWER: 4–8 L/min — normal resting cardiac output.
+    exp: `ANSWER: 4–8 L/min, normal resting cardiac output.
 
 WHY: cardiac output = stroke volume × heart rate ≈ 70 mL × 70 bpm ≈ 4.9 L/min. The normal resting band is 4–8 L/min, and it can climb above 20 L/min in heavy exercise.
 
 CLINICAL MEANING: a low CO causes hypoperfusion (cool, mottled skin, falling urine output, confusion); an abnormally high CO points to a hyperdynamic state such as sepsis, thyrotoxicosis or severe anaemia.
 
-EXAM TIP: anchor it to "≈5 L/min at rest" — the rough volume of the whole blood pool circulating each minute.`,
+EXAM TIP: anchor it to "≈5 L/min at rest", the rough volume of the whole blood pool circulating each minute.`,
     wrong: {
-      0: `2–3 L/min is too low — it would indicate severe cardiac dysfunction / cardiogenic shock.`,
-      2: `10–12 L/min is a high output — seen in exercise, sepsis or hyperthyroidism, not at rest.`,
+      0: `2–3 L/min is too low. It would indicate severe cardiac dysfunction / cardiogenic shock.`,
+      2: `10–12 L/min is a high output, seen in exercise, sepsis or hyperthyroidism, not at rest.`,
       3: `15–20 L/min is only reached at peak athletic exertion, never at rest.`
     }
   },
   a2: {
-    exp: `ANSWER: the nephron — the functional unit of the kidney.
+    exp: `ANSWER: the nephron: the functional unit of the kidney.
 
-WHY: each kidney holds about 1 million nephrons, and the nephron is the smallest structure that performs the kidney's whole job — filtration, reabsorption and secretion — start to finish.
+WHY: each kidney holds about 1 million nephrons, and the nephron is the smallest structure that performs the kidney's whole job, filtration, reabsorption and secretion, start to finish.
 
 ITS PARTS: renal corpuscle (glomerulus + Bowman's capsule) → proximal tubule → Loop of Henle → distal tubule → collecting duct. Each segment handles a specific step of urine formation.
 
-EXAM TIP: the other options are all PARTS of the nephron — "functional unit" means the complete working unit, not a component.`,
+EXAM TIP: the other options are all PARTS of the nephron, "functional unit" means the complete working unit, not a component.`,
     wrong: {
-      0: `The glomerulus is only the filtering tuft — one part of the nephron, not the whole working unit.`,
-      2: `Bowman's capsule is the cup that surrounds the glomerulus — again just one component.`,
+      0: `The glomerulus is only the filtering tuft, one part of the nephron, not the whole working unit.`,
+      2: `Bowman's capsule is the cup that surrounds the glomerulus, again just one component.`,
       3: `The Loop of Henle concentrates urine but is a single segment of the nephron.`
     }
   },
   a3: {
     exp: `ANSWER: I (Olfactory), II (Optic) and VIII (Vestibulocochlear) are the purely sensory cranial nerves.
 
-WHY: cranial nerves are sensory, motor or mixed. Only three carry sensation alone — smell, sight, and hearing/balance.
+WHY: cranial nerves are sensory, motor or mixed. Only three carry sensation alone, smell, sight, and hearing/balance.
 
-THE MAP: purely motor = III, IV, VI, XI, XII; mixed = V, VII, IX, X. Mnemonic for the type of each (I–XII): "Some Say Marry Money But My Brother Says Big Brains Matter More" — S = sensory, M = motor, B = both.
+THE MAP: purely motor = III, IV, VI, XI, XII; mixed = V, VII, IX, X. Mnemonic for the type of each (I–XII): "Some Say Marry Money But My Brother Says Big Brains Matter More". S = sensory, M = motor, B = both.
 
-EXAM TIP: the three sensory nerves are the "special senses" trio — easy to remember as smell, sight, sound.`,
+EXAM TIP: the three sensory nerves are the "special senses" trio, easy to remember as smell, sight, sound.`,
     wrong: {
-      2: `CN III (oculomotor) is purely MOTOR — eye movement and pupil constriction.`,
-      3: `CN V (trigeminal) is MIXED — facial sensation plus the muscles of mastication.`,
+      2: `CN III (oculomotor) is purely MOTOR, eye movement and pupil constriction.`,
+      3: `CN V (trigeminal) is MIXED, facial sensation plus the muscles of mastication.`,
       5: `CN X (vagus) is MIXED and very widely distributed (parasympathetic to thorax/abdomen plus sensory).`
     }
   },
@@ -148,7 +148,7 @@ WHY: ADH and oxytocin are made in the hypothalamus and merely stored and release
 
 ANTERIOR PITUITARY (mnemonic "GAT FLaP"): GH, ACTH, TSH, FSH, LH, Prolactin. POSTERIOR pituitary releases only ADH and Oxytocin.
 
-EXAM TIP: if the question asks what the posterior pituitary "secretes," remember it manufactures nothing — it only stores and releases the two hypothalamic hormones.`,
+EXAM TIP: if the question asks what the posterior pituitary "secretes," remember it manufactures nothing, it only stores and releases the two hypothalamic hormones.`,
     wrong: {
       0: `Growth hormone is an anterior pituitary hormone.`,
       1: `TSH (thyroid-stimulating hormone) is an anterior pituitary hormone.`,
@@ -156,7 +156,7 @@ EXAM TIP: if the question asks what the posterior pituitary "secretes," remember
     }
   },
   a5: {
-    exp: `ANSWER: stratum basale — the deepest layer of the epidermis.
+    exp: `ANSWER: stratum basale: the deepest layer of the epidermis.
 
 WHY: the basale sits on the basement membrane and is where keratinocytes divide (mitosis). New cells are pushed upward, maturing and dying as they rise, until they shed from the surface.
 
@@ -164,21 +164,21 @@ THE LAYERS (deep → superficial): Basale → Spinosum → Granulosum → Lucidu
 
 EXAM TIP: "deepest + dividing" = basale; "most superficial + dead" = corneum.`,
     wrong: {
-      0: `Stratum corneum is the most SUPERFICIAL layer — flat, dead, keratinised cells.`,
+      0: `Stratum corneum is the most SUPERFICIAL layer, flat, dead, keratinised cells.`,
       1: `Stratum lucidum lies just beneath the corneum and exists only in thick (palms/soles) skin.`,
-      3: `Stratum granulosum is a middle layer where keratohyalin granules form — not the deepest.`
+      3: `Stratum granulosum is a middle layer where keratohyalin granules form, not the deepest.`
     }
   },
   a6: {
-    exp: `ANSWER: 12–15 g/dL — normal haemoglobin for an adult female.
+    exp: `ANSWER: 12–15 g/dL, normal haemoglobin for an adult female.
 
 WHY: women run lower than men because menstrual loss and hormonal factors give them a smaller red-cell mass. Adult males: roughly 13.5–17.5 g/dL.
 
 ANAEMIA CUT-OFFS (WHO): <12 g/dL in non-pregnant women, <11 g/dL in pregnancy, <13 g/dL in men. Anaemia in reproductive-age women is extremely common in India.
 
-EXAM TIP: know the female "normal" (12–15) and the female anaemia threshold (<12, or <11 in pregnancy) — they are favourite values.`,
+EXAM TIP: know the female "normal" (12–15) and the female anaemia threshold (<12, or <11 in pregnancy). They are favourite values.`,
     wrong: {
-      0: `8–10 g/dL is severe anaemia — usually symptomatic (breathlessness, fatigue, tachycardia).`,
+      0: `8–10 g/dL is severe anaemia, usually symptomatic (breathlessness, fatigue, tachycardia).`,
       1: `10–12 g/dL falls into mild anaemia by most cut-offs, not the normal range.`,
       3: `15–17 g/dL is the MALE range; in a female it would suggest polycythaemia or haemoconcentration.`
     }
@@ -188,27 +188,27 @@ EXAM TIP: know the female "normal" (12–15) and the female anaemia threshold (<
   m1: {
     exp: `ANSWER: obtain a 12-lead ECG first.
 
-WHY: in suspected acute MI the ECG (target: within 10 minutes of arrival) is what classifies the patient — STEMI (needs immediate reperfusion) vs NSTEMI / unstable angina — and that decision drives the entire pathway.
+WHY: in suspected acute MI the ECG (target: within 10 minutes of arrival) is what classifies the patient. STEMI (needs immediate reperfusion) vs NSTEMI / unstable angina, and that decision drives the entire pathway.
 
-THE REST FOLLOW FAST: aspirin, IV access, and oxygen (only if SpO₂ <94%) all happen almost together — but the diagnostic ECG comes first because it directs everything else.
+THE REST FOLLOW FAST: aspirin, IV access, and oxygen (only if SpO₂ <94%) all happen almost together, but the diagnostic ECG comes first because it directs everything else.
 
-EXAM TIP: "diagnose before you treat" — when the question lists ECG among the actions for chest pain, it is usually the first step.`,
+EXAM TIP: "diagnose before you treat", when the question lists ECG among the actions for chest pain, it is usually the first step.`,
     wrong: {
       0: `Aspirin 325 mg is given very early, but the ECG comes first to confirm the cardiac picture and guide reperfusion.`,
-      2: `IV access is set up in parallel, yet it is preparatory — the ECG is the diagnostic priority.`,
+      2: `IV access is set up in parallel, yet it is preparatory. The ECG is the diagnostic priority.`,
       3: `Oxygen is given only if SpO₂ <94%; routine oxygen is no longer recommended, and the ECG still precedes it.`
     }
   },
   m2: {
     exp: `ANSWER: diabetic ketoacidosis (DKA).
 
-WHY: the picture — drowsiness, deep sighing (Kussmaul) breathing, and fruity breath — is the classic DKA triad of hyperglycaemia + ketosis + metabolic acidosis. Kussmaul breathing blows off CO₂ to compensate for the acidosis; the fruity smell is exhaled acetone.
+WHY: the picture: drowsiness, deep sighing (Kussmaul) breathing, and fruity breath. Is the classic DKA triad of hyperglycaemia + ketosis + metabolic acidosis. Kussmaul breathing blows off CO₂ to compensate for the acidosis; the fruity smell is exhaled acetone.
 
 USUAL SETTING: Type 1 diabetes. Management order: fluids → insulin → potassium replacement → treat the precipitant (often infection).
 
 EXAM TIP: "fruity breath + deep breathing in a diabetic" = DKA until proven otherwise.`,
     wrong: {
-      0: `Hypoglycaemia gives tremor, sweating and confusion — not Kussmaul breathing or a fruity odour.`,
+      0: `Hypoglycaemia gives tremor, sweating and confusion, not Kussmaul breathing or a fruity odour.`,
       2: `HHS shows very high glucose with minimal ketosis and no significant acidosis, so there is no Kussmaul breathing; it is more typical of Type 2.`,
       3: `Lactic acidosis can cause deep breathing but lacks the fruity (ketone) breath and arises in a different context (sepsis, metformin).`
     }
@@ -216,19 +216,19 @@ EXAM TIP: "fruity breath + deep breathing in a diabetic" = DKA until proven othe
   m3: {
     exp: `ANSWER: asthma is reversible airway obstruction; COPD is largely irreversible.
 
-WHY: in asthma the bronchoconstriction responds to bronchodilators and spirometry normalises afterward. In COPD the airflow limitation is chronic and progressive — driven by emphysema and chronic bronchitis — and only partly reverses.
+WHY: in asthma the bronchoconstriction responds to bronchodilators and spirometry normalises afterward. In COPD the airflow limitation is chronic and progressive, driven by emphysema and chronic bronchitis. And only partly reverses.
 
 SHARED BUT DIFFERENT: both involve inflammation, but asthma tends to be eosinophilic and episodic, COPD neutrophilic and persistent.
 
-EXAM TIP: the single discriminator the examiner wants is "reversibility" — asthma reverses, COPD largely does not.`,
+EXAM TIP: the single discriminator the examiner wants is "reversibility". Asthma reverses, COPD largely does not.`,
     wrong: {
-      1: `COPD is mostly smoking-related but also follows biomass-fuel exposure, occupational dust, and alpha-1 antitrypsin deficiency — so "only smokers" is false.`,
+      1: `COPD is mostly smoking-related but also follows biomass-fuel exposure, occupational dust, and alpha-1 antitrypsin deficiency. So "only smokers" is false.`,
       2: `Acute severe asthma absolutely causes hyperinflation (air trapping), so "never" is wrong.`,
-      3: `COPD has a definite inflammatory component (neutrophilic) — it is not non-inflammatory.`
+      3: `COPD has a definite inflammatory component (neutrophilic). It is not non-inflammatory.`
     }
   },
   m4: {
-    exp: `ANSWER: atelectasis — the commonest cause of fever in the first 24 hours after surgery.
+    exp: `ANSWER: atelectasis: the commonest cause of fever in the first 24 hours after surgery.
 
 WHY: anaesthesia and shallow, painful breathing leave small airways collapsed; this day-1 atelectasis is the classic early post-op fever.
 
@@ -236,7 +236,7 @@ THE "5 Ws" BY TIMING: Wind (atelectasis, day 1) → Water (UTI, day 3) → Wound
 
 PREVENTION/FIX: incentive spirometry, deep breathing, early ambulation.
 
-EXAM TIP: match the fever to the post-op DAY — "day 1 fever" almost always means atelectasis.`,
+EXAM TIP: match the fever to the post-op DAY. "day 1 fever" almost always means atelectasis.`,
     wrong: {
       0: `Wound infection ("Wound") typically appears around day 5, not day 1.`,
       2: `UTI ("Water") usually shows around day 3, often catheter-related.`,
@@ -246,29 +246,29 @@ EXAM TIP: match the fever to the post-op DAY — "day 1 fever" almost always mea
   m5: {
     exp: `ANSWER: stop the transfusion immediately.
 
-WHY: fever, chills, low-back pain and dark urine during a transfusion signal an acute haemolytic reaction (usually ABO incompatibility) — a life-threatening emergency. Every additional millilitre of incompatible blood worsens haemolysis, so the line must stop at once.
+WHY: fever, chills, low-back pain and dark urine during a transfusion signal an acute haemolytic reaction (usually ABO incompatibility), a life-threatening emergency. Every additional millilitre of incompatible blood worsens haemolysis, so the line must stop at once.
 
 THEN: keep the vein open with normal saline using NEW tubing (not the contaminated set), notify the doctor and blood bank, and send the unit plus a post-transfusion sample for recheck.
 
-EXAM TIP: for any suspected transfusion reaction the universal first action is STOP — never slow.`,
+EXAM TIP: for any suspected transfusion reaction the universal first action is STOP. Never slow.`,
     wrong: {
-      0: `Even a KVO ("keep vein open") rate keeps delivering incompatible blood — you must STOP, not slow.`,
+      0: `Even a KVO ("keep vein open") rate keeps delivering incompatible blood. You must STOP, not slow.`,
       2: `Paracetamol treats a mild febrile NON-haemolytic reaction, and only after stopping; these features point to dangerous haemolysis.`,
       3: `Continuing in any form is contraindicated once a haemolytic reaction is suspected.`
     }
   },
   m6: {
-    exp: `ANSWER: hyperkalaemia — the most immediately life-threatening electrolyte problem in CKD.
+    exp: `ANSWER: hyperkalaemia: the most immediately life-threatening electrolyte problem in CKD.
 
 WHY: damaged kidneys cannot excrete potassium, and a rising K⁺ destabilises cardiac conduction: peaked T waves → widened QRS → sine-wave pattern → cardiac arrest.
 
 EMERGENCY TREATMENT ORDER: calcium gluconate (stabilises the myocardium) → insulin + dextrose / salbutamol / bicarbonate (shift K⁺ into cells) → dialysis or potassium-binding resin (actually removes it).
 
-EXAM TIP: hyperkalaemia kills by arrhythmia in minutes — it outranks the slower CKD electrolyte problems.`,
+EXAM TIP: hyperkalaemia kills by arrhythmia in minutes, it outranks the slower CKD electrolyte problems.`,
     wrong: {
       0: `Hyponatraemia occurs in CKD but develops slowly and is rarely instantly fatal.`,
-      2: `Hypocalcaemia drives secondary hyperparathyroidism — a chronic bone problem, not an acute killer.`,
-      3: `Hypermagnesaemia matters mainly when magnesium-containing antacids are used in CKD — far less common.`
+      2: `Hypocalcaemia drives secondary hyperparathyroidism, a chronic bone problem, not an acute killer.`,
+      3: `Hypermagnesaemia matters mainly when magnesium-containing antacids are used in CKD, far less common.`
     }
   },
   m7: {
@@ -276,7 +276,7 @@ EXAM TIP: hyperkalaemia kills by arrhythmia in minutes — it outranks the slowe
 
 WHY: the Glasgow Coma Scale grades consciousness from 3 (deepest coma) to 15 (fully alert). The bands are 13–15 mild, 9–12 moderate, 3–8 severe.
 
-AIRWAY RULE: "GCS 8 — intubate." At 8 or below the patient cannot reliably protect their airway, so definitive airway control is anticipated.
+AIRWAY RULE: "GCS 8: intubate." At 8 or below the patient cannot reliably protect their airway, so definitive airway control is anticipated.
 
 EXAM TIP: the minimum score is 3, NEVER 0 (you always score at least 1 in each of Eye, Verbal, Motor).`,
     wrong: {
@@ -290,7 +290,7 @@ EXAM TIP: the minimum score is 3, NEVER 0 (you always score at least 1 in each o
 
 WHY: an absolute neutrophil count of 400/µL is severe neutropenia (ANC <500). With almost no neutrophils, the patient cannot mount a normal response to infection, which becomes the dominant, life-threatening risk.
 
-PRECAUTIONS: private room, strict hand hygiene, no fresh flowers or raw fruit/vegetables, visitor screening, daily mouth care, and temperature monitoring — fever ≥38°C is neutropenic fever, an emergency needing blood cultures and broad-spectrum antibiotics within 1 hour.
+PRECAUTIONS: private room, strict hand hygiene, no fresh flowers or raw fruit/vegetables, visitor screening, daily mouth care, and temperature monitoring. Fever ≥38°C is neutropenic fever, an emergency needing blood cultures and broad-spectrum antibiotics within 1 hour.
 
 EXAM TIP: in severe neutropenia, infection prevention beats every other need on a "priority" question.`,
     wrong: {
@@ -302,35 +302,35 @@ EXAM TIP: in severe neutropenia, infection prevention beats every other need on 
 
   // ---- PHARMACOLOGY ----
   p1: {
-    exp: `ANSWER: Lispro / Aspart — the fastest-onset insulins.
+    exp: `ANSWER: Lispro / Aspart: the fastest-onset insulins.
 
 WHY: rapid-acting analogues (lispro, aspart, glulisine) start working in 5–15 minutes, so they are given right at the start of a meal to match the post-meal glucose spike.
 
-THE PROFILES: rapid — onset 5–15 min, peak ~1 h, duration 3–4 h; regular — onset 30–60 min (give 30 min before food); NPH — intermediate, onset 1–2 h; glargine/detemir — long-acting, essentially peakless, ~24 h.
+THE PROFILES: rapid: onset 5–15 min, peak ~1 h, duration 3–4 h; regular. Onset 30–60 min (give 30 min before food); NPH, intermediate, onset 1–2 h; glargine/detemir, long-acting, essentially peakless, ~24 h.
 
 EXAM TIP: order of speed = rapid → regular → NPH → long-acting. "Analogue = fast" is the shortcut.`,
     wrong: {
-      0: `Regular (Actrapid) is short-acting with a 30–60 min onset — slower than the analogues.`,
-      1: `NPH is intermediate-acting (1–2 h onset) — clearly slower.`,
-      3: `Glargine is a long-acting basal insulin with no real peak — the slowest onset here.`
+      0: `Regular (Actrapid) is short-acting with a 30–60 min onset, slower than the analogues.`,
+      1: `NPH is intermediate-acting (1–2 h onset), clearly slower.`,
+      3: `Glargine is a long-acting basal insulin with no real peak, the slowest onset here.`
     }
   },
   p2: {
     exp: `ANSWER: "hypokalaemia symptoms" is NOT an early sign of digoxin toxicity.
 
-WHY: digoxin toxicity shows up as GI upset (anorexia, nausea — often first), visual disturbance (yellow-green halos, "xanthopsia"), and arrhythmias (bradycardia, heart block, ectopy).
+WHY: digoxin toxicity shows up as GI upset (anorexia, nausea, often first), visual disturbance (yellow-green halos, "xanthopsia"), and arrhythmias (bradycardia, heart block, ectopy).
 
 THE TRAP: low potassium PREDISPOSES to digoxin toxicity (it lets digoxin bind more); it is a cause/risk factor, not a feature of toxicity. Therapeutic level: 0.5–2.0 ng/mL.
 
-EXAM TIP: remember "digoxin + low K⁺ = danger" — hypokalaemia worsens toxicity rather than being a symptom of it.`,
+EXAM TIP: remember "digoxin + low K⁺ = danger". Hypokalaemia worsens toxicity rather than being a symptom of it.`,
     wrong: {
-      0: `Anorexia and nausea are classic EARLY toxic symptoms — genuine, so not the exception.`,
+      0: `Anorexia and nausea are classic EARLY toxic symptoms, genuine, so not the exception.`,
       1: `Yellow-green halos (xanthopsia) are a classic visual sign of toxicity.`,
       2: `Bradycardia / AV block are common toxic arrhythmias.`
     }
   },
   p3: {
-    exp: `ANSWER: Vitamin K — the antidote for warfarin.
+    exp: `ANSWER: Vitamin K: the antidote for warfarin.
 
 WHY: warfarin blocks the vitamin K-dependent clotting factors (II, VII, IX, X). Giving vitamin K (phytomenadione) lets the liver remake them, reversing the effect.
 
@@ -338,7 +338,7 @@ URGENT BLEEDING: vitamin K takes hours, so for life-threatening haemorrhage give
 
 KNOW THE PAIRS: heparin → protamine; opioids → naloxone; benzodiazepines → flumazenil.
 
-EXAM TIP: warfarin ↔ vitamin K, heparin ↔ protamine — examiners love to swap these.`,
+EXAM TIP: warfarin ↔ vitamin K, heparin ↔ protamine, examiners love to swap these.`,
     wrong: {
       0: `Protamine sulphate reverses HEPARIN, not warfarin.`,
       2: `Naloxone reverses opioid overdose.`,
@@ -346,20 +346,20 @@ EXAM TIP: warfarin ↔ vitamin K, heparin ↔ protamine — examiners love to sw
     }
   },
   p4: {
-    exp: `ANSWER: nephrotoxicity, ototoxicity and neuromuscular blockade — the aminoglycoside trio to monitor.
+    exp: `ANSWER: nephrotoxicity, ototoxicity and neuromuscular blockade, the aminoglycoside trio to monitor.
 
-WHY: gentamicin/amikacin damage the proximal renal tubule (watch creatinine), the inner ear (vestibular + cochlear — deafness can be permanent), and can potentiate neuromuscular blockers (caution in myasthenia gravis).
+WHY: gentamicin/amikacin damage the proximal renal tubule (watch creatinine), the inner ear (vestibular + cochlear. Deafness can be permanent), and can potentiate neuromuscular blockers (caution in myasthenia gravis).
 
 NOT THEM: they are excreted unchanged in urine, so they are not hepatotoxic, and QT prolongation belongs to macrolides/fluoroquinolones.
 
-EXAM TIP: aminoglycosides have a narrow therapeutic index — therapeutic drug monitoring (peak + trough) reduces toxicity.`,
+EXAM TIP: aminoglycosides have a narrow therapeutic index, therapeutic drug monitoring (peak + trough) reduces toxicity.`,
     wrong: {
-      3: `Aminoglycosides are NOT hepatotoxic — they are cleared unchanged by the kidney, which is why renal monitoring matters.`,
+      3: `Aminoglycosides are NOT hepatotoxic. They are cleared unchanged by the kidney, which is why renal monitoring matters.`,
       4: `QT prolongation is linked to macrolides and fluoroquinolones, not aminoglycosides.`
     }
   },
   p5: {
-    exp: `ANSWER: gingival hyperplasia — a hallmark phenytoin adverse effect.
+    exp: `ANSWER: gingival hyperplasia: a hallmark phenytoin adverse effect.
 
 WHY: phenytoin causes overgrowth of gum tissue in 40–50% of users, so meticulous oral hygiene is the key teaching point.
 
@@ -373,15 +373,15 @@ EXAM TIP: "phenytoin = swollen gums + hairy + folate problems" captures the clas
     }
   },
   p6: {
-    exp: `ANSWER: beta-2 adrenergic agonism — how salbutamol works.
+    exp: `ANSWER: beta-2 adrenergic agonism, how salbutamol works.
 
 WHY: salbutamol selectively stimulates β2 receptors on bronchial smooth muscle, relaxing it (bronchodilation) to relieve wheeze and breathlessness.
 
 SIDE EFFECTS: come from β2 spillover elsewhere (fine tremor, hypokalaemia) and, at high doses, some β1 effect (tachycardia, palpitations).
 
-EXAM TIP: β2 = bronchi (and uterus); β1 = heart. "Salbutamol opens airways via β2" — contrast with ipratropium, which is a muscarinic antagonist.`,
+EXAM TIP: β2 = bronchi (and uterus); β1 = heart. "Salbutamol opens airways via β2". Contrast with ipratropium, which is a muscarinic antagonist.`,
     wrong: {
-      0: `β1 agonism speeds the heart (e.g. dobutamine) — not salbutamol's main action.`,
+      0: `β1 agonism speeds the heart (e.g. dobutamine): not salbutamol's main action.`,
       2: `α1 antagonism lowers blood pressure (e.g. prazosin).`,
       3: `Muscarinic antagonism describes ipratropium, a different class of bronchodilator.`
     }
@@ -389,7 +389,7 @@ EXAM TIP: β2 = bronchi (and uterus); β1 = heart. "Salbutamol opens airways via
 
   // ---- PAEDIATRICS ----
   pe1: {
-    exp: `ANSWER: at birth — when BCG is given under India's UIP.
+    exp: `ANSWER: at birth: when BCG is given under India's UIP.
 
 WHY: BCG is given as early as possible to protect newborns against severe childhood TB (miliary TB, TB meningitis), which is most dangerous in the first months of life.
 
@@ -397,7 +397,7 @@ THE BIRTH DOSES: BCG, OPV-0, and Hepatitis B-0. At 6/10/14 weeks: pentavalent (D
 
 EXAM TIP: the "birth trio" is BCG + OPV-0 + Hep B-0.`,
     wrong: {
-      1: `6 weeks is the first dose of pentavalent/OPV/rotavirus — not BCG.`,
+      1: `6 weeks is the first dose of pentavalent/OPV/rotavirus, not BCG.`,
       2: `9 months is MR-1 (measles-rubella), not BCG.`,
       3: `16 months is the DPT booster and MR-2.`
     }
@@ -407,17 +407,17 @@ EXAM TIP: the "birth trio" is BCG + OPV-0 + Hep B-0.`,
 
 WHY: the 1-minute score reflects how the baby tolerated birth; the 5-minute score reflects the response to any resuscitation. If the 5-minute score is <7, it is repeated every 5 minutes up to 20 minutes.
 
-THE COMPONENTS: Appearance (colour), Pulse, Grimace (reflex), Activity (tone), Respiration — each 0–2, max 10. 7–10 normal, 4–6 moderate depression, 0–3 severe.
+THE COMPONENTS: Appearance (colour), Pulse, Grimace (reflex), Activity (tone), Respiration, each 0–2, max 10. 7–10 normal, 4–6 moderate depression, 0–3 severe.
 
 EXAM TIP: "1 and 5 minutes" is the routine; extra readings only if the baby is doing poorly.`,
     wrong: {
       1: `Assessing only "immediately at birth" is too early to judge the response to interventions.`,
-      2: `The 10-minute reading is added only when the 5-minute score was abnormal — not routine.`,
+      2: `The 10-minute reading is added only when the 5-minute score was abnormal, not routine.`,
       3: `Scoring every minute is not the standard schedule.`
     }
   },
   pe3: {
-    exp: `ANSWER: by 5 months — when an infant doubles birth weight.
+    exp: `ANSWER: by 5 months: when an infant doubles birth weight.
 
 WHY: growth is fastest in early infancy. The weight rule of thumb: double by ~5 months, triple by 1 year, quadruple by 2 years.
 
@@ -425,8 +425,8 @@ OTHER FIRST-YEAR GAINS: length increases ~25 cm; head circumference ~12 cm. Aver
 
 EXAM TIP: memorise "double-5, triple-12 (months)" for weight milestones.`,
     wrong: {
-      0: `By 3 months an infant has gained only about half its birth weight — not doubled.`,
-      2: `By 9 months weight is roughly 2.5× birth weight — past doubling but before tripling.`,
+      0: `By 3 months an infant has gained only about half its birth weight, not doubled.`,
+      2: `By 9 months weight is roughly 2.5× birth weight, past doubling but before tripling.`,
       3: `By 12 months weight has TRIPLED, not merely doubled.`
     }
   },
@@ -447,7 +447,7 @@ EXAM TIP: fast breathing = pneumonia; chest indrawing = SEVERE pneumonia.`,
   pe5: {
     exp: `ANSWER: 1600 mL/day for a 25 kg child (Holliday-Segar).
 
-WHY: the formula adds tiers — 100 mL/kg for the first 10 kg, 50 mL/kg for the next 10 kg, 20 mL/kg for each kg beyond 20.
+WHY: the formula adds tiers, 100 mL/kg for the first 10 kg, 50 mL/kg for the next 10 kg, 20 mL/kg for each kg beyond 20.
 
 THE MATH: (10 × 100) + (10 × 50) + (5 × 20) = 1000 + 500 + 100 = 1600 mL/day. The hourly "4-2-1" version gives 4+2+1 = 65 mL/hr for the same child.
 
@@ -467,7 +467,7 @@ PLUS ZINC: zinc supplementation for 10–14 days shortens the illness and reduce
 
 EXAM TIP: "low-osmolarity ORS + zinc" is the modern standard for childhood diarrhoea.`,
     wrong: {
-      0: `The high-osmolarity (311 mOsm/L) formula is the OLD standard — replaced because it drew water into the gut.`,
+      0: `The high-osmolarity (311 mOsm/L) formula is the OLD standard, replaced because it drew water into the gut.`,
       2: `Plain rice water is a useful home fluid but is not a balanced electrolyte solution.`,
       3: `Coconut water alone has inadequate sodium for rehydration.`
     }
@@ -483,7 +483,7 @@ THE WHOLE MAP: Stage 1 ends at full dilatation; Stage 2 = full dilatation → bi
 
 EXAM TIP: full dilatation is the END of Stage 1, not its start.`,
     wrong: {
-      1: `Full dilatation (10 cm) marks the END of the first stage — and the start of the second.`,
+      1: `Full dilatation (10 cm) marks the END of the first stage, and the start of the second.`,
       2: `Delivery of the baby is the END of the second stage.`,
       3: `Delivery of the placenta is the end of the third stage.`
     }
@@ -498,11 +498,11 @@ SEVERE FEATURES: BP ≥160/110, platelets <100k, transaminases ≥2× normal, cr
 EXAM TIP: ordinary thresholds (140/90, proteinuria) define pre-eclampsia; the higher/organ-damage criteria define SEVERE.`,
     wrong: {
       1: `Proteinuria >300 mg/24 h helps DIAGNOSE pre-eclampsia but is not by itself a "severe" feature.`,
-      4: `BP ≥140/90 defines pre-eclampsia in general — the severe cut-off is ≥160/110.`
+      4: `BP ≥140/90 defines pre-eclampsia in general. The severe cut-off is ≥160/110.`
     }
   },
   o3: {
-    exp: `ANSWER: uterine atony — the commonest cause of primary PPH.
+    exp: `ANSWER: uterine atony: the commonest cause of primary PPH.
 
 WHY: after delivery the uterus must clamp down on the placental bed; if it stays soft ("boggy"), the open vessels keep bleeding. Atony causes about 70% of cases.
 
@@ -512,17 +512,17 @@ MANAGEMENT: fundal massage + uterotonics (oxytocin → ergometrine → carbopros
 
 EXAM TIP: soft, boggy uterus + bleeding = atony, treat with massage and oxytocin first.`,
     wrong: {
-      1: `Retained placenta ("Tissue") causes ~10% of PPH — far less than atony.`,
+      1: `Retained placenta ("Tissue") causes ~10% of PPH, far less than atony.`,
       2: `Genital-tract trauma ("Trauma") is ~20%; suspect it when the uterus is firm but bleeding continues.`,
       3: `Coagulopathy ("Thrombin") is rare (~1%) though dangerous.`
     }
   },
   o4: {
-    exp: `ANSWER: 4 — the minimum ANC visits recommended in India.
+    exp: `ANSWER: 4: the minimum ANC visits recommended in India.
 
 WHY: India's RCH/PMSMA guidance sets a minimum of 4 antenatal visits: 1st in the first trimester, 2nd at 14–26 weeks, 3rd at 28–34 weeks, 4th at 36 weeks to term.
 
-THE NUANCE: WHO (2016) recommends 8 contacts for better outcomes, which India is gradually adopting — but for NORCET the standard Indian minimum answer is 4.
+THE NUANCE: WHO (2016) recommends 8 contacts for better outcomes, which India is gradually adopting, but for NORCET the standard Indian minimum answer is 4.
 
 EXAM TIP: Indian minimum = 4; WHO 2016 ideal = 8. Read which guideline the question wants.`,
     wrong: {
@@ -538,23 +538,23 @@ WHY: "typical use" includes real-world mistakes. The rhythm method depends on re
 
 TYPICAL-USE FAILURE RATES: implant <0.1%, IUCD 0.2–0.8%, sterilisation <0.5%, OCPs ~9%, condom ~13%, withdrawal ~20%, calendar ~24%.
 
-EXAM TIP: the more a method depends on user behaviour, the higher its typical-use failure — natural methods sit at the top.`,
+EXAM TIP: the more a method depends on user behaviour, the higher its typical-use failure, natural methods sit at the top.`,
     wrong: {
       0: `The copper-T IUCD is highly effective (0.2–0.8% failure).`,
-      1: `OCPs fail ~9% with typical use (mostly from missed pills) — far better than the rhythm method.`,
-      2: `Condoms fail ~13% typically — still more reliable than the calendar method.`
+      1: `OCPs fail ~9% with typical use (mostly from missed pills), far better than the rhythm method.`,
+      2: `Condoms fail ~13% typically, still more reliable than the calendar method.`
     }
   },
   o6: {
-    exp: `ANSWER: 110–160 bpm — the normal fetal heart rate at term.
+    exp: `ANSWER: 110–160 bpm: the normal fetal heart rate at term.
 
 WHY: this range reflects a healthy balance of fetal sympathetic and parasympathetic tone. Variability and accelerations indicate fetal well-being.
 
-OUT OF RANGE: <110 = bradycardia (cord compression, maternal hypotension, fetal hypoxia); >160 = tachycardia (maternal fever, chorioamnionitis, dehydration, fetal hypoxia, drugs). LATE decelerations are ominous — they signal uteroplacental insufficiency.
+OUT OF RANGE: <110 = bradycardia (cord compression, maternal hypotension, fetal hypoxia); >160 = tachycardia (maternal fever, chorioamnionitis, dehydration, fetal hypoxia, drugs). LATE decelerations are ominous, they signal uteroplacental insufficiency.
 
 EXAM TIP: normal FHR 110–160; late decelerations are the worrying pattern.`,
     wrong: {
-      0: `80–100 bpm is fetal bradycardia — concerning for hypoxia.`,
+      0: `80–100 bpm is fetal bradycardia, concerning for hypoxia.`,
       2: `170–200 bpm is tachycardia.`,
       3: `200–220 bpm is severe tachycardia.`
     }
@@ -562,15 +562,15 @@ EXAM TIP: normal FHR 110–160; late decelerations are the worrying pattern.`,
 
   // ---- COMMUNITY HEALTH ----
   c1: {
-    exp: `ANSWER: 1,000 live births — the denominator for IMR.
+    exp: `ANSWER: 1,000 live births, the denominator for IMR.
 
 WHY: Infant Mortality Rate = (deaths under 1 year ÷ live births in the same year) × 1000. Live births (not total population) are the at-risk group, which is why they form the denominator.
 
 RELATED RATES: Neonatal MR = deaths <28 days per 1000 live births; Under-5 MR per 1000 live births; Maternal Mortality Ratio per 100,000 live births. India's IMR is ~28 (SRS 2020) and falling.
 
-EXAM TIP: most "mortality rates" use 1000 live births — only the Maternal ratio uses 100,000.`,
+EXAM TIP: most "mortality rates" use 1000 live births, only the Maternal ratio uses 100,000.`,
     wrong: {
-      0: `Per 1,000 population is the wrong base — IMR uses live births.`,
+      0: `Per 1,000 population is the wrong base. IMR uses live births.`,
       2: `Per 10,000 population is not the standard scale for IMR.`,
       3: `Per 100,000 live births is the denominator for the Maternal Mortality Ratio.`
     }
@@ -578,9 +578,9 @@ EXAM TIP: most "mortality rates" use 1000 live births — only the Maternal rati
   c2: {
     exp: `ANSWER: National Tuberculosis Elimination Programme (NTEP).
 
-WHY: in 2020 RNTCP was renamed NTEP, signalling India's goal to ELIMINATE TB by 2025 — five years ahead of the global SDG target of 2030.
+WHY: in 2020 RNTCP was renamed NTEP, signalling India's goal to ELIMINATE TB by 2025, five years ahead of the global SDG target of 2030.
 
-THE STRATEGY: the National Strategic Plan's four pillars — Detect, Treat, Prevent, Build. Tools include CB-NAAT (GeneXpert) for rapid diagnosis with drug-resistance detection.
+THE STRATEGY: the National Strategic Plan's four pillars. Detect, Treat, Prevent, Build. Tools include CB-NAAT (GeneXpert) for rapid diagnosis with drug-resistance detection.
 
 EXAM TIP: RNTCP → NTEP (2020); target year for elimination = 2025.`,
     wrong: {
@@ -590,9 +590,9 @@ EXAM TIP: RNTCP → NTEP (2020); target year for elimination = 2025.`,
     }
   },
   c3: {
-    exp: `ANSWER: primary prevention — what BCG at birth represents.
+    exp: `ANSWER: primary prevention: what BCG at birth represents.
 
-WHY: primary prevention stops disease BEFORE it occurs. Immunisation does exactly that — it protects a healthy newborn from ever developing TB.
+WHY: primary prevention stops disease BEFORE it occurs. Immunisation does exactly that, it protects a healthy newborn from ever developing TB.
 
 THE LEVELS: primordial = stop risk factors arising (population-wide healthy lifestyle); primary = prevent disease (immunisation, sanitation, health education); secondary = early detection in the asymptomatic stage (screening); tertiary = limit disability and rehabilitate in established disease.
 
@@ -610,7 +610,7 @@ WHY: herd-immunity threshold ≈ 1 − (1/R₀). The more transmissible a diseas
 
 WORKED EXAMPLES: measles (R₀ ~12–18) needs ~95% coverage; polio (R₀ ~5–7) needs ~80–86%. Waning immunity and new variants complicate real-world figures.
 
-EXAM TIP: threshold rises with R₀ — that is why measles demands such high coverage.`,
+EXAM TIP: threshold rises with R₀. That is why measles demands such high coverage.`,
     wrong: {
       0: `Vaccine cost affects programme delivery, not the biological threshold.`,
       2: `Population size doesn't change the threshold PROPORTION needed.`,
@@ -618,13 +618,13 @@ EXAM TIP: threshold rises with R₀ — that is why measles demands such high co
     }
   },
   c5: {
-    exp: `ANSWER: about 50 litres/person/day — the WHO basic-access standard.
+    exp: `ANSWER: about 50 litres/person/day, the WHO basic-access standard.
 
 WHY: WHO frames water needs in tiers. ~20 L/person/day is the bare survival minimum (drinking, basic cooking and hygiene); ~50 L/person/day is the basic ACCESS standard (adds laundry and fuller hygiene); 100+ L meets full needs.
 
 EMERGENCIES: the SPHERE minimum in disasters is ~15 L/person/day.
 
-EXAM TIP: 20 = survival, 50 = basic access, 100+ = comfortable — the question's "for all purposes" points to 50.`,
+EXAM TIP: 20 = survival, 50 = basic access, 100+ = comfortable, the question's "for all purposes" points to 50.`,
     wrong: {
       0: `20 L is the survival MINIMUM, not the basic-access standard.`,
       2: `100 L is the optimal/comfortable level, above the basic standard.`,
@@ -638,15 +638,15 @@ WHY: each is a major centrally-sponsored programme: NTEP (TB elimination), NACP 
 
 OTHERS WORTH KNOWING: NVBDCP (vector-borne diseases), RCH, NPCDCS (non-communicable diseases), and Pulse Polio.
 
-EXAM TIP: learn the acronyms with their target disease — the "N…P" pattern (National … Programme) is a giveaway.`,
+EXAM TIP: learn the acronyms with their target disease, the "N…P" pattern (National … Programme) is a giveaway.`,
     wrong: {}
   },
 
   // ---- MENTAL HEALTH NURSING ----
   mh1: {
-    exp: `ANSWER: delusions, hallucinations and disorganised speech — the POSITIVE symptoms of schizophrenia.
+    exp: `ANSWER: delusions, hallucinations and disorganised speech, the POSITIVE symptoms of schizophrenia.
 
-WHY: positive symptoms are ADDITIONS to normal experience — things that shouldn't be there. Negative symptoms are SUBTRACTIONS — normal functions that are lost.
+WHY: positive symptoms are ADDITIONS to normal experience. Things that shouldn't be there. Negative symptoms are SUBTRACTIONS. Normal functions that are lost.
 
 NEGATIVE = the 5 A's: flat Affect, Alogia, Anhedonia, Avolition, Asociality. Antipsychotics control positive symptoms better than negative ones.
 
@@ -660,7 +660,7 @@ EXAM TIP: "positive = added (voices, false beliefs); negative = taken away (moti
   mh2: {
     exp: `ANSWER: denial.
 
-WHY: refusing to accept a painful reality — here insisting the terminal diagnosis is wrong and planning the future — is denial, the first of Kübler-Ross's grief stages.
+WHY: refusing to accept a painful reality. Here insisting the terminal diagnosis is wrong and planning the future. Is denial, the first of Kübler-Ross's grief stages.
 
 CONTRAST THE OTHERS: projection = blaming your own unacceptable feelings on someone else; rationalisation = inventing logical-sounding excuses; reaction formation = acting the opposite of your true feeling (excess kindness toward someone you resent).
 
@@ -672,29 +672,29 @@ EXAM TIP: denial = "this isn't happening / the test is wrong."`,
     }
   },
   mh3: {
-    exp: `ANSWER: severe depression with suicidal risk or catatonia — the leading ECT indication.
+    exp: `ANSWER: severe depression with suicidal risk or catatonia, the leading ECT indication.
 
-WHY: ECT works fastest where the danger is highest — severe major depression (especially with suicidal intent, psychotic features, or catatonia), treatment-resistant depression, and severe mania.
+WHY: ECT works fastest where the danger is highest, severe major depression (especially with suicidal intent, psychotic features, or catatonia), treatment-resistant depression, and severe mania.
 
-HOW IT'S DONE: under general anaesthesia with a muscle relaxant — safe and effective. Main side effect: temporary memory impairment around the treatment period.
+HOW IT'S DONE: under general anaesthesia with a muscle relaxant, safe and effective. Main side effect: temporary memory impairment around the treatment period.
 
-EXAM TIP: ECT is for the severe, urgent, treatment-resistant mood/catatonic states — not for anxiety, personality disorders, or addiction.`,
+EXAM TIP: ECT is for the severe, urgent, treatment-resistant mood/catatonic states, not for anxiety, personality disorders, or addiction.`,
     wrong: {
-      0: `Mild anxiety is not an ECT indication — it is managed with therapy and anxiolytics.`,
+      0: `Mild anxiety is not an ECT indication. It is managed with therapy and anxiolytics.`,
       2: `Personality disorders need long-term psychotherapy, not ECT.`,
       3: `Substance abuse needs detoxification and behavioural therapy.`
     }
   },
   mh4: {
-    exp: `ANSWER: "Are you thinking about hurting yourself?" — ask directly.
+    exp: `ANSWER: "Are you thinking about hurting yourself?": ask directly.
 
-WHY: when suicidal ideation is suspected, a calm, direct question is the priority. Research is clear that asking does NOT plant the idea — it opens the door to help and lets you assess safety.
+WHY: when suicidal ideation is suspected, a calm, direct question is the priority. Research is clear that asking does NOT plant the idea, it opens the door to help and lets you assess safety.
 
 AVOID: false reassurance ("everyone feels that way"), advice/minimising ("focus on the positives"), and "why" questions (they feel interrogative and are usually unanswerable).
 
 EXAM TIP: any hint of suicidal thinking → assess safety directly and first.`,
     wrong: {
-      0: `"Everyone feels that way" is false reassurance — it dismisses the patient's pain.`,
+      0: `"Everyone feels that way" is false reassurance, it dismisses the patient's pain.`,
       2: `"Focus on the positives" gives advice and minimises the feelings.`,
       3: `"Why do you feel this way?" sounds judgemental and is rarely answerable.`
     }
@@ -702,7 +702,7 @@ EXAM TIP: any hint of suicidal thinking → assess safety directly and first.`,
 
   // ---- MICROBIOLOGY ----
   mi1: {
-    exp: `ANSWER: purple/violet — Gram-POSITIVE bacteria after staining.
+    exp: `ANSWER: purple/violet: Gram-POSITIVE bacteria after staining.
 
 WHY: the thick peptidoglycan wall of gram-positive bacteria traps the crystal-violet–iodine complex, so it resists decolourisation and stays purple. Gram-negatives have a thin wall, lose the violet, and pick up the pink safranin counterstain.
 
@@ -716,21 +716,21 @@ EXAM TIP: "P for Positive = Purple."`,
     }
   },
   mi2: {
-    exp: `ANSWER: 121 °C, 15 psi, 15 minutes — standard autoclave parameters.
+    exp: `ANSWER: 121 °C, 15 psi, 15 minutes, standard autoclave parameters.
 
 WHY: moist heat under pressure kills all microbes including bacterial spores. At 121 °C/15 psi, 15–20 minutes ensures complete sterilisation; high-vacuum autoclaves can use 134 °C for 3 minutes.
 
 DRY HEAT ALTERNATIVE: a hot-air oven needs higher temperature/longer time (160 °C for 2 h, or 180 °C for 30 min) for glassware, oils and powders.
 
-EXAM TIP: lock in "121 °C / 15 psi / 15 min" — the most-asked sterilisation numbers.`,
+EXAM TIP: lock in "121 °C / 15 psi / 15 min", the most-asked sterilisation numbers.`,
     wrong: {
-      0: `100 °C, 5 psi, 5 min is far too mild — it will not kill spores.`,
+      0: `100 °C, 5 psi, 5 min is far too mild. It will not kill spores.`,
       2: `160 °C is a DRY-heat (hot-air oven) setting and needs about 2 hours.`,
       3: `80 °C / 30 psi / 30 min is not a recognised standard combination.`
     }
   },
   mi3: {
-    exp: `ANSWER: Ziehl-Neelsen acid-fast stain — for M. tuberculosis.
+    exp: `ANSWER: Ziehl-Neelsen acid-fast stain, for M. tuberculosis.
 
 WHY: TB's waxy, mycolic-acid-rich wall resists ordinary Gram staining. The acid-fast method (carbol fuchsin with heat → acid-alcohol decoloriser → methylene blue counterstain) makes acid-fast bacilli stand out red.
 
@@ -744,7 +744,7 @@ EXAM TIP: "TB = acid-fast (Ziehl-Neelsen), stains red."`,
     }
   },
   mi4: {
-    exp: `ANSWER: urinary tract infection — the commonest hospital-acquired infection.
+    exp: `ANSWER: urinary tract infection: the commonest hospital-acquired infection.
 
 WHY: most are catheter-associated (CAUTI). An indwelling catheter gives bacteria a direct route into the bladder, and catheters are extremely common, so UTIs top the list.
 
@@ -760,11 +760,11 @@ EXAM TIP: "most common HAI = UTI (usually catheter-related)."`,
 
   // ---- NUTRITION ----
   n1: {
-    exp: `ANSWER: overweight — a BMI of 24 by Asian-Indian criteria.
+    exp: `ANSWER: overweight: a BMI of 24 by Asian-Indian criteria.
 
 WHY: Indians develop cardiometabolic risk at a lower BMI, so the cut-offs are stricter than WHO's: <18.5 underweight, 18.5–22.9 normal, 23.0–24.9 OVERWEIGHT, ≥25 obese.
 
-THE CONTRAST: by standard WHO cut-offs (normal 18.5–24.9) a BMI of 24 would be "normal" — but modern Indian exams use the Asian-Indian thresholds.
+THE CONTRAST: by standard WHO cut-offs (normal 18.5–24.9) a BMI of 24 would be "normal", but modern Indian exams use the Asian-Indian thresholds.
 
 EXAM TIP: watch which standard the question uses; BMI 23–24.9 is the Indian "overweight" band.`,
     wrong: {
@@ -774,13 +774,13 @@ EXAM TIP: watch which standard the question uses; BMI 23–24.9 is the Indian "o
     }
   },
   n2: {
-    exp: `ANSWER: Vitamin A — the cause of night blindness in children.
+    exp: `ANSWER: Vitamin A: the cause of night blindness in children.
 
 WHY: vitamin A (retinol) is essential for the retinal pigment used in dim-light vision. Deficiency hits night vision first, then progresses: Bitot's spots → conjunctival/corneal xerosis → keratomalacia (irreversible blindness).
 
 INDIA'S RESPONSE: the Vitamin A prophylaxis programme gives 100,000 IU at 9 months, then 200,000 IU every 6 months up to age 5.
 
-EXAM TIP: "A = vision" — night blindness and Bitot's spots scream vitamin A.`,
+EXAM TIP: "A = vision": night blindness and Bitot's spots scream vitamin A.`,
     wrong: {
       1: `B12 deficiency causes pernicious anaemia and neuropathy, not night blindness.`,
       2: `Vitamin C deficiency causes scurvy.`,
@@ -788,7 +788,7 @@ EXAM TIP: "A = vision" — night blindness and Bitot's spots scream vitamin A.`,
     }
   },
   n3: {
-    exp: `ANSWER: restrict potassium, phosphate, sodium and fluids — the haemodialysis diet.
+    exp: `ANSWER: restrict potassium, phosphate, sodium and fluids, the haemodialysis diet.
 
 WHY: failing kidneys cannot clear these. High potassium risks fatal arrhythmia (limit bananas, oranges, tomatoes, coconut water); phosphate drives bone disease (limit dairy, nuts, processed food); sodium and fluid must be controlled between sessions to avoid overload.
 
@@ -796,13 +796,13 @@ THE TWIST: protein is actually INCREASED (1.2–1.4 g/kg/day) because dialysis r
 
 EXAM TIP: dialysis diet = low K⁺/PO₄/Na⁺/fluid but HIGH protein.`,
     wrong: {
-      0: `Protein is INCREASED on dialysis, not restricted — this option is wrong on protein.`,
+      0: `Protein is INCREASED on dialysis, not restricted. This option is wrong on protein.`,
       2: `Carbohydrate is not specifically restricted in dialysis.`,
       3: `Calcium and iron are usually SUPPLEMENTED, not restricted.`
     }
   },
   n4: {
-    exp: `ANSWER: 60 mg iron + 500 µg folic acid — India's antenatal IFA dose.
+    exp: `ANSWER: 60 mg iron + 500 µg folic acid. India's antenatal IFA dose.
 
 WHY: under the National Anaemia Prophylaxis programme, every pregnant woman gets one IFA tablet (60 mg elemental iron + 500 µg folic acid) daily for at least 180 days in pregnancy AND 180 days postpartum. If Hb <11 g/dL, the dose is doubled (therapeutic).
 
@@ -828,13 +828,13 @@ ACTION: stop the infusion, remove the cannula, elevate the limb, apply the appro
 
 EXAM TIP: cool + pale + swollen = infiltration; warm + red + tender = phlebitis.`,
     wrong: {
-      0: `Phlebitis presents warm, red and tender along the vein — not cool and pale.`,
+      0: `Phlebitis presents warm, red and tender along the vein, not cool and pale.`,
       2: `Extravasation is specifically the leakage of a tissue-damaging VESICANT drug.`,
       3: `Air embolism causes sudden dyspnoea and chest pain, not a localised cool swelling.`
     }
   },
   xf2: {
-    exp: `ANSWER: urine specific gravity 1.030 — the best sign of fluid volume DEFICIT.
+    exp: `ANSWER: urine specific gravity 1.030, the best sign of fluid volume DEFICIT.
 
 WHY: when the body is dry, healthy kidneys conserve water, producing concentrated urine (specific gravity >1.025–1.030).
 
@@ -850,7 +850,7 @@ EXAM TIP: concentrated (high specific-gravity) urine = the body is holding onto 
   xf3: {
     exp: `ANSWER: Stage 1 pressure injury.
 
-WHY: intact skin with localised non-blanchable redness over a bony prominence is the defining picture of Stage 1 — the skin is not yet broken.
+WHY: intact skin with localised non-blanchable redness over a bony prominence is the defining picture of Stage 1. The skin is not yet broken.
 
 THE STAGES: 1 = intact skin, non-blanchable redness; 2 = partial-thickness loss, exposed dermis (shallow ulcer/blister); 3 = full-thickness loss with visible fat; 4 = exposed bone/tendon/muscle.
 
@@ -868,7 +868,7 @@ EXAM TIP: "intact skin + redness that doesn't blanch" = Stage 1; any skin break 
 
 WHY: pH 7.30 = acidosis. Look at the primary driver: HCO₃⁻ is low (15) → a metabolic cause. The low PaCO₂ (30) shows the lungs blowing off CO₂ to compensate (think Kussmaul breathing).
 
-THE TRICK — ROME: Respiratory Opposite, Metabolic Equal. Here pH and HCO₃⁻ move the SAME way (both down) → metabolic problem.
+THE TRICK: ROME: Respiratory Opposite, Metabolic Equal. Here pH and HCO₃⁻ move the SAME way (both down) → metabolic problem.
 
 EXAM TIP: decide acidosis/alkalosis from pH, then see whether HCO₃⁻ (metabolic) or CO₂ (respiratory) matches its direction.`,
     wrong: {
@@ -880,25 +880,25 @@ EXAM TIP: decide acidosis/alkalosis from pH, then see whether HCO₃⁻ (metabol
   xa2: {
     exp: `ANSWER: by generating angiotensin II, which vasoconstricts and stimulates aldosterone.
 
-WHY: renin is an enzyme. It converts angiotensinogen → angiotensin I; then ACE (mostly in the lungs) converts angiotensin I → angiotensin II. Angiotensin II is the active player — a potent vasoconstrictor that also triggers aldosterone (Na⁺/water retention) and ADH, all raising BP.
+WHY: renin is an enzyme. It converts angiotensinogen → angiotensin I; then ACE (mostly in the lungs) converts angiotensin I → angiotensin II. Angiotensin II is the active player, a potent vasoconstrictor that also triggers aldosterone (Na⁺/water retention) and ADH, all raising BP.
 
-EXAM TIP: renin starts the cascade but does NOT raise BP directly — angiotensin II does the work (RAAS).`,
+EXAM TIP: renin starts the cascade but does NOT raise BP directly. Angiotensin II does the work (RAAS).`,
     wrong: {
-      0: `Renin is an enzyme — it does not directly constrict vessels.`,
-      1: `Renin first makes angiotensin I; ACE then converts it to angiotensin II — it is not a single step.`,
+      0: `Renin is an enzyme. It does not directly constrict vessels.`,
+      1: `Renin first makes angiotensin I; ACE then converts it to angiotensin II. It is not a single step.`,
       3: `Angiotensin II actually STIMULATES ADH to retain water, rather than inhibiting it.`
     }
   },
   xa3: {
-    exp: `ANSWER: increased CO₂, decreased pH (acidosis) and increased temperature — all cause a RIGHT shift.
+    exp: `ANSWER: increased CO₂, decreased pH (acidosis) and increased temperature, all cause a RIGHT shift.
 
-WHY: a right shift (Bohr effect) means haemoglobin releases O₂ more readily — exactly what active, metabolising tissue needs. The triggers are the markers of busy tissue: ↑CO₂, ↑H⁺ (↓pH), ↑temperature, and ↑2,3-DPG.
+WHY: a right shift (Bohr effect) means haemoglobin releases O₂ more readily. Exactly what active, metabolising tissue needs. The triggers are the markers of busy tissue: ↑CO₂, ↑H⁺ (↓pH), ↑temperature, and ↑2,3-DPG.
 
-LEFT SHIFT (Hb holds O₂): the opposites — ↓CO₂, alkalosis, hypothermia, ↓2,3-DPG, and fetal haemoglobin.
+LEFT SHIFT (Hb holds O₂): the opposites: ↓CO₂, alkalosis, hypothermia, ↓2,3-DPG, and fetal haemoglobin.
 
 EXAM TIP: "hot, acidic, CO₂-rich exercising muscle = right shift = give up O₂."`,
     wrong: {
-      3: `DECREASED 2,3-DPG causes a LEFT shift (Hb holds onto O₂) — the opposite of the question's intent.`
+      3: `DECREASED 2,3-DPG causes a LEFT shift (Hb holds onto O₂), the opposite of the question's intent.`
     }
   },
 
@@ -910,7 +910,7 @@ WHY: ST elevation in leads II, III and aVF localises to the INFERIOR wall, which
 
 THE TERRITORY MAP: LAD = anterior (V1–V4); circumflex = lateral (I, aVL, V5–V6); RCA = inferior (II, III, aVF).
 
-EXAM TIP: "inferior leads (II, III, aVF) = RCA — watch the heart rate."`,
+EXAM TIP: "inferior leads (II, III, aVF) = RCA. Watch the heart rate."`,
     wrong: {
       0: `LAD occlusion causes an ANTERIOR MI (V1–V4), not inferior changes.`,
       2: `The circumflex supplies the LATERAL wall (I, aVL, V5–V6).`,
@@ -920,11 +920,11 @@ EXAM TIP: "inferior leads (II, III, aVF) = RCA — watch the heart rate."`,
   xm2: {
     exp: `ANSWER: rule out haemorrhage with a non-contrast CT head.
 
-WHY: thrombolytics (rtPA) dissolve clots — giving them in a HAEMORRHAGIC stroke is fatal. A non-contrast CT must first confirm the stroke is ischaemic. rtPA is only for ischaemic stroke within the window (≤4.5 h).
+WHY: thrombolytics (rtPA) dissolve clots, giving them in a HAEMORRHAGIC stroke is fatal. A non-contrast CT must first confirm the stroke is ischaemic. rtPA is only for ischaemic stroke within the window (≤4.5 h).
 
 AROUND tPA: aspirin is withheld for 24 h after thrombolysis; heparin is not routine acutely; BP is treated only if very high (>185/110) before giving tPA.
 
-EXAM TIP: "no clot-buster before CT" — exclude bleeding first, every time.`,
+EXAM TIP: "no clot-buster before CT", exclude bleeding first, every time.`,
     wrong: {
       0: `Aspirin is delayed for 24 h after thrombolysis to limit bleeding.`,
       2: `Heparin is not standard acute therapy and adds bleeding risk.`,
@@ -938,9 +938,9 @@ WHY: in long-standing CO₂-retaining COPD, the brain's CO₂ sensors are desens
 
 TARGET: controlled low-flow O₂ to SpO₂ ~88–92% (e.g. Venturi mask).
 
-EXAM TIP: in known CO₂-retaining COPD, aim 88–92% — don't over-oxygenate.`,
+EXAM TIP: in known CO₂-retaining COPD, aim 88–92%. Don't over-oxygenate.`,
     wrong: {
-      0: `Oxygen toxicity needs prolonged HIGH concentrations, not minutes — it is not the reason here.`,
+      0: `Oxygen toxicity needs prolonged HIGH concentrations, not minutes. It is not the reason here.`,
       2: `Airway drying is managed by humidification and is not the core danger.`,
       3: `Fire risk exists with oxygen but is not the physiological reason for caution.`
     }
@@ -950,19 +950,19 @@ EXAM TIP: in known CO₂-retaining COPD, aim 88–92% — don't over-oxygenate.`
   xp1: {
     exp: `ANSWER: monitor aPTT; reverse with protamine sulphate.
 
-WHY: unfractionated heparin works fast and is tracked by the aPTT; its specific antidote is protamine sulphate. (Also watch the platelet count for HIT — heparin-induced thrombocytopenia.)
+WHY: unfractionated heparin works fast and is tracked by the aPTT; its specific antidote is protamine sulphate. (Also watch the platelet count for HIT, heparin-induced thrombocytopenia.)
 
 DON'T CONFUSE WITH WARFARIN: warfarin is monitored by INR/PT and reversed by vitamin K (± FFP/PCC if urgent).
 
 EXAM TIP: heparin → aPTT → protamine; warfarin → INR → vitamin K. Examiners love to swap the pairs.`,
     wrong: {
       0: `INR + vitamin K belong to WARFARIN, not heparin.`,
-      2: `FFP is not the specific heparin antidote — protamine is.`,
+      2: `FFP is not the specific heparin antidote. Protamine is.`,
       3: `Vitamin K reverses warfarin; the aPTT is right but the antidote is wrong.`
     }
   },
   xp2: {
-    exp: `ANSWER: around 1030 — about 2–3 hours after the 0800 dose.
+    exp: `ANSWER: around 1030: about 2–3 hours after the 0800 dose.
 
 WHY: regular (short-acting) insulin has onset ~30 min, PEAK ~2–3 h, duration ~6–8 h. Hypoglycaemia is most likely at the PEAK, so 0800 + ~2.5 h ≈ 1030.
 
@@ -970,7 +970,7 @@ KNOW THE PEAKS: rapid (lispro/aspart) ~1 h; regular ~2–3 h; NPH ~4–12 h; gla
 
 EXAM TIP: match "when is hypoglycaemia likely" to the insulin's PEAK time, not its onset.`,
     wrong: {
-      0: `0815 is only 15 minutes in — before regular insulin has meaningfully started.`,
+      0: `0815 is only 15 minutes in. Before regular insulin has meaningfully started.`,
       2: `1700 is past regular insulin's main action window.`,
       3: `Midnight is well beyond its duration.`
     }
@@ -978,15 +978,15 @@ EXAM TIP: match "when is hypoglycaemia likely" to the insulin's PEAK time, not i
   xp3: {
     exp: `ANSWER: hypotension is NOT expected with long-term corticosteroids.
 
-WHY: glucocorticoids have a mineralocorticoid effect — they retain sodium and water, which tends to RAISE blood pressure, not lower it.
+WHY: glucocorticoids have a mineralocorticoid effect, they retain sodium and water, which tends to RAISE blood pressure, not lower it.
 
-WHAT TO MONITOR: hyperglycaemia, osteoporosis, hypokalaemia (Na⁺ retention drives K⁺ loss), weight gain, infection risk, peptic ulcer, mood change, Cushingoid features. Never stop steroids abruptly — risk of adrenal crisis.
+WHAT TO MONITOR: hyperglycaemia, osteoporosis, hypokalaemia (Na⁺ retention drives K⁺ loss), weight gain, infection risk, peptic ulcer, mood change, Cushingoid features. Never stop steroids abruptly, risk of adrenal crisis.
 
 EXAM TIP: steroids cause HYPERtension; if "hypotension" appears in a steroid side-effect list, it's the odd one out.`,
     wrong: {
-      0: `Steroids raise blood glucose — hyperglycaemia is a genuine effect to monitor.`,
-      1: `Long-term steroids cause bone loss (osteoporosis) — genuine.`,
-      2: `Sodium retention drives potassium loss → hypokalaemia — genuine.`
+      0: `Steroids raise blood glucose. Hyperglycaemia is a genuine effect to monitor.`,
+      1: `Long-term steroids cause bone loss (osteoporosis), genuine.`,
+      2: `Sodium retention drives potassium loss → hypokalaemia, genuine.`
     }
   },
 
@@ -994,18 +994,18 @@ EXAM TIP: steroids cause HYPERtension; if "hypotension" appears in a steroid sid
   xpe1: {
     exp: `ANSWER: BCG, OPV-0 and the Hepatitis B birth dose are given AT BIRTH.
 
-WHY: birth doses target threats that strike earliest — severe childhood TB, polio, and vertical (mother-to-baby) hepatitis B transmission. The Hep B birth dose ideally goes in within 24 hours.
+WHY: birth doses target threats that strike earliest, severe childhood TB, polio, and vertical (mother-to-baby) hepatitis B transmission. The Hep B birth dose ideally goes in within 24 hours.
 
 LATER: DPT (inside the pentavalent) starts at 6 weeks; measles/MR is given at 9–12 months.
 
-EXAM TIP: the "birth trio" is BCG + OPV-0 + Hep B-0 — DPT and measles are NOT birth doses.`,
+EXAM TIP: the "birth trio" is BCG + OPV-0 + Hep B-0. DPT and measles are NOT birth doses.`,
     wrong: {
       3: `DPT (within pentavalent) begins at 6 weeks, not at birth.`,
       4: `Measles / MR is given at 9–12 months.`
     }
   },
   xpe2: {
-    exp: `ANSWER: 6–8 months — when an infant sits without support.
+    exp: `ANSWER: 6–8 months: when an infant sits without support.
 
 WHY: motor control develops head-to-toe. By 6–8 months trunk control is mature enough for independent sitting.
 
@@ -1019,13 +1019,13 @@ EXAM TIP: "sits at six" is the memory hook; marked delay warrants developmental 
     }
   },
   xpe3: {
-    exp: `ANSWER: Respiration — the fifth APGAR component.
+    exp: `ANSWER: Respiration: the fifth APGAR component.
 
 WHY: APGAR = Appearance (colour), Pulse (heart rate), Grimace (reflex irritability), Activity (muscle tone), Respiration (respiratory effort). Each is scored 0–2 at 1 and 5 minutes.
 
 SCORING: 7–10 normal, 4–6 moderately depressed, 0–3 severely depressed (needs resuscitation).
 
-EXAM TIP: the mnemonic APGAR itself gives the five words — Respiration completes it.`,
+EXAM TIP: the mnemonic APGAR itself gives the five words. Respiration completes it.`,
     wrong: {
       0: `"Reflex" is already captured under Grimace, so it is not the separate fifth term.`,
       2: `"Reaction" is not an APGAR component.`,
@@ -1035,7 +1035,7 @@ EXAM TIP: the mnemonic APGAR itself gives the five words — Respiration complet
 
   // ---- EXTENDED: OBSTETRICS ----
   xo1: {
-    exp: `ANSWER: respiratory rate 10/min with absent knee reflexes — magnesium toxicity; stop the infusion.
+    exp: `ANSWER: respiratory rate 10/min with absent knee reflexes. Magnesium toxicity; stop the infusion.
 
 WHY: magnesium toxicity follows a predictable ladder: loss of deep-tendon reflexes → respiratory depression (<12/min) → cardiac arrest. Absent reflexes plus RR 10 means it has reached a dangerous level.
 
@@ -1043,19 +1043,19 @@ MONITOR & ANTIDOTE: check reflexes, keep RR ≥12/min and urine output ≥30 mL/
 
 EXAM TIP: first sign of Mg toxicity = lost reflexes; act before respiration fails.`,
     wrong: {
-      0: `Brisk reflexes suggest the magnesium level is NOT yet toxic — reassuring, not a stop signal.`,
-      2: `Urine output 60 mL/hr is adequate (≥30 mL/hr) — reassuring.`,
+      0: `Brisk reflexes suggest the magnesium level is NOT yet toxic. Reassuring, not a stop signal.`,
+      2: `Urine output 60 mL/hr is adequate (≥30 mL/hr), reassuring.`,
       3: `BP 150/95 reflects the pre-eclampsia being treated, not magnesium toxicity.`
     }
   },
   xo2: {
-    exp: `ANSWER: full cervical dilatation to delivery of the baby — the second stage of labour.
+    exp: `ANSWER: full cervical dilatation to delivery of the baby, the second stage of labour.
 
 WHY: once the cervix is fully (10 cm) dilated, the mother pushes the baby out; that interval is the second stage.
 
 THE FULL SEQUENCE: Stage 1 = true contractions → full dilatation; Stage 2 = full dilatation → birth; Stage 3 = birth → placenta; Stage 4 = ~1 h recovery after the placenta (watch for PPH).
 
-EXAM TIP: anchor each stage by its END point — Stage 2 ends with the baby's birth.`,
+EXAM TIP: anchor each stage by its END point. Stage 2 ends with the baby's birth.`,
     wrong: {
       0: `Onset of contractions to full dilatation is the FIRST stage.`,
       2: `Birth of the baby to delivery of the placenta is the THIRD stage.`,
@@ -1063,13 +1063,13 @@ EXAM TIP: anchor each stage by its END point — Stage 2 ends with the baby's bi
     }
   },
   xo3: {
-    exp: `ANSWER: uterine atony — the commonest cause of primary PPH.
+    exp: `ANSWER: uterine atony: the commonest cause of primary PPH.
 
 WHY: a uterus that fails to contract ("boggy") leaves the placental-bed vessels open and bleeding. Atony causes ~70–80% of primary PPH.
 
 THE "4 Ts": Tone (atony) → Tissue (retained products) → Trauma (lacerations) → Thrombin (coagulopathy). First action for atony: firm fundal massage plus uterotonics (oxytocin).
 
-EXAM TIP: soft, boggy uterus + heavy bleeding = atony — massage and oxytocin first.`,
+EXAM TIP: soft, boggy uterus + heavy bleeding = atony, massage and oxytocin first.`,
     wrong: {
       0: `Retained tissue is a real cause but far less common than atony.`,
       2: `Trauma matters when the uterus is firm yet still bleeding.`,
@@ -1089,13 +1089,13 @@ DON'T CONFUSE: passive immunity = ready-made antibodies (maternal/immunoglobulin
 
 EXAM TIP: "protecting the unvaccinated by vaccinating the many" = herd immunity.`,
     wrong: {
-      1: `Passive immunity is the transfer of pre-formed antibodies and is short-lived — it protects an individual, not the herd.`,
+      1: `Passive immunity is the transfer of pre-formed antibodies and is short-lived, it protects an individual, not the herd.`,
       2: `Cold chain is the temperature-controlled vaccine supply system.`,
-      3: `Cross immunity is protection against a related organism — a different concept.`
+      3: `Cross immunity is protection against a related organism, a different concept.`
     }
   },
   xc2: {
-    exp: `ANSWER: kill pathogenic micro-organisms — the aim of chlorination.
+    exp: `ANSWER: kill pathogenic micro-organisms, the aim of chlorination.
 
 WHY: chlorine disinfects water by killing pathogens. A minimum free residual chlorine of 0.5 mg/L after 1 hour of contact confirms adequate dosing (checked by the orthotolidine test).
 
@@ -1115,7 +1115,7 @@ WHY: IMR = (infant deaths under 1 year ÷ live births in the same year) × 1,000
 
 DON'T CONFUSE: U5MR (per 1000 live births), Neonatal MR (<28 days), and Maternal Mortality Ratio (per 100,000 live births).
 
-EXAM TIP: "infant deaths per 1000 LIVE BIRTHS" — not per population.`,
+EXAM TIP: "infant deaths per 1000 LIVE BIRTHS", not per population.`,
     wrong: {
       0: `Mid-year population is the base for the crude death rate, not IMR.`,
       2: `Per 100,000 women relates to maternal mortality.`,
@@ -1131,7 +1131,7 @@ WHY: the man transfers his feelings from a threatening target (his boss) onto a 
 
 CONTRAST: projection = attributing your own feelings to someone else; sublimation (mature) = channelling the impulse into something constructive (aggression → sport); reaction formation = acting the opposite of the true feeling.
 
-EXAM TIP: displacement = "kick the dog" — the anger lands on a substitute target.`,
+EXAM TIP: displacement = "kick the dog", the anger lands on a substitute target.`,
     wrong: {
       0: `Projection attributes one's OWN feelings/impulses to another person.`,
       2: `Sublimation channels the impulse into a constructive outlet (a mature defence).`,
@@ -1143,26 +1143,26 @@ EXAM TIP: displacement = "kick the dog" — the anger lands on a substitute targ
 
 WHY: coarse tremor, vomiting, slurred speech and ataxia are lithium toxicity (therapeutic 0.6–1.2 mEq/L; toxic >1.5). Stop giving the drug and confirm with a level.
 
-THE SODIUM LINK: the kidney handles lithium like sodium, so low salt or dehydration RAISES lithium toward toxicity — maintain normal salt and fluids, never restrict.
+THE SODIUM LINK: the kidney handles lithium like sodium, so low salt or dehydration RAISES lithium toward toxicity. Maintain normal salt and fluids, never restrict.
 
 EXAM TIP: lithium toxicity → hold the dose, check a level, keep salt/fluids normal.`,
     wrong: {
       0: `A low-sodium diet RAISES lithium levels and worsens toxicity.`,
-      2: `Fluid restriction / dehydration increases lithium reabsorption — dangerous.`,
+      2: `Fluid restriction / dehydration increases lithium reabsorption, dangerous.`,
       3: `Giving more lithium during toxicity is harmful.`
     }
   },
   xmh3: {
-    exp: `ANSWER: "You seem upset — tell me more about what you're feeling."
+    exp: `ANSWER: "You seem upset: tell me more about what you're feeling."
 
-WHY: pairing an observation with an open-ended invitation encourages the patient to express feelings — the heart of therapeutic communication. It shows attention without judging or directing.
+WHY: pairing an observation with an open-ended invitation encourages the patient to express feelings, the heart of therapeutic communication. It shows attention without judging or directing.
 
 THE BLOCKS TO AVOID: "why" questions (sound accusatory), false reassurance (dismisses feelings), and changing the subject (shuts communication down). Helpful tools: active listening, silence, reflection, clarification.
 
 EXAM TIP: the therapeutic choice is usually the open-ended, feeling-focused one.`,
     wrong: {
       0: `"Why did you do that?" can feel interrogating and put the patient on the defensive.`,
-      1: `"Everything will be fine" is false reassurance — it dismisses real concerns.`,
+      1: `"Everything will be fine" is false reassurance, it dismisses real concerns.`,
       3: `Changing the subject is a communication block.`
     }
   },
@@ -1171,7 +1171,7 @@ EXAM TIP: the therapeutic choice is usually the open-ended, feeling-focused one.
   xmi1: {
     exp: `ANSWER: a biological indicator using Geobacillus stearothermophilus spores.
 
-WHY: these heat-resistant spores are the GOLD STANDARD test — if even they are killed, the cycle truly sterilised. Chemical/tape indicators only prove the item was EXPOSED to heat, not that organisms died.
+WHY: these heat-resistant spores are the GOLD STANDARD test. If even they are killed, the cycle truly sterilised. Chemical/tape indicators only prove the item was EXPOSED to heat, not that organisms died.
 
 CONTEXT: standard autoclave parameters are 121 °C / 15 psi / 15 min (or 134 °C for 3 min).
 
@@ -1189,7 +1189,7 @@ WHY: these spread in tiny droplet nuclei (<5 µm) that stay suspended in air and
 
 MEMORY HOOK: "My-T-V" → Measles, TB, Varicella (plus disseminated zoster).
 
-EXAM TIP: influenza is DROPLET (>5 µm) — surgical mask, not airborne.`,
+EXAM TIP: influenza is DROPLET (>5 µm), surgical mask, not airborne.`,
     wrong: {
       3: `Influenza spreads by larger DROPLETS, so it needs droplet precautions (surgical mask), not airborne.`
     }
@@ -1197,13 +1197,13 @@ EXAM TIP: influenza is DROPLET (>5 µm) — surgical mask, not airborne.`,
   xmi3: {
     exp: `ANSWER: Hepatitis B immunoglobulin (HBIG) plus start the vaccine series.
 
-WHY: a non-immune person exposed to an HBsAg-positive source needs BOTH passive protection now (HBIG = ready-made antibodies) AND active long-term immunity (the vaccine series) — ideally within 24 hours.
+WHY: a non-immune person exposed to an HBsAg-positive source needs BOTH passive protection now (HBIG = ready-made antibodies) AND active long-term immunity (the vaccine series), ideally within 24 hours.
 
 FIRST STEPS: wash the site with soap and water, then report and document. Antibiotics do nothing against a virus.
 
 EXAM TIP: known Hep-B-positive source + unvaccinated nurse = HBIG + vaccine, fast.`,
     wrong: {
-      0: `Vaccine alone is too slow against a known positive source — add HBIG for immediate cover.`,
+      0: `Vaccine alone is too slow against a known positive source, add HBIG for immediate cover.`,
       2: `Antibiotics are useless against a virus.`,
       3: `Doing nothing risks seroconversion; prophylaxis is time-critical.`
     }
@@ -1217,7 +1217,7 @@ WHY: night blindness, conjunctival xerosis and Bitot's spots are the classic ocu
 
 INDIA'S RESPONSE: the Vitamin A prophylaxis programme gives 1 lakh IU at 9 months, then 2 lakh IU 6-monthly up to age 5.
 
-EXAM TIP: "Bitot's spots + night blindness = vitamin A" — a favourite NORCET pairing.`,
+EXAM TIP: "Bitot's spots + night blindness = vitamin A", a favourite NORCET pairing.`,
     wrong: {
       1: `Vitamin C deficiency causes scurvy (bleeding gums, poor wound healing).`,
       2: `Vitamin D deficiency causes rickets / osteomalacia.`,
@@ -1227,7 +1227,7 @@ EXAM TIP: "Bitot's spots + night blindness = vitamin A" — a favourite NORCET p
   xn2: {
     exp: `ANSWER: Kwashiorkor.
 
-WHY: protein deficiency with relatively adequate calories produces the picture described — generalised pitting OEDEMA, "flaky-paint" dermatosis, a puffy "moon" face, fatty liver and apathy.
+WHY: protein deficiency with relatively adequate calories produces the picture described, generalised pitting OEDEMA, "flaky-paint" dermatosis, a puffy "moon" face, fatty liver and apathy.
 
 CONTRAST: marasmus is an energy (calorie) deficiency → severe wasting and an "old-man" face, but NO oedema. Oedema is the feature that points to kwashiorkor.
 
@@ -1239,7 +1239,7 @@ EXAM TIP: oedema + skin/hair changes = kwashiorkor; severe wasting without oedem
     }
   },
   xn3: {
-    exp: `ANSWER: low protein with restricted potassium and phosphorus — the pre-dialysis CKD diet.
+    exp: `ANSWER: low protein with restricted potassium and phosphorus, the pre-dialysis CKD diet.
 
 WHY: before dialysis, restricting protein lowers urea/nitrogenous waste; restricting potassium prevents hyperkalaemic arrhythmia; restricting phosphorus limits renal bone disease; sodium and fluid are controlled for oedema and BP. Calories are kept adequate to prevent catabolism.
 
@@ -1247,7 +1247,7 @@ THE SWITCH ON DIALYSIS: protein needs INCREASE once dialysis begins, because dia
 
 EXAM TIP: pre-dialysis = LOW protein; on dialysis = HIGH protein.`,
     wrong: {
-      0: `High potassium is dangerous in CKD, and protein is restricted pre-dialysis — this option is wrong on both counts.`,
+      0: `High potassium is dangerous in CKD, and protein is restricted pre-dialysis. This option is wrong on both counts.`,
       2: `Sodium and fluid are RESTRICTED to control oedema and BP, not increased.`,
       3: `Phosphorus is restricted; calcium balance is managed with binders, not phosphorus loading.`
     }

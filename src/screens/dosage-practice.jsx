@@ -165,7 +165,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
             <div className="flex items-center gap-2">
               <span className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>Order</span>
               {onToggleBookmark && (
-                <Tip text={isBookmarked ? 'Bookmarked — tap to remove' : 'Save this question to Bookmarks for later review'}>
+                <Tip text={isBookmarked ? 'Bookmarked: tap to remove' : 'Save this question to Bookmarks for later review'}>
                 <button onClick={toggleBookmark}
                         aria-pressed={isBookmarked}
                         aria-label={isBookmarked ? 'Remove bookmark' : 'Bookmark this question'}
