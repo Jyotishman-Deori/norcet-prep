@@ -23,7 +23,7 @@ import { loadMindmapNotes, mergeNotes, mindmapNoteMatch, sanitizeNoteText } from
 import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
-  KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR, KMAP_FOCUS_K,
+  KMAP_STATES, KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_STATE_LABEL, KMAP_BONUS_COLOR, KMAP_FOCUS_K,
   kmapLabelFont, kmapFocusSubjectId, kmapQuantK, kmapNodeScale,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
@@ -1155,7 +1155,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     const subDetail = kq >= 2.1 || !!matchSet;
     // Constant SCREEN-size labels (clamped so the phone default keeps
     // today's sizes; deep zoom never balloons).
-    const subjFont = kmapLabelFont(kq, surfacePx, 12.5, 8, 13);
+    // (target dropped 12.5->11.5 with the CAPS+tracking typography: uppercase
+    // runs ~40% wider than the mixed case the ring spacing was tuned for)
+    const subjFont = kmapLabelFont(kq, surfacePx, 11.5, 8, 12);
     const subFont = kmapLabelFont(kq, surfacePx, 11, 3.2, 9.5);
     const bonusFont = kmapLabelFont(kq, surfacePx, 11, 6, 11);
     // Star-chart sizing: stars stay ~constant on SCREEN as you zoom — zoom
@@ -1173,6 +1175,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
               ))}
               {/* ambient sun glow radiating from the NORCET centre */}
               <circle cx={KMAP_VIEW / 2} cy={KMAP_VIEW / 2} r={300} fill="url(#kmapSun)" className="kmap-sun-glow" />
+
+              {/* star-chart graticule — faint dotted declination rings on the
+                  two layout radii (+ the bonus ring), like a real sky chart. */}
+              <g aria-hidden="true" style={{ pointerEvents: 'none' }}>
+                {[KMAP_R1, KMAP_R2, KMAP_R2 + 120].map(gr => (
+                  <circle key={`grat${gr}`} cx={KMAP_VIEW / 2} cy={KMAP_VIEW / 2} r={gr}
+                          fill="none" stroke="rgba(255,255,255,0.07)"
+                          strokeWidth={1 * ns} strokeDasharray="1 6" />
+                ))}
+              </g>
 
               {/* edges first so nodes sit on top */}
               {layout.edges.map((ed, i) => {
@@ -1199,15 +1211,18 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                           strokeOpacity={0.55 * (0.3 + 0.7 * subReveal)} strokeDasharray="1 6" />
                   );
                 }
-                // tree edge: root→subject stays bright; subject→sub fades in with zoom.
+                // tree edge: root→subject stays bright; subject→sub fades in with
+                // zoom. The FOCUSED wedge's lines turn warm gold — the active
+                // "constellation figure", like the highlighted sign on a sky chart.
                 const isRoot = ed.from === '__root__';
+                const inFocusWedge = !isRoot && focusSubjectId && ed.from === focusSubjectId;
                 return (
                   <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                        stroke={isRoot ? CMAP.edgeRoot : CMAP.edge}
+                        stroke={isRoot ? CMAP.edgeRoot : inFocusWedge ? 'rgba(255,210,120,0.5)' : CMAP.edge}
                         strokeWidth={(isRoot ? 2 : 1.1) * ns}
-                        strokeOpacity={isRoot ? 0.7 : 0.55 * subReveal}
+                        strokeOpacity={isRoot ? 0.7 : (inFocusWedge ? 0.75 : 0.55) * subReveal}
                         strokeLinecap="round"
-                        style={{ transition: 'stroke-opacity 220ms ease' }} />
+                        style={{ transition: 'stroke-opacity 220ms ease, stroke 220ms ease' }} />
                 );
               })}
 
@@ -1301,6 +1316,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                           })}
                         </g>
                       )}
+                      {/* bright-star flare: thin crossing spikes, like a chart's
+                          brightest magnitudes — mastered only */}
+                      {cs.crown && (
+                        <g aria-hidden="true" style={{ pointerEvents: 'none' }} opacity={0.5}>
+                          <line x1={node.x - r * 2.2} y1={node.y} x2={node.x + r * 2.2} y2={node.y}
+                                stroke="#FFE6A6" strokeWidth={0.9 * ns} strokeLinecap="round" />
+                          <line x1={node.x} y1={node.y - r * 2.2} x2={node.x} y2={node.y + r * 2.2}
+                                stroke="#FFE6A6" strokeWidth={0.9 * ns} strokeLinecap="round" />
+                        </g>
+                      )}
                       <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring}
                               strokeWidth={(s.state === 'mastered' ? 3 : 2) * ns} />
                       <text x={node.x} y={node.y + 6 * ns} textAnchor="middle" fontSize={20 * ns}
@@ -1315,12 +1340,14 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                           <text x={node.x - r + 6 * ns} y={node.y - r + 10 * ns} textAnchor="middle" fontSize={11 * ns}>{'\uD83D\uDCCC'}</text>
                         </g>
                       )}
+                      {/* chart typography: letter-spaced CAPS, gold once mastered */}
                       <text x={lx} y={ly + 4 * ns} textAnchor={anchor} className="font-display"
                             fontSize={subjFont} fontWeight={s.state === 'locked' ? 500 : 600}
-                            fill={cs.label}
+                            letterSpacing={subjFont * 0.14}
+                            fill={s.state === 'mastered' ? '#FFE6A6' : cs.label}
                             opacity={cs.labelOpacity * (focusSubjectId && focusSubjectId !== node.id ? 0.35 : 1)}
                             style={{ transition: 'opacity 200ms ease' }}>
-                        {s.name}
+                        {s.name.toUpperCase()}
                       </text>
                       {/* Zoomed-out progress cue: replaces the sub-dot clutter
                           with one quiet ★ mastered/total line; cross-fades out
@@ -1380,6 +1407,14 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                     {subDetail && cs.glow && (
                       <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
                               opacity={cs.glowOpacity} className={cs.glowClass} />
+                    )}
+                    {subDetail && cs.crown && (
+                      <g aria-hidden="true" style={{ pointerEvents: 'none' }} opacity={0.5}>
+                        <line x1={node.x - r * 2.2} y1={node.y} x2={node.x + r * 2.2} y2={node.y}
+                              stroke="#FFE6A6" strokeWidth={0.9 * ns} strokeLinecap="round" />
+                        <line x1={node.x} y1={node.y - r * 2.2} x2={node.x} y2={node.y + r * 2.2}
+                              stroke="#FFE6A6" strokeWidth={0.9 * ns} strokeLinecap="round" />
+                      </g>
                     )}
                     <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring} strokeWidth={1.6 * ns} />
                     {subDetail && cs.crown && (
