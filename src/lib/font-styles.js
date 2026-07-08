@@ -237,6 +237,14 @@ export const fontStyles = `
 /* Suggested-today panel slides in from the right edge of the canvas. */
 @keyframes kmapPanelIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
 .kmap-panel-in { animation: kmapPanelIn 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+/* PERF: while the user pans/pinches (or a camera tween runs) the map toggles
+   this class on the surface — the ambient infinite animations pause so the
+   GPU isn't repainting dozens of pulsing circles under a moving transform. */
+.kmap-anim-paused .kmap-pulse-slow, .kmap-anim-paused .kmap-pulse-warm,
+.kmap-anim-paused .kmap-radiance, .kmap-anim-paused .kmap-sun-glow,
+.kmap-anim-paused .kmap-fog-shimmer, .kmap-anim-paused .kmap-fog-shimmer-strong,
+.kmap-anim-paused .kmap-orbit, .kmap-anim-paused .kmap-bonus-pulse,
+.kmap-anim-paused .kmap-edge-pulse { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
   .kmap-pulse-slow, .kmap-pulse-warm, .kmap-radiance, .kmap-sun-glow,
   .kmap-fog-shimmer, .kmap-fog-shimmer-strong, .kmap-orbit, .kmap-float-up { animation: none !important; }

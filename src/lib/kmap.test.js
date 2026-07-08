@@ -9,7 +9,7 @@ const {
   KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_FOCUS_K,
   mindmapState, mindmapNextProgress, mindmapLayout,
   subjectStruggling, masteredSubCount, revealedBonusNodes,
-  kmapLabelFont, kmapFocusSubjectId,
+  kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
 } = await import('./kmap.js');
 
 const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
@@ -187,6 +187,25 @@ const model4 = {
   const py = C + (KMAP_R1 + 5) * Math.sin(Math.PI + 0.05); // just past pi -> atan2 ~ -pi+0.05
   const v = { k, x: C - px * k, y: C - py * k };
   assert.equal(kmapFocusSubjectId(subjectNodes, v), s3.id, 'circular distance handles the pi wrap');
+}
+
+// ---- kmapQuantK: coarse zoom steps for the memoized scene ------------------
+{
+  assert.ok(Math.abs(kmapQuantK(2.301) - 2.30) < 1e-9);
+  assert.ok(Math.abs(kmapQuantK(2.326) - 2.35) < 1e-9);
+  assert.equal(kmapQuantK(1), 1, 'k=1 stays exactly 1');
+  assert.equal(kmapQuantK(kmapQuantK(3.333)), kmapQuantK(3.333), 'idempotent');
+  // monotone non-decreasing over a grid
+  let prev = -Infinity;
+  for (let k = 0.55; k <= 4; k += 0.013) {
+    const q = kmapQuantK(k);
+    assert.ok(q >= prev - 1e-9, 'monotone');
+    prev = q;
+  }
+  // degenerate inputs pass through untouched
+  assert.equal(kmapQuantK(0), 0);
+  assert.equal(kmapQuantK(-2), -2);
+  assert.equal(kmapQuantK(2, 0), 2);
 }
 
 console.log('kmap.test.js OK');

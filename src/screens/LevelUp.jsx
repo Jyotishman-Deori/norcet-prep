@@ -90,6 +90,19 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
   const atMax = prog.level >= MAX_LEVEL;
   const quests = questState(data && data.levelup, todayStr());
 
+  // PERF — warm up the Knowledge Map chunk (the app's biggest lazy screen)
+  // while the user browses this hub, its main door. Same import specifier as
+  // App's React.lazy → same Vite chunk, fetched once, PWA-cached after.
+  useEffect(() => {
+    const load = () => { import('./knowledge-map.jsx').catch(() => {}); };
+    if (typeof requestIdleCallback === 'function') {
+      const id = requestIdleCallback(load, { timeout: 2000 });
+      return () => { try { cancelIdleCallback(id); } catch (_) {} };
+    }
+    const t = setTimeout(load, 800);
+    return () => clearTimeout(t);
+  }, []);
+
   // TRENDING — surface which games (incl. the Knowledge Map) are surging across
   // users. Counts come from the shared free-tier counters; scoring is pure.
   const [trendingIds, setTrendingIds] = useState(() => new Set());

@@ -24,7 +24,7 @@ import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR, KMAP_FOCUS_K,
-  kmapLabelFont, kmapFocusSubjectId,
+  kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
 import { requestHelp, requestFeedback, requestConfirm } from '../ui/primitives.jsx';
@@ -768,12 +768,14 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     }, NOTE_LONGPRESS_MS);
   }, [clearLongPress, openNoteEditor]);
   // Props spread onto each annotatable node <g>. onContextMenu = desktop path.
-  const noteGestureProps = (node) => ({
+  // GUARD: rendered inside the memoized scene -- keep dependency-stable; any
+  // new state read here must be added to the kmapScene memo deps.
+  const noteGestureProps = useCallback((node) => ({
     onContextMenu: (e) => { e.preventDefault(); openNoteEditor(node); },
     onPointerDown: (e) => startLongPress(node, e),
     onPointerUp: clearLongPress,
     onPointerLeave: clearLongPress
-  });
+  }), [openNoteEditor, startLongPress, clearLongPress]);
 
   // search: the set of node ids matching the active query (name OR note text).
   const queryActive = query.trim().length > 0;
@@ -800,11 +802,24 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   }, [layout]);
   const nodeRadiusFor = (kind) => kind === 'subject' ? 34 : kind === 'sub' ? 11 : 16;
 
+  // PERF: pause the ambient pulse/shimmer/orbit animations while the user is
+  // actively panning/pinching or a camera tween runs -- dozens of infinite SVG
+  // animations repainting under a moving transform is wasted paint work.
+  // Imperative classList so this never causes a React render (CSS rule:
+  // .kmap-anim-paused in font-styles.js).
+  const setAnimPaused = useCallback((on) => {
+    try {
+      const el = svgRef.current && svgRef.current.parentElement;
+      if (el) el.classList.toggle('kmap-anim-paused', !!on);
+    } catch (_) {}
+  }, []);
+
   // Cancel any in-flight camera fly (used when the user grabs the map).
   const cancelCameraFly = useCallback(() => {
     if (camRaf.current && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(camRaf.current);
     camRaf.current = 0;
-  }, []);
+    setAnimPaused(false);
+  }, [setAnimPaused]);
   // Smoothly tween the existing { k,x,y } 'view' to a target (the react-flow
   // setCenter replacement — same transform model as focusNode/fitView). Falls
   // back to an instant set when rAF is unavailable (e.g. tests).
@@ -816,6 +831,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     const from = viewRef.current;
     const dur = ms || 480;
     const ease = (t) => 1 - Math.pow(1 - t, 3);   // easeOutCubic
+    setAnimPaused(true);
     const step = () => {
       const t = Math.min(1, (nowFn() - start) / dur);
       const e = ease(t);
@@ -825,9 +841,10 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
         y: from.y + (target.y - from.y) * e
       });
       camRaf.current = t < 1 ? requestAnimationFrame(step) : 0;
+      if (t >= 1) setAnimPaused(false);
     };
     camRaf.current = requestAnimationFrame(step);
-  }, [cancelCameraFly]);
+  }, [cancelCameraFly, setAnimPaused]);
 
   // Stop the celebration tour cleanly (timers + any fly), leaving the new state
   // shown. Called on unmount and when the user takes over the map.
@@ -1025,6 +1042,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   // --- pointer plumbing (pan + pinch) ---
   const onPointerDown = (e) => {
     cancelCelebration();   // user takes over -> stop the celebration tour + camera fly, keep the shown state
+    setAnimPaused(true);
     try { e.target.setPointerCapture && e.target.setPointerCapture(e.pointerId); } catch (_) {}
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
     if (pointers.current.size === 1) {
@@ -1067,12 +1085,15 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     clearLongPress();
     pointers.current.delete(e.pointerId);
     if (pointers.current.size < 2) pinchRef.current = null;
-    if (pointers.current.size === 0) dragRef.current = null;
+    if (pointers.current.size === 0) { dragRef.current = null; setAnimPaused(false); }
   };
   // (wheel handling moved to the NATIVE non-passive listener effect above)
 
   // Node activation — single tap opens popup; double tap centres+zooms.
-  const activateNode = (node) => {
+  // GUARD: rendered inside the memoized scene -- keep dependency-stable (reads
+  // only refs + stable callbacks); any new state read here must be added to
+  // the kmapScene memo deps.
+  const activateNode = useCallback((node) => {
     if (lpRef.current.fired) { lpRef.current.fired = false; return; }   // long-press already opened the note editor
     if (dragRef.current && dragRef.current.moved) return;   // ignore taps that were drags
     const now = Date.now();
@@ -1083,18 +1104,14 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     }
     lastTapRef.current = { t: now, id: node.id };
     setSelected(node);
-  };
+  }, [focusNode]);
 
   const minimapVisible = view.k > 1.15;
 
-  // #13 — progressive reveal by zoom. Galaxy: subjects only. Solar: sub-topics
-  // fade in. Topic: everything crisp. Sub-nodes + their tree edges share one
-  // opacity ramp so the map never feels like a dense web when zoomed out.
-  const subReveal = Math.max(0, Math.min(1, (view.k - 1.15) / 0.95));   // 0 at k≤1.15 → 1 at k≥2.10
-  const subsInteractive = view.k >= 1.35;
-  // Full decoration (glow/fog/crown/note badges) only near Topic zoom — below
-  // that, subs render as plain dots so the mid-zoom view isn't a blob chain.
-  const subDetail = view.k >= 2.1 || !!matchSet;
+  // PERF: pan/zoom updates state per frame, but the SCENE only re-renders
+  // when the QUANTIZED zoom (0.05 steps) or a data dep changes -- the
+  // reveal/LOD/font math lives inside the kmapScene memo, keyed on kq.
+  const kq = kmapQuantK(view.k);
 
   // Declutter: constant SCREEN-size labels. The SVG scales text by
   // k·containerPx/VIEW, so fixed logical fonts balloon with zoom and on wide
@@ -1113,191 +1130,36 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     else window.addEventListener('resize', measure);
     return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', measure); };
   }, [fullscreen]);
-  const subjFont = kmapLabelFont(view.k, surfacePx, 12.5, 8, 13);
-  const subFont = kmapLabelFont(view.k, surfacePx, 11, 3.2, 9.5);
-  const bonusFont = kmapLabelFont(view.k, surfacePx, 11, 6, 11);
 
   // Declutter: when zoomed to Topic level, only the wedge under the viewport
   // centre shows its sub-topic labels — every other wedge stays dots. Kills
   // the "label soup" without any collision engine.
   const subjectNodesOnly = useMemo(() => layout.nodes.filter(n => n.kind === 'subject'), [layout]);
-  const focusSubjectId = useMemo(
-    () => kmapFocusSubjectId(subjectNodesOnly, view),
-    [subjectNodesOnly, view]);
+  // Cheap per-render trig (13 subjects); its VALUE only changes when the view
+  // crosses a wedge boundary, so it feeds the scene memo directly as a dep.
+  const focusSubjectId = kmapFocusSubjectId(subjectNodesOnly, view);
 
-  // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
-  // get a subtle shimmer that pulls the eye toward what's unlockable next.
-  const fogSet = useMemo(() => {
-    const m = new Map();   // id -> 'soft' | 'strong'
-    const byId = {}; (model.subjects || []).forEach(s => { byId[s.id] = s; });
-    (model.subjects || []).forEach(subj => {
-      const started = mindmapStateRank(subj.state) >= 1;   // discovered+
-      const masteredSib = (subj.subs || []).some(x => x.state === 'mastered');
-      (subj.subs || []).forEach(sub => {
-        if (sub.state === 'locked' && started) m.set(`${subj.id}::${sub.sub}`, masteredSib ? 'strong' : 'soft');
-      });
-    });
-    DEPENDENCIES.forEach(dep => {
-      const a = byId[dep.from], b = byId[dep.to];
-      if (!a || !b) return;
-      if (a.state === 'locked' && mindmapStateRank(b.state) >= 1 && !m.has(a.id)) m.set(a.id, 'soft');
-      if (b.state === 'locked' && mindmapStateRank(a.state) >= 1 && !m.has(b.id)) m.set(b.id, 'soft');
-    });
-    return m;
-  }, [model]);
-
-  // #13 — first-time cinematic reveal. Start zoomed in on the NORCET sun, then
-  // pull back to the full galaxy over ~2.6s and show the one-time welcome.
-  useEffect(() => {
-    if (introRan.current) return;
-    introRan.current = true;
-    let alive = true;
-    const timers = [];
-    (async () => {
-      let seen = false;
-      try { const r = await safeStorage.get(kmapIntroSeenKey(profileId), false); seen = !!(r && r.value); } catch (_) {}
-      if (!alive || seen) return;
-      try { safeStorage.set(kmapIntroSeenKey(profileId), '1', false); } catch (_) {}
-      const reduced = prefersReducedMotion();
-      const cx = KMAP_VIEW / 2;
-      if (reduced || typeof requestAnimationFrame !== 'function') {
-        setIntro('banner');
-        timers.push(setTimeout(() => { if (alive) setIntro(null); }, 6000));
-        return;
-      }
-      setIntro('reveal');
-      setView({ k: 2.7, x: cx - cx * 2.7, y: cx - cx * 2.7 });   // centred on the sun
-      timers.push(setTimeout(() => { if (alive) animateView(FIT_TARGET, 2600); }, 70));
-      timers.push(setTimeout(() => { if (alive) setIntro('banner'); }, 2750));
-    })();
-    return () => { alive = false; timers.forEach(clearTimeout); };
-  }, [profileId, animateView]);
-
-  return (
-    <div className="anim-fadeup">
-      {/* Issues round — IMMERSIVE MODE: the Knowledge Map is the one screen
-          where the fixed top bar is intentionally HIDDEN (it's a full-screen
-          game view). A minimal floating chrome row replaces it: a glass back
-          button + a quiet help button, safe-area aware. The standard top bar
-          returns automatically on every other screen. */}
-      <div className="fixed inset-x-3 z-40 pointer-events-none"
-           style={{ top: 'calc(10px + env(safe-area-inset-top, 0px))' }}>
-       <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto flex items-center justify-between">
-        <button onClick={onBack} aria-label="Exit Knowledge Map"
-                className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
-                style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
-          <ArrowLeft size={18} style={{ color: T.ink }} />
-        </button>
-        <div className="flex items-center gap-2 pointer-events-none">
-          {/* #6 — Report, consistent with every other section (top-right,
-              alongside Help). Opens the same report modal via requestFeedback;
-              styled to match this screen's floating Help button. */}
-          <button onClick={() => requestFeedback({ source: 'screen', screen: 'Knowledge Map' })} aria-label="Report a bug or suggest a feature"
-                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
-            <AlertCircle size={17} style={{ color: T.accent }} />
-          </button>
-          <button onClick={() => requestHelp({ screen: 'Knowledge Map' })} aria-label="What is this screen?"
-                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
-                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
-            <HelpCircle size={17} style={{ color: T.primary }} />
-          </button>
-        </div>
-       </div>
-      </div>
-
-      {/* Multi-device: PageContainer's "wide" tier (maps) — phone stays the
-          exact max-w-md px-4 column; tablet/PC get a wide immersive canvas. */}
-      <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-24"
-           style={{ paddingTop: 'calc(58px + env(safe-area-inset-top, 0px))' }}>
-        {/* Encouraging banner for users with no progress (edge case 10),
-            re-voiced for the constellation metaphor. */}
-        {model.totalAttempted === 0 && (
-          <div className="rounded-2xl px-4 py-3 mb-3 text-sm anim-fadeup"
-               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}`, color: T.ink }}>
-            <span className="font-display font-semibold">Take a quiz to light your first star.</span>
-            <div className="text-xs mt-1" style={{ color: T.muted }}>
-              Every topic starts dark. Answer questions and watch your constellation come to life.
-            </div>
-          </div>
-        )}
-
-        {/* Legend — tiny live examples of each state in the new constellation
-            language, on a dark strip so the glows read the same as the map. */}
-        <div className="flex md:hidden flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
-             style={{ background: CMAP.panelSolid, border: `1px solid ${CMAP.border}`, color: CMAP.muted }}>
-          <KmapLegendChips onTierTap={pingTier} />
-        </div>
-
-        {/* The map surface — a dark "constellation" canvas. In fullscreen mode
-            it becomes a fixed overlay filling the viewport (Esc or the button
-            exits); all floating controls live inside, so they come along. */}
-        <div className={fullscreen
-               ? 'fixed inset-0 z-[80]'
-               : 'relative rounded-2xl overflow-hidden h-[460px] md:h-[clamp(520px,calc(100dvh-210px),1200px)] lg:h-[clamp(560px,calc(100dvh-160px),1400px)]'}
-             style={{ height: fullscreen ? '100dvh' : undefined, touchAction: 'none',
-                      background: CMAP.bg,
-                      border: fullscreen ? 'none' : `1px solid ${CMAP.border}` }}>
-          {/* P11 Feature A — "Suggested for you today" floating panel (top-right
-              overlay), restyled to the dark game aesthetic. */}
-          {suggestions.length > 0 && !suggestDismissed && !intro && (
-            <div className="absolute right-2 z-10 rounded-xl kmap-panel-in w-[200px] lg:w-[240px]"
-                 style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 8,
-                          background: CMAP.panel, border: `1px solid ${CMAP.border}`,
-                          boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
-              <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
-                   style={{ color: CMAP.text }}>
-                <span className="flex items-center gap-1.5">
-                  <Sparkles size={13} style={{ color: CMAP.sun }} /> Suggested today
-                </span>
-                <button onClick={() => setSuggestDismissed(true)}
-                        className="no-tap-highlight p-0.5 -m-0.5 rounded active:bg-white/10"
-                        aria-label="Dismiss suggestions">
-                  <X size={14} style={{ color: CMAP.muted }} />
-                </button>
-              </div>
-              <div className="px-2 pb-2 space-y-1.5">
-                {suggestions.map(sug => (
-                  <div key={sug.id} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-xs font-semibold truncate" style={{ color: CMAP.text }}>{sug.name}</span>
-                      {/* Same enter-a-test caution as the node popup's CTA. */}
-                      <button onClick={() => requestConfirm({
-                                title: `Start practice — ${sug.name}?`,
-                                body: `This begins a 10-question practice test on ${sug.name}. Your answers count toward this star's progress.`,
-                                confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
-                                onConfirm: () => { if (onPracticeTopic) onPracticeTopic(sug.id); },
-                              })}
-                              className="no-tap-highlight text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0 active:scale-95"
-                              style={{ background: T.primary, color: '#fff' }}
-                              aria-label={`Start a ${sug.name} quiz`}>
-                        Start
-                      </button>
-                    </div>
-                    <div className="text-[10px] mt-0.5 leading-snug" style={{ color: CMAP.muted }}>{sug.detail}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <svg ref={svgRef} viewBox={`0 0 ${KMAP_VIEW} ${KMAP_VIEW}`} width="100%" height="100%"
-               role="group" aria-label="Knowledge map of NORCET subjects and topics"
-               style={{ display: 'block', cursor: 'grab', background: CMAP.bg }}
-               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-               onPointerUp={endPointer} onPointerCancel={endPointer} onPointerLeave={endPointer}>
-            <defs>
-              <radialGradient id="kmapSpace" cx="50%" cy="50%" r="62%">
-                <stop offset="0%" stopColor="#141C32" />
-                <stop offset="60%" stopColor={CMAP.bg} />
-                <stop offset="100%" stopColor={CMAP.bgEdge} />
-              </radialGradient>
-              <radialGradient id="kmapSun" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stopColor={CMAP.sun} stopOpacity="0.55" />
-                <stop offset="45%" stopColor={CMAP.sun} stopOpacity="0.18" />
-                <stop offset="100%" stopColor={CMAP.sun} stopOpacity="0" />
-              </radialGradient>
-            </defs>
-            <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
+  // ── MEMOIZED SCENE (perf) ───────────────────────────────────────────
+  // The whole static sky (backdrop, starfield, edges, nodes) is built once
+  // per (data, quantized-zoom) change. Pan/tween frames then re-render ONLY
+  // the transform attribute on the outer <g> — this ~1,000-element SVG
+  // subtree stays referentially identical, which is what makes dragging and
+  // the intro fly smooth. GUARD: everything rendered here must come from the
+  // deps below or be module-constant; handlers must stay dependency-stable.
+  const kmapScene = useMemo(() => {
+    // #13 — progressive reveal by zoom. Galaxy: subjects only. Solar:
+    // sub-topics fade in. Topic: everything crisp.
+    const subReveal = Math.max(0, Math.min(1, (kq - 1.15) / 0.95));   // 0 at k<=1.15 -> 1 at k>=2.10
+    const subsInteractive = kq >= 1.35;
+    // Full decoration (glow/fog/crown/note badges) only near Topic zoom.
+    const subDetail = kq >= 2.1 || !!matchSet;
+    // Constant SCREEN-size labels (clamped so the phone default keeps
+    // today's sizes; deep zoom never balloons).
+    const subjFont = kmapLabelFont(kq, surfacePx, 12.5, 8, 13);
+    const subFont = kmapLabelFont(kq, surfacePx, 11, 3.2, 9.5);
+    const bonusFont = kmapLabelFont(kq, surfacePx, 11, 6, 11);
+    return (
+      <>
               {/* deep-space backdrop + static star field (panned with content) */}
               <rect x={-KMAP_VIEW} y={-KMAP_VIEW} width={KMAP_VIEW * 3} height={KMAP_VIEW * 3} fill="url(#kmapSpace)" />
               {CMAP_STARS.map((st, i) => (
@@ -1479,7 +1341,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 const reveal = matchSet ? 1 : subReveal;
                 // Labels only at Topic zoom AND only for the wedge under the
                 // viewport centre (search overrides) — the label-soup fix.
-                const labelOn = matchSet ? true : (view.k >= KMAP_FOCUS_K && focusSubjectId === node.parent);
+                const labelOn = matchSet ? true : (kq >= KMAP_FOCUS_K && focusSubjectId === node.parent);
                 return (
                   <g key={node.id} className="kmap-node"
                      style={{ cursor: 'pointer', opacity: (subDimmed ? 0.18 : 1) * reveal,
@@ -1527,6 +1389,187 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   </g>
                 );
               })}
+      </>
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout, matchSet, fogSet, notes, explorerBadges, pulseTier, focusSubjectId,
+      kq, surfacePx, T.primary, T.accent, activateNode, noteGestureProps]);
+
+
+  // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
+  // get a subtle shimmer that pulls the eye toward what's unlockable next.
+  const fogSet = useMemo(() => {
+    const m = new Map();   // id -> 'soft' | 'strong'
+    const byId = {}; (model.subjects || []).forEach(s => { byId[s.id] = s; });
+    (model.subjects || []).forEach(subj => {
+      const started = mindmapStateRank(subj.state) >= 1;   // discovered+
+      const masteredSib = (subj.subs || []).some(x => x.state === 'mastered');
+      (subj.subs || []).forEach(sub => {
+        if (sub.state === 'locked' && started) m.set(`${subj.id}::${sub.sub}`, masteredSib ? 'strong' : 'soft');
+      });
+    });
+    DEPENDENCIES.forEach(dep => {
+      const a = byId[dep.from], b = byId[dep.to];
+      if (!a || !b) return;
+      if (a.state === 'locked' && mindmapStateRank(b.state) >= 1 && !m.has(a.id)) m.set(a.id, 'soft');
+      if (b.state === 'locked' && mindmapStateRank(a.state) >= 1 && !m.has(b.id)) m.set(b.id, 'soft');
+    });
+    return m;
+  }, [model]);
+
+  // #13 — first-time cinematic reveal. Start zoomed in on the NORCET sun, then
+  // pull back to the full galaxy over ~2.6s and show the one-time welcome.
+  useEffect(() => {
+    if (introRan.current) return;
+    introRan.current = true;
+    let alive = true;
+    const timers = [];
+    (async () => {
+      let seen = false;
+      try { const r = await safeStorage.get(kmapIntroSeenKey(profileId), false); seen = !!(r && r.value); } catch (_) {}
+      if (!alive || seen) return;
+      try { safeStorage.set(kmapIntroSeenKey(profileId), '1', false); } catch (_) {}
+      const reduced = prefersReducedMotion();
+      const cx = KMAP_VIEW / 2;
+      if (reduced || typeof requestAnimationFrame !== 'function') {
+        setIntro('banner');
+        timers.push(setTimeout(() => { if (alive) setIntro(null); }, 6000));
+        return;
+      }
+      setIntro('reveal');
+      setView({ k: 2.7, x: cx - cx * 2.7, y: cx - cx * 2.7 });   // centred on the sun
+      timers.push(setTimeout(() => { if (alive) animateView(FIT_TARGET, 2600); }, 70));
+      timers.push(setTimeout(() => { if (alive) setIntro('banner'); }, 2750));
+    })();
+    return () => { alive = false; timers.forEach(clearTimeout); };
+  }, [profileId, animateView]);
+
+  return (
+    <div className="anim-fadeup">
+      {/* Issues round — IMMERSIVE MODE: the Knowledge Map is the one screen
+          where the fixed top bar is intentionally HIDDEN (it's a full-screen
+          game view). A minimal floating chrome row replaces it: a glass back
+          button + a quiet help button, safe-area aware. The standard top bar
+          returns automatically on every other screen. */}
+      <div className="fixed inset-x-3 z-40 pointer-events-none"
+           style={{ top: 'calc(10px + env(safe-area-inset-top, 0px))' }}>
+       <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto flex items-center justify-between">
+        <button onClick={onBack} aria-label="Exit Knowledge Map"
+                className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+          <ArrowLeft size={18} style={{ color: T.ink }} />
+        </button>
+        <div className="flex items-center gap-2 pointer-events-none">
+          {/* #6 — Report, consistent with every other section (top-right,
+              alongside Help). Opens the same report modal via requestFeedback;
+              styled to match this screen's floating Help button. */}
+          <button onClick={() => requestFeedback({ source: 'screen', screen: 'Knowledge Map' })} aria-label="Report a bug or suggest a feature"
+                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+            <AlertCircle size={17} style={{ color: T.accent }} />
+          </button>
+          <button onClick={() => requestHelp({ screen: 'Knowledge Map' })} aria-label="What is this screen?"
+                  className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
+                  style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
+            <HelpCircle size={17} style={{ color: T.primary }} />
+          </button>
+        </div>
+       </div>
+      </div>
+
+      {/* Multi-device: PageContainer's "wide" tier (maps) — phone stays the
+          exact max-w-md px-4 column; tablet/PC get a wide immersive canvas. */}
+      <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-24"
+           style={{ paddingTop: 'calc(58px + env(safe-area-inset-top, 0px))' }}>
+        {/* Encouraging banner for users with no progress (edge case 10),
+            re-voiced for the constellation metaphor. */}
+        {model.totalAttempted === 0 && (
+          <div className="rounded-2xl px-4 py-3 mb-3 text-sm anim-fadeup"
+               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}`, color: T.ink }}>
+            <span className="font-display font-semibold">Take a quiz to light your first star.</span>
+            <div className="text-xs mt-1" style={{ color: T.muted }}>
+              Every topic starts dark. Answer questions and watch your constellation come to life.
+            </div>
+          </div>
+        )}
+
+        {/* Legend — tiny live examples of each state in the new constellation
+            language, on a dark strip so the glows read the same as the map. */}
+        <div className="flex md:hidden flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
+             style={{ background: CMAP.panelSolid, border: `1px solid ${CMAP.border}`, color: CMAP.muted }}>
+          <KmapLegendChips onTierTap={pingTier} />
+        </div>
+
+        {/* The map surface — a dark "constellation" canvas. In fullscreen mode
+            it becomes a fixed overlay filling the viewport (Esc or the button
+            exits); all floating controls live inside, so they come along. */}
+        <div className={fullscreen
+               ? 'fixed inset-0 z-[80]'
+               : 'relative rounded-2xl overflow-hidden h-[460px] md:h-[clamp(520px,calc(100dvh-210px),1200px)] lg:h-[clamp(560px,calc(100dvh-160px),1400px)]'}
+             style={{ height: fullscreen ? '100dvh' : undefined, touchAction: 'none',
+                      background: CMAP.bg,
+                      border: fullscreen ? 'none' : `1px solid ${CMAP.border}` }}>
+          {/* P11 Feature A — "Suggested for you today" floating panel (top-right
+              overlay), restyled to the dark game aesthetic. */}
+          {suggestions.length > 0 && !suggestDismissed && !intro && (
+            <div className="absolute right-2 z-10 rounded-xl kmap-panel-in w-[200px] lg:w-[240px]"
+                 style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 8,
+                          background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+                          boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
+              <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
+                   style={{ color: CMAP.text }}>
+                <span className="flex items-center gap-1.5">
+                  <Sparkles size={13} style={{ color: CMAP.sun }} /> Suggested today
+                </span>
+                <button onClick={() => setSuggestDismissed(true)}
+                        className="no-tap-highlight p-0.5 -m-0.5 rounded active:bg-white/10"
+                        aria-label="Dismiss suggestions">
+                  <X size={14} style={{ color: CMAP.muted }} />
+                </button>
+              </div>
+              <div className="px-2 pb-2 space-y-1.5">
+                {suggestions.map(sug => (
+                  <div key={sug.id} className="rounded-lg p-2" style={{ background: 'rgba(255,255,255,0.05)' }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold truncate" style={{ color: CMAP.text }}>{sug.name}</span>
+                      {/* Same enter-a-test caution as the node popup's CTA. */}
+                      <button onClick={() => requestConfirm({
+                                title: `Start practice — ${sug.name}?`,
+                                body: `This begins a 10-question practice test on ${sug.name}. Your answers count toward this star's progress.`,
+                                confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
+                                onConfirm: () => { if (onPracticeTopic) onPracticeTopic(sug.id); },
+                              })}
+                              className="no-tap-highlight text-[11px] font-semibold px-2 py-1 rounded-md flex-shrink-0 active:scale-95"
+                              style={{ background: T.primary, color: '#fff' }}
+                              aria-label={`Start a ${sug.name} quiz`}>
+                        Start
+                      </button>
+                    </div>
+                    <div className="text-[10px] mt-0.5 leading-snug" style={{ color: CMAP.muted }}>{sug.detail}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <svg ref={svgRef} viewBox={`0 0 ${KMAP_VIEW} ${KMAP_VIEW}`} width="100%" height="100%"
+               role="group" aria-label="Knowledge map of NORCET subjects and topics"
+               style={{ display: 'block', cursor: 'grab', background: CMAP.bg }}
+               onPointerDown={onPointerDown} onPointerMove={onPointerMove}
+               onPointerUp={endPointer} onPointerCancel={endPointer} onPointerLeave={endPointer}>
+            <defs>
+              <radialGradient id="kmapSpace" cx="50%" cy="50%" r="62%">
+                <stop offset="0%" stopColor="#141C32" />
+                <stop offset="60%" stopColor={CMAP.bg} />
+                <stop offset="100%" stopColor={CMAP.bgEdge} />
+              </radialGradient>
+              <radialGradient id="kmapSun" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor={CMAP.sun} stopOpacity="0.55" />
+                <stop offset="45%" stopColor={CMAP.sun} stopOpacity="0.18" />
+                <stop offset="100%" stopColor={CMAP.sun} stopOpacity="0" />
+              </radialGradient>
+            </defs>
+            <g transform={`translate(${view.x} ${view.y}) scale(${view.k})`}>
+              {kmapScene}
 
               {/* P11 Feature B — celebration overlay for the node currently
                   upgrading. Sits inside the transformed <g> so it stays glued

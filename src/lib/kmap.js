@@ -200,6 +200,14 @@ function kmapLabelFont(k, containerPx, targetPx, minLogical, maxLogical) {
 // (== the pre-revamp label threshold, so labels appear at the same zoom).
 const KMAP_FOCUS_K = 2.3;
 
+// Quantize k for LOD/scene work: pan/zoom runs per-frame, but fonts/reveal/
+// scales only need to change in coarse steps — the memoized scene re-renders
+// on these steps instead of every frame. Degenerate inputs pass through.
+function kmapQuantK(k, step = 0.05) {
+  if (!(k > 0) || !(step > 0)) return k;
+  return Math.round(k / step) * step;
+}
+
 // The "dominant" subject when zoomed in: the wedge whose angle is circularly
 // nearest to the viewport centre's angle from the root. Only that wedge shows
 // its sub-topic labels (everyone else stays dots) — the label-soup fix.
@@ -252,7 +260,7 @@ function masteryTally(history, allQuestions, attemptStatsFn, nursingFilter) {
 
 export {
   KMAP_STATES, KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
-  KMAP_FOCUS_K, kmapLabelFont, kmapFocusSubjectId,
+  KMAP_FOCUS_K, kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
   mindmapState, mindmapNextProgress, mindmapStateRank, masteryTally,
   _kmapEdgePath, _kmapHexPath, mindmapLayout, subjectStruggling, DEPENDENCIES,
   BONUS_NODES, BONUS_REVEAL_MASTERED, masteredSubCount, revealedBonusNodes,
