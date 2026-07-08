@@ -18,7 +18,7 @@
 // Dark HUD shell on purpose: these dialogs float over the map's dark
 // constellation island, not over the light app theme.
 // =====================================================================
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 
@@ -31,8 +31,29 @@ const SHELL = {
 
 function KmapDialog({ label, onClose, children, zIndex = 90, maxWidth = 420 }) {
   const trapRef = useFocusTrap(onClose);
+  // Pinch guard: a trackpad pinch over the OPEN dialog is ctrl+wheel — block
+  // it from browser-page-zooming (which would scale this fixed-px dialog).
+  // Plain wheel must pass so the dialog body keeps scrolling; React wheel
+  // handlers are passive, hence the native non-passive listener.
+  const overlayRef = useRef(null);
+  useEffect(() => {
+    const el = overlayRef.current;
+    if (!el) return;
+    const onWheel = (e) => { if (e.ctrlKey) e.preventDefault(); };
+    const swallow = (e) => e.preventDefault();
+    el.addEventListener('wheel', onWheel, { passive: false });
+    el.addEventListener('gesturestart', swallow);
+    el.addEventListener('gesturechange', swallow);
+    el.addEventListener('gestureend', swallow);
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      el.removeEventListener('gesturestart', swallow);
+      el.removeEventListener('gesturechange', swallow);
+      el.removeEventListener('gestureend', swallow);
+    };
+  }, []);
   const overlay = (
-    <div className="fixed inset-0 flex items-center justify-center p-4 kmap-scrim-in"
+    <div ref={overlayRef} className="fixed inset-0 flex items-center justify-center p-4 kmap-scrim-in"
          style={{ zIndex, background: SHELL.scrim }}
          onClick={onClose}>
       <div ref={trapRef} role="dialog" aria-modal="true" aria-label={label}

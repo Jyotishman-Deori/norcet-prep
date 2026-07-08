@@ -868,6 +868,52 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
       return { k, x, y };
     });
   }, []);
+  // Relative-factor sibling of zoomAt: fully functional (reads NO outer view
+  // state), so the native wheel listener below can live in a []-deps effect
+  // with zero stale-closure risk.
+  const zoomBy = useCallback((factor, vx, vy) => {
+    setView(v => {
+      const k = clampNum(v.k * factor, Z_MIN, Z_MAX);
+      const fx = vx == null ? KMAP_VIEW / 2 : vx;
+      const fy = vy == null ? KMAP_VIEW / 2 : vy;
+      return { k, x: fx - ((fx - v.x) / v.k) * k, y: fy - ((fy - v.y) / v.k) * k };
+    });
+  }, []);
+
+  // ── NATIVE wheel/gesture listeners (the "popup zoomed in" fix) ──────
+  // React attaches wheel listeners PASSIVELY, so e.preventDefault() inside a
+  // React onWheel is a NO-OP — a desktop trackpad pinch (= ctrl+wheel) was
+  // zooming the map AND browser-page-zooming the whole app, which scaled the
+  // fixed-px dialogs. Non-passive native listeners actually block that.
+  // The focal point is the RAW viewBox coordinate (the old handler's
+  // toLogical→*k+x round-trip cancels algebraically), so no view state is
+  // needed here; Safari's proprietary gesture* events are also swallowed.
+  useEffect(() => {
+    const svg = svgRef.current;
+    if (!svg) return;
+    const onNativeWheel = (e) => {
+      e.preventDefault();
+      const r = svg.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const scale = Math.min(r.width, r.height) / KMAP_VIEW;
+      const padX = (r.width - KMAP_VIEW * scale) / 2;
+      const padY = (r.height - KMAP_VIEW * scale) / 2;
+      const vx = (e.clientX - r.left - padX) / scale;
+      const vy = (e.clientY - r.top - padY) / scale;
+      zoomBy(e.deltaY < 0 ? 1.12 : 1 / 1.12, vx, vy);
+    };
+    const swallow = (e) => e.preventDefault();
+    svg.addEventListener('wheel', onNativeWheel, { passive: false });
+    svg.addEventListener('gesturestart', swallow);
+    svg.addEventListener('gesturechange', swallow);
+    svg.addEventListener('gestureend', swallow);
+    return () => {
+      svg.removeEventListener('wheel', onNativeWheel);
+      svg.removeEventListener('gesturestart', swallow);
+      svg.removeEventListener('gesturechange', swallow);
+      svg.removeEventListener('gestureend', swallow);
+    };
+  }, [zoomBy]);
 
   const fitView = useCallback(() => setView({ k: 1, x: 0, y: 0 }), []);
 
@@ -1023,14 +1069,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     if (pointers.current.size < 2) pinchRef.current = null;
     if (pointers.current.size === 0) dragRef.current = null;
   };
-  const onWheel = (e) => {
-    e.preventDefault();
-    const focal = toLogical(e.clientX, e.clientY);
-    const focalVx = focal.x * view.k + view.x;
-    const focalVy = focal.y * view.k + view.y;
-    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    zoomAt(view.k * factor, focalVx, focalVy);
-  };
+  // (wheel handling moved to the NATIVE non-passive listener effect above)
 
   // Node activation — single tap opens popup; double tap centres+zooms.
   const activateNode = (node) => {
@@ -1239,8 +1278,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                role="group" aria-label="Knowledge map of NORCET subjects and topics"
                style={{ display: 'block', cursor: 'grab', background: CMAP.bg }}
                onPointerDown={onPointerDown} onPointerMove={onPointerMove}
-               onPointerUp={endPointer} onPointerCancel={endPointer} onPointerLeave={endPointer}
-               onWheel={onWheel}>
+               onPointerUp={endPointer} onPointerCancel={endPointer} onPointerLeave={endPointer}>
             <defs>
               <radialGradient id="kmapSpace" cx="50%" cy="50%" r="62%">
                 <stop offset="0%" stopColor="#141C32" />
