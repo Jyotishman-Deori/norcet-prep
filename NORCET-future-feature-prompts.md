@@ -10468,3 +10468,50 @@ commit; all 5 map modules transform cleanly through the live dev server.
 ⚠ Owner device check recommended: popup opens pixel-identical at any zoom /
 fullscreen / mid-pan; celebration tour after a quiz; search reveal; long-press
 note; reduced-motion setting.
+
+# ---------------------------------------------------------------------
+# (2026-07-08, later) Knowledge Map ROUND 2 — page-zoom fix, practice
+# confirm, star-chart look, lag-free
+# ---------------------------------------------------------------------
+
+Owner round-2 feedback: popup still "zoomed in"; want a caution before being
+thrown into a test; shared real star-chart images as the target aesthetic;
+map "slightly laggy" on open.
+
+SHIPPED (5 commits a7cc53e..e46a155, student surface only):
+
+1. fix a7cc53e — THE POPUP-ZOOM ROOT CAUSE: onWheel was a React synthetic
+   handler; React attaches wheel listeners PASSIVELY so its preventDefault()
+   was a NO-OP → desktop trackpad pinch (= ctrl+wheel) zoomed the map AND
+   browser-PAGE-zoomed the app, scaling the fixed-px dialogs. Map now binds
+   NATIVE non-passive wheel + Safari gesture* listeners (new functional
+   zoomBy(); focal point = raw viewBox coord, no state needed); KmapDialog
+   overlay guards ctrl+wheel too (plain wheel still scrolls the body). Page
+   zoom the USER sets via Ctrl+/menu is normal browser behaviour, unchanged.
+2. feat ff0d0ea — PRACTICE CONFIRM: node-popup CTA + Suggested-today Start
+   now raise the app-standard centred confirm ("Start practice — {name}? …
+   10-question practice test", Start test / Not now). Popup stays open behind;
+   cancel/Esc returns to it. Bonus "Mark as explored" untouched.
+3. perf ed54fc2 — LAG ROOT CAUSE: every pan/zoom/tween frame re-rendered the
+   whole ~1,000-element SVG through React. The scene (backdrop/stars/edges/
+   nodes) is now ONE useMemo keyed on data + QUANTIZED zoom (kmapQuantK 0.05
+   steps, lib+tests): pan/tweens re-render only the transform attribute.
+   activateNode/noteGestureProps stabilized (guard comments); celebration
+   overlay excluded from the memo. Ambient pulse/shimmer animations PAUSE
+   during gestures/tweens (.kmap-anim-paused, imperative classList). LevelUp
+   warms the map chunk on idle (same specifier as App's lazy import).
+4. feat 392a005 — SCREEN-CONSTANT STARS (kmapNodeScale, lib+tests): node
+   radii/rings/strokes/glyphs counter-scale so zoom grows SPACING, not
+   circles (the star-chart behaviour; kills the ballooning-overlap look).
+   Root sun shrinks gently (exp 0.5). HIT TARGETS unchanged: transparent hit
+   circles at the round-1 radii. Phone k=1 default byte-identical (clamp 1).
+5. feat e46a155 — STAR-CHART DRESSING: dotted graticule rings at R1/R2/
+   bonus-ring; subject labels = letter-spaced CAPS (gold when mastered;
+   size target 12.5→11.5 to offset the wider caps); mastered stars get thin
+   4-point flares; the focused wedge's lines turn warm gold (the active
+   "constellation figure"). All decorative bits aria-hidden + pointer-inert.
+
+⚠ Owner device check: trackpad-pinch/ctrl+wheel over the map on the laptop —
+map zooms, PAGE must not; popup 420px at every zoom; Practice → confirm →
+quiz; pan smoothness on the tablet; celebration tour after a quiz still
+plays; long-press note + search + fullscreen + minimap regressions.
