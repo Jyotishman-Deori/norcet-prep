@@ -275,6 +275,7 @@ const NOTE_FAB_HIDDEN = new Set([
   'advanced-test', 'paper-test',
   'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin',
   'three-am-chart', 'shift-survival', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
+  'knowledge-map',   // immersive full-canvas map; the FAB overlays the constellation
 ]);
 // [A1 slice 40] rename-profile host extracted.
 import RenameProfileHost from './screens/rename-profile-host.jsx';

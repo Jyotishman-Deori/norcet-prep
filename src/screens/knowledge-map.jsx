@@ -534,15 +534,46 @@ function _constNode(state, base) {
                rScale: 0.84, crown: false, orbit: false };
   }
 }
-// Deterministic star field (logical coords) — generated once, stable across renders.
+// Deterministic star field (logical coords) — generated once, stable across
+// renders. Domain extends past the viewBox so the letterbox bands a wide
+// (non-square) canvas exposes still get stars instead of flat dark.
 const CMAP_STARS = (() => {
   const out = []; let seed = 1337;
   const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
-  for (let i = 0; i < 90; i++) {
-    out.push({ x: rnd() * KMAP_VIEW, y: rnd() * KMAP_VIEW, r: 0.6 + rnd() * 1.6, o: 0.18 + rnd() * 0.5 });
+  for (let i = 0; i < 130; i++) {
+    out.push({ x: (rnd() * 1.8 - 0.4) * KMAP_VIEW, y: (rnd() * 1.8 - 0.4) * KMAP_VIEW, r: 0.6 + rnd() * 1.6, o: 0.18 + rnd() * 0.5 });
   }
   return out;
 })();
+
+// Legend chips — tiny live examples of each state in the constellation
+// language. Rendered twice: as the in-flow strip above the map on phones,
+// and as a glass pill overlaying the canvas bottom on tablet/PC + fullscreen.
+// `onTierTap` (optional) pings the matching-state stars on the map.
+function KmapLegendChips({ onTierTap }) {
+  return KMAP_STATES.map(s => {
+    const cs = _constNode(s, CMAP.sun);
+    const body = (
+      <>
+        <svg width="18" height="18" viewBox="0 0 18 18" style={{ display: 'block', flexShrink: 0 }}>
+          {cs.glow && <circle cx="9" cy="9" r={7.5} fill={cs.glow} opacity={cs.glowOpacity} />}
+          <circle cx="9" cy="9" r={4.6 * cs.rScale} fill={cs.core} stroke={cs.ring} strokeWidth={1.3} />
+          {cs.crown && <text x="9" y="6.2" textAnchor="middle" fontSize="6" fill="#FFE6A6">{'★'}</text>}
+        </svg>
+        <span style={{ color: s === 'locked' ? CMAP.muted : CMAP.text }}>{KMAP_STATE_LABEL[s]}</span>
+      </>
+    );
+    return onTierTap ? (
+      <button key={s} onClick={() => onTierTap(s)}
+              className="no-tap-highlight inline-flex items-center gap-1.5 px-1 py-0.5 rounded-lg active:scale-95 transition-transform"
+              aria-label={`Highlight ${KMAP_STATE_LABEL[s]} stars`}>
+        {body}
+      </button>
+    ) : (
+      <span key={s} className="inline-flex items-center gap-1.5">{body}</span>
+    );
+  });
+}
 const kmapIntroSeenKey = (pid) => 'kmapintroseen:v1:' + (pid || 'guest');
 
 // Stable empty-notes ref so `data.mindmapNotes || EMPTY_NOTES` doesn't churn
@@ -1045,8 +1076,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
           game view). A minimal floating chrome row replaces it: a glass back
           button + a quiet help button, safe-area aware. The standard top bar
           returns automatically on every other screen. */}
-      <div className="fixed left-3 right-3 z-40 flex items-center justify-between pointer-events-none"
+      <div className="fixed inset-x-3 z-40 pointer-events-none"
            style={{ top: 'calc(10px + env(safe-area-inset-top, 0px))' }}>
+       <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto flex items-center justify-between">
         <button onClick={onBack} aria-label="Exit Knowledge Map"
                 className="no-tap-highlight pointer-events-auto w-10 h-10 rounded-full flex items-center justify-center active:scale-90 transition"
                 style={{ background: T.surface, border: `1px solid ${T.border}`, boxShadow: '0 4px 14px rgba(0,0,0,0.18)' }}>
@@ -1067,9 +1099,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             <HelpCircle size={17} style={{ color: T.primary }} />
           </button>
         </div>
+       </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 pb-24"
+      {/* Multi-device: PageContainer's "wide" tier (maps) — phone stays the
+          exact max-w-md px-4 column; tablet/PC get a wide immersive canvas. */}
+      <div className="max-w-md md:max-w-3xl lg:max-w-6xl mx-auto px-4 md:px-6 lg:px-8 pb-24"
            style={{ paddingTop: 'calc(58px + env(safe-area-inset-top, 0px))' }}>
         {/* Encouraging banner for users with no progress (edge case 10),
             re-voiced for the constellation metaphor. */}
@@ -1085,21 +1120,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
         {/* Legend — tiny live examples of each state in the new constellation
             language, on a dark strip so the glows read the same as the map. */}
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
+        <div className="flex md:hidden flex-wrap items-center gap-x-3 gap-y-1.5 mb-2 px-3 py-2 rounded-xl text-[11px]"
              style={{ background: CMAP.panelSolid, border: `1px solid ${CMAP.border}`, color: CMAP.muted }}>
-          {KMAP_STATES.map(s => {
-            const cs = _constNode(s, CMAP.sun);
-            return (
-              <span key={s} className="inline-flex items-center gap-1.5">
-                <svg width="18" height="18" viewBox="0 0 18 18" style={{ display: 'block', flexShrink: 0 }}>
-                  {cs.glow && <circle cx="9" cy="9" r={7.5} fill={cs.glow} opacity={cs.glowOpacity} />}
-                  <circle cx="9" cy="9" r={4.6 * cs.rScale} fill={cs.core} stroke={cs.ring} strokeWidth={1.3} />
-                  {cs.crown && <text x="9" y="6.2" textAnchor="middle" fontSize="6" fill="#FFE6A6">{'\u2605'}</text>}
-                </svg>
-                <span style={{ color: s === 'locked' ? CMAP.muted : CMAP.text }}>{KMAP_STATE_LABEL[s]}</span>
-              </span>
-            );
-          })}
+          <KmapLegendChips />
         </div>
 
         {/* The map surface — a dark "constellation" canvas. In fullscreen mode
@@ -1107,16 +1130,16 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
             exits); all floating controls live inside, so they come along. */}
         <div className={fullscreen
                ? 'fixed inset-0 z-[80]'
-               : 'relative rounded-2xl overflow-hidden'}
-             style={{ height: fullscreen ? '100dvh' : 460, touchAction: 'none',
+               : 'relative rounded-2xl overflow-hidden h-[460px] md:h-[clamp(520px,calc(100dvh-210px),1200px)] lg:h-[clamp(560px,calc(100dvh-160px),1400px)]'}
+             style={{ height: fullscreen ? '100dvh' : undefined, touchAction: 'none',
                       background: CMAP.bg,
                       border: fullscreen ? 'none' : `1px solid ${CMAP.border}` }}>
           {/* P11 Feature A — "Suggested for you today" floating panel (top-right
               overlay), restyled to the dark game aesthetic. */}
           {suggestions.length > 0 && !suggestDismissed && !intro && (
-            <div className="absolute right-2 z-10 rounded-xl anim-fadeup"
+            <div className="absolute right-2 z-10 rounded-xl anim-fadeup w-[200px] lg:w-[240px]"
                  style={{ top: fullscreen ? 'calc(env(safe-area-inset-top, 0px) + 52px)' : 8,
-                          width: 200, background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+                          background: CMAP.panel, border: `1px solid ${CMAP.border}`,
                           boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(6px)' }}>
               <div className="px-3 pt-2.5 pb-1.5 text-[11px] font-semibold flex items-center justify-between"
                    style={{ color: CMAP.text }}>
@@ -1507,8 +1530,8 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
 
           {/* Minimap — dark, with bright dots; mastered nodes glow brightest. */}
           {minimapVisible && (
-            <div className="absolute bottom-3 right-3 rounded-lg overflow-hidden"
-                 style={{ width: 96, height: 96, background: CMAP.bgEdge, border: `1px solid ${CMAP.border}` }}
+            <div className="absolute bottom-3 right-3 rounded-lg overflow-hidden w-24 h-24 lg:w-32 lg:h-32"
+                 style={{ background: CMAP.bgEdge, border: `1px solid ${CMAP.border}` }}
                  aria-hidden="true">
               <svg viewBox={`0 0 ${KMAP_VIEW} ${KMAP_VIEW}`} width="100%" height="100%">
                 {layout.nodes.filter(n => n.kind !== 'sub').map(n => {
@@ -1525,6 +1548,17 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
               </svg>
             </div>
           )}
+
+          {/* Legend overlay — glass pill ON the canvas for tablet/PC, and in
+              fullscreen (where the in-flow strip above the map isn't visible).
+              Bottom-centre is the free lane between the zoom cluster (left)
+              and the minimap (right); narrow phones in fullscreen skip it. */}
+          <div className={(fullscreen ? 'hidden sm:flex' : 'hidden md:flex') + ' absolute left-1/2 -translate-x-1/2 z-10 flex-wrap items-center justify-center gap-x-3 gap-y-1 px-3.5 py-2 rounded-full text-[11px]'}
+               style={{ bottom: fullscreen ? 'calc(env(safe-area-inset-bottom, 0px) + 14px)' : 14,
+                        background: CMAP.panel, border: `1px solid ${CMAP.border}`,
+                        boxShadow: '0 6px 20px rgba(0,0,0,0.45)', backdropFilter: 'blur(8px)', color: CMAP.muted }}>
+            <KmapLegendChips />
+          </div>
 
           {/* #13 — first-time cinematic welcome (deferred #15 banner). Shows once
               ever, after the camera pulls back to the galaxy. Dismissible. */}
