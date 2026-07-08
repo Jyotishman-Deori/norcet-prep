@@ -9,7 +9,7 @@ const {
   KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_FOCUS_K,
   mindmapState, mindmapNextProgress, mindmapLayout,
   subjectStruggling, masteredSubCount, revealedBonusNodes,
-  kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
+  kmapLabelFont, kmapFocusSubjectId, kmapQuantK, kmapNodeScale,
 } = await import('./kmap.js');
 
 const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
@@ -187,6 +187,29 @@ const model4 = {
   const py = C + (KMAP_R1 + 5) * Math.sin(Math.PI + 0.05); // just past pi -> atan2 ~ -pi+0.05
   const v = { k, x: C - px * k, y: C - py * k };
   assert.equal(kmapFocusSubjectId(subjectNodes, v), s3.id, 'circular distance handles the pi wrap');
+}
+
+// ---- kmapNodeScale: screen-constant star sizes -----------------------------
+{
+  // k<=1 (incl. Z_MIN 0.55) -> 1: the phone default view is unchanged
+  assert.equal(kmapNodeScale(1), 1);
+  assert.equal(kmapNodeScale(0.55), 1);
+  // mid-range: exactly 1/k (screen size constant)
+  assert.ok(Math.abs(kmapNodeScale(2) - 0.5) < 1e-12);
+  // monotone non-increasing over the zoom range
+  let last = Infinity;
+  for (let k = 0.55; k <= 4; k += 0.05) {
+    const v = kmapNodeScale(k);
+    assert.ok(v <= last + 1e-12, 'monotone');
+    last = v;
+  }
+  // floor clamps deep zoom; degenerate inputs -> max (today's look)
+  assert.equal(kmapNodeScale(10), 0.3);
+  assert.equal(kmapNodeScale(0), 1);
+  assert.equal(kmapNodeScale(NaN), 1);
+  // gentler root variant: shrinks less at the same k, respects its own floor
+  assert.ok(kmapNodeScale(2.3, 0.5, 1, 0.5) > kmapNodeScale(2.3));
+  assert.equal(kmapNodeScale(9, 0.5, 1, 0.5), 0.5);
 }
 
 // ---- kmapQuantK: coarse zoom steps for the memoized scene ------------------

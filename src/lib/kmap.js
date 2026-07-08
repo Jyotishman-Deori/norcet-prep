@@ -208,6 +208,16 @@ function kmapQuantK(k, step = 0.05) {
   return Math.round(k / step) * step;
 }
 
+// Counter-scale node geometry so stars stay ~constant SCREEN size as you
+// zoom (the star-chart look — zooming grows the SPACING, not the circles).
+// scale = clamp((1/k)^exp, min, max). k<=1 → max(=1): the phone default view
+// is unchanged. exp<1 gives a gentler shrink (used for the root sun, which
+// is the map's identity anchor). Degenerate k → max (today's look).
+function kmapNodeScale(k, min = 0.3, max = 1, exp = 1) {
+  if (!(k > 0)) return max;
+  return Math.max(min, Math.min(max, Math.pow(1 / k, exp)));
+}
+
 // The "dominant" subject when zoomed in: the wedge whose angle is circularly
 // nearest to the viewport centre's angle from the root. Only that wedge shows
 // its sub-topic labels (everyone else stays dots) — the label-soup fix.
@@ -260,7 +270,7 @@ function masteryTally(history, allQuestions, attemptStatsFn, nursingFilter) {
 
 export {
   KMAP_STATES, KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
-  KMAP_FOCUS_K, kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
+  KMAP_FOCUS_K, kmapLabelFont, kmapFocusSubjectId, kmapQuantK, kmapNodeScale,
   mindmapState, mindmapNextProgress, mindmapStateRank, masteryTally,
   _kmapEdgePath, _kmapHexPath, mindmapLayout, subjectStruggling, DEPENDENCIES,
   BONUS_NODES, BONUS_REVEAL_MASTERED, masteredSubCount, revealedBonusNodes,

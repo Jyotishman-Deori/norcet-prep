@@ -24,7 +24,7 @@ import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
   KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR, KMAP_FOCUS_K,
-  kmapLabelFont, kmapFocusSubjectId, kmapQuantK,
+  kmapLabelFont, kmapFocusSubjectId, kmapQuantK, kmapNodeScale,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
 import { requestHelp, requestFeedback, requestConfirm } from '../ui/primitives.jsx';
@@ -1158,6 +1158,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
     const subjFont = kmapLabelFont(kq, surfacePx, 12.5, 8, 13);
     const subFont = kmapLabelFont(kq, surfacePx, 11, 3.2, 9.5);
     const bonusFont = kmapLabelFont(kq, surfacePx, 11, 6, 11);
+    // Star-chart sizing: stars stay ~constant on SCREEN as you zoom — zoom
+    // grows the SPACING between stars, not the circles (kills the overlap).
+    // The root sun shrinks more gently (it's the identity anchor). Hit
+    // targets keep the ROUND-1 geometry via transparent hit circles below.
+    const ns = kmapNodeScale(kq);
+    const rootScale = kmapNodeScale(kq, 0.5, 1, 0.5);
     return (
       <>
               {/* deep-space backdrop + static star field (panned with content) */}
@@ -1174,7 +1180,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (ed.kind === 'prereq') {
                   return (
                     <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                          stroke={T.accent} strokeWidth={2} strokeLinecap="round"
+                          stroke={T.accent} strokeWidth={2 * ns} strokeLinecap="round"
                           strokeOpacity={ed.pulse ? undefined : 0.55}
                           className={ed.pulse ? 'kmap-edge-pulse' : undefined} />
                   );
@@ -1182,14 +1188,14 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (ed.kind === 'related') {
                   return (
                     <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                          stroke={CMAP.muted} strokeWidth={1.4} strokeLinecap="round"
+                          stroke={CMAP.muted} strokeWidth={1.4 * ns} strokeLinecap="round"
                           strokeOpacity={0.4} strokeDasharray="2 7" />
                   );
                 }
                 if (ed.kind === 'bonus') {
                   return (
                     <path key={ed.id || `e${i}`} d={ed.d} fill="none"
-                          stroke={KMAP_BONUS_COLOR} strokeWidth={1.6} strokeLinecap="round"
+                          stroke={KMAP_BONUS_COLOR} strokeWidth={1.6 * ns} strokeLinecap="round"
                           strokeOpacity={0.55 * (0.3 + 0.7 * subReveal)} strokeDasharray="1 6" />
                   );
                 }
@@ -1198,7 +1204,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 return (
                   <path key={ed.id || `e${i}`} d={ed.d} fill="none"
                         stroke={isRoot ? CMAP.edgeRoot : CMAP.edge}
-                        strokeWidth={isRoot ? 2 : 1.1}
+                        strokeWidth={(isRoot ? 2 : 1.1) * ns}
                         strokeOpacity={isRoot ? 0.7 : 0.55 * subReveal}
                         strokeLinecap="round"
                         style={{ transition: 'stroke-opacity 220ms ease' }} />
@@ -1210,11 +1216,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (node.kind === 'root') {
                   return (
                     <g key={node.id}>
-                      <circle cx={node.x} cy={node.y} r={120} fill="url(#kmapSun)" className="kmap-sun-glow" />
-                      <circle cx={node.x} cy={node.y} r={46} fill={T.primary} />
-                      <circle cx={node.x} cy={node.y} r={46} fill="none" stroke={CMAP.sun} strokeOpacity={0.6} strokeWidth={2.5} />
-                      <text x={node.x} y={node.y + 5} textAnchor="middle" className="font-display"
-                            fontSize={20} fontWeight={700} fill="#FFFFFF">NORCET</text>
+                      <circle cx={node.x} cy={node.y} r={46} fill="transparent" stroke="none" />
+                      <circle cx={node.x} cy={node.y} r={120 * rootScale} fill="url(#kmapSun)" className="kmap-sun-glow" />
+                      <circle cx={node.x} cy={node.y} r={46 * rootScale} fill={T.primary} />
+                      <circle cx={node.x} cy={node.y} r={46 * rootScale} fill="none" stroke={CMAP.sun} strokeOpacity={0.6} strokeWidth={2.5 * rootScale} />
+                      <text x={node.x} y={node.y + 5 * rootScale} textAnchor="middle" className="font-display"
+                            fontSize={20 * rootScale} fontWeight={700} fill="#FFFFFF">NORCET</text>
                     </g>
                   );
                 }
@@ -1224,10 +1231,10 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                   // a filled hex; otherwise an outlined hex invites exploration.
                   const b = node.data;
                   const earned = explorerBadges.indexOf(b.id) !== -1;
-                  const r = 16;
+                  const r = 16 * ns;
                   const hex = _kmapHexPath(node.x, node.y, r);
-                  const lx = node.x + Math.cos(node.angle) * (r + 5);
-                  const ly = node.y + Math.sin(node.angle) * (r + 5);
+                  const lx = node.x + Math.cos(node.angle) * (r + 5 * ns);
+                  const ly = node.y + Math.sin(node.angle) * (r + 5 * ns);
                   const anchor = Math.cos(node.angle) > 0.3 ? 'start' : Math.cos(node.angle) < -0.3 ? 'end' : 'middle';
                   return (
                     <g key={node.id} className="kmap-bonus-reveal kmap-node"
@@ -1236,11 +1243,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                        role="button" tabIndex={0}
                        aria-label={`Bonus: ${b.name}${earned ? ', Explorer badge earned' : ''}`}
                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
+                      <circle cx={node.x} cy={node.y} r={16} fill="transparent" stroke="none" />
                       <path d={hex} fill={KMAP_BONUS_COLOR} opacity={0.18} className="kmap-bonus-pulse" />
                       <path d={hex} fill={earned ? KMAP_BONUS_COLOR : KMAP_BONUS_COLOR + '33'}
-                            stroke={KMAP_BONUS_COLOR} strokeWidth={2} />
-                      <text x={node.x} y={node.y + 5} textAnchor="middle" fontSize={15}>{earned ? '\u2605' : '\u2727'}</text>
-                      <text x={lx} y={ly + 4} textAnchor={anchor} className="font-body"
+                            stroke={KMAP_BONUS_COLOR} strokeWidth={2 * ns} />
+                      <text x={node.x} y={node.y + 5 * ns} textAnchor="middle" fontSize={15 * ns}>{earned ? '\u2605' : '\u2727'}</text>
+                      <text x={lx} y={ly + 4 * ns} textAnchor={anchor} className="font-body"
                             fontSize={bonusFont} fontWeight={600} fill={CMAP.muted}>
                         {b.name}
                       </text>
@@ -1250,9 +1258,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 if (node.kind === 'subject') {
                   const s = node.data;
                   const cs = _constNode(s.state, s.color);
-                  const r = 34 * cs.rScale;
-                  const lx = node.x + Math.cos(node.angle) * (r + 4);
-                  const ly = node.y + Math.sin(node.angle) * (r + 4);
+                  const r = 34 * cs.rScale * ns;
+                  const lx = node.x + Math.cos(node.angle) * (r + 4 * ns);
+                  const ly = node.y + Math.sin(node.angle) * (r + 4 * ns);
                   const anchor = Math.cos(node.angle) > 0.3 ? 'start' : Math.cos(node.angle) < -0.3 ? 'end' : 'middle';
                   const noted = !!(notes[node.id] && notes[node.id].text);
                   const dimmed = matchSet && !matchSet.has(node.id);
@@ -1266,16 +1274,18 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                        role="button" tabIndex={0}
                        aria-label={`${s.name}: ${KMAP_STATE_LABEL[s.state]}, ${Math.round(s.accuracy * 100)}% accuracy${noted ? ', has a note' : ''}`}
                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
+                      {/* round-1 interaction geometry, independent of visual ns */}
+                      <circle cx={node.x} cy={node.y} r={34 * cs.rScale} fill="transparent" stroke="none" />
                       {/* fog-of-war shimmer ring for locked-but-adjacent subjects */}
                       {fog && (
-                        <circle cx={node.x} cy={node.y} r={r + 7} fill="none" stroke={CMAP.sun}
-                                strokeWidth={2} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
+                        <circle cx={node.x} cy={node.y} r={r + 7 * ns} fill="none" stroke={CMAP.sun}
+                                strokeWidth={2 * ns} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
                       )}
                       {hit && (
-                        <circle cx={node.x} cy={node.y} r={r + 8} fill="none" stroke={T.accent} strokeWidth={3} strokeDasharray="4 4" opacity={0.95} />
+                        <circle cx={node.x} cy={node.y} r={r + 8 * ns} fill="none" stroke={T.accent} strokeWidth={3 * ns} strokeDasharray="4 4" opacity={0.95} />
                       )}
                       {pulseTier === s.state && (
-                        <circle cx={node.x} cy={node.y} r={r + 6} fill="none" stroke={cs.ring} strokeWidth={2.5} className="kmap-tier-ping" />
+                        <circle cx={node.x} cy={node.y} r={r + 6 * ns} fill="none" stroke={cs.ring} strokeWidth={2.5 * ns} className="kmap-tier-ping" />
                       )}
                       {/* state glow (radiance / pulse) behind the core */}
                       {cs.glow && (
@@ -1287,25 +1297,25 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                         <g className="kmap-orbit">
                           {[0, 1, 2].map(k => {
                             const a = (k / 3) * Math.PI * 2;
-                            return <circle key={k} cx={node.x + Math.cos(a) * (r + 10)} cy={node.y + Math.sin(a) * (r + 10)} r={2.4} fill="#FFE6A6" opacity={0.9} />;
+                            return <circle key={k} cx={node.x + Math.cos(a) * (r + 10 * ns)} cy={node.y + Math.sin(a) * (r + 10 * ns)} r={2.4 * ns} fill="#FFE6A6" opacity={0.9} />;
                           })}
                         </g>
                       )}
                       <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring}
-                              strokeWidth={s.state === 'mastered' ? 3 : 2} />
-                      <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize={20}
+                              strokeWidth={(s.state === 'mastered' ? 3 : 2) * ns} />
+                      <text x={node.x} y={node.y + 6 * ns} textAnchor="middle" fontSize={20 * ns}
                             opacity={s.state === 'locked' ? 0.45 : 1}>{topicIcon(s.id)}</text>
                       {/* mastered crown */}
                       {cs.crown && (
-                        <text x={node.x} y={node.y - r + 4} textAnchor="middle" fontSize={16} fill="#FFE6A6">{'\u2605'}</text>
+                        <text x={node.x} y={node.y - r + 4 * ns} textAnchor="middle" fontSize={16 * ns} fill="#FFE6A6">{'\u2605'}</text>
                       )}
                       {noted && (
                         <g aria-hidden="true">
-                          <circle cx={node.x - r + 6} cy={node.y - r + 6} r={9} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.5} />
-                          <text x={node.x - r + 6} y={node.y - r + 10} textAnchor="middle" fontSize={11}>{'\uD83D\uDCCC'}</text>
+                          <circle cx={node.x - r + 6 * ns} cy={node.y - r + 6 * ns} r={9 * ns} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.5 * ns} />
+                          <text x={node.x - r + 6 * ns} y={node.y - r + 10 * ns} textAnchor="middle" fontSize={11 * ns}>{'\uD83D\uDCCC'}</text>
                         </g>
                       )}
-                      <text x={lx} y={ly + 4} textAnchor={anchor} className="font-display"
+                      <text x={lx} y={ly + 4 * ns} textAnchor={anchor} className="font-display"
                             fontSize={subjFont} fontWeight={s.state === 'locked' ? 500 : 600}
                             fill={cs.label}
                             opacity={cs.labelOpacity * (focusSubjectId && focusSubjectId !== node.id ? 0.35 : 1)}
@@ -1316,8 +1326,8 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                           with one quiet ★ mastered/total line; cross-fades out
                           as the sub-stars reveal. */}
                       {s.subs && s.subs.length > 0 && subReveal < 1 && (
-                        <text x={lx} y={ly + 4 + subjFont + 3} textAnchor={anchor} className="font-body"
-                              fontSize={8.5} fill={CMAP.muted}
+                        <text x={lx} y={ly + 4 * ns + subjFont + 3} textAnchor={anchor} className="font-body"
+                              fontSize={8.5 * ns} fill={CMAP.muted}
                               opacity={(1 - subReveal) * 0.9}
                               style={{ transition: 'opacity 200ms ease' }} aria-hidden="true">
                           {'★'} {s.subs.filter(x => x.state === 'mastered').length}/{s.subs.length}
@@ -1329,9 +1339,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 // sub node — constellation star, revealed progressively by zoom.
                 const s = node.data;
                 const cs = _constNode(s.state, node.color);
-                const r = 11 * cs.rScale;
-                const lx = node.x + Math.cos(node.angle) * (r + 3);
-                const ly = node.y + Math.sin(node.angle) * (r + 3);
+                const r = 11 * cs.rScale * ns;
+                const lx = node.x + Math.cos(node.angle) * (r + 3 * ns);
+                const ly = node.y + Math.sin(node.angle) * (r + 3 * ns);
                 const anchor = Math.cos(node.angle) > 0.2 ? 'start' : Math.cos(node.angle) < -0.2 ? 'end' : 'middle';
                 const subNoted = !!(notes[node.id] && notes[node.id].text);
                 const subDimmed = matchSet && !matchSet.has(node.id);
@@ -1356,32 +1366,33 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                         badges) \u2014 the decorated halos used to overlap into
                         "caterpillar" blob chains at mid-zoom. Hit targets and
                         interactivity are unchanged. */}
+                    <circle cx={node.x} cy={node.y} r={11 * cs.rScale} fill="transparent" stroke="none" />
                     {subDetail && fog && (
-                      <circle cx={node.x} cy={node.y} r={r + 4} fill="none" stroke={CMAP.sun}
-                              strokeWidth={1.5} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
+                      <circle cx={node.x} cy={node.y} r={r + 4 * ns} fill="none" stroke={CMAP.sun}
+                              strokeWidth={1.5 * ns} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
                     )}
                     {subHit && (
-                      <circle cx={node.x} cy={node.y} r={r + 5} fill="none" stroke={T.accent} strokeWidth={2.5} strokeDasharray="3 3" opacity={0.95} />
+                      <circle cx={node.x} cy={node.y} r={r + 5 * ns} fill="none" stroke={T.accent} strokeWidth={2.5 * ns} strokeDasharray="3 3" opacity={0.95} />
                     )}
                     {pulseTier === s.state && (
-                      <circle cx={node.x} cy={node.y} r={r + 4} fill="none" stroke={cs.ring} strokeWidth={2} className="kmap-tier-ping" />
+                      <circle cx={node.x} cy={node.y} r={r + 4 * ns} fill="none" stroke={cs.ring} strokeWidth={2 * ns} className="kmap-tier-ping" />
                     )}
                     {subDetail && cs.glow && (
                       <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
                               opacity={cs.glowOpacity} className={cs.glowClass} />
                     )}
-                    <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring} strokeWidth={1.6} />
+                    <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring} strokeWidth={1.6 * ns} />
                     {subDetail && cs.crown && (
-                      <text x={node.x} y={node.y - r + 1} textAnchor="middle" fontSize={9} fill="#FFE6A6">{'\u2605'}</text>
+                      <text x={node.x} y={node.y - r + 1 * ns} textAnchor="middle" fontSize={9 * ns} fill="#FFE6A6">{'\u2605'}</text>
                     )}
                     {subDetail && subNoted && (
                       <g aria-hidden="true">
-                        <circle cx={node.x + r - 1} cy={node.y - r + 1} r={6} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.2} />
-                        <text x={node.x + r - 1} y={node.y - r + 4} textAnchor="middle" fontSize={8}>{'\uD83D\uDCCC'}</text>
+                        <circle cx={node.x + r - 1 * ns} cy={node.y - r + 1 * ns} r={6 * ns} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.2 * ns} />
+                        <text x={node.x + r - 1 * ns} y={node.y - r + 4 * ns} textAnchor="middle" fontSize={8 * ns}>{'\uD83D\uDCCC'}</text>
                       </g>
                     )}
                     {labelOn && (
-                      <text x={lx} y={ly + 3} textAnchor={anchor} className="font-body"
+                      <text x={lx} y={ly + 3 * ns} textAnchor={anchor} className="font-body"
                             fontSize={subFont} fill={cs.label} opacity={cs.labelOpacity}>
                         {s.sub.length > 22 ? s.sub.slice(0, 21) + '\u2026' : s.sub}
                       </text>
