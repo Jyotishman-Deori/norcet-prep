@@ -23,7 +23,8 @@ import { loadMindmapNotes, mergeNotes, mindmapNoteMatch, sanitizeNoteText } from
 import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
-  KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
+  KMAP_STATES, KMAP_VIEW, KMAP_STATE_LABEL, KMAP_BONUS_COLOR, KMAP_FOCUS_K,
+  kmapLabelFont, kmapFocusSubjectId,
   mindmapState, mindmapStateRank, mindmapLayout, _kmapHexPath, DEPENDENCIES,
 } from '../lib/kmap.js';
 import { requestHelp, requestFeedback } from '../ui/primitives.jsx';
@@ -1020,6 +1021,38 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
   // opacity ramp so the map never feels like a dense web when zoomed out.
   const subReveal = Math.max(0, Math.min(1, (view.k - 1.15) / 0.95));   // 0 at k≤1.15 → 1 at k≥2.10
   const subsInteractive = view.k >= 1.35;
+  // Full decoration (glow/fog/crown/note badges) only near Topic zoom — below
+  // that, subs render as plain dots so the mid-zoom view isn't a blob chain.
+  const subDetail = view.k >= 2.1 || !!matchSet;
+
+  // Declutter: constant SCREEN-size labels. The SVG scales text by
+  // k·containerPx/VIEW, so fixed logical fonts balloon with zoom and on wide
+  // screens — counter-scale via kmapLabelFont (clamped so the phone default
+  // view keeps today's exact sizes). Container measured off the SVG itself.
+  const [surfacePx, setSurfacePx] = useState(0);
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el || typeof window === 'undefined') return;
+    const measure = () => {
+      try { const r = el.getBoundingClientRect(); setSurfacePx(Math.min(r.width, r.height) || 0); } catch (e) {}
+    };
+    measure();
+    let ro = null;
+    if (typeof ResizeObserver === 'function') { ro = new ResizeObserver(measure); ro.observe(el); }
+    else window.addEventListener('resize', measure);
+    return () => { if (ro) ro.disconnect(); else window.removeEventListener('resize', measure); };
+  }, [fullscreen]);
+  const subjFont = kmapLabelFont(view.k, surfacePx, 12.5, 8, 13);
+  const subFont = kmapLabelFont(view.k, surfacePx, 11, 3.2, 9.5);
+  const bonusFont = kmapLabelFont(view.k, surfacePx, 11, 6, 11);
+
+  // Declutter: when zoomed to Topic level, only the wedge under the viewport
+  // centre shows its sub-topic labels — every other wedge stays dots. Kills
+  // the "label soup" without any collision engine.
+  const subjectNodesOnly = useMemo(() => layout.nodes.filter(n => n.kind === 'subject'), [layout]);
+  const focusSubjectId = useMemo(
+    () => kmapFocusSubjectId(subjectNodesOnly, view),
+    [subjectNodesOnly, view]);
 
   // #13 — fog of war. Locked nodes adjacent to discovered/familiar territory
   // get a subtle shimmer that pulls the eye toward what's unlockable next.
@@ -1270,7 +1303,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                             stroke={KMAP_BONUS_COLOR} strokeWidth={2} />
                       <text x={node.x} y={node.y + 5} textAnchor="middle" fontSize={15}>{earned ? '\u2605' : '\u2727'}</text>
                       <text x={lx} y={ly + 4} textAnchor={anchor} className="font-body"
-                            fontSize={11} fontWeight={600} fill={CMAP.muted}>
+                            fontSize={bonusFont} fontWeight={600} fill={CMAP.muted}>
                         {b.name}
                       </text>
                     </g>
@@ -1331,10 +1364,23 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                         </g>
                       )}
                       <text x={lx} y={ly + 4} textAnchor={anchor} className="font-display"
-                            fontSize={13} fontWeight={s.state === 'locked' ? 500 : 600}
-                            fill={cs.label} opacity={cs.labelOpacity}>
+                            fontSize={subjFont} fontWeight={s.state === 'locked' ? 500 : 600}
+                            fill={cs.label}
+                            opacity={cs.labelOpacity * (focusSubjectId && focusSubjectId !== node.id ? 0.35 : 1)}
+                            style={{ transition: 'opacity 200ms ease' }}>
                         {s.name}
                       </text>
+                      {/* Zoomed-out progress cue: replaces the sub-dot clutter
+                          with one quiet ★ mastered/total line; cross-fades out
+                          as the sub-stars reveal. */}
+                      {s.subs && s.subs.length > 0 && subReveal < 1 && (
+                        <text x={lx} y={ly + 4 + subjFont + 3} textAnchor={anchor} className="font-body"
+                              fontSize={8.5} fill={CMAP.muted}
+                              opacity={(1 - subReveal) * 0.9}
+                              style={{ transition: 'opacity 200ms ease' }} aria-hidden="true">
+                          {'★'} {s.subs.filter(x => x.state === 'mastered').length}/{s.subs.length}
+                        </text>
+                      )}
                     </g>
                   );
                 }
@@ -1351,7 +1397,9 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 const fog = fogSet.get(node.id);
                 // Search forces full reveal so matches are always findable.
                 const reveal = matchSet ? 1 : subReveal;
-                const labelOn = matchSet ? true : view.k >= 2.3;   // labels only at Topic zoom
+                // Labels only at Topic zoom AND only for the wedge under the
+                // viewport centre (search overrides) — the label-soup fix.
+                const labelOn = matchSet ? true : (view.k >= KMAP_FOCUS_K && focusSubjectId === node.parent);
                 return (
                   <g key={node.id}
                      style={{ cursor: 'pointer', opacity: (subDimmed ? 0.18 : 1) * reveal,
@@ -1362,22 +1410,26 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                      role="button" tabIndex={0}
                      aria-label={`${s.sub}: ${s.attempted > 0 ? `${Math.round(s.accuracy * 100)}% accuracy` : 'not started'}${subNoted ? ', has a note' : ''}`}
                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
-                    {fog && (
+                    {/* Below Topic zoom, subs are PLAIN DOTS (no fog/glow/
+                        badges) \u2014 the decorated halos used to overlap into
+                        "caterpillar" blob chains at mid-zoom. Hit targets and
+                        interactivity are unchanged. */}
+                    {subDetail && fog && (
                       <circle cx={node.x} cy={node.y} r={r + 4} fill="none" stroke={CMAP.sun}
                               strokeWidth={1.5} className={fog === 'strong' ? 'kmap-fog-shimmer-strong' : 'kmap-fog-shimmer'} />
                     )}
                     {subHit && (
                       <circle cx={node.x} cy={node.y} r={r + 5} fill="none" stroke={T.accent} strokeWidth={2.5} strokeDasharray="3 3" opacity={0.95} />
                     )}
-                    {cs.glow && (
+                    {subDetail && cs.glow && (
                       <circle cx={node.x} cy={node.y} r={r * cs.glowR} fill={cs.glow}
                               opacity={cs.glowOpacity} className={cs.glowClass} />
                     )}
                     <circle cx={node.x} cy={node.y} r={r} fill={cs.core} stroke={cs.ring} strokeWidth={1.6} />
-                    {cs.crown && (
+                    {subDetail && cs.crown && (
                       <text x={node.x} y={node.y - r + 1} textAnchor="middle" fontSize={9} fill="#FFE6A6">{'\u2605'}</text>
                     )}
-                    {subNoted && (
+                    {subDetail && subNoted && (
                       <g aria-hidden="true">
                         <circle cx={node.x + r - 1} cy={node.y - r + 1} r={6} fill={CMAP.panelSolid} stroke={CMAP.border} strokeWidth={1.2} />
                         <text x={node.x + r - 1} y={node.y - r + 4} textAnchor="middle" fontSize={8}>{'\uD83D\uDCCC'}</text>
@@ -1385,7 +1437,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                     )}
                     {labelOn && (
                       <text x={lx} y={ly + 3} textAnchor={anchor} className="font-body"
-                            fontSize={9.5} fill={cs.label} opacity={cs.labelOpacity}>
+                            fontSize={subFont} fill={cs.label} opacity={cs.labelOpacity}>
                         {s.sub.length > 22 ? s.sub.slice(0, 21) + '\u2026' : s.sub}
                       </text>
                     )}

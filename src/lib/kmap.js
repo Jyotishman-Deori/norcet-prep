@@ -143,7 +143,7 @@ function mindmapLayout(model) {
     subs.forEach((sub, j) => {
       const frac = M <= 1 ? 0.5 : j / (M - 1);
       const a = ang + (frac - 0.5) * wedge;
-      const r = KMAP_R2 + ((j % 2) * 30);                   // alternate radius -> fewer label clashes
+      const r = KMAP_R2 + ((j % 3) * 34);                   // 3-step radial stagger -> fewer label clashes
       const x = cx + r * Math.cos(a);
       const y = cy + r * Math.sin(a);
       const subId = `${subj.id}::${sub.sub}`;
@@ -184,6 +184,40 @@ function mindmapLayout(model) {
   return { nodes, edges, cx, cy };
 }
 
+// ---- LOD helpers (label declutter) ----------------------------------------
+// Screen-constant label sizing: the SVG scales text by `k · containerPx/VIEW`,
+// so a fixed logical font balloons as you zoom (and on wide screens). This
+// returns the logical font that renders as ~targetPx on screen, clamped so the
+// default view keeps today's sizes (maxLogical) and text never vanishes
+// (minLogical). Degenerate inputs fall back to maxLogical (today's look).
+function kmapLabelFont(k, containerPx, targetPx, minLogical, maxLogical) {
+  if (!(k > 0) || !(containerPx > 0) || !(targetPx > 0)) return maxLogical;
+  const logical = (targetPx * KMAP_VIEW) / (k * containerPx);
+  return Math.max(minLogical, Math.min(maxLogical, logical));
+}
+
+// Zoom level at which sub-topic labels appear AND label focus kicks in
+// (== the pre-revamp label threshold, so labels appear at the same zoom).
+const KMAP_FOCUS_K = 2.3;
+
+// The "dominant" subject when zoomed in: the wedge whose angle is circularly
+// nearest to the viewport centre's angle from the root. Only that wedge shows
+// its sub-topic labels (everyone else stays dots) — the label-soup fix.
+// `view` is the screen's {k,x,y} transform; returns null when zoomed out.
+function kmapFocusSubjectId(subjectNodes, view, minK = KMAP_FOCUS_K) {
+  if (!view || !(view.k >= minK) || !subjectNodes || !subjectNodes.length) return null;
+  const c = KMAP_VIEW / 2;
+  const cx = (c - view.x) / view.k, cy = (c - view.y) / view.k;  // logical point at screen centre
+  const a = Math.atan2(cy - c, cx - c);
+  let best = null, bd = Infinity;
+  for (const n of subjectNodes) {
+    let d = Math.abs(a - n.angle) % (2 * Math.PI);
+    if (d > Math.PI) d = 2 * Math.PI - d;
+    if (d < bd) { bd = d; best = n.id; }
+  }
+  return best;
+}
+
 const KMAP_STATE_LABEL = { locked: 'Locked', discovered: 'Discovered', familiar: 'Familiar', mastered: 'Mastered' };
 const KMAP_BONUS_COLOR = '#E0A52E';   // amber/gold for "beyond syllabus" bonus nodes (Phase B)
 
@@ -218,6 +252,7 @@ function masteryTally(history, allQuestions, attemptStatsFn, nursingFilter) {
 
 export {
   KMAP_STATES, KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_STATE_LABEL, KMAP_BONUS_COLOR,
+  KMAP_FOCUS_K, kmapLabelFont, kmapFocusSubjectId,
   mindmapState, mindmapNextProgress, mindmapStateRank, masteryTally,
   _kmapEdgePath, _kmapHexPath, mindmapLayout, subjectStruggling, DEPENDENCIES,
   BONUS_NODES, BONUS_REVEAL_MASTERED, masteredSubCount, revealedBonusNodes,

@@ -6,9 +6,10 @@
 import assert from 'node:assert/strict';
 
 const {
-  KMAP_VIEW, KMAP_R1, KMAP_R2,
+  KMAP_VIEW, KMAP_R1, KMAP_R2, KMAP_FOCUS_K,
   mindmapState, mindmapNextProgress, mindmapLayout,
   subjectStruggling, masteredSubCount, revealedBonusNodes,
+  kmapLabelFont, kmapFocusSubjectId,
 } = await import('./kmap.js');
 
 const dist = (x1, y1, x2, y2) => Math.hypot(x2 - x1, y2 - y1);
@@ -76,12 +77,12 @@ const model4 = {
   const wedge = (2 * Math.PI / N) * 0.80;
   const byParent = {};
   subs.forEach(n => { (byParent[n.parent] = byParent[n.parent] || []).push(n); });
-  // radius stagger: sub j sits at R2 + (j % 2) * 30 (current 2-step stagger)
+  // radius stagger: sub j sits at R2 + (j % 3) * 34 (3-step declutter stagger)
   for (const [pid, list] of Object.entries(byParent)) {
     const parent = subjects.find(s => s.id === pid);
     list.forEach((n, j) => {
       const r = dist(C, C, n.x, n.y);
-      const expectedR = KMAP_R2 + ((j % 2) * 30);
+      const expectedR = KMAP_R2 + ((j % 3) * 34);
       assert.ok(Math.abs(r - expectedR) < 1e-6, `${n.id} radius ${r} == ${expectedR}`);
       assert.ok(Math.abs(n.angle - parent.angle) <= wedge / 2 + 1e-9, `${n.id} stays inside its parent's wedge`);
       assert.equal(n.color, parent.data.color, 'sub inherits subject color');
@@ -143,6 +144,49 @@ const model4 = {
     const parent = nodes.find(n => n.id === 'msn');
     assert.ok(Math.abs(b.angle - parent.angle) < 1e-9, 'bonus rides the parent angle');
   });
+}
+
+// ---- kmapLabelFont: screen-constant labels, clamped ------------------------
+{
+  // degenerate inputs -> today's default (maxLogical)
+  assert.equal(kmapLabelFont(0, 800, 11, 3, 9.5), 9.5);
+  assert.equal(kmapLabelFont(2, 0, 11, 3, 9.5), 9.5);
+  // exact mid-range value: logical = target*VIEW/(k*container)
+  assert.ok(Math.abs(kmapLabelFont(3, 800, 11, 1, 20) - (11 * KMAP_VIEW) / (3 * 800)) < 1e-9);
+  // non-increasing in k, and clamped at both ends
+  const a = kmapLabelFont(1, 448, 11, 3.2, 9.5);
+  const b = kmapLabelFont(2.3, 448, 11, 3.2, 9.5);
+  const c = kmapLabelFont(6, 448, 11, 3.2, 9.5);
+  assert.ok(a >= b && b >= c);
+  assert.equal(a, 9.5, 'phone default view clamps to today’s size');
+  assert.equal(kmapLabelFont(20, 2000, 11, 3.2, 9.5), 3.2, 'deep zoom clamps at the floor');
+}
+
+// ---- kmapFocusSubjectId: dominant wedge under the viewport centre ----------
+{
+  const N = 4;
+  const subjectNodes = Array.from({ length: N }, (_, i) => {
+    const angle = (-Math.PI / 2) + (i * 2 * Math.PI / N);
+    return { id: 's' + i, angle,
+             x: C + KMAP_R1 * Math.cos(angle), y: C + KMAP_R1 * Math.sin(angle) };
+  });
+  // zoomed out -> no focus
+  assert.equal(kmapFocusSubjectId(subjectNodes, { k: 1, x: 0, y: 0 }), null);
+  assert.equal(kmapFocusSubjectId([], { k: 3, x: 0, y: 0 }), null);
+  // a view centred exactly on subject i (focusNode math: x = C - sx*k) picks it
+  for (const n of subjectNodes) {
+    const k = KMAP_FOCUS_K + 0.5;
+    const v = { k, x: C - n.x * k, y: C - n.y * k };
+    assert.equal(kmapFocusSubjectId(subjectNodes, v), n.id, `centred view picks ${n.id}`);
+  }
+  // wrap-around: a point just past angle pi (i.e. atan2 flips to ~-pi) still
+  // picks the subject sitting at +pi (s3 here at angle pi for N=4... s3 = pi).
+  const s3 = subjectNodes[3]; // angle = pi (pointing left)
+  const k = 3;
+  const px = C + (KMAP_R1 + 5) * Math.cos(Math.PI + 0.05);
+  const py = C + (KMAP_R1 + 5) * Math.sin(Math.PI + 0.05); // just past pi -> atan2 ~ -pi+0.05
+  const v = { k, x: C - px * k, y: C - py * k };
+  assert.equal(kmapFocusSubjectId(subjectNodes, v), s3.id, 'circular distance handles the pi wrap');
 }
 
 console.log('kmap.test.js OK');
