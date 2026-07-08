@@ -322,7 +322,7 @@ Deno.serve(async (req: Request) => {
     if (!role) return json({ error: "Forbidden: staff only" }, 403);
     const existing = await totpRead(session);
     if (existing && !existing.startsWith("pending:")) {
-      return json({ error: "2FA is already set up — ask the owner to reset it first" }, 409);
+      return json({ error: "2FA is already set up, ask the owner to reset it first" }, 409);
     }
     const raw = new Uint8Array(20);
     crypto.getRandomValues(raw);
@@ -442,7 +442,7 @@ Deno.serve(async (req: Request) => {
     if (ROLE_RANK[reqRole] >= ROLE_RANK[actorRole as StaffRole]) {
       return json({ error: "Forbidden: you can only grant roles below your own" }, 403);
     }
-    if (targetRow) return json({ error: "Already on the staff list — change their role instead" }, 409);
+    if (targetRow) return json({ error: "Already on the staff list, change their role instead" }, 409);
     const r = await fetch(`${SUPABASE_URL}/rest/v1/admin_profile_ids`, {
       method: "POST",
       headers: dbHeaders({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }),
@@ -465,7 +465,7 @@ Deno.serve(async (req: Request) => {
     if (!id) return json({ error: "Missing profileId" }, 400);
     if (actorIds.has(id)) return json({ error: "Forbidden: you can't remove your own access" }, 403);
     if (!targetRow) return json({ ok: true }); // already gone
-    if (targetRole === "admin") return json({ error: "Forbidden: the owner can't be removed — transfer ownership first" }, 403);
+    if (targetRole === "admin") return json({ error: "Forbidden: the owner can't be removed, transfer ownership first" }, 403);
     if (ROLE_RANK[targetRole as StaffRole] >= ROLE_RANK[actorRole as StaffRole]) {
       return json({ error: "Forbidden: you can only remove roles below your own" }, 403);
     }
@@ -515,7 +515,7 @@ Deno.serve(async (req: Request) => {
     });
     if (!r.ok) return json({ error: `transfer failed: ${r.status} (has admin-roles.sql been run?)` }, 502);
     const okRes = await r.json().catch(() => false);
-    if (okRes !== true) return json({ error: "Transfer refused — target not on the staff list" }, 409);
+    if (okRes !== true) return json({ error: "Transfer refused: target not on the staff list" }, 409);
     await audit(session, "ownership-transfer", id, reason);
     return json({ ok: true });
   }

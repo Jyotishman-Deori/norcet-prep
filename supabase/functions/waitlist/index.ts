@@ -95,7 +95,7 @@ async function sendApprovalInvite(
         subject: "Your NurseHolic seat is ready 🎉",
         text: `Your seat on the NurseHolic waitlist just opened!\n\n` +
           `Claim it here (one-time link):\n${claimUrl}\n\n` +
-          `Your seat is held for 48 hours — after that it goes to the next student in line.\n\n` +
+          `Your seat is held for 48 hours, after that it goes to the next student in line.\n\n` +
           `See you inside,\nNurseHolic · www.nurseholic.in`,
       }),
     });

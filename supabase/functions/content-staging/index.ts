@@ -233,14 +233,14 @@ async function generateQuestions(topic: string, count: number): Promise<any[]> {
     `You are a senior NORCET (Indian nursing officer exam) question author.\n` +
     `Brainstorm exactly ${count} ADVANCED exam scenarios for the topic "${topicName}".\n` +
     `Use a spread of difficulties (easy, medium, hard). Focus on clinical reasoning, ` +
-    `prioritisation, and applied judgement — AVOID basic definitions and rote recall.\n` +
+    `prioritisation, and applied judgement. AVOID basic definitions and rote recall.\n` +
     `For each, give a one-line scenario and the single key concept it tests. Number them 1–${count}.`,
   );
   if (!stage1.trim()) throw new Error("Stage 1 returned empty output");
 
   // Stage 2: format to strict JSON matching the DB schema.
   const stage2 = await gemini(
-    `Convert these NORCET scenarios into a STRICT JSON ARRAY. Output JSON ONLY — no prose, no code fences.\n\n` +
+    `Convert these NORCET scenarios into a STRICT JSON ARRAY. Output JSON ONLY: no prose, no code fences.\n\n` +
     `Each element MUST match exactly:\n` +
     `{"topic":"${topic}","sub":"<subtopic>","type":"mcq"|"msq","q":"<question>",` +
     `"options":["..."],"correct":[<0-based index ints>],"exp":"<why the answer is right>",` +
@@ -382,7 +382,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: `generation failed: ${msg}` }, 502);
     }
     if (rows.length === 0) {
-      return json({ error: "Model returned no valid questions — try again" }, 502);
+      return json({ error: "Model returned no valid questions, try again" }, 502);
     }
 
     const url = `${SUPABASE_URL}/rest/v1/questions_staging`;

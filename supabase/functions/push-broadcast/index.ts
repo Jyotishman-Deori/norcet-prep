@@ -146,7 +146,7 @@ Deno.serve(async (req: Request) => {
   // 3) Rate cap: 4 broadcasts/hour per admin.
   const rl = await rateHit("push-broadcast", session.id, 4, 60 * 60);
   if (!rl.allowed) {
-    return json({ error: `Too many broadcasts — try again in about ${Math.max(1, Math.ceil(rl.retryAfter / 60))} minute(s).`, retryAfter: rl.retryAfter }, 429);
+    return json({ error: `Too many broadcasts: try again in about ${Math.max(1, Math.ceil(rl.retryAfter / 60))} minute(s).`, retryAfter: rl.retryAfter }, 429);
   }
 
   // 4) Relay to notify-all (the only holder-of-secret call).

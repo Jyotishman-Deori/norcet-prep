@@ -452,7 +452,7 @@ Deno.serve(async (req: Request) => {
               const n = Array.isArray(incoming.questions) ? incoming.questions.length : 0;
               notify = {
                 title: "New on NurseHolic",
-                body: `${String(incoming.name || "A new question set")} — ${n} question${n === 1 ? "" : "s"} added. Open the Library.`,
+                body: `${String(incoming.name || "A new question set")}, ${n} question${n === 1 ? "" : "s"} added. Open the Library.`,
               };
             }
           }
