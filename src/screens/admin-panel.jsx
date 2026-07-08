@@ -1185,7 +1185,9 @@ function AdminPanel({
       { id: 'resolved', label: 'Resolved', count: resolved.length },
       { id: 'all', label: 'All', count: errs.length },
     ];
-    const sevColor = (s) => (s === 'crash' ? T.error : T.accent);
+    // 'ux' = rage-click / friction telemetry (rage-click.js) — amber so UX
+    // failures read apart from real crashes in the same triage list.
+    const sevColor = (s) => (s === 'crash' ? T.error : s === 'ux' ? '#D97706' : T.accent);
     return (
       <>
       <div className="anim-fadeup">
@@ -1242,7 +1244,7 @@ function AdminPanel({
                     <div className="flex items-center gap-2 mb-1.5">
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                             style={{ background: sevColor(e.severity) + '1A', color: sevColor(e.severity) }}>
-                        {e.severity === 'crash' ? 'Crash' : 'Error'}
+                        {e.severity === 'crash' ? 'Crash' : e.severity === 'ux' ? 'UX' : 'Error'}
                       </span>
                       <span className="text-[10px] px-1.5 py-0.5 rounded-full tabular-nums font-semibold"
                             style={{ background: T.surfaceWarm, color: T.inkSoft }}>×{e.count}</span>

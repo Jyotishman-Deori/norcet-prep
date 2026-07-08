@@ -404,8 +404,14 @@ Deno.serve(async (req: Request) => {
       }
       const res = await writeRow(key, String(body.value ?? ""));
       // Owner alert — inert until RESEND_API_KEY is set; ≤2/hour; failure
-      // can never affect the write result (see alertOwnerOnError).
-      try { await alertOwnerOnError(key); } catch (_) { /* best-effort */ }
+      // can never affect the write result (see alertOwnerOnError). UX
+      // telemetry (severity 'ux', e.g. rage-click reports) is triaged in the
+      // admin panel only and must NOT consume the shared crash-alert budget.
+      let isUxReport = false;
+      try { isUxReport = JSON.parse(String(body.value ?? "")).severity === "ux"; } catch (_) { /* not JSON */ }
+      if (!isUxReport) {
+        try { await alertOwnerOnError(key); } catch (_) { /* best-effort */ }
+      }
       return res;
     }
 

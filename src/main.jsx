@@ -4,12 +4,16 @@ import App, { ErrorBoundary } from './App.jsx';
 import './index.css';
 import { registerSW } from 'virtual:pwa-register';
 import { installGlobalErrorCapture } from './lib/errorlog.js';
+import { installRageClickCapture } from './lib/rage-click.js';
 import { captureReferralFromUrl } from './lib/referral.js';
 import { initUmami } from './lib/umami.js';
 import { captureInstallPrompt } from './lib/install-prompt.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
+// Rage-click detection — rapid clustered taps get flagged as UX failures in
+// the same admin triage list (severity 'ux'). Fail-safe, game screens excluded.
+installRageClickCapture();
 // Umami Cloud (free) pageview analytics — a no-op unless VITE_UMAMI_WEBSITE_ID
 // is configured, so it costs nothing for local/dev or an unconfigured deploy.
 initUmami();

@@ -31,6 +31,12 @@ export function setErrorContext(next) {
   try { ctx = { ...ctx, ...(next || {}) }; } catch (e) {}
 }
 
+// Read-only view of the telemetry context (rage-click.js needs the current
+// screen to attribute bursts and honor its game-screen exclusions).
+export function getErrorContext() {
+  return ctx;
+}
+
 // djb2 → base36; stable, tiny, no deps.
 function hash(str) {
   let h = 5381;
