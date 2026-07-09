@@ -107,6 +107,15 @@ const SCREENS = {
       onBack: noop, onNavigate: noop, profileId: 'smoke-test',
     });
   },
+  // I18N build: welcome gained the language-suggestion chip and t() chrome;
+  // firstRun renders the pitch page (chip + onboarding entry).
+  'welcome': async () => {
+    const m = await import('../../src/screens/welcome.jsx');
+    return React.createElement(m.default, {
+      displayName: 'Smoke', firstRun: true, demographics: null,
+      onSaveDemographics: noop, onDismiss: noop, onLaunch: noop,
+    });
+  },
 };
 
 let failed = 0;

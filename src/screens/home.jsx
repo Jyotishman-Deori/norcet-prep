@@ -10,7 +10,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
-import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
+import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
@@ -73,6 +73,7 @@ function darkenHex(hex, t) {
 // Not dismissable (it's reassurance, not an interruption).
 function AllCaughtUpCard() {
   const { theme: T } = useTheme();
+  const { t } = useI18n();
   const [visible, setVisible] = useState(true);
   useEffect(() => {
     const t = setTimeout(() => setVisible(false), 3000);
@@ -86,8 +87,8 @@ function AllCaughtUpCard() {
         <CheckCircle size={18} style={{ color: T.success }} />
       </div>
       <div>
-        <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>All caught up</div>
-        <div className="text-xs" style={{ color: T.muted }}>Nothing due for review today</div>
+        <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>{t('home.caughtUp')}</div>
+        <div className="text-xs" style={{ color: T.muted }}>{t('home.caughtUpSub')}</div>
       </div>
     </div>
   );
@@ -97,6 +98,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const { profile } = useProfile();
+  const { t } = useI18n();
   const profileId = (profile && profile.id) || 'guest';
 
   // Is the Favourites section turned on? When it is, the desktop dashboard
@@ -286,8 +288,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     if (due.length > 0) {
       pushNotification({
         type: 'spaced_due',
-        title: 'Questions ready for review',
-        body: `${due.length} question${due.length === 1 ? '' : 's'} are due for spaced revision today.`,
+        title: t('home.notif.reviewTitle'),
+        body: due.length === 1 ? t('home.notif.reviewBodyOne') : t('home.notif.reviewBodyMany', { n: due.length }),
         action: { screen: 'quiz', mode: 'review-due' }
       });
     }
@@ -299,8 +301,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     if (STREAK_MILESTONES.includes(s)) {
       pushNotification({
         type: 'streak',
-        title: `${s}-day streak! 🔥`,
-        body: `You've studied ${s} days in a row. That kind of consistency is what separates those who pass from those who don't.`,
+        title: t('home.notif.streakTitle', { s }),
+        body: t('home.notif.streakBody', { s }),
         action: null
       });
     }
@@ -317,13 +319,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     const daysLeft = Math.round((tgt - t0) / 86400000);
     if (daysLeft < 0 || daysLeft > 30) return;
     const line = daysLeft <= 7
-      ? 'The final stretch: trust your prep and keep the high-yield notes close.'
+      ? t('home.notif.exam7')
       : daysLeft <= 14
-        ? 'Two weeks to go. Tighten up your weak areas and lean on revision.'
-        : 'Under a month left. Steady, focused revision now pays off most.';
+        ? t('home.notif.exam14')
+        : t('home.notif.exam30');
     pushNotification({
       type: 'exam_countdown',
-      title: daysLeft === 0 ? 'Exam day is here' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} to your exam`,
+      title: daysLeft === 0 ? t('home.notif.examDay') : (daysLeft === 1 ? t('home.notif.examOneDay') : t('home.notif.examDays', { n: daysLeft })),
       body: line,
       action: { screen: 'revision-sheet' },
       dedupeMs: 23 * 60 * 60 * 1000,
@@ -340,8 +342,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     if (thisAcc != null && lastAcc != null && thisAcc - lastAcc >= 5) {
       pushNotification({
         type: 'improvement',
-        title: 'You\u2019re trending up',
-        body: `Your accuracy rose from ${lastAcc}% to ${thisAcc}% week over week. Whatever you changed, it\u2019s working.`,
+        title: t('home.notif.trendingUp'),
+        body: t('home.notif.trendingUpBody', { lastAcc, thisAcc }),
         action: { screen: 'stats' },
         dedupeMs: WEEK,
       });
@@ -349,8 +351,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     if (improvedTopic) {
       pushNotification({
         type: 'accuracy_up',
-        title: 'Sharper this week',
-        body: `Your ${topicName(improvedTopic)} accuracy improved noticeably over last week. Nice momentum.`,
+        title: t('home.notif.sharper'),
+        body: t('home.notif.sharperBody', { topic: topicName(improvedTopic) }),
         action: { screen: 'stats' },
         dedupeMs: WEEK,
       });
@@ -367,7 +369,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
     if (announcement.id === data.dismissedAnnouncementId) return;
     pushNotification({
       type: 'admin',
-      title: announcement.level === 'important' ? 'Important announcement' : 'Announcement',
+      title: announcement.level === 'important' ? t('home.notif.importantAnnouncement') : t('home.notif.announcement'),
       body: toPlainText(announcement.text).slice(0, 240),
       action: null,
       dedupeMs: 7 * 24 * 60 * 60 * 1000,
@@ -377,11 +379,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   useEffect(() => {
     if (!whatsNew || whatsNew.length === 0) return;
     const body = whatsNew.length === 1
-      ? `"${whatsNew[0].name}" was updated to v${whatsNew[0].version}.`
-      : `${whatsNew.length} question banks were updated with new content.`;
+      ? t('home.notif.bankUpdatedOne', { name: whatsNew[0].name, version: whatsNew[0].version })
+      : t('home.notif.bankUpdatedMany', { n: whatsNew.length });
     pushNotification({
       type: 'feature',
-      title: 'New content available',
+      title: t('home.notif.newContent'),
       body,
       action: { screen: 'library' },
       dedupeMs: 3 * 24 * 60 * 60 * 1000,
@@ -392,10 +394,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const replies = unseenReplies || [];
   const fixedReply = replies.find(r => r.status === 'fixed');
   const replyMsg = fixedReply
-    ? `Your report${fixedReply.questionId ? ` on ${fixedReply.questionId}` : ''} was fixed: thank you!`
+    ? (fixedReply.questionId ? t('home.reply.fixedOn', { id: fixedReply.questionId }) : t('home.reply.fixed'))
     : (replies.length === 1
-        ? 'An admin replied to your feedback.'
-        : `An admin responded to ${replies.length} of your reports.`);
+        ? t('home.reply.one')
+        : t('home.reply.many', { n: replies.length }));
 
   // Focus row (Weak area + Syllabus coverage). Computed once here so it can
   // render in TWO places without duplicating the logic: in the left status
@@ -422,7 +424,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
     if (worstWeak) {
       tiles.push(
-        <Tip key="weak" title="Weak area" text="The topic where your accuracy is lowest right now. Tap to drill all your weak topics, the questions you’ve got wrong come back first.">
+        <Tip key="weak" title={t('home.weakArea')} text={t('home.weakAreaTip')}>
         <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
               onClick={() => onNavigate({ screen: 'weak-areas' })}
               onContextMenu={(e) => e.preventDefault()}
@@ -433,14 +435,14 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <AlertCircle size={16} color="#FFF" />
             </div>
             <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-              Weak area
+              {t('home.weakArea')}
             </div>
           </div>
           <div className="font-display text-sm font-semibold leading-tight" style={{ color: '#FFF', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
             {topicName(worstWeak.topic)}
           </div>
           <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-            {Math.round(worstWeak.accuracy * 100)}% accuracy
+            {t('home.pctAccuracy', { pct: Math.round(worstWeak.accuracy * 100) })}
           </div>
         </Card>
         </Tip>
@@ -455,7 +457,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       const showWarning = untouchedCount > 0;
       const sc = showWarning ? T.accent : T.primary;
       tiles.push(
-        <Tip key="untouched" title="Syllabus coverage" text="How much of the whole syllabus you’ve touched. Tap for the topic-by-topic breakdown, what you’ve started, what’s mastered, and what’s still untouched.">
+        <Tip key="untouched" title={t('home.syllabusCoverage')} text={t('home.syllabusCoverageTip')}>
         <Card className="p-3.5 cursor-pointer no-tap-highlight pressable press-safe"
               onClick={() => onNavigate({ screen: 'coverage' })}
               onContextMenu={(e) => e.preventDefault()}
@@ -466,25 +468,25 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <Activity size={16} color="#FFF" />
             </div>
             <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-              Syllabus
+              {t('home.syllabus')}
             </div>
           </div>
           {showWarning ? (
             <>
               <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
-                {untouchedCount} topic{untouchedCount === 1 ? '' : 's'}
+                {untouchedCount === 1 ? t('home.topicOne') : t('home.topicMany', { n: untouchedCount })}
               </div>
               <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                not started yet
+                {t('home.notStartedYet')}
               </div>
             </>
           ) : (
             <>
               <div className="font-display text-sm font-semibold" style={{ color: '#FFF' }}>
-                All topics
+                {t('home.allTopics')}
               </div>
               <div className="text-[11px] mt-0.5" style={{ color: 'rgba(255,255,255,0.82)' }}>
-                view the breakdown
+                {t('home.viewBreakdown')}
               </div>
             </>
           )}
@@ -525,12 +527,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                       transform: barHidden ? 'translateY(-100%)' : 'translateY(0)',
                       transition: 'transform .28s cubic-bezier(.22,.61,.36,1)' }}>
           <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-2.5 max-w-md md:max-w-3xl lg:max-w-6xl mx-auto">
-            <Tip title="Menu" text="Every section of the app, study, progress, tools, learning and help, one swipe or tap away. On Home, swipe right anywhere to open it.">
+            <Tip title={t('nav.drawer.menu')} text={t('home.menuTip')}>
               <button onClick={onOpenMenu}
                       className="no-tap-highlight flex items-center gap-2 p-2 -ml-2 rounded-xl active:bg-black/5"
-                      aria-label="Open menu">
+                      aria-label={t('nav.openMenu')}>
                 <Menu size={22} style={{ color: T.ink }} />
-                <span className="text-sm font-medium" style={{ color: T.inkSoft }}>Menu</span>
+                <span className="text-sm font-medium" style={{ color: T.inkSoft }}>{t('nav.drawer.menu')}</span>
               </button>
             </Tip>
             <div className="flex items-center gap-1">
@@ -538,10 +540,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   not the shared TopBar). Same leftmost slot as elsewhere. */}
               <NoteButton />
               {onOpenNotifications && (
-                <Tip title="Today" text="Your daily briefing, what's due for revision, reminders, fresh achievements and study insights.">
+                <Tip title={t('home.todayTipTitle')} text={t('home.todayTip')}>
                 <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
                         className="no-tap-highlight relative p-2 rounded-full active:bg-black/5 pressable"
-                        aria-label="Notifications">
+                        aria-label={t('nav.notifications')}>
                   {unreadNotifCount > 0
                     ? <BellRing size={20} style={{ color: T.primary }} />
                     : <Bell size={20} style={{ color: T.muted }} />}
@@ -554,9 +556,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 </button>
                 </Tip>
               )}
-              <Tip title="Settings" text="Account, themes, reminders, notifications, sound, sidebar gestures, backups and more.">
+              <Tip title={t('nav.tabs.settings')} text={t('home.settingsTip')}>
                 <button onClick={() => onNavigate({ screen: 'settings' })}
-                        className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Settings">
+                        className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label={t('nav.tabs.settings')}>
                   <SettingsIcon size={20} style={{ color: T.muted }} />
                 </button>
               </Tip>
@@ -585,16 +587,16 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <UserPlus size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold" style={{ color: T.ink }}>You're exploring as a guest</div>
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>{t('home.guestTitle')}</div>
               <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-                Sign in to save your progress, sync across devices, and unlock the leaderboard & library.
+                {t('home.guestBody')}
               </div>
               <div className="flex items-center gap-2 mt-2.5">
-                <Button size="sm" onClick={onGuestSignIn}>Sign in / Create account</Button>
+                <Button size="sm" onClick={onGuestSignIn}>{t('home.guestCta')}</Button>
                 <button onClick={onDismissGuestBanner}
                         className="no-tap-highlight text-xs font-medium px-2 py-1.5 rounded-lg active:bg-black/5"
                         style={{ color: T.muted }}>
-                  Not now
+                  {t('common.notNow')}
                 </button>
               </div>
             </div>
@@ -617,9 +619,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <Ticket size={18} style={{ color: T.accent }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold" style={{ color: T.ink }}>Invite-only launch is coming</div>
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>{t('home.waitlistTitle')}</div>
               <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-                Reserve your founding-member seat on the waitlist, early batches get everything free.
+                {t('home.waitlistBody')}
               </div>
             </div>
             <ChevronRight size={16} className="flex-shrink-0" style={{ color: T.muted }} />
@@ -642,7 +644,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               </div>
               <div className="min-w-0 flex-1">
                 <div className="text-xs font-semibold mb-0.5" style={{ color: annAccent }}>
-                  {important ? 'Important' : 'Announcement'}
+                  {important ? t('home.important') : t('home.notif.announcement')}
                 </div>
                 <RichText text={announcement.text} className="text-sm" style={{ color: T.inkSoft }} />
               </div>
@@ -665,9 +667,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               {fixedReply ? <Check size={14} color="#FFF" /> : <AlertCircle size={14} color="#FFF" />}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold mb-0.5" style={{ color: T.success }}>Feedback update</div>
+              <div className="text-xs font-semibold mb-0.5" style={{ color: T.success }}>{t('home.feedbackUpdate')}</div>
               <div className="text-sm leading-snug" style={{ color: T.inkSoft }}>
-                {replyMsg} <span className="underline">View</span>
+                {replyMsg} <span className="underline">{t('common.view')}</span>
               </div>
             </div>
             <button onClick={(e) => { e.stopPropagation(); onDismissReplies(); }}
@@ -689,9 +691,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <span style={{ fontSize: 14 }}>🛡️</span>
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>Streak saved</div>
+              <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>{t('home.streakSaved')}</div>
               <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>
-                You missed yesterday: your grace day covered it. Keep going today to keep the streak alive.
+                {t('home.streakSavedBody')}
               </div>
             </div>
             <button onClick={onDismissGrace}
@@ -712,11 +714,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <Sparkles size={14} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>What's new</div>
+              <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>{t('home.whatsNew')}</div>
               <div className="text-xs leading-snug" style={{ color: T.inkSoft }}>
                 {whatsNew.length === 1
-                  ? `"${whatsNew[0].name}" updated to v${whatsNew[0].version}`
-                  : `${whatsNew.length} banks updated`}: tap to view
+                  ? t('home.whatsNewOne', { name: whatsNew[0].name, version: whatsNew[0].version })
+                  : t('home.whatsNewMany', { n: whatsNew.length })}
               </div>
             </div>
             <button onClick={(e) => { e.stopPropagation(); onDismissWhatsNew(); }}
@@ -738,7 +740,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       <div className="mb-6 mt-2 lg:mt-4">
         <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NurseHolic™</div>
         <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
-          Good {timeOfDay}{userName ? `, ${userName}` : ''}
+          {t('home.greeting.' + timeOfDay)}{userName ? `, ${userName}` : ''}
         </h1>
       </div>
 
@@ -778,7 +780,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         <Card className="px-2 py-4 text-center relative cursor-pointer no-tap-highlight pressable"
               onClick={() => onNavigate({ screen: 'stats' })}>
           {data.stats.streakCurrent > 0 && data.stats.streakGraceAvailable !== false && (
-            <span className="absolute top-2 right-2 text-[10px]" title="One missed day allowed">🛡️</span>
+            <span className="absolute top-2 right-2 text-[10px]" title={t('home.stats.graceTitle')}>🛡️</span>
           )}
           <div className="w-9 h-9 mx-auto rounded-full flex items-center justify-center mb-2"
                style={{ background: T.accent + '15' }}>
@@ -787,13 +789,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               : <Flame size={16} style={{ color: T.accent }} />}
           </div>
           <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>
-            Streak
+            {t('home.stats.streak')}
           </div>
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {data.stats.streakCurrent}
           </div>
           <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
-            day{data.stats.streakCurrent === 1 ? '' : 's'}
+            {data.stats.streakCurrent === 1 ? t('home.stats.day') : t('home.stats.days')}
           </div>
         </Card>
 
@@ -805,13 +807,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <Target size={16} style={{ color: T.primary }} />
           </div>
           <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>
-            Accuracy
+            {t('home.stats.accuracy')}
           </div>
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {accuracy}<span className="text-base font-medium">%</span>
           </div>
           <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
-            {data.stats.totalAttempted} done
+            {t('home.stats.done', { n: data.stats.totalAttempted })}
           </div>
         </Card>
 
@@ -823,13 +825,13 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <Sparkles size={16} style={{ color: T.success }} />
           </div>
           <div className="text-[10px] uppercase tracking-wider font-semibold mb-1" style={{ color: T.muted }}>
-            Today
+            {t('home.stats.today')}
           </div>
           <div className="font-display text-2xl font-semibold leading-none mb-1" style={{ color: T.ink }}>
             {todayCount}
           </div>
           <div className="text-[10px] font-medium" style={{ color: T.inkSoft }}>
-            question{todayCount === 1 ? '' : 's'}
+            {todayCount === 1 ? t('home.stats.question') : t('home.stats.questions')}
           </div>
         </Card>
       </div>
@@ -842,7 +844,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <div className="flex items-center gap-2">
                 <BarChart2 size={16} style={{ color: T.primary }} />
                 <div className="font-display text-sm font-semibold" style={{ color: T.ink }}>
-                  Your week · {weeklySummary.dateRange}
+                  {t('home.week.title', { range: weeklySummary.dateRange })}
                 </div>
               </div>
               <button onClick={dismissWeeklySummary}
@@ -854,17 +856,17 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
             {weeklySummary.thisAnswered < 5 ? (
               <div className="text-sm" style={{ color: T.muted }}>
-                Keep going: answer a few questions each day to unlock your weekly summary.
+                {t('home.week.keepGoing')}
               </div>
             ) : (
               <>
                 <div className="flex items-center gap-3 mb-2 flex-wrap">
                   <div className="text-sm font-semibold" style={{ color: T.ink }}>
-                    {weeklySummary.thisAnswered} questions
+                    {t('home.week.questions', { n: weeklySummary.thisAnswered })}
                   </div>
                   {weeklySummary.thisAcc !== null && (
                     <div className="text-sm font-semibold" style={{ color: T.ink }}>
-                      · {weeklySummary.thisAcc}% accuracy
+                      {t('home.week.accuracy', { pct: weeklySummary.thisAcc })}
                     </div>
                   )}
                 </div>
@@ -876,7 +878,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                     return (
                       <div className="text-xs mb-2 font-medium"
                            style={{ color: diff > 0 ? T.success : T.error }}>
-                        {diff > 0 ? '▲' : '▼'} {Math.abs(diff)}% accuracy vs last week
+                        {diff > 0 ? '\u25b2' : '\u25bc'} {t('home.week.vsLastWeek', { pct: Math.abs(diff) })}
                       </div>
                     );
                   })()
@@ -884,7 +886,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
                 {weeklySummary.improvedTopic && (
                   <div className="text-xs mb-1" style={{ color: T.muted }}>
-                    Improved: <span style={{ color: T.success, fontWeight: 600 }}>
+                    {t('home.week.improved')} <span style={{ color: T.success, fontWeight: 600 }}>
                       {topicName(weeklySummary.improvedTopic)}
                     </span>
                   </div>
@@ -894,7 +896,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   <div className="flex items-center justify-between gap-2 mt-3 pt-3"
                        style={{ borderTop: `1px solid ${T.borderSoft}` }}>
                     <div className="text-xs" style={{ color: T.muted }}>
-                      Focus next: <span style={{ color: T.ink, fontWeight: 600 }}>
+                      {t('home.week.focusNext')} <span style={{ color: T.ink, fontWeight: 600 }}>
                         {topicName(weeklySummary.weakestTopic)}
                       </span>
                     </div>
@@ -902,7 +904,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                                                         topic: weeklySummary.weakestTopic, count: 10 })}
                             className="no-tap-highlight flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold pressable"
                             style={{ background: T.primary, color: '#FFF' }}>
-                      Start <ChevronRight size={12} />
+                      {t('common.start')} <ChevronRight size={12} />
                     </button>
                   </div>
                 )}
@@ -951,10 +953,10 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         // a spaced-review test by accident.
         const startReview = () => requestConfirm({
           icon: <RotateCcw size={20} style={{ color: T.success }} />,
-          title: 'Start your review test?',
-          body: `${due.length} question${due.length === 1 ? '' : 's'} are due for spaced revision. You'll get instant feedback as you go.`,
-          confirmLabel: 'Start review',
-          cancelLabel: 'Not now',
+          title: t('home.review.confirmTitle'),
+          body: due.length === 1 ? t('home.review.confirmBodyOne') : t('home.review.confirmBodyMany', { n: due.length }),
+          confirmLabel: t('home.review.start'),
+          cancelLabel: t('common.notNow'),
           tone: 'primary',
           onConfirm: () => onNavigate({ screen: 'quiz', mode: 'review-due' }),
         });
@@ -968,31 +970,31 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 </div>
                 <div className="min-w-0">
                   <div className="font-display text-base font-semibold flex items-center gap-1.5" style={{ color: T.ink }}>
-                    Review due
+                    {t('home.review.due')}
                     <button onClick={() => onShowReviewInfo && onShowReviewInfo()}
                             className="no-tap-highlight p-0.5 -m-0.5 rounded-full"
-                            aria-label="What is this?">
+                            aria-label={t('home.review.whatIsThis')}>
                       <HelpCircle size={13} style={{ color: T.muted }} />
                     </button>
                   </div>
                   <div className="text-xs truncate" style={{ color: T.inkSoft }}>
-                    {due.length} question{due.length === 1 ? '' : 's'} for spaced revision
+                    {due.length === 1 ? t('home.review.subOne') : t('home.review.subMany', { n: due.length })}
                   </div>
                 </div>
               </div>
               <button onClick={() => onDismissReviewToday && onDismissReviewToday()}
                       className="no-tap-highlight p-2 -m-1 rounded-full active:bg-black/5 flex-shrink-0"
-                      aria-label="Hide for today"
-                      title="Hide for today">
+                      aria-label={t('home.review.hideToday')}
+                      title={t('home.review.hideToday')}>
                 <X size={16} style={{ color: T.muted }} />
               </button>
             </div>
             <button onClick={startReview}
-                    aria-label="Start review test"
+                    aria-label={t('home.review.startAria')}
                     className="no-tap-highlight w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-semibold active:scale-[0.98] transition"
                     style={{ background: T.success, color: '#FFF', boxShadow: `0 4px 12px ${T.success}55` }}>
               <Play size={15} fill="#FFF" strokeWidth={0} />
-              Start review
+              {t('home.review.start')}
             </button>
           </Card>
         );
@@ -1056,29 +1058,29 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 <div className="min-w-0 flex-1" style={{ color: examPassed ? T.muted : '#FFF' }}>
                   {examPassed ? (
                     <>
-                      <div className="font-display text-base font-semibold">Exam date passed</div>
-                      <div className="text-xs mt-0.5">Tap to set a new date</div>
+                      <div className="font-display text-base font-semibold">{t('home.exam.passed')}</div>
+                      <div className="text-xs mt-0.5">{t('home.exam.setNewDate')}</div>
                     </>
                   ) : daysLeft === 0 ? (
                     <>
-                      <div className="font-display text-base font-semibold">Exam day, good luck</div>
+                      <div className="font-display text-base font-semibold">{t('home.exam.examDayLuck')}</div>
                       <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.8)' }}>{niceDate}</div>
                     </>
                   ) : (
                     <>
                       <div className="flex items-baseline gap-2">
                         <div className="font-display text-2xl font-semibold leading-none">{daysLeft}</div>
-                        <div className="text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>day{daysLeft === 1 ? '' : 's'} to {niceDate}</div>
+                        <div className="text-sm" style={{ color: 'rgba(255,255,255,0.85)' }}>{daysLeft === 1 ? t('home.exam.dayTo', { date: niceDate }) : t('home.exam.daysTo', { date: niceDate })}</div>
                       </div>
                       <div className="text-xs mt-1.5" style={{ color: 'rgba(255,255,255,0.85)' }}>
                         {perDay > 0 ? (
                           <>
-                            Today: <span className="font-semibold">{todayCount2}/{perDay}</span>{' '}
+                            {t('home.exam.todayLabel')} <span className="font-semibold">{todayCount2}/{perDay}</span>{' '}
                             <span style={{ opacity: 0.75 }}>
-                              ({todayProgress}% · {manualTarget ? 'your goal' : 'auto'})
+                              ({todayProgress}% · {manualTarget ? t('home.exam.yourGoal') : t('home.exam.auto')})
                             </span>
                           </>
-                        ) : 'Keep revising.'}
+                        ) : t('home.exam.keepRevising')}
                       </div>
                     </>
                   )}
@@ -1090,7 +1092,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <button onClick={(e) => { e.stopPropagation(); onNavigate({ screen: 'study-plan' }); }}
                       className="no-tap-highlight mt-3 w-full inline-flex items-center justify-center gap-1.5 text-[12px] font-semibold rounded-xl py-2 active:scale-[0.98] transition"
                       style={{ background: 'rgba(255,255,255,0.20)', color: '#FFF' }}>
-                <Target size={13} /> Open study plan
+                <Target size={13} /> {t('home.exam.openStudyPlan')}
               </button>
             )}
           </Card>
@@ -1130,7 +1132,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           tap-and-hold INFO tip is restored here (issues #2) — it is
           glitch-free now that the bubble carries no backdrop-filter and the
           card suppresses the native long-press chrome. */}
-      <Tip title="Drill Tests" text="All your test modes in one place. Quick, Topic Wise, Mock, Dosage and Advanced, plus previous-year papers.">
+      <Tip title={t('home.drill.title')} text={t('home.drill.tip')}>
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'drill-tests' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${lightenHex(T.primary, 0.12)} 0%, ${T.primary} 60%, ${darkenHex(T.primary, 0.12)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.45)}38` }}>
@@ -1139,9 +1141,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <Dumbbell size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Drill Tests</div>
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>{t('home.drill.title')}</div>
             <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>
-              Quick {'\u00b7'} Topic Wise {'\u00b7'} Mock {'\u00b7'} Advanced {'\u00b7'} Dosage {'\u00b7'} PYQ
+              {t('home.drill.sub')}
             </div>
           </div>
           <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
@@ -1159,7 +1161,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           now shares the THEME PRIMARY as a tonal pair: Drill is the brighter
           tone, Learn the deeper one — cohesive with the theme grading in every
           palette, while staying clearly distinct from Drill. */}
-      <Tip title="Learn topic wise" text="Concept cards that teach each topic, learn the material before you test yourself on it.">
+      <Tip title={t('home.learn.title')} text={t('home.learn.tip')}>
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'learn-topics' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(140deg, ${T.primary} 0%, ${darkenHex(T.primary, 0.26)} 55%, ${darkenHex(T.primary, 0.42)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(T.primary, 0.5)}40` }}>
@@ -1168,8 +1170,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
             <Brain size={20} color="#FFF" />
           </div>
           <div className="flex-1 min-w-0">
-            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>Learn topic wise</div>
-            <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>Concept cards {'\u00b7'} learn before you test</div>
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>{t('home.learn.title')}</div>
+            <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>{t('home.learn.sub')}</div>
           </div>
           <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
         </div>
@@ -1184,7 +1186,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* Level Up — the gamification hub. A LIVE entry: current level, prestige
           tier and XP-to-next progress. Groups the clinical games + the Knowledge
           Map under one progression spine. */}
-      <Tip title="Level Up" text="Your progression hub, play the clinical games and the Knowledge Map to earn XP, climb levels and unlock prestige tiers.">
+      <Tip title={t('home.levelUp.title')} text={t('home.levelUp.tip')}>
       <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'level-up' })}
             onContextMenu={(e) => e.preventDefault()}
             style={{ background: `linear-gradient(135deg, ${luTier.accent} 0%, ${luTier.accent}CC 50%, rgba(0,0,0,0.5) 130%)`,
@@ -1197,11 +1199,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-              <div className="font-display text-base font-semibold" style={{ color: '#FFF' }}>Level Up</div>
+              <div className="font-display text-base font-semibold" style={{ color: '#FFF' }}>{t('home.levelUp.title')}</div>
               <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
                     style={{ background: 'rgba(255,255,255,0.2)', color: '#FFF' }}>{luTier.title}</span>
             </div>
-            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Clinical games {'·'} Knowledge Map {'·'} earn XP</div>
+            <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>{t('home.levelUp.sub')}</div>
           </div>
           <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
         </div>
@@ -1211,8 +1213,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           </div>
           <div className="text-[10px] mt-1.5 font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>
             {luProg.level >= 100
-              ? `${luProg.xp.toLocaleString()} XP · max level`
-              : `${luProg.into.toLocaleString()} / ${luProg.span.toLocaleString()} XP to Level ${luProg.level + 1}`}
+              ? t('home.levelUp.maxLevel', { xp: luProg.xp.toLocaleString() })
+              : t('home.levelUp.toNext', { into: luProg.into.toLocaleString(), span: luProg.span.toLocaleString(), next: luProg.level + 1 })}
           </div>
         </div>
       </Card>

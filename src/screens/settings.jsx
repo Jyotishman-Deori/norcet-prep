@@ -9,10 +9,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Cloud, CloudOff, Copy, Download, Edit3,
-  Fingerprint, FileText, GraduationCap, Hand, Heart, Lock, LogIn, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
+  Fingerprint, FileText, GraduationCap, Hand, Heart, Languages, Lock, LogIn, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
   Shield, Sigma, SquarePlus, Trash2, User, UserPlus, Volume2
 } from 'lucide-react';
-import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
+import { useTheme, useProfile, useData, useI18n } from '../lib/app-context.jsx';
+import { getLocale } from '../lib/i18n.js';
+import SettingsLanguage from './settings-language.jsx';
 import { Card, Button, TopBar, requestSupport, requestConfirm } from '../ui/primitives.jsx';
 import { LegalScreen } from './legal.jsx';
 import { Tip } from '../ui/tooltip.jsx';
@@ -43,6 +45,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile } = useProfile();
+  const { t, lang } = useI18n();
   // #21/#29 — per-device UI prefs (hydrated at App boot; re-read here so a
   // fresh Settings mount always reflects storage truth).
   const [gestures, setGestures] = useState(() => getSidebarGestures());
@@ -179,10 +182,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       const pend = await getPendingSync();
       const stillPending = profile.id in (pend || {});
       setSyncMsg(stillPending
-        ? { ok: false, text: 'Couldn’t reach the cloud just now. Your progress is safe on this device and will back up automatically when you’re back online.' }
-        : { ok: true, text: 'Backed up to the cloud just now.' });
+        ? { ok: false, text: t('settings.sync.msgOffline') }
+        : { ok: true, text: t('settings.sync.msgOk') });
     } catch (e) {
-      setSyncMsg({ ok: false, text: 'Backup didn’t go through, check your connection and try again.' });
+      setSyncMsg({ ok: false, text: t('settings.sync.msgFailed') });
     } finally {
       setSyncBusy(false);
     }
@@ -228,10 +231,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       <Card className="mb-3 p-0 overflow-hidden">
         <button onClick={() => requestConfirm({
                   icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,
-                  title: `Reset ${profile ? `${profile.displayName}'s` : "this profile's"} data?`,
-                  body: "This permanently deletes progress, bookmarks, stats, and custom questions for this profile only. Other profiles are untouched. This cannot be undone, consider downloading a backup first (Settings → Backup).",
-                  confirmLabel: 'Reset data',
-                  cancelLabel: 'Cancel',
+                  title: profile ? t('settings.reset.confirmTitleNamed', { name: profile.displayName }) : t('settings.reset.confirmTitle'),
+                  body: t('settings.reset.confirmBody'),
+                  confirmLabel: t('settings.reset.cta'),
+                  cancelLabel: t('common.cancel'),
                   tone: 'danger',
                   confirmWord: 'RESET',
                   onConfirm: () => onClearAll(),
@@ -241,9 +244,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             <Trash2 size={16} style={{ color: T.error }} />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-medium text-sm" style={{ color: T.error }}>Reset this profile's data</div>
+            <div className="font-medium text-sm" style={{ color: T.error }}>{t('settings.reset.rowTitle')}</div>
             <div className="text-[11px] mt-0.5" style={{ color: T.error, opacity: 0.65 }}>
-              Permanently deletes progress, bookmarks, stats &amp; custom questions
+              {t('settings.reset.rowSub')}
             </div>
           </div>
         </button>
@@ -267,7 +270,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 {onRenameProfile && <Edit3 size={14} style={{ color: 'rgba(255,255,255,0.7)' }} className="flex-shrink-0" />}
               </div>
               <div className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
-                {onRenameProfile ? 'Tap to rename · syncs across devices' : 'Logged in · syncs across devices'}
+                {onRenameProfile ? t('settings.profile.tapToRename') : t('settings.profile.loggedIn')}
               </div>
             </div>
           </div>
@@ -283,14 +286,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Fingerprint size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Account ID</div>
+              <div className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.profile.accountId')}</div>
               <div className="font-mono text-[13px] truncate" style={{ color: T.ink }}>{accountId}</div>
             </div>
             <button onClick={copyAccountId}
                     className="no-tap-highlight flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold flex-shrink-0 active:scale-95 transition"
                     style={{ background: idCopied ? T.success + '18' : T.surfaceWarm, border: `1px solid ${idCopied ? T.success : T.border}`, color: idCopied ? T.success : T.inkSoft }}
-                    aria-label="Copy account ID">
-              {idCopied ? <Check size={14} /> : <Copy size={14} />}{idCopied ? 'Copied' : 'Copy'}
+                    aria-label={t('settings.profile.copyAccountId')}>
+              {idCopied ? <Check size={14} /> : <Copy size={14} />}{idCopied ? t('settings.profile.copied') : t('settings.profile.copy')}
             </button>
           </div>
         </Card>
@@ -304,7 +307,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           <div className="flex items-start gap-2.5">
             <RefreshCw size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
             <div className="text-[12px] leading-relaxed" style={{ color: T.inkSoft }}>
-              <span className="font-semibold" style={{ color: T.ink }}>Backed up &amp; synced.</span> Your progress is saved to your account. On a new phone or laptop, just sign in with the same name &amp; password, everything restores automatically.
+              <span className="font-semibold" style={{ color: T.ink }}>{t('settings.profile.syncedLead')}</span> {t('settings.profile.syncedBody')}
             </div>
           </div>
         </Card>
@@ -324,31 +327,31 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       {/* Session actions — moved to the BOTTOM (owner request 2026-07-06):
           exits live together at the end of the page, right above the
           destructive Reset, instead of interrupting the account cards. */}
-      <div className="mt-7 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Session</div>
+      <div className="mt-7 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.session')}</div>
       <div className="grid grid-cols-2 gap-2 mb-3">
         <Card className="p-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => requestConfirm({
                 icon: <RefreshCw size={18} style={{ color: T.primary }} />,
-                title: 'Switch profile?',
-                body: 'You will be moved to a different profile. Your current progress is saved.',
-                confirmLabel: 'Switch', cancelLabel: 'Cancel', tone: 'primary',
+                title: t('settings.switch.confirmTitle'),
+                body: t('settings.switch.confirmBody'),
+                confirmLabel: t('settings.switch.cta'), cancelLabel: t('common.cancel'), tone: 'primary',
                 onConfirm: () => onSwitchProfile(),
               })}>
           <RefreshCw size={16} style={{ color: T.success }} />
-          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Switch</div>
-          <div className="text-[10px]" style={{ color: T.muted }}>Use a different profile</div>
+          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>{t('settings.switch.cta')}</div>
+          <div className="text-[10px]" style={{ color: T.muted }}>{t('settings.switch.sub')}</div>
         </Card>
         <Card className="p-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => requestConfirm({
                 icon: <LogOut size={18} style={{ color: T.error }} />,
-                title: 'Log out of this profile?',
-                body: 'Your progress is saved and you can log back in anytime. Nothing is deleted.',
-                confirmLabel: 'Log out', cancelLabel: 'Cancel', tone: 'danger',
+                title: t('settings.logout.confirmTitle'),
+                body: t('settings.logout.confirmBody'),
+                confirmLabel: t('settings.logout.cta'), cancelLabel: t('common.cancel'), tone: 'danger',
                 onConfirm: () => onLogout(),
               })}>
           <LogOut size={16} style={{ color: '#D4900A' }} />
-          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>Log out</div>
-          <div className="text-[10px]" style={{ color: T.muted }}>End session on this device</div>
+          <div className="font-display text-sm font-semibold mt-2" style={{ color: T.ink }}>{t('settings.logout.cta')}</div>
+          <div className="text-[10px]" style={{ color: T.muted }}>{t('settings.logout.sub')}</div>
         </Card>
       </div>
       {renderReset()}
@@ -358,7 +361,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   const renderGesturesSub = () => (
     <>
       <div className="text-xs mb-3" style={{ color: T.muted }}>
-        Choose how the sidebar opens and closes. Tapping the backdrop to close is always on.
+        {t('settings.gestures.intro')}
       </div>
       <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => flipGesture('close')}>
         <div className="flex items-center justify-between gap-3">
@@ -367,11 +370,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Hand size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0">
-              <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.gestures.closeTitle')}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 {gestures.close
-                  ? 'Swipe right anywhere while the sidebar is open to close it'
-                  : 'Off: you can still close it by tapping the backdrop or the menu icon'}
+                  ? t('settings.gestures.closeOn')
+                  : t('settings.gestures.closeOff')}
               </div>
             </div>
           </div>
@@ -389,9 +392,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Hand size={18} style={{ color: T.accent, transform: 'scaleX(-1)' }} />
             </div>
             <div className="min-w-0">
-              <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.gestures.openTitle')}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Swipe left <b>anywhere on the home screen</b> to open the sidebar, phone, tablet and iOS.
+                {t('settings.gestures.openSub')}
               </div>
             </div>
           </div>
@@ -409,8 +412,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Lock size={16} style={{ color: T.muted }} />
             </div>
             <div className="min-w-0">
-              <div className="font-medium" style={{ color: T.ink }}>Tap backdrop to close</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Always on: cannot be disabled</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.gestures.backdropTitle')}</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.gestures.backdropSub')}</div>
             </div>
           </div>
           <div className="w-11 h-6 rounded-full p-0.5 flex-shrink-0" style={{ background: T.success, opacity: 0.5 }}>
@@ -448,7 +451,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       {/* Guests: the real fix is signing in (that IS the cloud backup). */}
       {isGuest ? (
         <Button onClick={() => onGuestSignIn && onGuestSignIn()} size="lg" className="w-full" icon={<LogIn size={17} />}>
-          Sign in to turn on cloud backup
+          {t('settings.sync.signInCta')}
         </Button>
       ) : (
         <>
@@ -461,8 +464,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                           : <RefreshCw size={18} style={{ color: T.primary }} />}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-medium" style={{ color: T.ink }}>{syncBusy ? 'Backing up…' : 'Back up now'}</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>Push your latest progress to the cloud right now</div>
+                <div className="font-medium" style={{ color: T.ink }}>{syncBusy ? t('settings.sync.backingUp') : t('settings.sync.backUpNow')}</div>
+                <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.sync.backUpNowSub')}</div>
               </div>
             </div>
           </Card>
@@ -473,7 +476,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             </Card>
           )}
           <div className="text-[11px] leading-relaxed px-1 mt-1" style={{ color: T.muted }}>
-            Backup is automatic: everything you do saves to the cloud on its own, including your Knowledge-Map notes. There are no files to download or lose. To move to a new phone, just install the app and sign in.
+            {t('settings.sync.footer')}
           </div>
         </>
       )}
@@ -483,10 +486,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
 
   const renderLegalSub = () => {
     const LEGAL_ROWS = [
-      { key: 'privacy',    Icon: Shield,      title: 'Privacy Policy',         sub: "What we store and how it's used" },
-      { key: 'terms',      Icon: FileText,    title: 'Terms of Use',           sub: 'The rules for using the app' },
-      { key: 'guidelines', Icon: Heart,       title: 'Community Guidelines',   sub: 'How we keep FAQ threads and the leaderboard friendly' },
-      { key: 'refunds',    Icon: RotateCcw,   title: 'Cancellation & Refunds', sub: 'How paid plans will work (everything is free today)' },
+      { key: 'privacy',    Icon: Shield,      title: t('auth.privacyPolicy'),          sub: t('settings.legal.privacySub') },
+      { key: 'terms',      Icon: FileText,    title: t('auth.termsOfUse'),             sub: t('settings.legal.termsSub') },
+      { key: 'guidelines', Icon: Heart,       title: t('settings.legal.guidelines'),   sub: t('settings.legal.guidelinesSub') },
+      { key: 'refunds',    Icon: RotateCcw,   title: t('settings.legal.refunds'),      sub: t('settings.legal.refundsSub') },
     ];
     return (
       <div className="space-y-2.5">
@@ -510,10 +513,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   };
 
   const SUB_PAGES = {
-    profile:  { title: 'Profile',          render: renderProfileSub },
-    gestures: { title: 'Sidebar gestures', render: renderGesturesSub },
-    backup:   { title: 'Sync & Backup',    render: renderSyncSub },
-    legal:    { title: 'Legal',            render: renderLegalSub },
+    profile:  { title: t('settings.sub.profile'),  render: renderProfileSub },
+    gestures: { title: t('settings.sub.gestures'), render: renderGesturesSub },
+    backup:   { title: t('settings.sub.backup'),   render: renderSyncSub },
+    language: { title: t('settings.language.title'), render: () => <SettingsLanguage /> },
+    legal:    { title: t('settings.sub.legal'),    render: renderLegalSub },
   };
 
   if (legalView) return <LegalScreen doc={legalView} onBack={() => setLegalView(null)} />;
@@ -523,7 +527,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
     const sp = SUB_PAGES[subPage];
     return (
       <div className="anim-fadeup">
-        <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${sp.title}`, noHelp: subPage === 'legal' }} />
+        <TopBar title={sp.title} onBack={closeSub} feedback={{ screen: `Settings · ${subPage}`, noHelp: subPage === 'legal' }} />
         <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-4 pb-24">
           {sp.render()}
         </div>
@@ -533,14 +537,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Settings" onBack={onBack} feedback={{ screen: "Settings" }} desktopHidden />
+      <TopBar title={t('nav.tabs.settings')} onBack={onBack} feedback={{ screen: "Settings" }} desktopHidden />
       <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-4 pb-24">
 
         {/* Profile section */}
         {isGuest && (
           <>
-            <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Account</div>
-            <Tip title="Create a profile" text="Right now you’re a guest, your progress lives only on this device. Create a free profile to back it up and sync across phones.">
+            <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.account')}</div>
+            <Tip title={t('settings.guest.tipTitle')} text={t('settings.guest.tip')}>
             <Card className="p-4 mb-6 cursor-pointer no-tap-highlight pressable"
                   style={{ background: T.primary, border: 'none' }}
                   onClick={onGuestSignIn}>
@@ -550,9 +554,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                   <UserPlus size={20} color="#FFF" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="font-display text-lg font-semibold" style={{ color: '#FFF' }}>Sign in / Create account</div>
+                  <div className="font-display text-lg font-semibold" style={{ color: '#FFF' }}>{t('home.guestCta')}</div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.8)' }}>
-                    You're a guest: save your progress &amp; sync across devices
+                    {t('settings.guest.sub')}
                   </div>
                 </div>
                 <ChevronRight size={18} style={{ color: 'rgba(255,255,255,0.8)' }} className="flex-shrink-0" />
@@ -566,10 +570,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         )}
         {!isGuest && profile && (
           <>
-            <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Profile</div>
-            <SubPageCard icon={User} iconBg={T.primary} title="Profile"
-                         sub={`${profile.displayName} · rename, switch, backup, reset`}
-                         tip="Rename yourself, switch to another profile on this device, back up your data, or reset this profile, all in one focused page."
+            <div className="mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sub.profile')}</div>
+            <SubPageCard icon={User} iconBg={T.primary} title={t('settings.sub.profile')}
+                         sub={`${profile.displayName} · ${t('settings.profile.rowSub')}`}
+                         tip={t('settings.profile.rowTip')}
                          onClick={() => openSub('profile')} />
           </>
         )}
@@ -577,17 +581,17 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* "Share NurseHolic" is now its OWN labelled section, clearly
             separated from the Profile/Account card above (own header + section
             spacing). For guests the Reset action renders below this section. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Share</div>
-        <Tip title="Share NurseHolic" text="Your personal invite, link, QR and a one-tap WhatsApp message. Friends who join through it appear on your leaderboard.">
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.share')}</div>
+        <Tip title={t('settings.share.title')} text={t('settings.share.tip')}>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenShare}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>
               <Share2 size={18} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Share NurseHolic</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.share.title')}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Your personal invite link, QR code &amp; WhatsApp share
+                {t('settings.share.sub')}
               </div>
             </div>
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
@@ -608,8 +612,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             just stops nudging her. */}
         {onToggleReviewReminders && (
           <>
-            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Reminders</div>
-            <Tip title="Spaced revision" text="Spaced repetition is the biggest lever for long-term memory. This surfaces a ‘Review due’ card on Home exactly when each topic needs another pass.">
+            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.reminders')}</div>
+            <Tip title={t('settings.spaced.tipTitle')} text={t('settings.spaced.tip')}>
             <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
                   onClick={() => onToggleReviewReminders(!(data.preferences && data.preferences.reviewRemindersEnabled !== false))}>
               <div className="flex items-center justify-between gap-3">
@@ -619,11 +623,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                     <RotateCcw size={18} style={{ color: T.success }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium" style={{ color: T.ink }}>Spaced revision reminders</div>
+                    <div className="font-medium" style={{ color: T.ink }}>{t('settings.spaced.title')}</div>
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                       {data.preferences && data.preferences.reviewRemindersEnabled !== false
-                        ? "Show the green 'Review due' card on Home when questions are ready for review"
-                        : "Hidden: the spaced-repetition engine still tracks dates, just doesn't nudge you"}
+                        ? t('settings.spaced.on')
+                        : t('settings.spaced.off')}
                     </div>
                   </div>
                 </div>
@@ -646,7 +650,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             because web push simply doesn't exist there until installed. */}
         {onSetDailyReminder && (
           <>
-            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Notifications</div>
+            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.notifications')}</div>
 
             {pushSupport.level === 'ios-install' && !reminderOn ? (
               /* iOS Safari tab: honest install steps instead of a dead toggle. */
@@ -656,27 +660,27 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                     <Bell size={18} style={{ color: T.accent }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
+                    <div className="font-medium" style={{ color: T.ink }}>{t('settings.sections.notifications')}</div>
                     <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.muted }}>
-                      iPhones only allow notifications from installed apps. Install first: it takes ten seconds:
+                      {t('settings.notif.iosIntro')}
                     </div>
                     <div className="mt-2.5 space-y-1.5 text-xs" style={{ color: T.inkSoft }}>
                       <div className="flex items-center gap-2">
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                               style={{ background: T.accent + '22', color: T.accent }}>1</span>
-                        Tap <Share size={13} style={{ color: T.accent }} aria-label="Share" /> <b>Share</b> in Safari's toolbar
+                        {t('settings.notif.iosStep1Pre')} <Share size={13} style={{ color: T.accent }} aria-label={t('settings.sections.share')} /> <b>{t('settings.notif.iosShareWord')}</b> {t('settings.notif.iosStep1Post')}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0"
                               style={{ background: T.accent + '22', color: T.accent }}>2</span>
-                        Choose <SquarePlus size={13} style={{ color: T.accent }} aria-label="Add" /> <b>Add to Home Screen</b>, open the app, and flip this switch
+                        {t('settings.notif.iosStep2Pre')} <SquarePlus size={13} style={{ color: T.accent }} aria-label={t('settings.notif.iosAddWord')} /> <b>{t('settings.notif.iosAddToHome')}</b>{t('settings.notif.iosStep2Post')}
                       </div>
                     </div>
                   </div>
                 </div>
               </Card>
             ) : (
-              <Tip title="Notifications" text="One switch for everything: a gentle daily nudge if you haven’t studied by your chosen time, plus a ping when new question sets drop. Fine-tune both below.">
+              <Tip title={t('settings.sections.notifications')} text={t('settings.notif.tip')}>
               <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onToggleReminder}>
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -684,11 +688,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                       <BellRing size={18} style={{ color: T.accent }} />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium" style={{ color: T.ink }}>Notifications</div>
+                      <div className="font-medium" style={{ color: T.ink }}>{t('settings.sections.notifications')}</div>
                       <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                         {reminderOn
-                          ? `On: daily nudge at ${reminder.time || '20:00'}${reminder.contentPush === false ? '' : ' + new-content pings'}`
-                          : 'One tap: a daily study nudge + a ping when new questions drop'}
+                          ? t('settings.notif.onSub', { time: reminder.time || '20:00' }) + (reminder.contentPush === false ? '' : ' ' + t('settings.notif.plusPings'))
+                          : t('settings.notif.offSub')}
                       </div>
                     </div>
                   </div>
@@ -705,8 +709,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Card className="p-4 mb-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="text-sm font-medium" style={{ color: T.ink }}>Nudge time</div>
-                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>Only fires if you haven't studied by then</div>
+                    <div className="text-sm font-medium" style={{ color: T.ink }}>{t('settings.notif.nudgeTime')}</div>
+                    <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.notif.nudgeTimeSub')}</div>
                   </div>
                   <input type="time" value={reminder.time || '20:00'}
                          onChange={(e) => onSetDailyReminder({ time: e.target.value })}
@@ -720,9 +724,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                      style={{ borderTop: `1px solid ${T.borderSoft}` }}
                      onClick={() => onSetDailyReminder({ contentPush: reminder.contentPush === false })}>
                   <div className="min-w-0">
-                    <div className="text-sm font-medium" style={{ color: T.ink }}>New content alerts</div>
+                    <div className="text-sm font-medium" style={{ color: T.ink }}>{t('settings.notif.contentAlerts')}</div>
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                      {reminder.contentPush === false ? 'Off: no pings about new question sets' : 'A ping when the team adds a new question set'}
+                      {reminder.contentPush === false ? t('settings.notif.contentOff') : t('settings.notif.contentOn')}
                     </div>
                   </div>
                   <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0" style={{ background: reminder.contentPush !== false ? T.success : T.border }}>
@@ -736,14 +740,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             {!reminderOn && drPerm === 'denied' && (
               <Card className="p-3 mb-3" style={{ background: T.errorSoft, border: `1px solid ${T.error}30` }}>
                 <div className="text-xs" style={{ color: T.error }}>
-                  Notifications are blocked for this app. To turn them on, allow notifications for this site in your browser settings, then try again.
+                  {t('settings.notif.blocked')}
                 </div>
               </Card>
             )}
             {!reminderOn && drPerm === 'unsupported' && pushSupport.level === 'unsupported' && (
               <Card className="p-3 mb-3" style={{ background: T.surfaceWarm }}>
                 <div className="text-xs" style={{ color: T.muted }}>
-                  This browser doesn't support notifications. Try installing the app to your home screen.
+                  {t('settings.notif.unsupported')}
                 </div>
               </Card>
             )}
@@ -759,15 +763,15 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                       <Download size={18} style={{ color: T.primary }} />
                     </div>
                     <div className="min-w-0">
-                      <div className="font-medium" style={{ color: T.ink }}>Install the app</div>
-                      <div className="text-xs mt-0.5" style={{ color: T.muted }}>Full screen, works offline, one tap from your home screen</div>
+                      <div className="font-medium" style={{ color: T.ink }}>{t('settings.install.title')}</div>
+                      <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.install.sub')}</div>
                     </div>
                   </div>
                   <Button size="sm" onClick={async () => {
                     const outcome = await promptInstall();
                     if (outcome === 'accepted') setCanInstall(false);
                   }}>
-                    Install
+                    {t('settings.install.cta')}
                   </Button>
                 </div>
               </Card>
@@ -780,8 +784,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             user who practises them on purpose fold them back into the numbers. */}
         {onToggleIncludeGkInStats && (
           <>
-            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Analytics</div>
-            <Tip title="What counts in stats" text="GK and Aptitude aren’t part of the NORCET nursing core, so they’re left out of your accuracy and weak areas by default. Turn on only if you drill them on purpose.">
+            <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.analytics')}</div>
+            <Tip title={t('settings.gk.tipTitle')} text={t('settings.gk.tip')}>
             <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
                   onClick={() => onToggleIncludeGkInStats(!(data.preferences && data.preferences.includeGkInStats === true))}>
               <div className="flex items-center justify-between gap-3">
@@ -791,11 +795,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                     <Sigma size={18} style={{ color: T.primary }} />
                   </div>
                   <div className="min-w-0">
-                    <div className="font-medium" style={{ color: T.ink }}>Count GK &amp; Aptitude in stats</div>
+                    <div className="font-medium" style={{ color: T.ink }}>{t('settings.gk.title')}</div>
                     <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                       {(data.preferences && data.preferences.includeGkInStats === true)
-                        ? 'General Knowledge and Reasoning & Aptitude are included in your accuracy, coverage and weak areas'
-                        : 'Off: only nursing topics count toward accuracy, coverage and weak areas (recommended)'}
+                        ? t('settings.gk.on')
+                        : t('settings.gk.off')}
                     </div>
                   </div>
                 </div>
@@ -812,8 +816,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
 
         {/* F-B — pull-to-refresh sound toggle. Local pref; respects the device
             media volume (a web app can't read the hardware mute switch). */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sound</div>
-        <Tip title="Pull-to-refresh sound" text="A soft confirmation sound when you pull down to refresh. Purely cosmetic: turn it off for silent refreshes.">
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.sound')}</div>
+        <Tip title={t('settings.sound.title')} text={t('settings.sound.tip')}>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable"
               onClick={() => { const next = !soundOn; setSoundOn(next); setSoundEnabled(next); }}>
           <div className="flex items-center justify-between gap-3">
@@ -823,11 +827,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <Volume2 size={18} style={{ color: T.primary }} />
               </div>
               <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Pull-to-refresh sound</div>
+                <div className="font-medium" style={{ color: T.ink }}>{t('settings.sound.title')}</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {soundOn
-                    ? 'A soft sound plays when you pull down to refresh'
-                    : 'Off: refreshing is silent'}
+                    ? t('settings.sound.on')
+                    : t('settings.sound.off')}
                 </div>
               </div>
             </div>
@@ -843,8 +847,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* Appearance → renamed "Themes", now a DEDICATED SUB-PAGE (issues
             round). The full mode selector + colour picker moved to
             screens/themes.jsx; Settings keeps this single row. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Themes</div>
-        <Tip title="Themes" text="Switch between light and dark, and pick an accent colour palette for the whole app.">
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.themes.title')}</div>
+        <Tip title={t('settings.themes.title')} text={t('settings.themes.tip')}>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onOpenThemes}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -852,9 +856,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Palette size={18} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Themes</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.themes.title')}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                {themeMode === 'dark' ? 'Dark mode' : 'Light mode'} {'\u00b7'} pick a mode and colour palette
+                {themeMode === 'dark' ? t('settings.themes.dark') : t('settings.themes.light')} {'\u00b7'} {t('settings.themes.sub')}
               </div>
             </div>
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
@@ -862,15 +866,23 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         </Card>
         </Tip>
 
+        {/* I18N: UI language. Opens the Spotify-style picker sub page.
+            Chrome only: study content stays English (see lib/i18n.js). */}
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.language.title')}</div>
+        <SubPageCard icon={Languages} iconBg={T.primary} title={t('settings.language.title')}
+                     sub={`${(getLocale(lang) || {}).native || 'English'}${lang === 'en' ? '' : ' · ' + ((getLocale(lang) || {}).name || '')}`}
+                     tip={t('settings.language.rowTip')}
+                     onClick={() => openSub('language')} />
+
         {/* #8 — Sidebar gestures now open in a focused sub-page. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
-        <SubPageCard icon={Hand} iconBg={T.primary} title="Sidebar gestures"
-                     sub="Swipe to open or close the sidebar"
-                     tip="Choose how the sidebar opens and closes, swipe left anywhere on Home to open it, swipe right to close. Tapping the backdrop always closes."
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sub.gestures')}</div>
+        <SubPageCard icon={Hand} iconBg={T.primary} title={t('settings.sub.gestures')}
+                     sub={t('settings.gestures.rowSub')}
+                     tip={t('settings.gestures.rowTip')}
                      onClick={() => openSub('gestures')} />
 
         {/* Help */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Help</div>
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.help')}</div>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={onShowWelcome}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
@@ -878,8 +890,8 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <GraduationCap size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.ink }}>Show welcome tour</div>
-              <div className="text-xs mt-0.5" style={{ color: T.muted }}>Quick recap of what each mode does</div>
+              <div className="font-medium" style={{ color: T.ink }}>{t('settings.help.tourTitle')}</div>
+              <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.help.tourSub')}</div>
             </div>
             <ChevronRight size={18} style={{ color: T.muted }} />
           </div>
@@ -888,10 +900,10 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* Cloud Sync & Backup — a status page (no files). Everything, incl.
             topic notes, syncs to the cloud automatically; this shows the state
             + a manual "Back up now". */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sync &amp; Backup</div>
-        <SubPageCard icon={Cloud} iconBg={T.primary} title="Sync &amp; Backup"
-                     sub={isGuest ? 'Sign in to back up to the cloud' : 'Your progress is backed up automatically'}
-                     tip="See your cloud-backup status and back up on demand. Your progress: including Knowledge-Map notes, syncs automatically and restores when you sign in on any device. No files to download."
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sub.backup')}</div>
+        <SubPageCard icon={Cloud} iconBg={T.primary} title={t('settings.sub.backup')}
+                     sub={isGuest ? t('settings.sync.rowSubGuest') : t('settings.sync.rowSub')}
+                     tip={t('settings.sync.rowTip')}
                      onClick={() => openSub('backup')} />
 
         {/* [admin-app separation] The Settings admin section (unlock admin +
@@ -901,7 +913,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         {/* FAV — Favourites: opt-in home-screen strip of hearted sections.
             OFF by default; hearts always save regardless, so flipping this on
             instantly reveals everything collected so far. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Favourites</div>
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.fav.title')}</div>
         <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={flipFavs}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -909,11 +921,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <Heart size={18} fill={favs && favs.enabled ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
               </div>
               <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Favourites</div>
+                <div className="font-medium" style={{ color: T.ink }}>{t('settings.fav.title')}</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {favs && favs.enabled
-                    ? `On: heart icons are visible across the app. ${favs.order.length === 0 ? 'Heart some sections to pin them to your home screen.' : `${favs.order.length} favourite${favs.order.length === 1 ? '' : 's'} at the top of your home screen.`}`
-                    : 'Off: heart icons are hidden everywhere. Turn this on to show them and pin your favourite sections to home.'}
+                    ? `${t('settings.fav.onLead')} ${favs.order.length === 0 ? t('settings.fav.onEmpty') : (favs.order.length === 1 ? t('settings.fav.onCountOne') : t('settings.fav.onCountMany', { n: favs.order.length }))}`
+                    : t('settings.fav.off')}
                 </div>
               </div>
             </div>
@@ -949,16 +961,16 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           );
           return (
             <>
-              <FavRow icon={Heart} label="Manage favourites" sub="Add sections to your one-stop list"
+              <FavRow icon={Heart} label={t('settings.fav.manage')} sub={t('settings.fav.manageSub')}
                       onClick={onManageFavorites || onOpenFavorites} />
-              <FavRow icon={ArrowUpDown} label="Priority order" sub="Reorder how they appear on home"
+              <FavRow icon={ArrowUpDown} label={t('settings.fav.order')} sub={t('settings.fav.orderSub')}
                       onClick={onOpenFavorites} />
             </>
           );
         })()}
 
         {/* #29 — Tests: the single control for the post-test Crib Sheet. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Tests</div>
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.tests')}</div>
         <Card className="p-4 mb-1 cursor-pointer no-tap-highlight pressable" onClick={flipCrib}>
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -966,11 +978,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                 <FileText size={18} style={{ color: T.primary }} />
               </div>
               <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>Show Crib Sheet after tests</div>
+                <div className="font-medium" style={{ color: T.ink }}>{t('settings.crib.title')}</div>
                 <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                   {cribOn
-                    ? 'Review correct, wrong, and missed questions after every test'
-                    : 'Crib Sheet is hidden, results screen only after tests'}
+                    ? t('settings.crib.on')
+                    : t('settings.crib.off')}
                 </div>
               </div>
             </div>
@@ -982,16 +994,16 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           </div>
         </Card>
         <div className="text-[11px] leading-relaxed mb-3 px-2" style={{ color: T.muted }}>
-          The Crib Sheet shows every question with correct answers and explanations. Like a PYQ booklet. You can also share it.
+          {t('settings.crib.footer')}
         </div>
 
         {/* #16 — Legal. Privacy Policy + Terms as sub-pages (rendered by the
             legalView sub-view above). Sits just above Support. */}
         {/* #8 — Legal opens in a focused sub-page listing Privacy + Terms. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Legal</div>
-        <SubPageCard icon={Shield} iconBg={T.primary} title="Legal"
-                     tip="Read the Privacy Policy and Terms of Use. What's stored, how it's used, and the simple rules of the app."
-                     sub="Privacy Policy and Terms of Use"
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sub.legal')}</div>
+        <SubPageCard icon={Shield} iconBg={T.primary} title={t('settings.sub.legal')}
+                     tip={t('settings.legal.rowTip')}
+                     sub={t('settings.legal.rowSub')}
                      onClick={() => openSub('legal')} />
 
         {/* P9 / step 33 — "Support the app" section. Quiet, always visible,
@@ -1001,9 +1013,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             The support card is visually ELEVATED (primary-tinted fill, heavier
             border, tinted icon block) so it reads as a warm highlight among
             the utilitarian rows — same logic as the Admin card's green tint. */}
-        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Support</div>
+        <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.sections.support')}</div>
         <Card className="p-4 mb-3 cursor-pointer no-tap-highlight pressable" onClick={() => requestSupport()}
-              ariaLabel="Support the app"
+              ariaLabel={t('settings.support.aria')}
               style={{ background: T.primary + '0E', border: `1.5px solid ${T.primary}45`, borderRadius: 14 }}>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -1011,9 +1023,9 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <Heart size={18} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium" style={{ color: T.primary }}>Keep NurseHolic free {'\u2615'}</div>
+              <div className="font-medium" style={{ color: T.primary }}>{t('settings.support.title')} {'\u2615'}</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Free and ad-free {'\u00b7'} buy me a chai to help with server costs
+                {t('settings.support.sub')}
               </div>
             </div>
             <ChevronRight size={18} style={{ color: T.primary, opacity: 0.7 }} />
@@ -1024,7 +1036,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             build is live. __APP_VERSION__ is injected by vite.config.js;
             the typeof guard keeps it from throwing outside a Vite build. */}
         <div className="mt-8 mb-2 text-center" style={{ color: T.muted, fontSize: 11, opacity: 0.75 }}>
-          Version: {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
+          {t('settings.version')} {typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : 'dev'}
         </div>
       </div>
 

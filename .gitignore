@@ -9,6 +9,10 @@ dist-admin
 *.log
 .vite
 dev-dist
+# I18N font pipeline: downloaded Noto source TTFs + derived glyph lists
+# (regenerable via scripts/build-locale-fonts.mjs; only the subsetted
+# public/fonts/*.woff2 outputs are committed).
+scripts/.font-src
 
 .vercel
 .env*

@@ -11,6 +11,10 @@
 //   useTheme()   -> { theme, isDark, themeMode, setThemeMode }
 //   useProfile() -> { profile, isAdmin, profileId, setProfile }
 //   useData()    -> { data, allQuestions, setData }
+//   useI18n()    -> { lang, setLang, langLoading, t }
+//     `t` is the stable lookup from lib/i18n.js (UI CHROME strings only —
+//     study content is never translated; see the i18n.js header rule).
+//     Re-render on language switch is driven by `lang` changing in App.
 //
 // Notes on the shape:
 //   • `theme` is the active theme object (aliased to T at call sites); `isDark`
@@ -23,12 +27,14 @@
 //     truth, even though most consumers read the smaller documented subset.
 // =====================================================================
 import React, { createContext, useContext, useMemo } from 'react';
+import { t } from './i18n.js';
 
 // The contexts are exported so callers can use them directly if ever needed;
 // the hooks below are the supported access path.
 export const ThemeContext = createContext(null);
 export const ProfileContext = createContext(null);
 export const DataContext = createContext(null);
+export const I18nContext = createContext(null);
 
 export function useTheme() {
   const ctx = useContext(ThemeContext);
@@ -48,17 +54,33 @@ export function useData() {
   return ctx;
 }
 
+export function useI18n() {
+  const ctx = useContext(I18nContext);
+  if (ctx == null) throw new Error('useI18n must be used within <AppProviders>');
+  return ctx;
+}
+
 // One provider wrapper for all three contexts, mounted once at the App root.
 // Prop order mirrors the <AppProviders ...> call in App.jsx's `provide()`.
 export function AppProviders({
   theme, themeMode, setThemeMode, isDark,
   profile, setProfile, isAdmin,
   data, setData, allQuestions,
+  lang, setLang, langLoading,
   children,
 }) {
   const themeValue = useMemo(
     () => ({ theme, isDark, themeMode, setThemeMode }),
     [theme, isDark, themeMode, setThemeMode]
+  );
+
+  // `t` reads the module-level active dict; `lang` in the value is what
+  // makes consumers re-render when the dict swaps. Defaults keep older
+  // AppProviders call sites (and the admin app, which never passes i18n
+  // props) safely on English.
+  const i18nValue = useMemo(
+    () => ({ lang: lang || 'en', setLang: setLang || (() => {}), langLoading: !!langLoading, t }),
+    [lang, setLang, langLoading]
   );
 
   const profileValue = useMemo(
@@ -72,12 +94,14 @@ export function AppProviders({
   );
 
   return (
-    <ThemeContext.Provider value={themeValue}>
-      <ProfileContext.Provider value={profileValue}>
-        <DataContext.Provider value={dataValue}>
-          {children}
-        </DataContext.Provider>
-      </ProfileContext.Provider>
-    </ThemeContext.Provider>
+    <I18nContext.Provider value={i18nValue}>
+      <ThemeContext.Provider value={themeValue}>
+        <ProfileContext.Provider value={profileValue}>
+          <DataContext.Provider value={dataValue}>
+            {children}
+          </DataContext.Provider>
+        </ProfileContext.Provider>
+      </ThemeContext.Provider>
+    </I18nContext.Provider>
   );
 }

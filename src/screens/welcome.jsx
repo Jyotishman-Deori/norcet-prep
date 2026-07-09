@@ -19,8 +19,9 @@
 // Guest re-show / onboarding-seen behaviour is owned by App and untouched.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle, Lock, Bell } from 'lucide-react';
-import { useTheme, useProfile } from '../lib/app-context.jsx';
+import { Brain, Check, ChevronRight, FileText, Flag, GraduationCap, Languages, Layers, ListChecks, Dumbbell, Network, Lightbulb, Sparkles, ArrowLeft, ArrowRight, X, Hand, MousePointerClick, Heart, Rocket, Download, Users, Clock, Headphones, Target, PlusCircle, Lock, Bell } from 'lucide-react';
+import { useTheme, useProfile, useI18n } from '../lib/app-context.jsx';
+import { LOCALES, getLang } from '../lib/i18n.js';
 import { Card, Button } from '../ui/primitives.jsx';
 import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
 import { useContent } from '../lib/content.js';
@@ -50,7 +51,49 @@ function SkipButton({ T, onClick, label = 'Skip tour' }) {
 function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemographics, onDismiss, onLaunch }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { profile } = useProfile();
+  const { t, setLang } = useI18n();
   const { data: help } = useContent('help');
+
+  // I18N — one-time "view in your language?" chip. Suggestion only, never an
+  // auto-switch: shown while the UI is English, the device language matches a
+  // Tier-1 locale, and the user hasn't dealt with it before. Accepting or
+  // dismissing both retire it for good (localStorage flag).
+  const [langSuggest, setLangSuggest] = useState(() => {
+    try {
+      if (getLang() !== 'en') return null;
+      if (localStorage.getItem(KEYS.LANG_SUGGEST_DISMISSED)) return null;
+      const navCode = String((typeof navigator !== 'undefined' && navigator.language) || '')
+        .toLowerCase().split('-')[0];
+      // Match on our code OR the BCP-47 primary subtag (Assamese devices
+      // report 'as' while our code is 'asm').
+      return LOCALES.find(l => l.suggest && navCode &&
+        (l.code === navCode || l.bcp47.split('-')[0].toLowerCase() === navCode)) || null;
+    } catch (e) { return null; }
+  });
+  const retireLangSuggest = () => {
+    setLangSuggest(null);
+    try { localStorage.setItem(KEYS.LANG_SUGGEST_DISMISSED, '1'); } catch (e) {}
+  };
+  const acceptLangSuggest = () => {
+    const code = langSuggest && langSuggest.code;
+    retireLangSuggest();
+    if (code) Promise.resolve(setLang(code)).catch(() => {});
+  };
+  const langChip = langSuggest ? (
+    <div className="anim-fadeup flex items-center gap-2.5 rounded-2xl px-3.5 py-2.5 mb-4"
+         style={{ background: T.primary + '10', border: `1px solid ${T.primary}30` }}>
+      <Languages size={16} className="flex-shrink-0" style={{ color: T.primary }} />
+      <button onClick={acceptLangSuggest} lang={langSuggest.bcp47}
+              className="no-tap-highlight flex-1 min-w-0 text-left text-sm font-semibold active:opacity-70 transition-opacity"
+              style={{ color: T.primary }}>
+        {langSuggest.suggest}
+      </button>
+      <button onClick={retireLangSuggest} aria-label={t('common.close')}
+              className="no-tap-highlight p-1 -m-1 flex-shrink-0">
+        <X size={14} style={{ color: T.muted }} />
+      </button>
+    </div>
+  ) : null;
   const profileId = (profile && profile.id) || 'guest';
   const storeKey = `${KEYS.WELCOME_TOUR_VISITED}${profileId}`;
   const demo = normalizeDemographics(demographics);
@@ -67,13 +110,13 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // Mirrors the current IA: tests are consolidated under Drill Tests (#11) and
   // the Knowledge Map (#13, the USP) gets a constellation hero treatment.
   const items = [
-    { icon: <Network size={18} />,   title: 'Knowledge Map',     desc: 'Your syllabus as a constellation, practise to light up every star.',      color: '#8A6D1F',                darkColor: '#FFD27A',               nav: { screen: 'knowledge-map' },  helpKey: 'Knowledge Map', hero: true },
-    { icon: <Dumbbell size={18} />,  title: 'Drill Tests',       desc: 'All six test modes, quick warm-ups to full exam simulation, one place.',   color: LIGHT_THEME.sec.mock,     darkColor: DARK_THEME.sec.mock,     nav: { screen: 'drill-tests' },    helpKey: 'Drill tests' },
-    { icon: <Brain size={18} />,     title: 'Learn topic wise',  desc: 'Bite-sized concept cards instead of passive video.',                        color: LIGHT_THEME.sec.learn,    darkColor: DARK_THEME.sec.learn,    nav: { screen: 'learn-topics' },   helpKey: 'Learn: topics' },
-    { icon: <GraduationCap size={18} />, title: 'Study Methods', desc: 'Six science-backed ways to study, and how to use each one here.',          color: LIGHT_THEME.primary,      darkColor: DARK_THEME.primary,      nav: { screen: 'study-methods' },  helpKey: 'Study methods' },
-    { icon: <FileText size={18} />,  title: 'Revision Sheet',    desc: 'Bookmarks digested into one printable page.',                               color: LIGHT_THEME.sec.revision, darkColor: DARK_THEME.sec.revision, nav: { screen: 'revision-sheet' }, helpKey: 'Revision sheet' },
-    { icon: <Flag size={18} />,      title: 'My Doubts',         desc: 'Flag anything unclear while you learn; clear it all up in one place.',       color: '#B3413A',                darkColor: '#E0726B',               nav: { screen: 'doubts' },         helpKey: 'Doubts' },
-    { icon: <Layers size={18} />,    title: 'Question Bank Library', desc: 'Browse shared banks and import questions.',                             color: LIGHT_THEME.sec.library,  darkColor: DARK_THEME.sec.library,  nav: { screen: 'library' },        helpKey: 'Library' }
+    { icon: <Network size={18} />,   title: t('welcome.rows.kmap.title'),     desc: t('welcome.rows.kmap.desc'),      color: '#8A6D1F',                darkColor: '#FFD27A',               nav: { screen: 'knowledge-map' },  helpKey: 'Knowledge Map', hero: true },
+    { icon: <Dumbbell size={18} />,  title: t('welcome.rows.drill.title'),       desc: t('welcome.rows.drill.desc'),   color: LIGHT_THEME.sec.mock,     darkColor: DARK_THEME.sec.mock,     nav: { screen: 'drill-tests' },    helpKey: 'Drill tests' },
+    { icon: <Brain size={18} />,     title: t('welcome.rows.learn.title'),  desc: t('welcome.rows.learn.desc'),                        color: LIGHT_THEME.sec.learn,    darkColor: DARK_THEME.sec.learn,    nav: { screen: 'learn-topics' },   helpKey: 'Learn: topics' },
+    { icon: <GraduationCap size={18} />, title: t('welcome.rows.methods.title'), desc: t('welcome.rows.methods.desc'),          color: LIGHT_THEME.primary,      darkColor: DARK_THEME.primary,      nav: { screen: 'study-methods' },  helpKey: 'Study methods' },
+    { icon: <FileText size={18} />,  title: t('welcome.rows.revision.title'),    desc: t('welcome.rows.revision.desc'),                               color: LIGHT_THEME.sec.revision, darkColor: DARK_THEME.sec.revision, nav: { screen: 'revision-sheet' }, helpKey: 'Revision sheet' },
+    { icon: <Flag size={18} />,      title: t('welcome.rows.doubts.title'),         desc: t('welcome.rows.doubts.desc'),       color: '#B3413A',                darkColor: '#E0726B',               nav: { screen: 'doubts' },         helpKey: 'Doubts' },
+    { icon: <Layers size={18} />,    title: t('welcome.rows.library.title'), desc: t('welcome.rows.library.desc'),                             color: LIGHT_THEME.sec.library,  darkColor: DARK_THEME.sec.library,  nav: { screen: 'library' },        helpKey: 'Library' }
   ];
 
   const [selected, setSelected] = useState(null); // item whose popup is open
@@ -139,9 +182,9 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- the per-row help popup (What / How / Why, reusing help.json) ----
   const c = selected ? (help && help[selected.helpKey]) : null;
   const sections = c ? [
-    { label: 'What it is', icon: <Lightbulb size={13} />, text: c.what },
-    { label: 'How to use it', icon: <ListChecks size={13} />, text: c.how },
-    { label: 'Why it\u2019s here', icon: <Sparkles size={13} />, text: c.why },
+    { label: t('welcome.popup.what'), icon: <Lightbulb size={13} />, text: c.what },
+    { label: t('welcome.popup.how'), icon: <ListChecks size={13} />, text: c.how },
+    { label: t('welcome.popup.why'), icon: <Sparkles size={13} />, text: c.why },
   ].filter(s => s.text) : [];
 
   // Shared chrome for the onboarding pages: quiet Back (when not first) + the
@@ -153,8 +196,8 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         ? <span />
         : <button onClick={prevStep}
                   className="no-tap-highlight inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
-                  style={{ color: T.muted }}><ArrowLeft size={14} /> Back</button>}
-      <SkipButton T={T} onClick={() => setLeaveConfirm(true)} />
+                  style={{ color: T.muted }}><ArrowLeft size={14} /> {t('common.back')}</button>}
+      <SkipButton T={T} onClick={() => setLeaveConfirm(true)} label={t('welcome.skipTour')} />
     </div>
   );
   const heroIcon = (Icon, color) => (
@@ -171,18 +214,19 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- NEW-01 page 1: App pitch ----
   if (step === 'pitch') {
     const points = [
-      { icon: <Target size={18} />, color: T.error, title: 'Most aspirants drown in PDFs', body: 'Endless notes, no idea where they actually stand or what to fix next.' },
-      { icon: <Brain size={18} />, color: T.primary, title: 'This app makes prep deliberate', body: 'Spaced revision, weak-area targeting, real exam-style timing and a clear map of your syllabus.' },
-      { icon: <Sparkles size={18} />, color: T.accent, title: 'Built to feel like exam day', body: 'Negative marking, sectional pacing and topper benchmarks, so the real CBT feels familiar.' },
+      { icon: <Target size={18} />, color: T.error, title: t('welcome.pitch.p1Title'), body: t('welcome.pitch.p1Body') },
+      { icon: <Brain size={18} />, color: T.primary, title: t('welcome.pitch.p2Title'), body: t('welcome.pitch.p2Body') },
+      { icon: <Sparkles size={18} />, color: T.accent, title: t('welcome.pitch.p3Title'), body: t('welcome.pitch.p3Body') },
     ];
     return (
       <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
         {pageHead}
+        {langChip}
         {heroIcon(Rocket, T.primary)}
         <div className="text-center mb-6">
-          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>Welcome{displayName ? `, ${displayName}` : ''}</div>
-          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>Your NORCET edge</h1>
-          <div className="text-sm" style={{ color: T.muted }}>Sixty seconds on why this beats another PDF.</div>
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>{t('welcome.hello')}{displayName ? `, ${displayName}` : ''}</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>{t('welcome.pitch.title')}</h1>
+          <div className="text-sm" style={{ color: T.muted }}>{t('welcome.pitch.sub')}</div>
         </div>
         <div className="space-y-2.5 mb-6">
           {points.map((p, i) => (
@@ -203,7 +247,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           ))}
         </div>
         <div className="welcome-row" style={{ animationDelay: `${points.length * 70 + 60}ms` }}>
-          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Next</Button>
+          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>{t('common.next')}</Button>
         </div>
       </div>
     );
@@ -212,18 +256,18 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- NEW-01 page 2: Library & question-bank explainer ----
   if (step === 'library') {
     const rows = [
-      { icon: <Layers size={18} />, color: T.sec.library, title: 'The Library holds question banks', body: 'Curated sets of questions grouped by topic and source, the heart of your practice pool.' },
-      { icon: <Download size={18} />, color: T.primary, title: 'Download the sets you want', body: 'Add a bank and its questions join your tests, stats and revision, and work offline after.' },
-      { icon: <PlusCircle size={18} />, color: T.accent, title: 'Or build your own', body: 'Create custom question sets (Add question / Library) to drill exactly what you need.' },
+      { icon: <Layers size={18} />, color: T.sec.library, title: t('welcome.lib.r1Title'), body: t('welcome.lib.r1Body') },
+      { icon: <Download size={18} />, color: T.primary, title: t('welcome.lib.r2Title'), body: t('welcome.lib.r2Body') },
+      { icon: <PlusCircle size={18} />, color: T.accent, title: t('welcome.lib.r3Title'), body: t('welcome.lib.r3Body') },
     ];
     return (
       <div className="anim-fadeup max-w-md mx-auto px-4 pb-12" style={{ paddingTop: 'calc(20px + env(safe-area-inset-top, 0px))' }}>
         {pageHead}
         {heroIcon(Layers, T.sec.library)}
         <div className="text-center mb-6">
-          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>How questions work</div>
-          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>Start with the Library</h1>
-          <div className="text-sm" style={{ color: T.muted }}>Find it in the sidebar menu anytime.</div>
+          <div className="text-xs uppercase tracking-widest mb-2" style={{ color: T.muted }}>{t('welcome.lib.kicker')}</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5" style={{ color: T.ink }}>{t('welcome.lib.title')}</h1>
+          <div className="text-sm" style={{ color: T.muted }}>{t('welcome.lib.sub')}</div>
         </div>
         <div className="space-y-2.5 mb-6">
           {rows.map((r, i) => (
@@ -244,7 +288,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           ))}
         </div>
         <div className="welcome-row" style={{ animationDelay: `${rows.length * 70 + 60}ms` }}>
-          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Next</Button>
+          <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>{t('common.next')}</Button>
         </div>
       </div>
     );
@@ -255,23 +299,23 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // without saving; "Skip tour" exits (fill it in later in Settings → Profile).
   if (step === 'gender' || step === 'qualification' || step === 'employment' || step === 'window') {
     const cfg = {
-      gender: { icon: Users, color: T.primary, kicker: 'A quick calibration',
-        title: 'Where do you stand?',
-        trust: 'AIIMS applies a strict 80:20 gender quota. We use this only to calibrate your simulated leaderboard rank in your pool. Never to limit content.',
+      gender: { icon: Users, color: T.primary, kicker: t('welcome.demo.genderKicker'),
+        title: t('welcome.demo.genderTitle'),
+        trust: t('welcome.demo.genderTrust'),
         field: 'gender', kind: 'gender', options: GENDER_OPTIONS },
-      qualification: { icon: GraduationCap, color: T.accent, kicker: 'Your background',
-        title: 'Your highest qualification?',
-        trust: 'Lets us frame examples for your training. GNM nurses get bedside-to-theory drills.',
+      qualification: { icon: GraduationCap, color: T.accent, kicker: t('welcome.demo.qualKicker'),
+        title: t('welcome.demo.qualTitle'),
+        trust: t('welcome.demo.qualTrust'),
         field: 'qualification', kind: 'qualification', options: QUALIFICATION_OPTIONS },
-      employment: { icon: Clock, color: T.sec.revision || T.primary, kicker: 'Your schedule',
-        title: 'How does prep fit your day?',
-        trust: 'We adapt your dashboard. A working nurse can’t sit a 3-hour mock on a Tuesday afternoon.',
+      employment: { icon: Clock, color: T.sec.revision || T.primary, kicker: t('welcome.demo.empKicker'),
+        title: t('welcome.demo.empTitle'),
+        trust: t('welcome.demo.empTrust'),
         field: 'employment', kind: 'employment', options: EMPLOYMENT_OPTIONS },
       // Duty Roster — the Day-1 "when do you study?" commitment. Seeds the daily
       // reminder time so the nudge lands in the user's own window.
-      window: { icon: Bell, color: T.sec.mock || T.primary, kicker: 'Your rhythm',
-        title: 'When do you study best?',
-        trust: 'We’ll time your daily nudge to this window, a reminder that lands when you’re actually free beats one you ignore. Change it anytime.',
+      window: { icon: Bell, color: T.sec.mock || T.primary, kicker: t('welcome.demo.windowKicker'),
+        title: t('welcome.demo.windowTitle'),
+        trust: t('welcome.demo.windowTrust'),
         field: 'studyWindow', kind: 'window', options: STUDY_WINDOW_OPTIONS, unlockIcon: Bell },
     }[step];
     const Icon = cfg.icon;
@@ -326,17 +370,17 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
               <UnlockIcon size={18} className="flex-shrink-0 mt-0.5" style={{ color: cfg.color }} />
               <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>{pendingUnlock}</div>
             </div>
-            <Button onClick={() => { setPendingUnlock(null); nextStep(); }} size="lg" className="w-full" icon={<ChevronRight size={18} />}>Continue</Button>
+            <Button onClick={() => { setPendingUnlock(null); nextStep(); }} size="lg" className="w-full" icon={<ChevronRight size={18} />}>{t('common.continue')}</Button>
           </div>
         ) : (
           <button onClick={nextStep}
                   className="no-tap-highlight w-full inline-flex items-center justify-center gap-1 text-[13px] font-medium py-2.5 rounded-xl active:bg-black/5"
                   style={{ color: T.muted }}>
-            {current ? 'Continue' : 'Skip this one'} <ArrowRight size={14} />
+            {current ? t('common.continue') : t('welcome.skipThisOne')} <ArrowRight size={14} />
           </button>
         )}
         <div className="text-[10.5px] text-center mt-2" style={{ color: T.muted }}>
-          Optional &amp; private · change it anytime in Settings → Profile.
+          {t('welcome.demo.privacyNote')}
         </div>
       </div>
     );
@@ -363,10 +407,10 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                style={{ background: 'linear-gradient(140deg, #E0245E, #9C1A57)', boxShadow: '0 12px 30px rgba(224,36,94,0.5)' }}>
             <Heart size={28} color="#FFF" fill="#FFF" />
           </div>
-          <div className="text-[11px] uppercase tracking-[0.22em] mb-1.5 relative" style={{ color: T.muted }}>One last thing</div>
-          <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>What's your reason why?</h1>
+          <div className="text-[11px] uppercase tracking-[0.22em] mb-1.5 relative" style={{ color: T.muted }}>{t('welcome.ikigai.kicker')}</div>
+          <h1 className="font-display text-3xl font-semibold mb-1 relative" style={{ color: T.ink }}>{t('welcome.ikigai.title')}</h1>
           <div className="text-[13px] leading-relaxed relative px-3" style={{ color: T.muted }}>
-            Your <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span>: the deeper reason you want to become a Nursing Officer. What makes all this worth it?
+            {t('welcome.ikigai.bodyPre')} <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span>{t('welcome.ikigai.bodyPost')}
           </div>
         </div>
 
@@ -378,29 +422,29 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           <div className="font-display leading-none mb-0.5" style={{ color: 'rgba(224,36,94,0.85)', fontSize: 40 }}>{'“'}</div>
           <textarea value={ikigaiText} onChange={e => setIkigaiText(e.target.value.slice(0, IKIGAI_MAX))}
                     rows={4} maxLength={IKIGAI_MAX}
-                    placeholder="To buy my parents a house. To prove I can do it. To serve my community."
+                    placeholder={t('welcome.ikigai.placeholder')}
                     className="w-full bg-transparent resize-none outline-none text-[15px] leading-relaxed -mt-2 relative"
                     style={{ color: '#F3EEE3', caretColor: '#E0245E' }} />
           <div className="flex items-center justify-between mt-2 pt-2.5 relative" style={{ borderTop: '1px solid rgba(255,255,255,0.10)' }}>
             <div className="text-[11px] flex items-center gap-1.5" style={{ color: 'rgba(243,238,227,0.62)' }}>
-              <Lock size={12} /> Private. Only you will ever see this.
+              <Lock size={12} /> {t('welcome.ikigai.private')}
             </div>
             <div className="text-[10px] tabular-nums" style={{ color: ikigaiText.length >= IKIGAI_MAX ? '#FF9A9A' : 'rgba(243,238,227,0.55)' }}>{ikigaiText.length}/{IKIGAI_MAX}</div>
           </div>
         </div>
 
         <div className="text-[12px] leading-relaxed text-center px-3 mb-4" style={{ color: T.muted }}>
-          On your hardest days, NurseHolic will bring this back to you, in your own words.
+          {t('welcome.ikigai.return')}
         </div>
 
         <Button onClick={saveIkigai} size="lg" className="w-full" icon={<Heart size={17} fill="#FFF" />}>
-          {has ? 'Anchor my why' : 'Continue'}
+          {has ? t('welcome.ikigai.anchor') : t('common.continue')}
         </Button>
         {!has && (
           <button onClick={nextStep}
                   className="no-tap-highlight w-full inline-flex items-center justify-center gap-1 text-[13px] font-medium py-2.5 mt-1 rounded-xl active:bg-black/5"
                   style={{ color: T.muted }}>
-            Skip this one <ArrowRight size={14} />
+            {t('welcome.skipThisOne')} <ArrowRight size={14} />
           </button>
         )}
       </div>
@@ -410,14 +454,14 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
   // ---- Second onboarding page: the gestures + tap-and-hold first-timers miss ----
   if (step === 'tips') {
     const tips = [
-      { icon: <MousePointerClick size={20} />, title: 'Press & hold any card',
-        body: 'On the home screen, the menu or in settings, press and hold a card for a moment to peek a quick description of what it does, without opening it.',
+      { icon: <MousePointerClick size={20} />, title: t('welcome.tips.t1Title'),
+        body: t('welcome.tips.t1Body'),
         color: T.primary },
-      { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: 'Swipe to open the menu',
-        body: 'On the home screen, swipe left from anywhere to slide the menu open, and swipe right to close it. Works the same on phone, tablet and iPhone.',
+      { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: t('welcome.tips.t2Title'),
+        body: t('welcome.tips.t2Body'),
         color: T.accent },
-      { icon: <Heart size={20} fill="#FFF" />, title: 'Heart your favourites',
-        body: 'Tap the heart on any section. Stats, a drill mode, the leaderboard, to pin it. Your favourites then sit one tap away on the home screen.',
+      { icon: <Heart size={20} fill="#FFF" />, title: t('welcome.tips.t3Title'),
+        body: t('welcome.tips.t3Body'),
         color: '#E0245E' },
     ];
     return (
@@ -427,7 +471,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           <button onClick={() => setStep('tour')}
                   className="no-tap-highlight inline-flex items-center gap-1 text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
                   style={{ color: T.muted }}>
-            <ArrowLeft size={14} /> Back
+            <ArrowLeft size={14} /> {t('common.back')}
           </button>
         </div>
         <div className="text-center mb-6 relative">
@@ -437,9 +481,9 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                style={{ background: `linear-gradient(140deg, ${T.primary}, ${T.primarySoft || T.primary})`, boxShadow: `0 10px 26px ${T.primary}50` }}>
             <Sparkles size={28} color="#FFF" />
           </div>
-          <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>Before you start</div>
-          <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>Three quick tips</h1>
-          <div className="text-sm relative" style={{ color: T.muted }}>Little things that make the app yours.</div>
+          <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>{t('welcome.tips.kicker')}</div>
+          <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>{t('welcome.tips.title')}</h1>
+          <div className="text-sm relative" style={{ color: T.muted }}>{t('welcome.tips.sub')}</div>
         </div>
         <div className="space-y-2.5 mb-6">
           {tips.map((t, i) => (
@@ -461,7 +505,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         </div>
         <div className="welcome-row" style={{ animationDelay: `${tips.length * 70 + 60}ms` }}>
           <Button onClick={onDismiss} size="lg" className="w-full" icon={<Check size={18} />}>
-            Start studying
+            {t('welcome.startStudying')}
           </Button>
         </div>
       </div>
@@ -476,9 +520,10 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <button onClick={() => setLeaveConfirm(true)}
                 className="no-tap-highlight text-xs font-medium px-3 py-1.5 rounded-full active:bg-black/5"
                 style={{ color: T.muted }}>
-          Skip tour
+          {t('welcome.skipTour')}
         </button>
       </div>
+      {langChip}
       <div className="text-center mb-6 relative">
         {/* soft radial glow behind the hero icon — product-reveal feel */}
         <div aria-hidden="true" className="absolute left-1/2 -translate-x-1/2 -top-6 w-48 h-48 rounded-full pointer-events-none"
@@ -487,9 +532,9 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
              style={{ background: `linear-gradient(140deg, ${T.primary}, ${T.primarySoft || T.primary})`, boxShadow: `0 10px 26px ${T.primary}50` }}>
           <GraduationCap size={30} color="#FFF" />
         </div>
-        <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>Welcome{displayName ? `, ${displayName}` : ''}</div>
-        <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>Here's what's inside</h1>
-        <div className="text-sm relative" style={{ color: T.muted }}>Tap any section to see what it does, then jump in. You can reopen this from Settings.</div>
+        <div className="text-xs uppercase tracking-widest mb-2 relative" style={{ color: T.muted }}>{t('welcome.hello')}{displayName ? `, ${displayName}` : ''}</div>
+        <h1 className="font-display text-3xl font-semibold mb-1.5 relative" style={{ color: T.ink }}>{t('welcome.tour.title')}</h1>
+        <div className="text-sm relative" style={{ color: T.muted }}>{t('welcome.tour.sub')}</div>
       </div>
 
       {/* Tour progress — fills as rows are explored. */}
@@ -500,7 +545,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                         transition: 'width 500ms cubic-bezier(0.22,1,0.36,1)' }} />
         </div>
         <div className="text-[11px] font-medium tabular-nums flex-shrink-0" style={{ color: T.muted }}>
-          {exploredCount}/{items.length} explored
+          {t('welcome.tour.explored', { done: exploredCount, total: items.length })}
         </div>
       </div>
 
@@ -535,7 +580,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                       {it.title}
                       {it.hero && (
                         <span className="text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider"
-                              style={{ background: 'rgba(255,210,122,0.18)', color: '#FFD27A' }}>{'\u2728'} Game</span>
+                              style={{ background: 'rgba(255,210,122,0.18)', color: '#FFD27A' }}>{'\u2728'} {t('welcome.gameBadge')}</span>
                       )}
                     </div>
                     <div className="text-xs leading-snug" style={{ color: it.hero ? 'rgba(234,240,255,0.62)' : T.muted }}>{it.desc}</div>
@@ -550,7 +595,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
 
       <div className="welcome-row" style={{ animationDelay: `${items.length * 55 + 60}ms` }}>
         <Button onClick={() => setStep('tips')} size="lg" className="w-full" icon={<ChevronRight size={18} />}>
-          Got it
+          {t('welcome.gotIt')}
         </Button>
       </div>
 
@@ -563,15 +608,15 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
                style={{ background: T.surface, maxHeight: '85vh', overflowY: 'auto' }}
                onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between gap-3 mb-4">
-              <button onClick={() => setSelected(null)} aria-label="Back"
+              <button onClick={() => setSelected(null)} aria-label={t('common.back')}
                       className="no-tap-highlight -ml-1 p-1 rounded-lg active:scale-95 transition" style={{ color: T.muted }}>
                 <ArrowLeft size={20} />
               </button>
               <div className="flex-1 text-center">
                 <div className="font-display text-lg font-semibold" style={{ color: T.ink }}>{selected.title}</div>
-                <div className="text-[11px]" style={{ color: T.muted }}>A quick look before you jump in</div>
+                <div className="text-[11px]" style={{ color: T.muted }}>{t('welcome.popup.sub')}</div>
               </div>
-              <button onClick={() => setSelected(null)} aria-label="Close"
+              <button onClick={() => setSelected(null)} aria-label={t('common.close')}
                       className="no-tap-highlight -mr-1 p-1 rounded-lg active:scale-95 transition" style={{ color: T.muted }}>
                 <X size={20} />
               </button>
@@ -592,7 +637,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             </div>
 
             <Button onClick={launchSelected} size="lg" className="w-full" icon={<ChevronRight size={18} />}>
-              Got it: open {selected.title}
+              {t('welcome.gotItOpen', { title: selected.title })}
             </Button>
           </div>
         </div>
@@ -601,9 +646,9 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
       {/* Leave-tour confirmation (issues round) — the device back button (or
           Skip) never exits abruptly; only an explicit choice ends the tour. */}
       <ConfirmDialog open={leaveConfirm}
-                     title="Leave the tour?"
-                     body="You can reopen it anytime from Settings → Show welcome tour."
-                     confirmLabel="Leave" cancelLabel="Stay" tone="primary"
+                     title={t('welcome.leave.title')}
+                     body={t('welcome.leave.body')}
+                     confirmLabel={t('welcome.leave.leave')} cancelLabel={t('welcome.leave.stay')} tone="primary"
                      onConfirm={() => { setLeaveConfirm(false); onDismiss(); }}
                      onCancel={() => setLeaveConfirm(false)} />
     </div>

@@ -38,7 +38,7 @@ console.log('\n> text-encoding gate (mojibake scan)');
   const { execSync } = await import('node:child_process');
   const sigs = [Buffer.from([0xc3, 0xa2, 0xc2, 0x80]), Buffer.from([0xc3, 0xa2, 0xe2, 0x82, 0xac])];
   const fffd = Buffer.from([0xef, 0xbf, 0xbd]); // legit as a sentinel in tests (note-companion.test.js)
-  const files = execSync('git ls-files -- src public/data index.html admin.html', { cwd: root })
+  const files = execSync('git ls-files -- src public/data public/locales index.html admin.html', { cwd: root })
     .toString().split('\n').filter(f => /\.(jsx?|ts|json|html)$/.test(f));
   const bad = files.filter(f => {
     try {
@@ -53,6 +53,13 @@ console.log('\n> text-encoding gate (mojibake scan)');
   }
   console.log(`clean: ${files.length} text files scanned`);
 }
+
+// I18N gate (scripts/check-locales.mjs) — en.js hygiene (no em dashes),
+// every t('...') key used in src exists in en, and every locale ui.json
+// has full key + {placeholder} parity with en plus the DRAFT marker.
+console.log('\n> i18n locale gate');
+const loc = spawnSync(process.execPath, [join(root, 'scripts', 'check-locales.mjs')], { stdio: 'inherit', cwd: root });
+if (loc.status !== 0) process.exit(1);
 
 // Runtime render smoke (scripts/smoke) — server-renders the real Knowledge
 // Map screen, catching first-render crashes (e.g. TDZ in memo deps) that the

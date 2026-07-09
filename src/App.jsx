@@ -341,6 +341,10 @@ import { loadQDoubts, saveQDoubts, autoResolveQDoubts } from './lib/qdoubts.js';
 import { topicName } from './lib/topics.js';
 // #21/#29 — sidebar gesture + crib-sheet preferences (per-device).
 import { loadUiPrefs, isCribSheetEnabled } from './lib/ui-prefs.js';
+// I18N — UI chrome translation layer (study content is NEVER translated;
+// see the src/lib/i18n.js header rule). getLang() is already restored by
+// main.jsx's awaited loadI18n() before this module's first render.
+import { getLang, setLocale, onLangChange } from './lib/i18n.js';
 // [F-E] stale-doubt nudge.
 import { loadDoubts as loadDoubtsForNudge, staleUnresolvedCount } from './lib/doubts.js';
 // [A1 slice 45] AdminTile no longer referenced by App (now used only inside AdminPanel).
@@ -1785,6 +1789,21 @@ export default function App() {
   const [banks, setBanks] = useState([]);
   const [banksLoading, setBanksLoading] = useState(false);
   const [themeMode, setThemeMode] = useState('light');
+  // I18N — active UI language. Seeded from the module (boot restore ran in
+  // main.jsx); changeLang is what the Settings language page calls. A failed
+  // download (offline, never-fetched pack) rethrows so the page can show a
+  // retry row; the app stays on the current language.
+  const [lang, setLangState] = useState(getLang());
+  const [langLoading, setLangLoading] = useState(false);
+  const changeLang = useCallback(async (code) => {
+    if (code === getLang()) return;
+    setLangLoading(true);
+    try { await setLocale(code); }
+    finally { setLangLoading(false); }
+  }, []);
+  // Keep React in sync with the module (covers boot's late dict arrival and
+  // any non-React setLocale caller).
+  useEffect(() => onLangChange(setLangState), []);
   const [showWelcome, setShowWelcome] = useState(false);
   // NEW-01 — true when the welcome screen is a genuine FIRST RUN (show the App
   // Pitch / Library / demographic onboarding pages); false when replayed from
@@ -3990,7 +4009,8 @@ export default function App() {
     <AppProviders
       theme={T} themeMode={themeMode} setThemeMode={setThemeMode} isDark={IS_DARK}
       profile={profile} setProfile={setProfile} isAdmin={isAdmin}
-      data={data} setData={setData} allQuestions={allQuestions}>
+      data={data} setData={setData} allQuestions={allQuestions}
+      lang={lang} setLang={changeLang} langLoading={langLoading}>
       {node}
       {pendingBatchId && (
         <BatchJoinModal batchId={pendingBatchId}

@@ -48,7 +48,9 @@ export default defineConfig(({ mode }) => {
         orientation: 'portrait',
         start_url: '/',
         scope: '/',
-        // Reasonable language hint — the app is English-only.
+        // Default language. The manifest is a static build artifact, so it
+        // stays 'en'; at runtime the UI supports Indian languages and sets
+        // <html lang> itself (src/lib/i18n.js).
         lang: 'en',
         icons: [
           { src: '/icon-192.png',           sizes: '192x192', type: 'image/png',                  purpose: 'any' },
@@ -64,6 +66,14 @@ export default defineConfig(({ mode }) => {
         // Precache everything Vite emits. globPatterns is the source of truth
         // for what's available offline on first visit.
         globPatterns: ['**/*.{js,css,html,svg,png,ico,webp,woff,woff2}'],
+        // I18N — language packs + subsetted Indic fonts are LAZY by design:
+        // fetched only when a user selects that language, then kept offline
+        // by the 'locale-assets-v1' runtime cache below (+ IndexedDB for the
+        // JSON). Precache would make EVERY user download EVERY language's
+        // font on install; the woff2 glob above would do exactly that, so
+        // these two folders are excluded. (Verify after a build: dist/sw.js
+        // precache manifest must contain no locales/ or fonts/ entries.)
+        globIgnores: ['**/locales/**', '**/fonts/**'],
         // Lift the per-file precache size cap so the App bundle (a single
         // ~640KB jsx becomes a larger emitted JS chunk after JSX → JS) isn't
         // excluded from precaching. 5MB is plenty of headroom; raise further
@@ -73,6 +83,23 @@ export default defineConfig(({ mode }) => {
         // via @import in fontStyles). Without this, the very first offline
         // visit would render in the fallback system font.
         runtimeCaching: [
+          // I18N — once a language pack (ui.json) or subsetted font is
+          // fetched, it stays available offline in a NAMED, versioned cache
+          // (explicit Cache API per the iOS-reliability requirement; the
+          // ?v=LOCALE_VERSION query busts it on content updates). ui.json
+          // is ALSO cached in IndexedDB by lib/i18n.js: iOS evicts Cache
+          // API storage before IndexedDB, so the two layers back each
+          // other up.
+          {
+            urlPattern: ({ url }) => url.origin === self.location.origin &&
+              (url.pathname.startsWith('/locales/') || url.pathname.startsWith('/fonts/')),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'locale-assets-v1',
+              cacheableResponse: { statuses: [0, 200] },
+              expiration: { maxEntries: 48, maxAgeSeconds: 60 * 60 * 24 * 365 }
+            }
+          },
           {
             urlPattern: ({ url }) => url.origin === 'https://fonts.googleapis.com',
             handler: 'StaleWhileRevalidate',

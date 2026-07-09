@@ -19,7 +19,7 @@
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
 import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Target, Trophy, X } from 'lucide-react';
-import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
+import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
 import { getSidebarGestures } from '../lib/ui-prefs.js';
@@ -38,6 +38,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const { theme: T } = useTheme();
   const { data } = useData();
   const { isAdmin } = useProfile();
+  const { t } = useI18n();
   const panelRef = useRef(null);
   // Lock background scroll while the drawer is open.
   useEffect(() => {
@@ -239,46 +240,46 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
 
   // ---- Category 1 — Study ----
   const study = [
-    { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: 'Revision', tip: 'A printable high-yield digest of everything due for revision today, plus your saved Crib Sheets.',  sub: 'High-yield digest',              action: () => go('revision-sheet', null, 'revision') },
-    { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: 'Library', tip: 'Browse and import question banks curated by the team.',   sub: 'Question banks',                 action: () => go('library', null, 'library') },
-    { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: 'Bookmarks', tip: 'Every question you saved, grouped by topic, ready to re-read or retest.', sub: 'Questions you saved', badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
-    { key: 'mistake-vault', icon: Target, color: T.error, label: 'Mistake Vault', tip: 'Every question you got wrong, kept until you answer it right twice in a row.', sub: 'Fix what you got wrong', action: () => go('mistake-vault', null, 'mistake-vault') },
-    { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: 'My Doubts', tip: 'Concept points and question explanations you flagged as unclear, resolve them here.', sub: 'Points you flagged to revisit',  action: () => go('doubts', null, 'doubts') },
+    { key: 'revision',  fav: 'revision-sheet', icon: FileText,    color: T.sec.revision, label: t('nav.drawer.revision.label'), tip: t('nav.drawer.revision.tip'), sub: t('nav.drawer.revision.sub'),              action: () => go('revision-sheet', null, 'revision') },
+    { key: 'library',   fav: 'library', icon: Layers,      color: T.sec.library,  label: t('nav.drawer.library.label'), tip: t('nav.drawer.library.tip'), sub: t('nav.drawer.library.sub'),                 action: () => go('library', null, 'library') },
+    { key: 'bookmarks', fav: 'bookmarks-view', icon: Bookmark,    color: T.accent,       label: t('nav.drawer.bookmarks.label'), tip: t('nav.drawer.bookmarks.tip'), sub: t('nav.drawer.bookmarks.sub'), badge: data.bookmarks.length, action: () => go('bookmarks-view', null, 'bookmarks') },
+    { key: 'mistake-vault', icon: Target, color: T.error, label: t('nav.drawer.mistakeVault.label'), tip: t('nav.drawer.mistakeVault.tip'), sub: t('nav.drawer.mistakeVault.sub'), action: () => go('mistake-vault', null, 'mistake-vault') },
+    { key: 'doubts',    fav: 'doubts', icon: Flag,        color: T.error,        label: t('nav.drawer.doubts.label'), tip: t('nav.drawer.doubts.tip'), sub: t('nav.drawer.doubts.sub'),  action: () => go('doubts', null, 'doubts') },
     // Adding questions is now ADMIN ONLY (content authority) — hidden for users.
-    ...(isAdmin ? [{ key: 'addq', icon: Plus, color: T.primary, label: 'Add question', tip: 'Upload and write the question sets students practise.', sub: 'Admin · question sets', action: () => go('add-question', null, 'addq') }] : []),
+    ...(isAdmin ? [{ key: 'addq', icon: Plus, color: T.primary, label: t('nav.drawer.addq.label'), tip: t('nav.drawer.addq.tip'), sub: t('nav.drawer.addq.sub'), action: () => go('add-question', null, 'addq') }] : []),
   ];
   // ---- Category 2 — Progress ----
   const progress = [
-    { key: 'ikigai',      fav: 'ikigai', icon: Compass,   color: '#9333EA',   label: 'Ikigai Compass', badge: 'New', tip: 'Your living 4-circle readiness map. Passion, Profession, Mission and Vocation drift together as you practise.', sub: 'Your readiness, balanced', action: () => go('ikigai', null, 'ikigai') },
-    { key: 'stats',       fav: 'stats', icon: BarChart3, color: T.sec.stats, label: 'Stats', tip: 'Accuracy, streaks and progress, broken down topic by topic.',          sub: 'Progress by topic',          action: () => go('stats', null, 'stats') },
-    { key: 'leaderboard', fav: 'leaderboard', icon: Trophy,    color: T.accent,    label: 'Leaderboard', tip: 'See how your week stacks up against other aspirants.',    sub: 'Compare with other users',   action: () => go('leaderboard', null, 'leaderboard') },
-    { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: 'Exam weightage', tip: 'How many marks each subject carries. Study where the marks are.', sub: 'What the exam tests most',    action: () => go('weightage', null, 'weightage') },
-    { key: 'activity-log', icon: History, color: T.sec.stats, label: 'History', tip: 'A newest-first timeline of your level-ups, streak milestones, mastery moments and test attempts.', sub: 'Achievements & study timeline', action: () => go('activity-log', null, 'activity-log') },
+    { key: 'ikigai',      fav: 'ikigai', icon: Compass,   color: '#9333EA',   label: t('nav.drawer.ikigai.label'), badge: t('nav.drawer.badgeNew'), tip: t('nav.drawer.ikigai.tip'), sub: t('nav.drawer.ikigai.sub'), action: () => go('ikigai', null, 'ikigai') },
+    { key: 'stats',       fav: 'stats', icon: BarChart3, color: T.sec.stats, label: t('nav.drawer.stats.label'), tip: t('nav.drawer.stats.tip'), sub: t('nav.drawer.stats.sub'),          action: () => go('stats', null, 'stats') },
+    { key: 'leaderboard', fav: 'leaderboard', icon: Trophy,    color: T.accent,    label: t('nav.drawer.leaderboard.label'), tip: t('nav.drawer.leaderboard.tip'), sub: t('nav.drawer.leaderboard.sub'),   action: () => go('leaderboard', null, 'leaderboard') },
+    { key: 'weightage',   fav: 'weightage', icon: Activity,  color: T.primary,   label: t('nav.drawer.weightage.label'), tip: t('nav.drawer.weightage.tip'), sub: t('nav.drawer.weightage.sub'),    action: () => go('weightage', null, 'weightage') },
+    { key: 'activity-log', icon: History, color: T.sec.stats, label: t('nav.drawer.activityLog.label'), tip: t('nav.drawer.activityLog.tip'), sub: t('nav.drawer.activityLog.sub'), action: () => go('activity-log', null, 'activity-log') },
   ];
   // ---- Category 3 — Tools ----
   const tools = [
     // Global search also lives on the bottom nav bar (mobile/tablet); this row
     // keeps it reachable on desktop, where the bar is hidden.
-    { key: 'search',    icon: Search, color: T.primary, label: 'Search', tip: 'One search across practice questions, concept cards, lab values, dosage drills and FAQs.', sub: 'Find anything in the app', action: () => go('search', null, 'search') },
-    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: 'Study plan', tip: 'Set your NORCET date and daily goal, and get a personalised day-by-day plan to exam day.', sub: 'Date, daily goal & day-by-day plan', action: () => go('study-plan', null, 'examdate') },
-    { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: 'Reference', tip: 'Lab values, drug tables and quick-look clinical numbers.', sub: 'Labs, drugs, values',    action: () => go('reference', null, 'reference') },
+    { key: 'search',    icon: Search, color: T.primary, label: t('nav.drawer.search.label'), tip: t('nav.drawer.search.tip'), sub: t('nav.drawer.search.sub'), action: () => go('search', null, 'search') },
+    { key: 'examdate',  icon: CalendarDays, color: T.primary, label: t('nav.drawer.studyPlan.label'), tip: t('nav.drawer.studyPlan.tip'), sub: t('nav.drawer.studyPlan.sub'), action: () => go('study-plan', null, 'examdate') },
+    { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: t('nav.drawer.reference.label'), tip: t('nav.drawer.reference.tip'), sub: t('nav.drawer.reference.sub'),    action: () => go('reference', null, 'reference') },
     // Premium — a preview of upcoming plans/perks. Gated on the contract flag
     // the same way the admin-only "Add question" row is conditionally spread;
     // nothing in the app is gated, everything is free during the test phase.
-    ...(isPremiumEnabled() ? [{ key: 'premium', icon: Crown, color: '#D97706', label: 'Premium', badge: 'New', tip: 'See what Premium will include. Everything is free during the test phase.', sub: 'Plans & perks preview', action: () => go('premium', null, 'premium') }] : []),
+    ...(isPremiumEnabled() ? [{ key: 'premium', icon: Crown, color: '#D97706', label: t('nav.drawer.premium.label'), badge: t('nav.drawer.badgeNew'), tip: t('nav.drawer.premium.tip'), sub: t('nav.drawer.premium.sub'), action: () => go('premium', null, 'premium') }] : []),
   ];
   // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as
   // every other section so spacing + sizing stay perfectly symmetric.)
   const learn = [
-    { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques: active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
-    { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team, ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
-    { key: 'about', icon: Info, color: T.accent, label: 'About', tip: 'Our mission, how the app teaches, and the person building it.', sub: 'The story behind NurseHolic', action: () => go('about', null, 'about') },
+    { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: t('nav.drawer.studyMethods.label'), badge: t('nav.drawer.badgeGuide'), tip: t('nav.drawer.studyMethods.tip'), sub: t('nav.drawer.studyMethods.sub'), action: () => go('study-methods', null, 'methods') },
+    { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: t('nav.drawer.faq.label'), badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: t('nav.drawer.faq.tip'), sub: t('nav.drawer.faq.sub'), action: () => go('faq', null, 'faq') },
+    { key: 'about', icon: Info, color: T.accent, label: t('nav.drawer.about.label'), tip: t('nav.drawer.about.tip'), sub: t('nav.drawer.about.sub'), action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly
   // spaced rows replacing the old combined panel.)
   const feedback = [
-    { key: 'send-feedback', icon: Send, color: T.accent, label: 'Send feedback', tip: 'Found a bug or have an idea? Send a report straight to the developer.', sub: 'Report a bug or suggest a feature', action: () => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); } },
-    { key: 'my-reports', icon: Inbox, color: T.primary, label: 'My feedback', badge: replyUnread > 0 ? String(replyUnread) : null, badgeUrgent: true, tip: 'Your past reports and the admin\u2019s replies.', sub: 'Your reports and admin replies', action: () => go('my-reports', null, 'my-reports') },
+    { key: 'send-feedback', icon: Send, color: T.accent, label: t('nav.drawer.sendFeedback.label'), tip: t('nav.drawer.sendFeedback.tip'), sub: t('nav.drawer.sendFeedback.sub'), action: () => { onClose(); requestFeedback({ source: 'feedback', screen: 'Sidebar feedback' }); } },
+    { key: 'my-reports', icon: Inbox, color: T.primary, label: t('nav.drawer.myReports.label'), badge: replyUnread > 0 ? String(replyUnread) : null, badgeUrgent: true, tip: t('nav.drawer.myReports.tip'), sub: t('nav.drawer.myReports.sub'), action: () => go('my-reports', null, 'my-reports') },
   ];
 
   const Item = ({ it, index = 0 }) => {
@@ -398,10 +399,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
             </div>
             <div className="min-w-0">
               <div className="font-display text-base font-semibold leading-tight" style={{ color: T.ink }}>NurseHolic</div>
-              <div className="text-[11px]" style={{ color: T.muted }}>Menu</div>
+              <div className="text-[11px]" style={{ color: T.muted }}>{t('nav.drawer.menu')}</div>
             </div>
           </div>
-          <button onClick={onClose} className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label="Close menu">
+          <button onClick={onClose} className="no-tap-highlight p-2 -mr-2 rounded-full active:bg-black/5" aria-label={t('nav.drawer.closeMenu')}>
             <X size={20} style={{ color: T.muted }} />
           </button>
         </div>
@@ -409,22 +410,22 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
         {/* Nav list */}
         <div className="px-2 py-2 pb-10">
           <div key={openCount}>{/* remount per open → entrance replays */}
-          <SectionHeader label="Study" sectionKey="study" />
+          <SectionHeader label={t('nav.drawer.sections.study')} sectionKey="study" />
           <Collapsible open={openSections.study}>
             {study.map((it, i) => <Item key={it.key} it={it} index={i} />)}
           </Collapsible>
 
-          <SectionHeader label="Progress" sectionKey="progress" />
+          <SectionHeader label={t('nav.drawer.sections.progress')} sectionKey="progress" />
           <Collapsible open={openSections.progress}>
             {progress.map((it, i) => <Item key={it.key} it={it} index={study.length + i} />)}
           </Collapsible>
 
-          <SectionHeader label="Tools" sectionKey="tools" />
+          <SectionHeader label={t('nav.drawer.sections.tools')} sectionKey="tools" />
           <Collapsible open={openSections.tools}>
             {tools.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + i} />)}
           </Collapsible>
 
-          <SectionHeader label="Help & Learn" sectionKey="learn" />
+          <SectionHeader label={t('nav.drawer.sections.learn')} sectionKey="learn" />
           <Collapsible open={openSections.learn}>
             {learn.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + tools.length + i} />)}
           </Collapsible>
@@ -433,7 +434,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
               heading expands "Send feedback" + "My feedback" as children. Same
               targets as before (source:'feedback' → the one admin inbox; and
               the user's own reports + admin replies, with an unread badge). */}
-          <SectionHeader label="Feedback" sectionKey="feedback" />
+          <SectionHeader label={t('nav.drawer.sections.feedback')} sectionKey="feedback" />
           <Collapsible open={openSections.feedback}>
             {feedback.map((it, i) => <Item key={it.key} it={it} index={study.length + progress.length + tools.length + learn.length + i} />)}
           </Collapsible>
@@ -441,7 +442,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           </div>
 
           <div className="my-3 mx-3 border-t" style={{ borderColor: T.borderSoft }} />
-          <Tip title="Settings" text="Themes, sounds, gestures, reminders, backup and your profile.">
+          <Tip title={t('nav.tabs.settings')} text={t('nav.drawer.settingsTip')}>
           <button onClick={() => go('settings', null, 'settings')}
                   className="no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left"
                   style={{ background: T.surface, border: `1px solid ${T.borderSoft}`, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
@@ -449,8 +450,8 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
               <SettingsIcon size={18} style={{ color: T.inkSoft }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm" style={{ color: T.ink }}>Settings</div>
-              <div className="text-[11px]" style={{ color: T.muted }}>Profile, backup, appearance</div>
+              <div className="font-medium text-sm" style={{ color: T.ink }}>{t('nav.tabs.settings')}</div>
+              <div className="text-[11px]" style={{ color: T.muted }}>{t('nav.drawer.settingsSub')}</div>
             </div>
             <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
           </button>

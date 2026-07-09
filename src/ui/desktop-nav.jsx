@@ -19,24 +19,26 @@ import React, { useEffect } from 'react';
 import {
   Search, Heart, Settings, Menu, Bell, Plus,
 } from 'lucide-react';
-import { useTheme, useProfile } from '../lib/app-context.jsx';
+import { useTheme, useProfile, useI18n } from '../lib/app-context.jsx';
 import { playTapSound } from '../lib/sound.js';
 
 const BAR_H = 64;
 
 // Section links (center cluster). Routes are nav objects via onNavigate
 // (the drawer's dispatcher), so quiz-spec style entries would work too.
+// Labels are i18n keys resolved at render (module scope must stay key-only).
 const LINKS = [
-  { label: 'Learn', screen: 'learn-topics' },
-  { label: 'Level Up', screen: 'level-up' },
-  { label: 'Revision', screen: 'revision-sheet' },
-  { label: 'Library', screen: 'library' },
-  { label: 'Stats', screen: 'stats' },
+  { labelKey: 'nav.links.learn',    screen: 'learn-topics' },
+  { labelKey: 'nav.links.levelUp',  screen: 'level-up' },
+  { labelKey: 'nav.links.revision', screen: 'revision-sheet' },
+  { labelKey: 'nav.links.library',  screen: 'library' },
+  { labelKey: 'nav.links.stats',    screen: 'stats' },
 ];
 
 export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOpenNote, unreadNotifCount = 0, onOpenNotifications }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { profile } = useProfile();
+  const { t } = useI18n();
 
   // Publish the bar height so portaled TopBars (Settings sub-views etc.)
   // can sit BELOW the bar instead of colliding with it at top:0.
@@ -45,7 +47,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
     return () => { try { document.documentElement.style.removeProperty('--dnav-h'); } catch (e) {} };
   }, []);
 
-  const name = (profile && (profile.displayName || profile.id)) || 'Guest';
+  const name = (profile && (profile.displayName || profile.id)) || t('common.guest');
   const initial = String(name).trim().charAt(0).toUpperCase() || 'N';
 
   const iconBtn = (active) => ({
@@ -67,7 +69,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
           {/* Brand → Home (tab-root switch, clears the back stack) */}
           <button onClick={() => { playTapSound(); onTab('home'); }}
                   className="no-tap-highlight flex items-center gap-2.5 flex-shrink-0 dnav-brand"
-                  aria-label="Home" aria-current={screen === 'home' ? 'page' : undefined}>
+                  aria-label={t('nav.tabs.home')} aria-current={screen === 'home' ? 'page' : undefined}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center font-display text-base font-bold"
                  style={{ background: T.primary, color: '#FFF' }}>
               N
@@ -78,31 +80,31 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
           </button>
 
           {/* Section links — hover underline slides in; Home is via the brand. */}
-          <nav className="flex items-center gap-1 flex-1" aria-label="Primary">
+          <nav className="flex items-center gap-1 flex-1" aria-label={t('nav.mainNavigation')}>
             {LINKS.map((l) => (
               <button key={l.screen}
                       onClick={() => { playTapSound(); onNavigate({ screen: l.screen }); }}
                       className="dnav-link no-tap-highlight relative px-3.5 py-2 rounded-lg text-[13.5px] font-semibold transition-colors"
                       style={{ color: T.inkSoft, '--dnav-underline': T.primary }}>
-                {l.label}
+                {t(l.labelKey)}
               </button>
             ))}
           </nav>
 
           {/* Right cluster — mirrors the hidden Home header + bottom bar. */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            <button onClick={() => { playTapSound(); onTab('search'); }} aria-label="Search"
+            <button onClick={() => { playTapSound(); onTab('search'); }} aria-label={t('nav.tabs.search')}
                     aria-current={screen === 'search' ? 'page' : undefined}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(screen === 'search')}>
               <Search size={19} strokeWidth={2.2} />
             </button>
-            <button onClick={() => { playTapSound(); onOpenNote(); }} aria-label="Quick note"
+            <button onClick={() => { playTapSound(); onOpenNote(); }} aria-label={t('nav.quickNote')}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(false)}>
               <Plus size={19} strokeWidth={2.2} />
             </button>
-            <button onClick={() => { playTapSound(); onOpenNotifications(); }} aria-label="Notifications"
+            <button onClick={() => { playTapSound(); onOpenNotifications(); }} aria-label={t('nav.notifications')}
                     className="dnav-icon no-tap-highlight relative p-2.5 rounded-xl transition-colors"
                     style={iconBtn(false)}>
               <Bell size={19} strokeWidth={2.2} />
@@ -113,7 +115,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
                 </span>
               )}
             </button>
-            <button onClick={() => { playTapSound(); onTab('favorites'); }} aria-label="Favourites"
+            <button onClick={() => { playTapSound(); onTab('favorites'); }} aria-label={t('nav.tabs.favourites')}
                     aria-current={screen === 'favorites' ? 'page' : undefined}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(screen === 'favorites')}>
@@ -122,7 +124,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
 
             {/* Profile chip → Settings */}
             <button onClick={() => { playTapSound(); onTab('settings'); }}
-                    aria-label="Settings" aria-current={screen === 'settings' ? 'page' : undefined}
+                    aria-label={t('nav.tabs.settings')} aria-current={screen === 'settings' ? 'page' : undefined}
                     className="dnav-chip no-tap-highlight flex items-center gap-2 ml-1 pl-1.5 pr-3 py-1.5 rounded-full transition-all"
                     style={{
                       background: screen === 'settings' ? T.primary + '14' : T.surface,
@@ -138,7 +140,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               <Settings size={14} style={{ color: T.muted }} />
             </button>
 
-            <button onClick={() => { playTapSound(); onOpenMenu(); }} aria-label="Open menu"
+            <button onClick={() => { playTapSound(); onOpenMenu(); }} aria-label={t('nav.openMenu')}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(false)}>
               <Menu size={19} strokeWidth={2.2} />

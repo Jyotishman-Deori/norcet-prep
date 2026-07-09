@@ -5,13 +5,16 @@
 // handles selection, reveal, bookmarking, per-question timing, the
 // reference lookup, and exit confirmation; calls onComplete with the run.
 // [A7] theme + isDark via useTheme(); app data via useData(); the
-// per-run config + callbacks stay props. profileId stays a prop (scalar,
+// per-run config + callbacks stay props.
+// I18N: only CHROME strings go through t() here. The question payload
+// (q.q / q.options / q.exp / q.wrong / q.memoryTip / q.hint / q.alt_exp)
+// is exam-mirroring study content and must stay English verbatim. profileId stays a prop (scalar,
 // forwarded to HelpfulToggle). The previously-passed `allQuestions` prop
 // was dead in the body and has been dropped.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
 import { AlertCircle, Bookmark, BookmarkCheck, Brain, Check, ChevronRight, Coins, Flag, FlaskConical, Lightbulb, Sparkles, Timer, X } from 'lucide-react';
-import { useTheme, useData } from '../lib/app-context.jsx';
+import { useTheme, useData, useI18n } from '../lib/app-context.jsx';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
 import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
@@ -47,14 +50,15 @@ const PACE_MODES = ['quick', 'topic', 'weak-topic', 'mock'];
 // #4 — per-question self-rating. Defaults to "Unsure" so it's a zero-friction
 // optional tap; the choice feeds the calibration report on Results + Stats.
 const CONF_OPTS = [
-  { key: 'sure',   label: 'Sure',   color: (T) => T.success },
-  { key: 'unsure', label: 'Unsure', color: (T) => (T.sec && T.sec.stats) || T.primary },
-  { key: 'guess',  label: 'Guess',  color: () => '#B8791A' },
+  { key: 'sure',   labelKey: 'quiz.conf.sure',   color: (T) => T.success },
+  { key: 'unsure', labelKey: 'quiz.conf.unsure', color: (T) => (T.sec && T.sec.stats) || T.primary },
+  { key: 'guess',  labelKey: 'quiz.conf.guess',  color: () => '#B8791A' },
 ];
 function ConfidenceChips({ value, onChange, T }) {
+  const { t } = useI18n();
   return (
     <div className="flex items-center gap-2 mb-2.5">
-      <span className="text-[11px] font-medium shrink-0" style={{ color: T.muted }}>How sure?</span>
+      <span className="text-[11px] font-medium shrink-0" style={{ color: T.muted }}>{t('quiz.conf.howSure')}</span>
       <div className="flex gap-1.5 flex-1">
         {CONF_OPTS.map((o) => {
           const active = value === o.key;
@@ -66,7 +70,7 @@ function ConfidenceChips({ value, onChange, T }) {
               style={active
                 ? { background: c + '1F', color: c, border: `1.5px solid ${c}` }
                 : { background: T.surface, color: T.muted, border: `1.5px solid ${T.border}` }}>
-              {o.label}
+              {t(o.labelKey)}
             </button>
           );
         })}
@@ -78,6 +82,7 @@ function ConfidenceChips({ value, onChange, T }) {
 function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false, flashpoint = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
+  const { t } = useI18n();
   const [index, setIndex] = useState(0);
   const [selected, setSelected] = useState([]);
   const [submitted, setSubmitted] = useState(false);
@@ -250,21 +255,21 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   }, [index]);
 
   if (!q) {
-    const emptyTitle = mode === 'bookmarks' ? 'Bookmarks'
-      : mode === 'review-due' ? 'Review'
-      : mode === 'wrong' ? 'Review'
-      : 'Practice';
+    const emptyTitle = mode === 'bookmarks' ? t('quiz.title.bookmarks')
+      : mode === 'review-due' ? t('quiz.title.review')
+      : mode === 'wrong' ? t('quiz.title.review')
+      : t('quiz.title.practice');
     return (
       <div className="anim-fadeup">
         <TopBar title={emptyTitle} onBack={onBack}
                 feedback={{ screen: `Quiz · ${mode || 'practice'} (empty)` }} />
         <div className="p-6 text-center max-w-md mx-auto pt-16">
-          <div className="font-display text-xl mb-2 text-ink">No questions available</div>
+          <div className="font-display text-xl mb-2 text-ink">{t('quiz.empty.none')}</div>
           <div className="text-sm text-muted">
-            {mode === 'bookmarks' && 'You have no bookmarked questions yet, bookmark a few during practice, then come back.'}
-            {mode === 'review-due' && 'Nothing is due for review yet, come back tomorrow.'}
-            {mode === 'wrong' && 'No wrong answers to review.'}
-            {!['bookmarks', 'review-due', 'wrong'].includes(mode) && 'Nothing to show here.'}
+            {mode === 'bookmarks' && t('quiz.empty.bookmarks')}
+            {mode === 'review-due' && t('quiz.empty.reviewDue')}
+            {mode === 'wrong' && t('quiz.empty.wrong')}
+            {!['bookmarks', 'review-due', 'wrong'].includes(mode) && t('quiz.empty.generic')}
           </div>
         </div>
       </div>
@@ -460,14 +465,14 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     <>
     <div className="test-enter">
       <TopBar
-        title={`Q ${scheduleIndex + 1} of ${schedule.length}`}
+        title={t('quiz.qOf', { n: scheduleIndex + 1, total: schedule.length })}
         onBack={() => setConfirmExit(true)}
         feedback={{ screen: `Quiz · ${mode || 'practice'}`, questionId: q.id }}
         right={
           <div className="flex items-center gap-2">
             {/* PHIL-03 — Accuracy Coins balance (premium, non-monetary). Pops
                 when a Why Bonus lands. */}
-            <Tip text="Accuracy Coins, earned by studying the 'why', not just guessing">
+            <Tip text={t('quiz.coinsTip')}>
             <div className={"flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold tabular-nums" + (whyBonus ? ' q-pulse' : '')}
                  style={{ background: '#F59E0B18', color: '#B45309', border: '1px solid #F59E0B40' }}>
               <Coins size={12} />
@@ -488,7 +493,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               const bg = noTime ? T.errorSoft : (lowTime ? T.errorSoft : T.surfaceWarm);
               const fg = (lowTime || noTime) ? T.error : T.ink;
               return (
-                <Tip text={isCountdown ? 'Time remaining: the chip pulses in the final seconds' : 'Time elapsed on this session'}>
+                <Tip text={isCountdown ? t('quiz.timerRemainingTip') : t('quiz.timerElapsedTip')}>
                 <div className={"flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium tabular-nums" + beatClass}
                      style={{ background: bg, color: fg }}>
                   <Timer size={12} />
@@ -511,9 +516,9 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               <Sparkles size={18} color="#FFF" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-sm font-semibold">+50 Coins · The Why Bonus</div>
+              <div className="font-display text-sm font-semibold">{t('quiz.whyBonusTitle')}</div>
               <div className="text-[12px] leading-snug" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                You got the mark and stayed to understand the <i>why</i>. That's true clinical instinct.
+                {t('quiz.whyBonusBody')}
               </div>
             </div>
           </div>
@@ -548,15 +553,15 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             </Pill>
             {q.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{q.sub}</Pill>}
             <Pill bg={q.type === 'msq' ? T.errorSoft : T.successSoft} color={q.type === 'msq' ? T.error : T.success}>
-              {q.type === 'msq' ? 'Multi-select' : 'Single answer'}
+              {q.type === 'msq' ? t('quiz.multiSelect') : t('quiz.singleAnswer')}
             </Pill>
             {/* P16 — provenance badge (Quick / Topic / Mock all render via Quiz) */}
             <PyqBadge q={q} />
           </div>
-          <Tip text={bookmarkedLocal.has(q.id) ? 'Bookmarked: tap to remove' : 'Save this question to Bookmarks for later review'}>
+          <Tip text={bookmarkedLocal.has(q.id) ? t('quiz.bookmarkedTip') : t('quiz.bookmarkTip')}>
           <button onClick={toggleBookmark}
                   aria-pressed={bookmarkedLocal.has(q.id)}
-                  aria-label={bookmarkedLocal.has(q.id) ? 'Remove bookmark' : 'Bookmark this question'}
+                  aria-label={bookmarkedLocal.has(q.id) ? t('quiz.removeBookmark') : t('quiz.addBookmark')}
                   className="no-tap-highlight p-1 -mr-1 -mt-0.5 rounded-full active:bg-black/5 flex-shrink-0">
             <span className={"inline-block " + (bmAnim === 'pop' ? 'bm-pop' : bmAnim === 'deflate' ? 'bm-deflate' : '')}
                   key={bmAnim ? `${q.id}:${bookmarkedLocal.has(q.id)}` : q.id}
@@ -589,7 +594,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                       className="no-tap-highlight inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition"
                       style={{ background: T.accent + '15', color: T.accent, border: `1px solid ${T.accent}40` }}>
                 <Lightbulb size={12} />
-                Need a hint?
+                {t('quiz.needHint')}
               </button>
             ) : (
               <Card className="anim-fadeup p-3" style={{ background: T.accent + '12', border: `1px solid ${T.accent}40` }}>
@@ -648,7 +653,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                    tabIndex={isLocked ? -1 : 0}
                    aria-pressed={isSelected}
                    aria-disabled={isLocked || undefined}
-                   aria-label={`Option ${String.fromCharCode(65 + i)}: ${opt}`}
+                   aria-label={t('quiz.optionAria', { letter: String.fromCharCode(65 + i), text: opt })}
                    onKeyDown={(e) => {
                      if (isLocked) return;
                      if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
@@ -676,8 +681,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             <div className="flex items-start gap-2.5 text-xs leading-relaxed text-ink-soft">
               <AlertCircle size={14} className="flex-shrink-0 mt-0.5 text-accent" />
               <div>
-                Solution shown: this one stays neutral, so it won’t count for or
-                against your accuracy. We’ll bring it back in your review queue so you can lock it in.
+                {t('quiz.revealedBanner')}
               </div>
             </div>
           </Card>
@@ -690,7 +694,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <Lightbulb size={16} className="text-accent" />
-                  <div className="text-xs uppercase tracking-wider font-semibold text-muted">Explanation</div>
+                  <div className="text-xs uppercase tracking-wider font-semibold text-muted">{t('quiz.explanation')}</div>
                 </div>
                 <TTSButton text={q.exp} />
               </div>
@@ -701,7 +705,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                   this question is later answered correctly. Hidden for guests
                   (no profile to store against). */}
               {profileId && (
-                <Tip text="Flagged questions are saved to My Doubts, find them in the sidebar.">
+                <Tip text={t('quiz.flagTip')}>
                 <button onClick={toggleSolutionFlag}
                         aria-pressed={!!(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)}
                         className="no-tap-highlight w-full mt-3 inline-flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-medium active:scale-95 transition"
@@ -712,8 +716,8 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                     <Flag size={12} fill={(qDoubts[q.id] && !qDoubts[q.id].resolvedAt) ? 'currentColor' : 'none'} />
                   </span>
                   {(qDoubts[q.id] && !qDoubts[q.id].resolvedAt)
-                    ? 'Flagged: explanation unclear (tap to unflag)'
-                    : 'Still confused? Flag this explanation'}
+                    ? t('quiz.flagged')
+                    : t('quiz.flagCta')}
                 </button>
                 </Tip>
               )}
@@ -731,7 +735,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                     }}>
                 <div className="flex items-center gap-2 mb-2">
                   <Lightbulb size={14} style={{ color: '#D4900A' }} />
-                  <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: '#D4900A' }}>Memory tip</div>
+                  <div className="text-[10px] uppercase tracking-wider font-semibold" style={{ color: '#D4900A' }}>{t('quiz.memoryTip')}</div>
                 </div>
                 <div className="text-sm leading-relaxed" style={{ color: T.ink }}>
                   {q.memoryTip}
@@ -740,7 +744,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             )}
             {q.wrong && Object.keys(q.wrong).length > 0 && (
               <Card className="p-4 bg-surface">
-                <div className="text-xs uppercase tracking-wider font-semibold mb-3 text-muted">Why the others are wrong</div>
+                <div className="text-xs uppercase tracking-wider font-semibold mb-3 text-muted">{t('quiz.whyOthersWrong')}</div>
                 <div className="space-y-2.5">
                   {Object.entries(q.wrong).map(([idx, text]) => (
                     <div key={idx} className="flex gap-2.5 text-sm text-ink-soft">
@@ -761,7 +765,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                       className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-medium active:scale-95 transition"
                       style={{ background: T.surface, border: `1.5px dashed ${T.primary}50`, color: T.primary }}>
                 <Brain size={14} />
-                I still don't get it
+                {t('quiz.stillDontGetIt')}
               </button>
             )}
             {q.alt_exp && altShown && (
@@ -769,7 +773,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <Brain size={14} className="text-primary" />
-                    <div className="text-xs uppercase tracking-wider font-semibold text-primary">Explained another way</div>
+                    <div className="text-xs uppercase tracking-wider font-semibold text-primary">{t('quiz.explainedAnotherWay')}</div>
                   </div>
                   <TTSButton text={q.alt_exp} />
                 </div>
@@ -792,13 +796,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                     className="no-tap-highlight inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium active:scale-95 transition"
                     style={{ background: T.surfaceWarm, color: T.accent, border: `1px solid ${T.border}` }}>
               <FlaskConical size={13} />
-              Reference
+              {t('quiz.reference')}
             </button>
           </div>
           {(submitted || revealed) ? (
             <Button onClick={next} size="lg" className="w-full" variant="primary"
                     icon={<ChevronRight size={18} />}>
-              {scheduleIndex + 1 < schedule.length ? 'Next question' : 'Finish'}
+              {scheduleIndex + 1 < schedule.length ? t('quiz.nextQuestion') : t('quiz.finish')}
             </Button>
           ) : (
             <>
@@ -811,7 +815,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                         className="no-tap-highlight w-full inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-medium active:scale-95 transition disabled:opacity-40 mb-2"
                         style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
                   <ChevronRight size={12} />
-                  Skip{remainingAfter > 0 ? (skipsForCurrent >= 2 ? ` (already deferred)` : ` (come back to this)`) : ''}
+                  {remainingAfter > 0 ? (skipsForCurrent >= 2 ? t('quiz.skipDeferred') : t('quiz.skipComeBack')) : t('quiz.skip')}
                 </button>
               )}
               {/* #4 — rate confidence once an answer is picked (before checking) */}
@@ -827,13 +831,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
                 const hasSel = selected.length > 0;
                 return (
                   <button onClick={hasSel ? submit : revealAnswer}
-                          aria-label={hasSel ? 'Check answer' : 'Submit without answering'}
+                          aria-label={hasSel ? t('quiz.checkAnswer') : t('quiz.submitWithoutAnswering')}
                           className={'no-tap-highlight w-full rounded-2xl py-3.5 font-semibold text-base active:brightness-95 transition-[background-color,color,box-shadow,border-color] duration-300 ease-out' + (hasSel ? ' qbtn-ready' : '')}
                           style={hasSel
                             ? { background: T.primary, color: '#FFF', border: '1.5px solid transparent', boxShadow: `0 10px 26px ${T.primary}45` }
                             : { background: T.primary + '12', color: T.primary, border: `1.5px solid ${T.primary}33`, boxShadow: 'none' }}>
                     <span key={hasSel ? 'check' : 'submit'} className="qbtn-label inline-flex items-center justify-center gap-2">
-                      {hasSel ? <><Check size={18} /> Check answer</> : <>Submit</>}
+                      {hasSel ? <><Check size={18} /> {t('quiz.checkAnswer')}</> : <>{t('quiz.submit')}</>}
                     </span>
                   </button>
                 );

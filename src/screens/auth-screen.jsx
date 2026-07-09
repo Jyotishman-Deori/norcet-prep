@@ -18,7 +18,7 @@ import {
   GraduationCap, User, UserPlus, LogIn, Lock, Eye, EyeOff, RefreshCw,
   CalendarDays, Mail, ShieldQuestion, ChevronDown, X, Link2
 } from 'lucide-react';
-import { useTheme } from '../lib/app-context.jsx';
+import { useTheme, useI18n } from '../lib/app-context.jsx';
 import { Card, Button } from '../ui/primitives.jsx';
 import TurnstileWidget, { isTurnstileEnabled } from '../ui/turnstile.jsx';
 import GoogleSignInButton, { isGoogleSignInEnabled } from '../ui/google-signin.jsx';
@@ -53,6 +53,7 @@ async function clearLegacyData() {
 // clear "not a staff account" message instead of a sign-up.
 function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, claimToken, loginOnly = false }) {
   const { theme: T } = useTheme();
+  const { t } = useI18n();
   const [mode, setMode] = useState(loginOnly ? 'login' : initialMode);
   const [displayName, setDisplayName] = useState('');
   const [password, setPassword] = useState('');
@@ -201,7 +202,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
       } else if (result.newGoogleUser) {
         if (loginOnly) {
           // Admin app: a Google account with no linked profile isn't staff.
-          setError('This Google account isn’t linked to a staff account. Sign in with your username & password, or link Google from the main app first.');
+          setError(t('auth.err.notStaff'));
         } else {
           setGoogleIdToken(idToken);
           setGoogleNewUser({ suggestedName: result.suggestedName, email: result.email });
@@ -214,7 +215,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         onAuthed(result.profile);
       }
     } catch (e) {
-      setError(e.message || 'Google sign-in failed');
+      setError(e.message || t('auth.err.googleFailed'));
     } finally {
       setWorking(false);
     }
@@ -231,7 +232,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
   const handleGoogleLink = async () => {
     if (linkBusy || !linkGoogle) return;
     setLinkErr(null);
-    if (!linkPwd) { setLinkErr("Enter this profile's password"); return; }
+    if (!linkPwd) { setLinkErr(t('auth.err.enterLinkPwd')); return; }
     setLinkBusy(true);
     try {
       const profile = await googleLink(googleIdToken, linkPwd);
@@ -239,7 +240,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
       setLinkGoogle(null); setLinkPwd(''); setGoogleIdToken(null);
       onAuthed(profile);
     } catch (e) {
-      setLinkErr(e.message || 'Could not link your Google account');
+      setLinkErr(e.message || t('auth.err.linkFailed'));
     } finally {
       setLinkBusy(false);
     }
@@ -257,19 +258,19 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
 
     // ---- Recovery step 1: identify the account's recovery factor ----
     if (recovering && recoveryStep === 'identify') {
-      if (!displayName.trim()) { setError('Enter your display name'); return; }
+      if (!displayName.trim()) { setError(t('auth.err.enterName')); return; }
       setWorking(true);
       try {
         const info = await getRecoveryQuestion(displayName);
         if (!info) {
-          setError("We couldn't find a recoverable profile with that name. Check the spelling, or create a new profile.");
+          setError(t('auth.err.noRecoverable'));
         } else {
           setRecoveryMethod(info.method);
           setRecoveryQuestion(info.method === 'question' ? (info.question || '') : '');
           setRecoveryStep('verify');
         }
       } catch (e) {
-        setError(e.message || 'Could not reach the recovery service');
+        setError(e.message || t('auth.err.recoveryUnreachable'));
       } finally {
         setWorking(false);
       }
@@ -279,11 +280,11 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     // ---- Recovery step 2: verify the answer/DOB and set a new password ----
     if (recovering && recoveryStep === 'verify') {
       if (recoveryMethod === 'dob') {
-        if (!dob) { setError('Pick your date of birth'); return; }
+        if (!dob) { setError(t('auth.err.pickDob')); return; }
       } else {
-        if (!securityAnswer.trim()) { setError('Type the answer to your security question'); return; }
+        if (!securityAnswer.trim()) { setError(t('auth.err.typeAnswer')); return; }
       }
-      if (!newPassword) { setError('Enter a new password'); return; }
+      if (!newPassword) { setError(t('auth.err.enterNewPwd')); return; }
       setWorking(true);
       try {
         if (recoveryMethod === 'dob') {
@@ -298,7 +299,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         leaveRecovery();
         setMode('login');
       } catch (e) {
-        setError(e.message || 'Recovery failed');
+        setError(e.message || t('auth.err.recoveryFailed'));
         resetCaptcha();
       } finally {
         setWorking(false);
@@ -307,18 +308,18 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     }
 
     // ---- Create / Login ----
-    if (!displayName.trim()) { setError('Enter a display name'); return; }
-    if (!googleNewUser && !password) { setError('Enter a password'); return; }
+    if (!displayName.trim()) { setError(t('auth.err.enterName')); return; }
+    if (!googleNewUser && !password) { setError(t('auth.err.enterPwd')); return; }
     if (mode === 'create') {
       // Community moderation: names show on the leaderboard and FAQ threads —
       // profanity (en/hi/hinglish/assamese) is blocked at the door.
       if (containsProfanity(displayName.trim()).hit) {
-        setError('That display name contains a word we can’t show publicly, pick another.');
+        setError(t('auth.err.profanity'));
         return;
       }
       if (!googleNewUser) {
-        if (!securityQuestion) { setError('Pick a security question'); return; }
-        if (!securityAnswer.trim()) { setError('Type an answer to your security question'); return; }
+        if (!securityQuestion) { setError(t('auth.err.pickQuestion')); return; }
+        if (!securityAnswer.trim()) { setError(t('auth.err.typeAnswer')); return; }
       }
     }
     setWorking(true);
@@ -347,7 +348,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
       setGoogleIdToken(null);
       onAuthed(profile);
     } catch (e) {
-      setError(e.message || 'Something went wrong');
+      setError(e.message || t('auth.err.generic'));
       resetCaptcha();
       setWorking(false);
     }
@@ -372,8 +373,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         : mode === 'create' ? (googleNewUser ? false : (!password || !securityQuestion || !securityAnswer.trim()))
         : !password);
   const submitLabel = working
-    ? (inRecoveryIdentify ? 'Checking…' : inRecoveryVerify ? 'Resetting…' : mode === 'create' ? 'Creating…' : 'Logging in…')
-    : (inRecoveryIdentify ? 'Continue' : inRecoveryVerify ? 'Reset password' : mode === 'create' ? 'Create profile' : 'Log in');
+    ? (inRecoveryIdentify ? t('auth.busy.checking') : inRecoveryVerify ? t('auth.busy.resetting') : mode === 'create' ? t('auth.busy.creating') : t('auth.busy.loggingIn'))
+    : (inRecoveryIdentify ? t('common.continue') : inRecoveryVerify ? t('auth.resetPassword') : mode === 'create' ? t('auth.createProfile') : t('auth.logIn'));
   const submitIcon = working
     ? <RefreshCw size={18} className="animate-spin" />
     : (recovering ? <Lock size={18} /> : (mode === 'create' ? <UserPlus size={18} /> : <LogIn size={18} />));
@@ -386,13 +387,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             let the user back out and keep exploring without an account. */}
         {onBack && (
           <button onClick={onBack}
-                  aria-label="Keep exploring as guest"
+                  aria-label={t('auth.keepExploring')}
                   className="no-tap-highlight group mb-5 inline-flex items-center gap-2 pl-2 pr-4 py-2 rounded-full active:scale-95 transition-transform"
                   style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.ink }}>
             <span className="flex items-center justify-center w-7 h-7 rounded-full" style={{ background: T.primary + '1A' }}>
               <ArrowLeft size={15} style={{ color: T.primary }} className="transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:-translate-x-0.5" />
             </span>
-            <span className="text-sm font-medium">Keep exploring as guest</span>
+            <span className="text-sm font-medium">{t('auth.keepExploring')}</span>
           </button>
         )}
         {/* Brand */}
@@ -403,14 +404,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           </div>
           <div className="font-display text-3xl font-semibold" style={{ color: T.ink }}>NurseHolic™</div>
           <div className="text-sm mt-1" style={{ color: T.muted }}>
-            {loginOnly ? 'Staff sign-in' : mode === 'create' ? 'Create a profile to save your progress across devices' : 'Welcome back'}
+            {loginOnly ? t('auth.staffSignIn') : mode === 'create' ? t('auth.createSub') : t('auth.welcomeBack')}
           </div>
           {/* Waitlist invite chip — reassures the student their ?claim= link is
               attached before they fill the form (the server checks it on submit). */}
           {claimToken && mode === 'create' && !recovering && (
             <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full text-xs font-medium"
                  style={{ background: T.success + '1A', color: T.success, border: `1px solid ${T.success}40` }}>
-              <Check size={13} /> Founding-member invite active
+              <Check size={13} /> {t('auth.inviteActive')}
             </div>
           )}
         </div>
@@ -425,7 +426,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                              color: mode === 'create' ? T.ink : T.muted,
                              boxShadow: mode === 'create' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}>
               <UserPlus size={14} />
-              Create profile
+              {t('auth.createProfile')}
             </button>
             <button onClick={() => { setMode('login'); setError(null); if (googleNewUser) cancelGoogleNewUser(); }}
                     className="no-tap-highlight py-2.5 rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2"
@@ -433,7 +434,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                              color: mode === 'login' ? T.ink : T.muted,
                              boxShadow: mode === 'login' ? '0 1px 2px rgba(0,0,0,0.05)' : 'none' }}>
               <LogIn size={14} />
-              Log in
+              {t('auth.logIn')}
             </button>
           </div>
         )}
@@ -445,7 +446,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <GoogleSignInButton onCredential={handleGoogleCredential} disabled={working} />
             <div className="flex items-center gap-3 my-5">
               <div className="flex-1 h-px" style={{ background: T.border }} />
-              <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>or</span>
+              <span className="text-[11px] uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('auth.or')}</span>
               <div className="flex-1 h-px" style={{ background: T.border }} />
             </div>
           </>
@@ -459,11 +460,11 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="flex items-center gap-2.5">
               <Check size={16} className="flex-shrink-0" style={{ color: T.success }} />
               <div className="flex-1 min-w-0 text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                Signed in with Google as <span className="font-medium" style={{ color: T.ink }}>{googleNewUser.email}</span>: pick a display name below to finish.
+                {t('auth.googleSignedPre')} <span className="font-medium" style={{ color: T.ink }}>{googleNewUser.email}</span>{t('auth.googleSignedPost')}
               </div>
               <button type="button" onClick={cancelGoogleNewUser}
                       className="no-tap-highlight text-xs underline flex-shrink-0" style={{ color: T.muted }}>
-                Cancel
+                {t('common.cancel')}
               </button>
             </div>
           </Card>
@@ -472,13 +473,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         {/* Recovery header */}
         {recovering && (
           <div className="mb-4 px-1">
-            <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>Reset password</div>
+            <div className="font-display text-base font-semibold mb-1" style={{ color: T.ink }}>{t('auth.resetPassword')}</div>
             <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
               {recoveryStep === 'identify'
-                ? "Enter your display name. We'll show your security question so you can prove it's you."
+                ? t('auth.recovery.identify')
                 : recoveryMethod === 'dob'
-                  ? "Enter the date of birth you set when you created this profile, then choose a new password."
-                  : "Answer your security question, then choose a new password."}
+                  ? t('auth.recovery.dob')
+                  : t('auth.recovery.question')}
             </div>
           </div>
         )}
@@ -489,7 +490,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="flex items-start gap-2.5">
               <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                Password reset. Log in with your new password, we've pre-filled it for you.
+                {t('auth.recovery.success')}
               </div>
             </div>
           </Card>
@@ -499,7 +500,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             lookup-by-email in authenticateProfile). */}
         <div className="flex items-center justify-between mb-2">
           <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
-            {mode === 'create' || recovering ? 'Display name' : 'Username or email'}
+            {mode === 'create' || recovering ? t('auth.displayName') : t('auth.usernameOrEmail')}
           </div>
           {/* Task 9 — live counter, CREATE mode only (login must not cap/clip an
               existing longer name). */}
@@ -515,7 +516,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             type="text"
             value={displayName}
             onChange={e => setDisplayName(mode === 'create' ? e.target.value.slice(0, USERNAME_MAX) : e.target.value)}
-            placeholder={mode === 'create' ? 'Your name' : recovering ? 'Enter your name' : 'Username or email'}
+            placeholder={mode === 'create' ? t('auth.ph.yourName') : recovering ? t('auth.ph.enterName') : t('auth.usernameOrEmail')}
             autoCapitalize="words"
             autoComplete="off"
             maxLength={mode === 'create' ? USERNAME_MAX : undefined}
@@ -529,21 +530,21 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                  style={{ color: T.error || '#9B5050' }}>
               <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
               <span>
-                This name is already taken.{' '}
+                {t('auth.nameTaken')}{' '}
                 <button
                   type="button"
                   onClick={() => { setMode('login'); setError(null); setPassword(''); setNameTaken(null); if (googleNewUser) cancelGoogleNewUser(); }}
                   className="no-tap-highlight underline font-medium"
                   style={{ color: T.primary }}
                 >
-                  Log in instead?
+                  {t('auth.logInInstead')}
                 </button>
               </span>
             </div>
           )}
           {mode === 'create' && !recovering && checkingName && nameTaken === null && displayName.trim() && (
             <div className="mt-2 text-xs" style={{ color: T.muted }}>
-              Checking availability…
+              {t('auth.checkingAvailability')}
             </div>
           )}
           {/* Caution (non-blocking): the name becomes your login id and is shown
@@ -551,7 +552,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           {mode === 'create' && !recovering && displayName.trim() && /[^\p{L}\p{N}\s\-_.'’]/u.test(displayName.trim()) && (
             <div className="mt-2 text-xs flex items-start gap-1.5" style={{ color: T.accent }}>
               <AlertCircle size={13} className="flex-shrink-0 mt-0.5" />
-              <span>Emojis and symbols may not display correctly on the leaderboard or in backups. Letters, numbers and spaces are safest.</span>
+              <span>{t('auth.emojiCaution')}</span>
             </div>
           )}
         </div>
@@ -561,8 +562,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         {mode === 'create' && !recovering && !googleNewUser && (
           <>
             <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between" style={{ color: T.muted }}>
-              <span>Security question</span>
-              <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>For password recovery</span>
+              <span>{t('auth.securityQuestion')}</span>
+              <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>{t('auth.forRecovery')}</span>
             </div>
             <div className="relative mb-2">
               <button type="button" onClick={() => setSecurityPickerOpen(true)}
@@ -577,7 +578,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 type="text"
                 value={securityAnswer}
                 onChange={e => setSecurityAnswer(e.target.value)}
-                placeholder="Your answer"
+                placeholder={t('auth.ph.yourAnswer')}
                 autoCapitalize="none"
                 autoCorrect="off"
                 autoComplete="off"
@@ -586,7 +587,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               />
             </div>
             <div className="text-[10px] mb-4 px-1 leading-relaxed" style={{ color: T.muted }}>
-              You'll use this to recover your password if you forget it. Not case-sensitive.
+              {t('auth.answerHelp')}
             </div>
           </>
         )}
@@ -599,9 +600,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         {mode === 'create' && !recovering && (
           <>
             <div className="text-xs uppercase tracking-wider font-semibold mb-2 flex items-center justify-between" style={{ color: T.muted }}>
-              <span>Email</span>
+              <span>{t('auth.email')}</span>
               <span className="font-normal normal-case text-[10px]" style={{ color: T.muted }}>
-                {googleNewUser ? 'From Google' : 'Optional, but recommended'}
+                {googleNewUser ? t('auth.fromGoogle') : t('auth.emailOptional')}
               </span>
             </div>
             <div className="relative mb-1">
@@ -610,7 +611,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com (optional)"
+                placeholder={t('auth.ph.email')}
                 autoCapitalize="none"
                 autoCorrect="off"
                 autoComplete="email"
@@ -622,8 +623,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             </div>
             <div className="text-[10px] mb-4 px-1 leading-relaxed" style={{ color: T.muted }}>
               {googleNewUser
-                ? 'Confirmed by your Google account.'
-                : "Lets you log in with either your username or email, and helps you recover your account."}
+                ? t('auth.emailConfirmedGoogle')
+                : t('auth.emailHelp')}
             </div>
           </>
         )}
@@ -634,7 +635,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           <>
             <div className="flex items-center justify-between mb-2">
               <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
-                Password
+                {t('auth.password')}
               </div>
               {/* Task 9 — counter on CREATE only; login must accept an existing
                   longer password unchanged. */}
@@ -650,7 +651,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={e => setPassword(mode === 'create' ? e.target.value.slice(0, PASSWORD_MAX) : e.target.value)}
-                placeholder={mode === 'create' ? 'Choose a password (min 8 chars)' : 'Your password'}
+                placeholder={mode === 'create' ? t('auth.ph.choosePwd') : t('auth.ph.yourPwd')}
                 autoComplete={mode === 'create' ? 'new-password' : 'current-password'}
                 maxLength={mode === 'create' ? PASSWORD_MAX : undefined}
                 onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
@@ -669,7 +670,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                         className="no-tap-highlight text-xs font-medium underline"
                         style={{ color: T.primary }}
                         type="button">
-                  Forgot password?
+                  {t('auth.forgotPassword')}
                 </button>
               </div>
             )}
@@ -683,7 +684,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             {recoveryMethod === 'dob' ? (
               <>
                 <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-                  Date of birth
+                  {t('auth.dob')}
                 </div>
                 <div className="relative mb-4">
                   <CalendarDays size={16} className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: T.muted }} />
@@ -700,12 +701,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             ) : (
               <>
                 <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-                  Security question
+                  {t('auth.securityQuestion')}
                 </div>
                 <Card className="p-3 mb-2" style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
                   <div className="flex items-start gap-2.5">
                     <ShieldQuestion size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.accent }} />
-                    <div className="text-sm" style={{ color: T.ink }}>{recoveryQuestion || 'Your security question'}</div>
+                    <div className="text-sm" style={{ color: T.ink }}>{recoveryQuestion || t('auth.yourSecurityQuestion')}</div>
                   </div>
                 </Card>
                 <div className="relative mb-4">
@@ -713,7 +714,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                     type="text"
                     value={securityAnswer}
                     onChange={e => setSecurityAnswer(e.target.value)}
-                    placeholder="Your answer"
+                    placeholder={t('auth.ph.yourAnswer')}
                     autoCapitalize="none"
                     autoCorrect="off"
                     autoComplete="off"
@@ -725,7 +726,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             )}
 
             <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
-              New password
+              {t('auth.newPassword')}
             </div>
             <div className="relative mb-4">
               <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
@@ -733,7 +734,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 type={showPassword ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="Choose a new password (min 8 chars)"
+                placeholder={t('auth.ph.chooseNewPwd')}
                 autoComplete="new-password"
                 onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); }}
                 className="w-full rounded-xl pl-10 pr-12 py-3 text-sm"
@@ -756,9 +757,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
                 {mode === 'create'
                   ? (googleNewUser
-                      ? <>Your Google account keeps this profile secure, there's no separate password to remember.</>
-                      : <>Remember your display name and password. You'll need both to log in. Your security question is the only way to recover access if you forget.</>)
-                  : <>This is a study app, not a secure account. Don't reuse a password you use elsewhere.</>}
+                      ? t('auth.warn.google')
+                      : t('auth.warn.create'))
+                  : t('auth.warn.login')}
               </div>
             </div>
           </Card>
@@ -767,15 +768,15 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
         {/* #2 — consent at the sign-up step (calm inline notice + tappable links) */}
         {mode === 'create' && !recovering && (
           <div className="text-[11px] leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
-            By creating a profile, you agree to our{' '}
+            {t('auth.consentPre')}{' '}
             <button type="button" onClick={() => setLegalView('privacy')}
                     className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
-              Privacy Policy
+              {t('auth.privacyPolicy')}
             </button>
-            {' '}and{' '}
+            {' '}{t('auth.consentAnd')}{' '}
             <button type="button" onClick={() => setLegalView('terms')}
                     className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
-              Terms of Use
+              {t('auth.termsOfUse')}
             </button>.
           </div>
         )}
@@ -794,13 +795,13 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium" style={{ color: T.ink }}>
-                  Move existing on-device progress into this profile
+                  {t('auth.legacy.title')}
                 </div>
                 <div className="text-xs mt-1 leading-relaxed" style={{ color: T.muted }}>
-                  {legacyStats.attempted} question{legacyStats.attempted === 1 ? '' : 's'} practiced
-                  {legacyStats.streak > 0 && ` · ${legacyStats.streak}-day streak`}
-                  {legacyStats.bookmarks > 0 && ` · ${legacyStats.bookmarks} bookmark${legacyStats.bookmarks === 1 ? '' : 's'}`}
-                  {legacyStats.customs > 0 && ` · ${legacyStats.customs} custom Q${legacyStats.customs === 1 ? '' : 's'}`}
+                  {t('auth.legacy.practiced', { n: legacyStats.attempted })}
+                  {legacyStats.streak > 0 && ` · ${t('auth.legacy.streak', { n: legacyStats.streak })}`}
+                  {legacyStats.bookmarks > 0 && ` · ${t('auth.legacy.bookmarks', { n: legacyStats.bookmarks })}`}
+                  {legacyStats.customs > 0 && ` · ${t('auth.legacy.customs', { n: legacyStats.customs })}`}
                 </div>
               </div>
             </div>
@@ -835,15 +836,15 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           {recovering ? (
             <button onClick={leaveRecovery}
                     className="no-tap-highlight text-xs underline" style={{ color: T.muted }} type="button">
-              Back to log in
+              {t('auth.backToLogin')}
             </button>
           ) : (
             <div className="text-xs leading-relaxed" style={{ color: T.muted }}>
               {mode === 'create'
                 ? (googleNewUser
-                    ? 'Profiles sync across devices. Your Google account keeps you signed in, no password needed.'
-                    : 'Profiles sync across devices. Remember your display name and password, and your security answer.')
-                : 'Forgot your password? Use the link above. You can reset it with your security question.'}
+                    ? t('auth.hint.google')
+                    : t('auth.hint.create'))
+                : t('auth.hint.login')}
             </div>
           )}
         </div>
@@ -866,10 +867,10 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
               <div className="min-w-0">
                 <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NurseHolic™</div>
                 <div className="font-display text-lg font-semibold leading-tight" style={{ color: T.ink }}>
-                  {legalDoc(legalView)?.title || 'Legal'}
+                  {legalDoc(legalView)?.title || t('auth.legal')}
                 </div>
               </div>
-              <button type="button" onClick={() => setLegalView(null)} aria-label="Close"
+              <button type="button" onClick={() => setLegalView(null)} aria-label={t('common.close')}
                       className="no-tap-highlight w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-90 transition-transform"
                       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
                 <X size={17} style={{ color: T.muted }} />
@@ -900,12 +901,12 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                 <Link2 size={22} style={{ color: T.primary }} />
               </div>
               <div className="font-display text-lg font-semibold text-center mb-1.5" style={{ color: T.ink }}>
-                We found your profile
+                {t('auth.link.title')}
               </div>
               <div className="text-[12.5px] leading-relaxed text-center mb-4" style={{ color: T.inkSoft }}>
-                <span className="font-medium" style={{ color: T.ink }}>{linkGoogle.email}</span> is already on the profile{' '}
+                <span className="font-medium" style={{ color: T.ink }}>{linkGoogle.email}</span> {t('auth.link.body1')}{' '}
                 <span className="font-semibold" style={{ color: T.primary }}>{linkGoogle.displayName}</span>.
-                Enter that profile's password once to connect Google, after this, one tap signs you in.
+                {' '}{t('auth.link.body2')}
               </div>
               <div className="relative mb-2">
                 <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: T.muted }} />
@@ -913,7 +914,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                   type={showPassword ? 'text' : 'password'}
                   value={linkPwd}
                   onChange={e => setLinkPwd(e.target.value)}
-                  placeholder={`Password for ${linkGoogle.displayName}`}
+                  placeholder={t('auth.link.pwdFor', { name: linkGoogle.displayName })}
                   autoComplete="current-password"
                   autoFocus
                   onKeyDown={e => { if (e.key === 'Enter') handleGoogleLink(); }}
@@ -936,17 +937,17 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                       className="no-tap-highlight w-full py-3 rounded-xl text-sm font-semibold active:scale-[0.99] transition inline-flex items-center justify-center gap-2"
                       style={{ background: T.primary, color: '#FFF', opacity: (linkBusy || !linkPwd) ? 0.6 : 1 }}>
                 {linkBusy ? <RefreshCw size={16} className="animate-spin" /> : <Link2 size={16} />}
-                {linkBusy ? 'Linking…' : 'Link & log in'}
+                {linkBusy ? t('auth.link.linking') : t('auth.link.cta')}
               </button>
               <div className="flex items-center justify-between mt-3">
                 <button type="button"
                         onClick={() => { const dn = linkGoogle.displayName; cancelGoogleLink(); setMode('login'); setDisplayName(dn); enterRecovery(); }}
                         className="no-tap-highlight text-xs underline" style={{ color: T.muted }}>
-                  Forgot that password?
+                  {t('auth.link.forgot')}
                 </button>
                 <button type="button" onClick={cancelGoogleLink}
                         className="no-tap-highlight text-xs underline" style={{ color: T.muted }}>
-                  Not now
+                  {t('common.notNow')}
                 </button>
               </div>
             </div>
@@ -966,8 +967,8 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between px-5 py-3.5 flex-shrink-0"
                  style={{ borderBottom: `1px solid ${T.border}` }}>
-              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Security question</div>
-              <button type="button" onClick={() => setSecurityPickerOpen(false)} aria-label="Close"
+              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>{t('auth.securityQuestion')}</div>
+              <button type="button" onClick={() => setSecurityPickerOpen(false)} aria-label={t('common.close')}
                       className="no-tap-highlight w-8 h-8 rounded-full flex items-center justify-center active:scale-90 transition-transform"
                       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
                 <X size={16} style={{ color: T.muted }} />

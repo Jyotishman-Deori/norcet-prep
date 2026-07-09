@@ -48,6 +48,15 @@ export const KEYS = {
   // endpoint requires before revealing an approved claim token.
   WAITLIST_IDENTITY: 'norcet:waitlist-identity:v1',
   SHARE_NUDGE:   'norcet:share-nudge:v1',    // {lastShownAt,lastStreak} results share-nudge gating
+  // I18N — active UI language code ('en' | 'hi' | ...). Device-level,
+  // IndexedDB (shared:false) is the AUTHORITATIVE record per the offline
+  // requirement; LANG_HINT is a localStorage mirror read synchronously at
+  // boot so returning non-English users don't flash English first paint.
+  LANG:          'norcet:lang:v1',
+  LANG_HINT:     'norcet:lang-hint:v1',      // localStorage only, never IDB
+  // I18N — set once when the welcome-screen "view in your language?" chip is
+  // dismissed or accepted, so it never re-offers. localStorage only.
+  LANG_SUGGEST_DISMISSED: 'norcet:lang-suggest-dismissed:v1',
 
   // -- Shared / cross-device (private blobs, but visible across devices) --
   ANNOUNCEMENT:  'announcement:current',

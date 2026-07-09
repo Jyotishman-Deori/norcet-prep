@@ -8,6 +8,7 @@ import { installRageClickCapture } from './lib/rage-click.js';
 import { captureReferralFromUrl } from './lib/referral.js';
 import { initUmami } from './lib/umami.js';
 import { captureInstallPrompt, requestPersistentStorage } from './lib/install-prompt.js';
+import { loadI18n } from './lib/i18n.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
@@ -56,10 +57,18 @@ registerSW({
     // No UI — the install/offline experience is intentionally invisible.
   }
 });
-ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <App />
-    </ErrorBoundary>
-  </React.StrictMode>
-);
+// I18N — restore the saved UI language BEFORE first render so returning
+// non-English users don't flash English. The localStorage hint + IndexedDB
+// dict cache resolve in a few ms; the 1500ms race is a hard ceiling so a
+// wedged IndexedDB can never blank the app (worst case: English first,
+// the App's onLangChange subscription swaps strings when the dict lands).
+// loadI18n() itself never throws.
+Promise.race([loadI18n(), new Promise((r) => setTimeout(r, 1500))]).then(() => {
+  ReactDOM.createRoot(document.getElementById('root')).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <App />
+      </ErrorBoundary>
+    </React.StrictMode>
+  );
+});

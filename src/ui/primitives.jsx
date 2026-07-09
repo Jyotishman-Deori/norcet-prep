@@ -13,7 +13,7 @@
 // =====================================================================
 import React, { useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
-import { useTheme, useProfile } from '../lib/app-context.jsx';
+import { useTheme, useProfile, useI18n } from '../lib/app-context.jsx';
 import { isPYQ, pyqLabel } from '../lib/pyq.js';
 import { ArrowLeft, HelpCircle, AlertCircle, History, Flame, NotebookPen } from 'lucide-react';
 import { conceptCount, highYieldTier } from '../lib/high-yield.js';
@@ -110,13 +110,14 @@ function PyqBadge({ q, className = '' }) {
 // concepts, so it is safe to drop next to PyqBadge unconditionally.
 const HIGH_YIELD_AMBER = '#B8791A';
 function HighYieldBadge({ q, className = '' }) {
+  const { t } = useI18n();
   if (!isPYQ(q) || !q || !q.topic) return null;
   const n = conceptCount(q.topic, q.sub);
   const tier = highYieldTier(n);
   if (tier === 'none') return null;
   return (
     <Pill bg={HIGH_YIELD_AMBER + (tier === 'high' ? '24' : '16')} color={HIGH_YIELD_AMBER} className={className}>
-      <Flame size={10} />Asked {n}×
+      <Flame size={10} />{t('quiz.askedTimes', { n })}
     </Pill>
   );
 }
@@ -179,6 +180,7 @@ function Button({ children, onClick, variant = 'primary', size = 'md', disabled 
 // while mounted (0px everywhere else, so nothing moves on mobile).
 function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopHidden = false }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
+  const { t } = useI18n();
   // Theme-aware background. `solid` opts OUT of the frosted blur: a fully opaque
   // bar with no backdrop-filter, so there is no compositing layer to re-sample
   // (and ghost) when animated content — e.g. the Favourites jiggle/enter tiles
@@ -210,12 +212,12 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
       <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-3 max-w-md md:max-w-3xl lg:max-w-5xl mx-auto">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
-            <Tip text="Go back to the previous screen">
+            <Tip text={t('topbar.backTip')}>
               {/* Premium back affordance: a circular chip that matches the
                   Help/Report pills, scales down on press and nudges its arrow
                   left with a soft spring, plus a light haptic tap. */}
               <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} onBack(); }}
-                      aria-label="Go back"
+                      aria-label={t('topbar.back')}
                       className="no-tap-highlight group flex items-center justify-center w-9 h-9 -ml-1 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
                       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
                 <ArrowLeft size={18} color={T.ink}
@@ -263,15 +265,16 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
 // its surrounding tap padding; labelled by aria + Tip for accessibility.
 function NoteButton() {
   const { theme: T } = useTheme();
+  const { t } = useI18n();
   // Registry-gated: renders nothing until a NoteHost has registered an opener
   // (student app root). In the admin bundle there is no NoteHost, so the
   // button never appears there.
   const hasHost = useSyncExternalStore(subscribeNoteOpener, hasNoteOpener, hasNoteOpener);
   if (!hasHost) return null;
   return (
-    <Tip text="Jot quick study notes, then copy them into an AI to learn more">
+    <Tip text={t('topbar.noteTip')}>
       <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} requestNote(); }}
-              aria-label="Open study notes"
+              aria-label={t('nav.openStudyNotes')}
               className="no-tap-highlight flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
               style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
         <NotebookPen size={16} style={{ color: T.primary }} />
@@ -283,18 +286,19 @@ function NoteButton() {
 function FeedbackButton({ screen, questionId, profileId, profileName }) {
   const { profile: CURRENT_PROFILE } = useProfile();
   const { theme: T } = useTheme();
+  const { t } = useI18n();
   const hasHost = useSyncExternalStore(subscribeFeedbackOpener, hasFeedbackOpener, hasFeedbackOpener);
   const pid = profileId || (CURRENT_PROFILE && CURRENT_PROFILE.id) || null;
   const pname = profileName || (CURRENT_PROFILE && CURRENT_PROFILE.displayName) || null;
   if (!hasHost) return null;
   return (
-    <Tip text="Found a bug or have an idea? Send a report straight to the developer">
+    <Tip text={t('topbar.reportTip')}>
     <button onClick={() => requestFeedback({ screen, questionId, profileId: pid, profileName: pname })}
             className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
             style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}
-            aria-label="Report a bug or suggest a feature">
+            aria-label={t('topbar.reportAria')}>
       <AlertCircle size={15} style={{ color: T.accent }} />
-      <span className="text-xs font-medium">Report</span>
+      <span className="text-xs font-medium">{t('topbar.report')}</span>
     </button>
     </Tip>
   );
@@ -302,16 +306,17 @@ function FeedbackButton({ screen, questionId, profileId, profileName }) {
 
 function HelpButton({ screen }) {
   const { theme: T } = useTheme();
+  const { t } = useI18n();
   const hasHost = useSyncExternalStore(subscribeHelpOpener, hasHelpOpener, hasHelpOpener);
   if (!hasHost) return null;
   return (
-    <Tip text="What this screen does, how to use it, and why it helps">
+    <Tip text={t('topbar.helpTip')}>
       <button onClick={() => requestHelp({ screen })}
               className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
               style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}
-              aria-label="What is this screen?">
+              aria-label={t('topbar.helpAria')}>
         <HelpCircle size={15} style={{ color: T.primary }} />
-        <span className="text-xs font-medium">Help</span>
+        <span className="text-xs font-medium">{t('topbar.help')}</span>
       </button>
     </Tip>
   );
