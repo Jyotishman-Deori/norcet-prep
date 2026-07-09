@@ -414,7 +414,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         body: 'On the home screen, the menu or in settings, press and hold a card for a moment to peek a quick description of what it does, without opening it.',
         color: T.primary },
       { icon: <Hand size={20} style={{ transform: 'scaleX(-1)' }} />, title: 'Swipe to open the menu',
-        body: 'On the home screen, swipe right from anywhere to slide the menu open, and swipe left to close it. Works the same on phone, tablet and iPhone.',
+        body: 'On the home screen, swipe left from anywhere to slide the menu open, and swipe right to close it. Works the same on phone, tablet and iPhone.',
         color: T.accent },
       { icon: <Heart size={20} fill="#FFF" />, title: 'Heart your favourites',
         body: 'Tap the heart on any section. Stats, a drill mode, the leaderboard, to pin it. Your favourites then sit one tap away on the home screen.',
@@ -592,7 +592,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             </div>
 
             <Button onClick={launchSelected} size="lg" className="w-full" icon={<ChevronRight size={18} />}>
-              Got it {'\u2014'} open {selected.title}
+              Got it: open {selected.title}
             </Button>
           </div>
         </div>

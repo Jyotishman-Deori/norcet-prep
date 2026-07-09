@@ -42,7 +42,7 @@ export function ComparisonToggle() {
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium" style={{ color: T.ink }}>Compare weekly progress</div>
           <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-            Friends you invited (and your batches) can see your weekly accuracy {'\u2014'} and you see theirs. On by default; switch off anytime.
+            Friends you invited (and your batches) can see your weekly accuracy, and you see theirs. On by default; switch off anytime.
           </div>
         </div>
         <button onClick={toggle} role="switch" aria-checked={on}
@@ -54,7 +54,7 @@ export function ComparisonToggle() {
       </div>
       {on && (
         <div className="text-[11px] mt-2.5 pt-2.5" style={{ color: T.muted, borderTop: `1px solid ${T.borderSoft}` }}>
-          Only people connected to you see it, and only a weekly accuracy % {'\u2014'} never your answers or activity. Turn this off and you vanish from every comparison instantly.
+          Only people connected to you see it, and only a weekly accuracy %, never your answers or activity. Turn this off and you vanish from every comparison instantly.
         </div>
       )}
     </div>
@@ -83,8 +83,8 @@ export function PeerComparisonCard() {
   const you = res.you || { pct: 0, count: 0 };
   const peer = res.peers[0];
   const lead = you.pct - peer.pct;
-  const msg = lead > 0 ? `You're ahead by ${lead} point${lead === 1 ? '' : 's'} this week \u2014 keep it up!`
-    : lead < 0 ? `${peer.name} is ${Math.abs(lead)} ahead this week \u2014 you've got this.`
+  const msg = lead > 0 ? `You're ahead by ${lead} point${lead === 1 ? '' : 's'} this week: keep it up!`
+    : lead < 0 ? `${peer.name} is ${Math.abs(lead)} ahead this week, you've got this.`
       : `Neck and neck with ${peer.name} this week!`;
 
   const Bar = ({ label, pct, accent }) => (
@@ -315,11 +315,11 @@ function BatchRow({ batchId, onLeave }) {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <div className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: T.muted }}>Your week</div>
-              <div className="font-display text-xl font-semibold tabular-nums" style={{ color: T.primary }}>{cmp.yourPct == null ? '\u2014' : cmp.yourPct + '%'}</div>
+              <div className="font-display text-xl font-semibold tabular-nums" style={{ color: T.primary }}>{cmp.yourPct == null ? '—' : cmp.yourPct + '%'}</div>
             </div>
             <div>
               <div className="text-[10px] uppercase tracking-wide font-semibold" style={{ color: T.muted }}>Batch average</div>
-              <div className="font-display text-xl font-semibold tabular-nums" style={{ color: T.ink }}>{cmp.activeCount ? cmp.batchAvg + '%' : '\u2014'}</div>
+              <div className="font-display text-xl font-semibold tabular-nums" style={{ color: T.ink }}>{cmp.activeCount ? cmp.batchAvg + '%' : '—'}</div>
             </div>
           </div>
           {cmp.rank ? (
@@ -410,7 +410,7 @@ export function BatchJoinModal({ batchId, onDone }) {
           {info.creatorName ? `${info.creatorName} invited you. ` : ''}Members compare their weekly accuracy to stay motivated together.
         </div>
         <div className="text-[11px] mt-2 mb-4" style={{ color: T.muted }}>
-          Comparison is on by default {'\u2014'} only your weekly accuracy %, never your answers. You can switch it off anytime in Settings.
+          Comparison is on by default: only your weekly accuracy %, never your answers. You can switch it off anytime in Settings.
         </div>
         <div className="grid grid-cols-2 gap-2">
           <button onClick={close} className="no-tap-highlight py-3 rounded-xl text-sm font-semibold active:scale-95" style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>Not now</button>

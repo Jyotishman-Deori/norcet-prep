@@ -64,7 +64,7 @@ function Splash({ T, label }) {
     <div className="font-body min-h-screen flex items-center justify-center" style={{ background: T.bg }}>
       <style>{fontStyles}</style>
       <div className="text-center px-8">
-        <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.primary }}>NurseHolic Admin</div>
+        <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.primary }}>NurseHolic™ Admin</div>
         <div className="mx-auto mb-5 mt-3 rounded-full" style={{ width: 32, height: 2, background: T.primary, opacity: 0.3 }} />
         <div className="text-sm" style={{ color: T.inkSoft }}>{label || 'Loading…'}</div>
       </div>

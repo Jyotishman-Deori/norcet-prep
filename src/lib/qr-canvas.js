@@ -126,10 +126,10 @@ function brandHeader(ctx, cx, theme) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `700 62px ${SERIF}`;
-  ctx.fillText('NurseHolic', cx, 138);
+  ctx.fillText('NurseHolic™', cx, 138);
   ctx.font = `500 27px ${SANS}`;
   ctx.fillStyle = 'rgba(255,255,255,0.80)';
-  ctx.fillText('Free AIIMS NORCET nursing prep \u2014 no ads', cx, 184);
+  ctx.fillText('Free AIIMS NORCET nursing prep, no ads', cx, 184);
   ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(cx - 118, 210); ctx.lineTo(cx + 118, 210); ctx.stroke();
 }
@@ -175,7 +175,7 @@ export function paintBrandedQrCard({ url, displayUrl, socialProof = null, theme 
       ctx.fillStyle = 'rgba(255,255,255,0.92)';
       ctx.font = `600 33px ${SANS}`;
       ctx.textAlign = 'center';
-      ctx.fillText('Scan to start practising \u2014 free, no ads', cx, yBelow + 58);
+      ctx.fillText('Scan to start practising, free, no ads', cx, yBelow + 58);
 
       // URL pill (flow-positioned below the caption)
       const pillTop = yBelow + 88;
@@ -270,7 +270,7 @@ export async function shareOrSavePng(blob, filename, meta = {}) {
   if (!blob) return 'error';
   try {
     const file = new File([blob], filename, { type: 'image/png' });
-    const data = { files: [file], title: meta.title || 'NurseHolic', ...(meta.text ? { text: meta.text } : {}) };
+    const data = { files: [file], title: meta.title || 'NurseHolic™', ...(meta.text ? { text: meta.text } : {}) };
     if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(data)) {
       try { await navigator.share(data); return 'shared'; }
       catch (e) { return 'cancelled'; }   // user dismissed the sheet

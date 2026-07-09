@@ -370,7 +370,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <div className="font-medium" style={{ color: T.ink }}>Swipe to close sidebar</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
                 {gestures.close
-                  ? 'Swipe left anywhere while the sidebar is open to close it'
+                  ? 'Swipe right anywhere while the sidebar is open to close it'
                   : 'Off: you can still close it by tapping the backdrop or the menu icon'}
               </div>
             </div>
@@ -391,7 +391,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             <div className="min-w-0">
               <div className="font-medium" style={{ color: T.ink }}>Swipe to open sidebar</div>
               <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                Swipe right <b>anywhere on the home screen</b> to open the sidebar, phone, tablet and iOS.
+                Swipe left <b>anywhere on the home screen</b> to open the sidebar, phone, tablet and iOS.
               </div>
             </div>
           </div>
@@ -866,7 +866,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Sidebar gestures</div>
         <SubPageCard icon={Hand} iconBg={T.primary} title="Sidebar gestures"
                      sub="Swipe to open or close the sidebar"
-                     tip="Choose how the sidebar opens and closes, swipe right anywhere on Home to open it, swipe left to close. Tapping the backdrop always closes."
+                     tip="Choose how the sidebar opens and closes, swipe left anywhere on Home to open it, swipe right to close. Tapping the backdrop always closes."
                      onClick={() => openSub('gestures')} />
 
         {/* Help */}

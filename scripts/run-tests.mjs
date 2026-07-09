@@ -29,6 +29,31 @@ if (failed) {
   process.exit(1);
 }
 
+// Mojibake gate: double-encoded UTF-8 (byte signatures of 'â€¦'-style
+// corruption) must never ship — search.jsx carried baked mojibake in its
+// display strings for 6 days in prod before anyone noticed (2026-07-09).
+console.log('\n> text-encoding gate (mojibake scan)');
+{
+  const { readFileSync } = await import('node:fs');
+  const { execSync } = await import('node:child_process');
+  const sigs = [Buffer.from([0xc3, 0xa2, 0xc2, 0x80]), Buffer.from([0xc3, 0xa2, 0xe2, 0x82, 0xac])];
+  const fffd = Buffer.from([0xef, 0xbf, 0xbd]); // legit as a sentinel in tests (note-companion.test.js)
+  const files = execSync('git ls-files -- src public/data index.html admin.html', { cwd: root })
+    .toString().split('\n').filter(f => /\.(jsx?|ts|json|html)$/.test(f));
+  const bad = files.filter(f => {
+    try {
+      const raw = readFileSync(join(root, f));
+      if (sigs.some(sig => raw.includes(sig))) return true;
+      return raw.includes(fffd) && !/\.test\.js$/.test(f);
+    } catch { return false; }
+  });
+  if (bad.length) {
+    console.error('MOJIBAKE detected (double-encoded UTF-8) in:\n  ' + bad.join('\n  '));
+    process.exit(1);
+  }
+  console.log(`clean: ${files.length} text files scanned`);
+}
+
 // Runtime render smoke (scripts/smoke) — server-renders the real Knowledge
 // Map screen, catching first-render crashes (e.g. TDZ in memo deps) that the
 // compile gate can't see. See scripts/smoke/build.mjs for the incident note.

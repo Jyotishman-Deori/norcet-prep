@@ -7,7 +7,7 @@ import { installGlobalErrorCapture } from './lib/errorlog.js';
 import { installRageClickCapture } from './lib/rage-click.js';
 import { captureReferralFromUrl } from './lib/referral.js';
 import { initUmami } from './lib/umami.js';
-import { captureInstallPrompt } from './lib/install-prompt.js';
+import { captureInstallPrompt, requestPersistentStorage } from './lib/install-prompt.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
@@ -26,6 +26,9 @@ captureReferralFromUrl();
 // early and is lost unless preventDefault'd), so the Home install card and
 // the Settings row can replay the REAL install sheet on a user tap later.
 captureInstallPrompt();
+// Budget-Android storage protection: ask the OS not to auto-evict this
+// origin's IndexedDB (progress cache) when the phone's disk fills up.
+requestPersistentStorage();
 // Register the service worker. autoUpdate (configured in vite.config.js)
 // silently fetches a new SW in the background; this callback gets called
 // when a fresh build is fully installed and waiting. We auto-reload so the

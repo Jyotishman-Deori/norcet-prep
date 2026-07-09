@@ -42,7 +42,7 @@ function stateTone(state, color) {
 function mentorChallenge(state, attempted, accuracy, name) {
   const a = Number(attempted) || 0;
   const acc = Number(accuracy) || 0;
-  if (state === 'mastered') return 'Mastered. This territory is yours \u2014 planted flag and all.';
+  if (state === 'mastered') return 'Mastered. This territory is yours, planted flag and all.';
   if (state === 'familiar') {
     const need = Math.max(0, 25 - a);
     return acc >= 0.80
@@ -88,7 +88,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
             </button>
           </div>
           <div className="text-sm leading-relaxed mb-4" style={{ color: HUD.muted }}>
-            Extra-credit material beyond the core NORCET syllabus. It doesn\u2019t count toward your coverage \u2014 it\u2019s here to stretch you once you\u2019ve mastered the basics.
+            Extra-credit material beyond the core NORCET syllabus. It doesn\u2019t count toward your coverage, it\u2019s here to stretch you once you\u2019ve mastered the basics.
           </div>
           {explorerEarned ? (
             <div className="text-sm font-medium flex items-center gap-1.5 px-3 py-3 rounded-xl"
@@ -118,14 +118,14 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
   const rank = mindmapStateRank(state);
 
   const ptName = name.length > 22 ? name.slice(0, 21) + '\u2026' : name;
-  // Owner spec: never throw the user straight into a test \u2014 confirm first.
+  // Owner spec: never throw the user straight into a test — confirm first.
   // The app-root ConfirmDialog portals AFTER this open KmapDialog, so it
   // stacks on top; Esc/cancel returns to this intact popup. The
   // "10-question" copy mirrors count:10 in App.jsx's startQuiz wiring.
   const practice = () => {
     requestConfirm({
       icon: <Brain size={20} style={{ color: T.primary }} />,
-      title: `Start practice \u2014 ${ptName}?`,
+      title: `Start practice: ${ptName}?`,
       body: `This begins a 10-question practice test on ${name}. Your answers count toward this star's progress.`,
       confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
       onConfirm: () => {
@@ -200,7 +200,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
           <div className="rounded-2xl px-4 py-3 flex-1" style={{ background: 'rgba(255,255,255,0.05)' }}>
             <div className="font-display text-3xl font-semibold leading-none tabular-nums"
                  style={{ color: accPct == null ? HUD.faint : tone.fg }}>
-              {accPct == null ? '\u2014' : `${accPct}%`}
+              {accPct == null ? '—' : `${accPct}%`}
             </div>
             <div className="text-[10px] mt-1 uppercase tracking-wide" style={{ color: HUD.muted }}>Accuracy</div>
           </div>
@@ -251,7 +251,7 @@ function MindmapNodePopup({ node, onClose, onPracticeTopic, onPracticeSub, explo
         <button onClick={practice}
                 className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 font-semibold rounded-2xl px-5 py-4 text-base active:scale-[0.98] transition"
                 style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primarySoft})`, color: '#fff', boxShadow: `0 8px 22px ${T.primary}55` }}>
-          <Brain size={18} /> Practice {'\u2014'} {ptName}
+          <Brain size={18} /> Practice: {ptName}
         </button>
       </div>
     </Sheet>

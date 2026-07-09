@@ -37,3 +37,25 @@ try {
 } catch (e) {
   console.warn('[post-admin-build] could not write .vercel/project.json:', e.message);
 }
+
+// 3) Anti-clone/anti-sniff security headers for the admin deploy (the student
+//    app gets these from the repo-root vercel.json; the admin app deploys
+//    from dist-admin, so its config must be generated into the output).
+const ADMIN_VERCEL_CONFIG = {
+  headers: [
+    {
+      source: '/(.*)',
+      headers: [
+        { key: 'X-Frame-Options', value: 'DENY' },
+        { key: 'X-Content-Type-Options', value: 'nosniff' },
+        { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      ],
+    },
+  ],
+};
+try {
+  writeFileSync('dist-admin/vercel.json', JSON.stringify(ADMIN_VERCEL_CONFIG, null, 2));
+  console.log('[post-admin-build] wrote security headers -> dist-admin/vercel.json');
+} catch (e) {
+  console.warn('[post-admin-build] could not write vercel.json:', e.message);
+}

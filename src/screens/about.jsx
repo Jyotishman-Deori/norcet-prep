@@ -90,7 +90,7 @@ function AboutScreen({ onBack, onNavigate }) {
               N
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-semibold leading-tight" style={{ color: T.ink }}>
-              NurseHolic
+              NurseHolic™
             </h1>
             <p className="text-sm md:text-base mt-2 leading-relaxed max-w-md mx-auto" style={{ color: T.inkSoft }}>
               Serious NORCET preparation: free, ad-free, and built to feel like exam day.
@@ -241,7 +241,7 @@ function AboutScreen({ onBack, onNavigate }) {
             ))}
           </div>
           <div className="text-center text-[11px]" style={{ color: T.muted }}>
-            © 2026 NurseHolic · Made with care in Assam, India
+            © 2026 NurseHolic™. All rights reserved. Made with care in Assam, India
           </div>
         </div>
       </PageContainer>

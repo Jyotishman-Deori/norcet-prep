@@ -1413,7 +1413,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                      aria-label={`${s.sub}: ${s.attempted > 0 ? `${Math.round(s.accuracy * 100)}% accuracy` : 'not started'}${subNoted ? ', has a note' : ''}`}
                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelected(node); } }}>
                     {/* Below Topic zoom, subs are PLAIN DOTS (no fog/glow/
-                        badges) \u2014 the decorated halos used to overlap into
+                        badges) — the decorated halos used to overlap into
                         "caterpillar" blob chains at mid-zoom. Hit targets and
                         interactivity are unchanged. */}
                     <circle cx={node.x} cy={node.y} r={11 * cs.rScale} fill="transparent" stroke="none" />
@@ -1849,7 +1849,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
         const states = [
           { s: 'locked',     t: 'Locked',     d: 'Untouched. A faint, dim star waiting in the dark.' },
           { s: 'discovered', t: 'Discovered', d: 'You\u2019ve started here. It glows a cool blue.' },
-          { s: 'familiar',   t: 'Familiar',   d: 'Getting consistent \u2014 a warmer, brighter star.' },
+          { s: 'familiar',   t: 'Familiar',   d: 'Getting consistent: a warmer, brighter star.' },
           { s: 'mastered',   t: 'Mastered',   d: 'Conquered. Radiant gold with a \u2605 crown.' },
         ];
         const Section = ({ title, children }) => (
@@ -1900,7 +1900,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                     <div className="flex items-center gap-3"><Line stroke={CMAP.edgeRoot} glow />
                       <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Gold threads tie each <span style={{ color: CMAP.text }}>subject</span> to the NORCET core (the sun).</div></div>
                     <div className="flex items-center gap-3"><Line stroke={CMAP.edge} />
-                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Faint lines link a subject to its <span style={{ color: CMAP.text }}>sub-topics</span> {'\u2014'} they appear as you zoom in.</div></div>
+                      <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>Faint lines link a subject to its <span style={{ color: CMAP.text }}>sub-topics</span>. They appear as you zoom in.</div></div>
                     <div className="flex items-center gap-3"><Line stroke={T.accent} glow />
                       <div className="text-xs leading-snug" style={{ color: CMAP.muted }}>A <span style={{ color: CMAP.text }}>pulsing</span> line marks a prerequisite worth doing first.</div></div>
                     <div className="flex items-center gap-3"><Line stroke={KMAP_BONUS_COLOR} dash="1 5" />
@@ -1911,7 +1911,7 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
                 <Section title="Fog of war">
                   <div className="text-sm leading-relaxed" style={{ color: CMAP.muted }}>
                     A faint shimmer around a locked star means it{'\u2019'}s right next to where you{'\u2019'}re
-                    working {'\u2014'} a good one to unlock next.
+                    working. A good one to unlock next.
                   </div>
                 </Section>
 

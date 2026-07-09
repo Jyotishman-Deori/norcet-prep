@@ -6,9 +6,9 @@
 //
 //   Sidebar gestures (KEY_PREFIXES.SIDEBAR_GESTURES, JSON):
 //     { close: true, open: false }
-//     - close (swipe left on the open drawer to close): default ON — safe on
+//     - close (swipe right on the open drawer to close): default ON — safe on
 //       all devices, the user is already inside the overlay.
-//     - open (swipe right from the left screen edge): default OFF — conflicts
+//     - open (swipe left anywhere on Home): default OFF — conflicts
 //       with the Android 10+ system back gesture on many devices.
 //
 //   Crib sheet (KEY_PREFIXES.CRIB_SHEET, 'true'/'false'): default ON. When

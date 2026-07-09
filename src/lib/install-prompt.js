@@ -43,6 +43,20 @@ export function captureInstallPrompt() {
 
 export function hasDeferredPrompt() { return _deferredPrompt != null; }
 
+// Ask the OS to protect this origin's storage from automatic eviction.
+// Budget Android phones (most of the student base) aggressively clear
+// browser storage when the disk fills with WhatsApp media; a granted
+// persist() keeps the IndexedDB progress cache safe. Chrome grants or
+// denies silently on engagement heuristics (no dialog); Firefox may show
+// a small prompt. Safe to call repeatedly; fire-and-forget at boot.
+export function requestPersistentStorage() {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.storage && navigator.storage.persist) {
+      navigator.storage.persist().catch(() => {});
+    }
+  } catch (e) { /* never blocks boot */ }
+}
+
 // promptInstall() → 'accepted' | 'dismissed' | null (no prompt to show).
 // The event is single-use: it's cleared regardless of outcome.
 export async function promptInstall() {

@@ -449,7 +449,7 @@ export const fontStyles = `
 /* ── DRAWER — premium row micro-interactions. Rows slide in from the left
    with a stagger every time the menu opens; the chevron nudges toward the
    destination on press; the last-visited row glows once on return. */
-@keyframes drawerItemIn { 0% { opacity: 0; transform: translateX(-14px); } 100% { opacity: 1; transform: translateX(0); } }
+@keyframes drawerItemIn { 0% { opacity: 0; transform: translateX(14px); } 100% { opacity: 1; transform: translateX(0); } }
 .drawer-item-in { animation: drawerItemIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 .drawer-row { transition: transform 0.15s ease, box-shadow 0.15s ease; }
 .drawer-row:active { transform: scale(0.975); }

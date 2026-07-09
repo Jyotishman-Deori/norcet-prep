@@ -250,7 +250,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       `\u2727${RULE}\u2727`,
       '',
       `${title}${subtitle ? ` \u00b7 ${subtitle}` : ''}`,
-      `\u2713 ${correct.length} correct  \u00b7  \u2715 ${wrong.length} wrong  \u00b7  \u2014 ${na.length} skipped`,
+      `\u2713 ${correct.length} correct  \u00b7  \u2715 ${wrong.length} wrong  \u00b7: ${na.length} skipped`,
       '',
     ];
     const qBlocks = items.slice(0, 50).map((it, i) => {
@@ -266,7 +266,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     const foot = [
       items.length > 50 ? `\u2026and ${items.length - 50} more questions inside the app.` : null,
       RULE,
-      'NurseHolic \u2014 Free NORCET exam prep:',
+      'NurseHolic™: Free NORCET exam prep:',
       'tests, revision notes, PYQs, dosage drills.',
       `\u27a4 ${baseUrl}`,
     ].filter(Boolean);

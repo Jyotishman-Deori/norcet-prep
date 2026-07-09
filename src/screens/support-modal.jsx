@@ -137,7 +137,7 @@ function SupportModal({ onClose }) {
             <>
               <div className="text-sm leading-relaxed mt-1 mb-4" style={{ color: T.inkSoft }}>
                 This app is free and ad-free, and it stays that way. If it's helped your prep,
-                you can buy me a chai to help cover the server bills. Totally optional {'\u2014'} no pressure,
+                you can buy me a chai to help cover the server bills. Totally optional, no pressure,
                 and nothing changes if you don't. {'\uD83D\uDC99'}
               </div>
 
@@ -210,7 +210,7 @@ function SupportModal({ onClose }) {
               <div className="text-4xl mb-3">{'\uD83D\uDC99'}</div>
               <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>Thank you! {'\uD83D\uDC99'}</div>
               <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-                Your support means a lot {'\u2014'} it genuinely helps keep NurseHolic free for everyone.
+                Your support means a lot. It genuinely helps keep NurseHolic free for everyone.
               </div>
               <button onClick={onClose}
                       className="no-tap-highlight w-full mt-5 py-3 rounded-xl text-sm font-semibold active:scale-[0.99] transition"

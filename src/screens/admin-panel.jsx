@@ -646,13 +646,13 @@ function AdminPanel({
                           })}
                         </div>
                         <div className="text-[10.5px] mt-2.5 leading-relaxed" style={{ color: T.muted }}>
-                          Shared networks (colleges, hostels) can share an IP {'\u2014'} review before acting. Nothing is auto-blocked.
+                          Shared networks (colleges, hostels) can share an IP. Review before acting. Nothing is auto-blocked.
                         </div>
                       </Card>
                     )
                   )}
                   <div className="text-[11px] leading-relaxed px-1" style={{ color: T.muted }}>
-                    {'\u201C'}Confirmed{'\u201D'} is approximate {'\u2014'} the invited user attempted at least one question or returned to the app after signing up. Precise activation tracking comes later.
+                    {'\u201C'}Confirmed{'\u201D'} is approximate: the invited user attempted at least one question or returned to the app after signing up. Precise activation tracking comes later.
                   </div>
                 </div>
               )}
@@ -755,7 +755,7 @@ function AdminPanel({
                     );
                   })}
                   <div className="text-[11px] leading-relaxed px-1 pt-1" style={{ color: T.muted }}>
-                    Which sharing surface each signup came through. {'\u201C'}Direct{'\u201D'} means no referral link {'\u2014'} they found the app another way.
+                    Which sharing surface each signup came through. {'\u201C'}Direct{'\u201D'} means no referral link: they found the app another way.
                   </div>
                 </div>
               )}

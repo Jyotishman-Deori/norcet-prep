@@ -33,18 +33,18 @@ const AUDIENCES = [
 ];
 
 const STEPS = {
-  android: ['Open the link in Chrome', 'Tap the \u22ee menu (top right)', 'Tap "Add to Home screen" \u2192 confirm', 'It now opens as a full app \u2014 fast, full-screen, works offline'],
+  android: ['Open the link in Chrome', 'Tap the \u22ee menu (top right)', 'Tap "Add to Home screen" \u2192 confirm', 'It now opens as a full app, fast, full-screen, works offline'],
   ios: ['Open the link in Safari (must be Safari)', 'Tap the Share icon at the bottom', 'Scroll \u2192 "Add to Home Screen" \u2192 Add', 'It now opens as a full app on your iPhone'],
-  web: ['Open the link in any browser', 'Bookmark it \u2014 your progress syncs automatically', 'On a phone later? Add it to your home screen for the full app feel'],
+  web: ['Open the link in any browser', 'Bookmark it, your progress syncs automatically', 'On a phone later? Add it to your home screen for the full app feel'],
 };
 
 function buildMessage(audience, shareUrl) {
   const head = [
-    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
-    '   N O R C E T   P R E P',
-    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
+    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
+    '  N U R S E H O L I C \u2122',
+    '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
     '',
-    "I've been preparing for AIIMS NORCET with this \u2014 it's completely free, no ads: tests, revision notes, PYQs, dosage drills and more.",
+    "I've been preparing for AIIMS NORCET with this. It's completely free, no ads: tests, revision notes, PYQs, dosage drills and more.",
     '',
     `\u27a4 ${shareUrl}`,
     '',
@@ -171,7 +171,7 @@ export default function ShareAppCard() {
       const blob = await makeCardBlob();
       const res = await shareOrSavePng(blob, 'nurseholic-qr.png', {
         title: 'NurseHolic',
-        text: `Free, no-ads AIIMS NORCET prep \u2014 scan or tap: ${qrUrl}`,
+        text: `Free, no-ads AIIMS NORCET prep, scan or tap: ${qrUrl}`,
       });
       setImgStatus(res === 'error' ? 'error' : 'done');
     } catch (e) { setImgStatus('error'); }
@@ -189,8 +189,8 @@ export default function ShareAppCard() {
             <div className="font-medium" style={{ color: T.primary }}>Share NurseHolic</div>
             <div className="text-xs mt-0.5" style={{ color: T.muted }}>
               {code
-                ? 'Your personal link \u2014 every install is credited to you'
-                : 'Share the app with a friend \u2014 link + setup steps included'}
+                ? 'Your personal link: every install is credited to you'
+                : 'Share the app with a friend, link + setup steps included'}
             </div>
           </div>
         </div>

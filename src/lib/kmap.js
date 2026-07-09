@@ -26,12 +26,12 @@ function mindmapNextProgress(state, attempted, accuracy) {
   if (state === 'familiar') {
     const ratio = Math.min(a / 25, 1);
     const need = acc >= 0.80 ? `${Math.max(0, 25 - a)} more attempts` : 'keep accuracy \u2265 80%';
-    return { label: 'Next: Mastered', ratio, hint: `25 attempts & 80% \u2014 ${need}.` };
+    return { label: 'Next: Mastered', ratio, hint: `25 attempts & 80%: ${need}.` };
   }
   if (state === 'discovered') {
     const ratio = Math.min(a / 10, 1);
     const need = acc >= 0.60 ? `${Math.max(0, 10 - a)} more attempts` : 'lift accuracy to \u2265 60%';
-    return { label: 'Next: Familiar', ratio, hint: `10 attempts & 60% \u2014 ${need}.` };
+    return { label: 'Next: Familiar', ratio, hint: `10 attempts & 60%: ${need}.` };
   }
   // locked
   return { label: 'Next: Discovered', ratio: 0, hint: 'Answer one question to unlock this topic.' };

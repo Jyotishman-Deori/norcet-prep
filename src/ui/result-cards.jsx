@@ -542,14 +542,14 @@ function ShareScoreButton({ correct, total, quizType, topicName: topicLabel = nu
     // install is credited to them; guests get a channel-only link.
     const appUrl = scoreUrl;
     const inviteLine = pct >= 80
-      ? `Just aced a ${quizType || 'practice'} session on NurseHolic \u2014 ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
+      ? `Just aced a ${quizType || 'practice'} session on NurseHolic. ${safeCorrect}/${safeTotal} \uD83D\uDD25 Think you can beat that?`
       : pct >= 50
-        ? `Putting in the NORCET reps \u2014 ${safeCorrect}/${safeTotal} this round and climbing \uD83D\uDCAA Join me?`
-        : `Every attempt counts \u2014 grinding NORCET prep one session at a time \uD83C\uDFAF Study with me?`;
+        ? `Putting in the NORCET reps, ${safeCorrect}/${safeTotal} this round and climbing \uD83D\uDCAA Join me?`
+        : `Every attempt counts: grinding NORCET prep one session at a time \uD83C\uDFAF Study with me?`;
     const shareData = {
       files: [file],
       title: 'My NurseHolic result',
-      text: `${inviteLine}\nIt's free \u2014 tests, revision notes, PYQs & more: ${appUrl}`
+      text: `${inviteLine}\nIt's free: tests, revision notes, PYQs & more: ${appUrl}`
     };
 
     // Mobile: native share sheet (only if it can share THIS file).
@@ -797,7 +797,7 @@ function ShareNudge({ pct = 0, totalAttempted = 0, sessionAttempted = 0, streak 
       });
       const res = await shareOrSavePng(blob, 'nurseholic-milestone.png', {
         title: 'NurseHolic',
-        text: `Free, no-ads AIIMS NORCET prep \u2014 try it: ${url}`,
+        text: `Free, no-ads AIIMS NORCET prep, try it: ${url}`,
       });
       setStatus(res === 'error' ? 'error' : 'done');
     } catch (e) { setStatus('error'); }

@@ -101,6 +101,12 @@ const SCREENS = {
       onPracticeTopic: noop, onPracticeSub: noop, onBack: noop,
     });
   },
+  'search': async () => {
+    const m = await import('../../src/screens/search.jsx');
+    return React.createElement(m.default, {
+      onBack: noop, onNavigate: noop, profileId: 'smoke-test',
+    });
+  },
 };
 
 let failed = 0;

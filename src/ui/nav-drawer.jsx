@@ -67,12 +67,13 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // #21 — Sidebar gesture controls. Two opt-in gestures, both governed by
   // the Settings → Sidebar gestures toggles (lib/ui-prefs.js, read LIVE at
   // touchstart so a settings change applies without remounting):
-  //   swipe-to-CLOSE (default ON)  — leftward drag anywhere on the open
-  //     panel; the panel tracks the finger 1:1, commits past 38% width or a
-  //     fast leftward flick, otherwise springs back open.
-  //   swipe-to-OPEN  (default OFF) — rightward drag starting in the left
-  //     20% screen-edge zone while the drawer is closed (Home only, via
-  //     gesturesAllowed). Same threshold/velocity logic, mirrored.
+  //   swipe-to-CLOSE (default ON)  — rightward drag anywhere on the open
+  //     panel (toward its right-edge home); tracks the finger 1:1, commits
+  //     past 38% width or a fast rightward flick, else springs back open.
+  //   swipe-to-OPEN  (default OFF) — leftward drag while the drawer is
+  //     closed (Home only, via gesturesAllowed). Same threshold/velocity
+  //     logic, mirrored. The panel is RIGHT-anchored: the hamburger sits
+  //     top-right on phone and desktop, so it opens under the button.
   // Tap-backdrop and the hamburger/X button are ALWAYS available — gestures
   // are additive, never the only way out. Direct style mutation during the
   // drag (no re-renders) keeps tracking smooth on low-end phones.
@@ -91,7 +92,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const restorePanel = (isOpen) => {
     const el = panelRef.current; if (!el) return;
     el.style.transition = '';
-    el.style.transform = isOpen ? 'translateX(0)' : 'translateX(-102%)';
+    el.style.transform = isOpen ? 'translateX(0)' : 'translateX(102%)';
   };
 
   // -- swipe-to-close: handlers attached to the panel itself --
@@ -106,7 +107,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const t = e.touches && e.touches[0]; if (!t) return;
     const dx = t.clientX - d.startX;
     const dy = t.clientY - d.startY;
-    // Only claim clearly-horizontal leftward drags; let vertical scrolls win.
+    // Only claim clearly-horizontal rightward drags; let vertical scrolls win.
     if (!d.active) {
       if (Math.abs(dx) < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
       d.active = true;
@@ -114,7 +115,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const now = Date.now();
     d.vx = (t.clientX - d.lastX) / Math.max(1, now - d.lastT);
     d.lastX = t.clientX; d.lastT = now;
-    setPanelX(Math.min(0, dx), false);
+    setPanelX(Math.max(0, dx), false);
   };
   const onPanelTouchEnd = () => {
     const d = dragRef.current; dragRef.current = null;
@@ -122,7 +123,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const el = panelRef.current; if (!el) return;
     const w = el.offsetWidth || 300;
     const dx = d.lastX - d.startX;
-    const commit = (-dx) > w * 0.38 || d.vx < -0.4; // distance OR fast flick left
+    const commit = dx > w * 0.38 || d.vx > 0.4; // distance OR fast flick right
     restorePanel(!commit);            // committed → animate to closed; else spring back open
     if (commit) onClose();
   };
@@ -130,10 +131,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // -- swipe-to-open: a document-level edge listener while closed --
   useEffect(() => {
     if (open || !gesturesAllowed || typeof document === 'undefined') return;
-    // Home-only (gesturesAllowed) rightward-swipe to open, anywhere on the
-    // screen, on every platform. We no longer restrict to the left edge — a
-    // mid-screen start is what AVOIDS the iOS system back-edge, so this is safe
-    // on iOS too. Horizontal intent is required below before we claim the drag,
+    // Home-only (gesturesAllowed) LEFTWARD-swipe to open, anywhere on the
+    // screen, on every platform (the panel lives on the right). A mid-screen
+    // start is what AVOIDS the iOS system back-edge, so this is safe on iOS
+    // too. Horizontal intent is required below before we claim the drag,
     // so vertical scrolling is unaffected.
     const onStart = (e) => {
       if (!getSidebarGestures().open) return;
@@ -152,7 +153,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       const dx = t.clientX - d.startX;
       const dy = t.clientY - d.startY;
       if (!d.active) {
-        if (dx < 12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        if (dx > -12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
         d.active = true;
       }
       const now = Date.now();
@@ -160,7 +161,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       d.lastX = t.clientX; d.lastT = now;
       const el = panelRef.current; if (!el) return;
       const w = el.offsetWidth || 300;
-      setPanelX(Math.min(0, -w + dx), false);
+      setPanelX(Math.max(0, w + dx), false);
     };
     const onEnd = () => {
       const d = dragRef.current; dragRef.current = null;
@@ -168,7 +169,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       const el = panelRef.current;
       const w = (el && el.offsetWidth) || 300;
       const dx = d.lastX - d.startX;
-      const commit = dx > w * 0.38 || d.vx > 0.4;
+      const commit = (-dx) > w * 0.38 || d.vx < -0.4;
       restorePanel(commit);           // committed → animate to open; else slide back out
       if (commit && onOpen) onOpen();
     };
@@ -269,8 +270,8 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // ---- Category 4 — Help & Learn ---- (rendered through the SAME Item card as
   // every other section so spacing + sizing stay perfectly symmetric.)
   const learn = [
-    { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques \u2014 active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
-    { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team \u2014 ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
+    { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: 'Study Methods', badge: 'Guide', tip: 'Evidence-based techniques: active recall, spaced repetition and how to use this app well.', sub: 'Learn how to study smarter', action: () => go('study-methods', null, 'methods') },
+    { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: 'FAQ', badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: 'Common questions answered by the team, ask your own too.', sub: 'Questions answered by our team', action: () => go('faq', null, 'faq') },
     { key: 'about', icon: Info, color: T.accent, label: 'About', tip: 'Our mission, how the app teaches, and the person building it.', sub: 'The story behind NurseHolic', action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly
@@ -377,12 +378,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           so scrolling works on every device without relying on flexbox. */}
       <div ref={panelRef}
            data-no-ptr
-           className="absolute inset-y-0 left-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
+           className="absolute inset-y-0 right-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
            style={{
              background: T.bg,
              WebkitOverflowScrolling: 'touch',
              touchAction: 'pan-y',
-             transform: open ? 'translateX(0)' : 'translateX(-102%)',
+             transform: open ? 'translateX(0)' : 'translateX(102%)',
              boxShadow: open ? '0 0 40px rgba(0,0,0,0.25)' : 'none'
            }}>
         {/* Header (sticky so it stays pinned while the list scrolls). Pads
