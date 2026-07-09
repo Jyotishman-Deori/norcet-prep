@@ -10643,3 +10643,33 @@ events none, no buttons, silent on a normal online boot, aria-live polite,
 reduced-motion gated (font-styles.js conn-pill block). Visual layer over the
 existing offline write queue + flushPendingSync. Verified both boot states
 via renderToString harness; gate green (31 tests + smoke + build).
+
+---
+
+## 2026-07-09 — Waitlist-audit gap closure + text integrity + brand polish (a1b5bc7)
+
+Waitlist plan audited section-by-section vs the codebase (verdict: everything
+launch-blocking already built, hardened beyond spec; owner confirmed
+waitlist.sql run). Closed the residual gaps + owner requests in one commit,
+BOTH apps deployed:
+
+1. MOJIBAKE: search.jsx display strings were baked double-encoded UTF-8
+   since ~07-03 (live users saw 'helpâ€¦' / 'â€œnovaâ€'). Byte-level repair;
+   note-companion.test.js FFFD is a deliberate sentinel, exempted. NEW
+   text-encoding gate in npm test (proven to FAIL on planted corruption);
+   search screen added to the render smoke (now 7 screens).
+2. EM DASHES pass 2: escape-sequence form (13 files incl. the seed question
+   bank) + 12 JSX-wrapped prose dashes + manifest description. Share-message
+   banner was still 'N O R C E T  P R E P' -> now 'N U R S E H O L I C (tm)'.
+3. TRADEMARK (tm) on every brand lockup (splash, nav, footer + '(c) 2026
+   NurseHolic(tm). All rights reserved.', auth, about, waitlist, manifest
+   name/short_name, page titles, iOS label, QR image, notification titles).
+   No (R) anywhere. TODO.md created: marketing calendar parked until testing
+   sign-off (owner wants a proactive reminder then).
+4. DRAWER UX: nav drawer now opens from the RIGHT (hamburger is top-right on
+   every surface); swipe gestures, row-entrance animation and all gesture
+   copy mirrored (open = swipe left, close = swipe right).
+5. PWA: navigator.storage.persist() at boot (budget-Android eviction guard).
+6. SECURITY headers on both apps: X-Frame-Options DENY, nosniff,
+   Referrer-Policy (student via vercel.json, admin generated into dist-admin
+   by post-admin-build). VERIFIED live via curl on www.nurseholic.in.
