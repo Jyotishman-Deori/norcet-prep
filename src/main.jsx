@@ -9,9 +9,15 @@ import { captureReferralFromUrl } from './lib/referral.js';
 import { initUmami } from './lib/umami.js';
 import { captureInstallPrompt, requestPersistentStorage } from './lib/install-prompt.js';
 import { loadI18n } from './lib/i18n.js';
+import { initDevBadge } from './lib/dev-env.js';
 // #29 — capture uncaught errors + unhandled promise rejections from the very
 // start, grouped for the admin crash dashboard. Fail-safe (never throws).
 installGlobalErrorCapture();
+// Dev-environment indicator — inert in production builds. On a dev serve it
+// shows which Supabase project this session touches: 'DEV DATA' (the
+// nurseholic-dev project via .env.development) or a red 'LIVE DATA' warning
+// when that file is missing and Vite fell back to the production .env.
+initDevBadge(import.meta.env);
 // Rage-click detection — rapid clustered taps get flagged as UX failures in
 // the same admin triage list (severity 'ux'). Fail-safe, game screens excluded.
 installRageClickCapture();

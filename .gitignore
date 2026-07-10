@@ -16,5 +16,6 @@ scripts/.font-src
 
 .vercel
 .env*
-# ...but DO track the committed template (it holds only placeholders, no secrets).
+# ...but DO track the committed templates (placeholders only, no secrets).
 !.env.example
+!.env.development.example

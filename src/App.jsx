@@ -73,6 +73,7 @@ import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as 
 import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
 import { framePrice } from './lib/cosmetics.js';
 import { loadGameConfig, getConfig } from './lib/game-config.js';
+import { isInternalAccount, setInternalSessionProfile } from './lib/internal-accounts.js';
 // LAUNCH WAITLIST — ?claim=<uuid> invite links (parsed once at mount, like
 // the family ?join= tokens above).
 import { parseClaimParam } from './lib/waitlist.js';
@@ -1017,6 +1018,20 @@ const PTR_DISABLED_SCREENS = new Set([
   // intercept the pull and interfere with scrolling it.
   'share-app',
 ]);
+
+// Internal (test/staff) account isolation — register the active profile with
+// the session bridge (lib/internal-accounts.js) and flip Umami's native kill
+// switch (localStorage 'umami.disabled') so tester traffic never reaches
+// analytics. Nothing else in the app touches that key. Safe under private
+// mode / SSR (try/catch, feature-checked).
+function syncInternalFlag(profile) {
+  try {
+    setInternalSessionProfile(profile);
+    if (typeof localStorage === 'undefined') return;
+    if (isInternalAccount(getConfig(), profile)) localStorage.setItem('umami.disabled', '1');
+    else localStorage.removeItem('umami.disabled');
+  } catch (e) {}
+}
 
 // =====================================================================
 // FEEDBACK INBOX — shared storage; one key per report
@@ -3070,7 +3085,14 @@ export default function App() {
   // just keep their coins; nothing re-grants.
   // Load the live game_config (tunable XP/quests/crates/frames/combos) once at
   // boot — a single public read; falls back to hardcoded defaults if absent.
-  useEffect(() => { loadGameConfig(); }, []);
+  // Once it lands, re-sync the internal-account flag (the profile effect below
+  // may have run before the remote internalIds list arrived).
+  useEffect(() => { loadGameConfig().then(() => syncInternalFlag(profileRef.current)); }, []);
+
+  // Internal (test/staff) account isolation: register the active profile with
+  // the session bridge (trending guard reads it lazily) and flip Umami's
+  // native kill switch so tester traffic never lands in analytics.
+  useEffect(() => { syncInternalFlag(profile); }, [profile]);
 
   // Content quality gate — read the public hidden-question list once at boot
   // (one tiny anon read). Drives the filterHidden() in allQuestions above.

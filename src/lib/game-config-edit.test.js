@@ -74,6 +74,24 @@ assert.deepEqual(validateConfig(DEFAULTS), []);
   assert.deepEqual(changedFields(base, work), ['xp.reqScale']);
 }
 
+// ---- idlist (internalIds): sanitize + no phantom dirty ----
+{
+  // string form (pasted list) becomes a clean array; junk is dropped
+  let cfg = setAtPath(clone(DEFAULTS), 'internalIds', ' Jyoti, tester2  tester2 ,');
+  const s = sanitizeConfig(cfg);
+  assert.deepEqual(getAtPath(s, 'internalIds'), ['jyoti', 'tester2']);
+  assert.deepEqual(getAtPath(sanitizeConfig(setAtPath(clone(DEFAULTS), 'internalIds', 42)), 'internalIds'), []);
+  // idlist never produces validation errors
+  assert.deepEqual(validateConfig(setAtPath(clone(DEFAULTS), 'internalIds', 'anything')), []);
+  // deep-cloned but equal arrays are NOT flagged as changed (no phantom dirty)
+  const base = setAtPath(clone(DEFAULTS), 'internalIds', ['a', 'b']);
+  const same = clone(base);
+  assert.deepEqual(changedFields(base, same), []);
+  // a real edit IS flagged
+  const edited = setAtPath(clone(base), 'internalIds', ['a', 'b', 'c']);
+  assert.deepEqual(changedFields(base, edited), ['internalIds']);
+}
+
 // every schema field resolves to a real path in DEFAULTS (no typos)
 for (const f of ALL_FIELDS) {
   assert.notEqual(getAtPath(DEFAULTS, f.path), undefined, `schema path exists: ${f.path}`);

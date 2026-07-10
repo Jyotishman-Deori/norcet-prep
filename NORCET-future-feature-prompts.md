@@ -10857,3 +10857,63 @@ Owner ops still pending from the runbook: flip waitlist.collect when ready
 (gate stays off until launch), Tue/Fri batch cadence via the admin waitlist
 control room, and the pre-launch register (test toggles, key rotation,
 cribVault flip, locale review).
+
+---
+
+## 2026-07-10 — Tenant, test & boundary architecture (owner: "tenant isolation as a business requirement")
+
+Scoped with the owner: B2B college tenants DEFERRED (cohort seam already in
+place); built the three pragmatic layers instead.
+
+LAYER 1 — TEST-ACCOUNT ISOLATION. game_config gains `internalIds` (empty by
+default), edited in the admin Live config editor via a new `idlist` field type
+(chips + add box; sanitize normalizes, changedFields compares by value so
+arrays don't phantom-dirty). New pure lib src/lib/internal-accounts.js
+(normalizeInternalIds / isInternalAccount matches id OR uid since profile.id
+changes on rename / session bridge). Flagged accounts: no leaderboard publish
+AND filtered out of board reads (instant), no trending writes (one guard in
+recordInteraction covers all call sites), excluded from admin Engagement
+aggregates (computeEngagement excludeIds), Umami killed via its native
+localStorage switch. SERVER-ENFORCED in kv-write: the old _ssFlag cache is now
+a shared 60s game_config cache; leaderboard:/analytics:user: sets for a listed
+target and trend: sets from a listed session return {ok:true,skipped:
+'internal'} silently (deletes pass through for cleanup). Fail-open.
+
+LAYER 2 — DEV ENVIRONMENT BOUNDARY. npm run dev used to hit PRODUCTION
+Supabase. Now: local-only .env.development (gitignored; committed
+.env.development.example template) points dev serves at a free-tier
+nurseholic-dev project; builds never read it. src/lib/dev-env.js shows a
+DEV DATA chip on dev serves, and a red LIVE DATA warning when the file is
+missing and Vite silently fell back to prod (the trap this exists for);
+provably inert in production builds. Owner runbook: docs/dev-environment.md
+(SQL order, function deploys with --no-verify-jwt, fresh dev
+SESSION_SIGNING_SECRET, Cloudflare always-pass Turnstile test keys). NEW
+supabase/admin-allowlist.sql heals a repo drift: no committed SQL ever
+CREATED admin_profile_ids.
+
+LAYER 3 — BOUNDARY HARDENING. (a) Storage self-test now probes ALL SIX
+private prefixes (was 2 of 6, stale since the broker-read split): plants a
+broker canary under each, proves a RAW anon REST read (bypassing kv-read
+routing, the true student-visible path) sees nothing, deletes it. States
+blocked/LEAKED/no-probe per prefix; the selftest: canary stays as the
+must-remain-readable control so over-blocking is caught too. Probes carry
+severity 'ux' so the errlog one never burns the Resend owner-alert budget.
+(b) NEW scripts/check-student-bundle.mjs in npm test: scans dist/ for 5
+verified admin-only sentinels (admin-manage/content-staging/push-broadcast
+URLs, admin-approve, totp-enroll) with a self-check that fails if a sentinel
+vanishes from src/ (guard can't rot). NEGATIVE-PROVEN: a planted
+admin-ops import in main.jsx failed the gate naming file+sentinel; note a
+side-effect-only import of a pure admin module is tree-shaken away and
+correctly does NOT trip it (nothing shipped = no leak).
+
+Verification: 40 test files (3 new: internal-accounts, dev-env + extended
+game-config-edit/engagement/storage-selftest) + 16-screen smoke + compile
+gate + bundle guard green; kv-write esbuild-checked; SSR render of the three
+changed admin screens passed.
+
+OWNER ACTIONS PENDING: (1) after this deploy, admin → Live config → Test
+accounts: add your tester ids/uids; (2) run the Storage self-test on prod,
+expect 6x hidden; (3) optional one-off cleanup of old tester board rows:
+DELETE FROM kv_shared WHERE key IN ('leaderboard:<id>', ...); (4) stand up
+the nurseholic-dev project per docs/dev-environment.md; (5) kv-write must be
+redeployed (done this session) for the server-side skip.

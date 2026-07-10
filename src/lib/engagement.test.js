@@ -86,6 +86,22 @@ const NOW = Date.UTC(2026, 6, 2, 12, 0, 0);
   assert.equal(e.dormant[0].id, 'd0', 'most recently lost first');
 }
 
+// excludeIds removes internal (test/staff) accounts from EVERY aggregate
+{
+  const metas = [
+    { id: 'Real1', createdAt: NOW - 2 * DAY, lastActive: NOW - 1e3 },
+    { id: 'tester', createdAt: NOW - 2 * DAY, lastActive: NOW - 1e3 },
+    { id: 'ghost-tester', createdAt: NOW - 40 * DAY, lastActive: null },
+  ];
+  const e = computeEngagement(metas, NOW, { excludeIds: ['Tester', 'GHOST-TESTER'] });
+  assert.equal(e.total, 1, 'excluded ids drop out of the total (case-insensitive)');
+  assert.equal(e.activeToday, 1);
+  assert.equal(e.recency.never, 0, 'excluded never-seen tester does not pollute the bucket');
+  assert.ok(!e.dormant.some(m => m.id === 'ghost-tester'), 'excluded from the win-back list');
+  const none = computeEngagement(metas, NOW, { excludeIds: [] });
+  assert.equal(none.total, 3, 'empty exclude list changes nothing');
+}
+
 // ---- agoLabel ----
 assert.equal(agoLabel(null, NOW), 'never');
 assert.equal(agoLabel(NOW - 3600e3, NOW), 'today');

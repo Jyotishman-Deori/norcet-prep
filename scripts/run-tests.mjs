@@ -73,4 +73,11 @@ const viteBin = join(root, 'node_modules', 'vite', 'bin', 'vite.js');
 const build = spawnSync(process.execPath, [viteBin, 'build'], { stdio: 'inherit', cwd: root });
 if (build.status !== 0) process.exit(1);
 
-console.log(`\nAll ${tests.length} test file(s) + render smoke + compile gate passed.`);
+// Student-bundle boundary guard — scans the dist/ the build above just
+// produced for admin-only sentinels (the student app must ship zero admin
+// code; tree-shaking alone is not a guarantee).
+console.log('\n> student-bundle boundary guard');
+const bundleGuard = spawnSync(process.execPath, [join(root, 'scripts', 'check-student-bundle.mjs')], { stdio: 'inherit', cwd: root });
+if (bundleGuard.status !== 0) process.exit(1);
+
+console.log(`\nAll ${tests.length} test file(s) + render smoke + compile gate + bundle guard passed.`);

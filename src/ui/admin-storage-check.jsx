@@ -14,10 +14,24 @@ import { Card, Button, TopBar } from './primitives.jsx';
 import { safeStorage } from '../lib/safe-storage.js';
 import { runStorageSelfTest, SHARED_WRITE_FEATURES } from '../lib/storage-selftest.js';
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 const io = {
   write:    (k, v) => safeStorage.setSharedStrict(k, v),
   readAnon: (k)    => safeStorage.get(k, true).then(r => (r && r.value != null) ? r.value : null),
   del:      (k)    => safeStorage.delSharedStrict(k),
+  // RAW anon REST read that bypasses the kv-read broker routing in storage.js —
+  // exactly what a curious student with the public anon key could do. Used by
+  // the privacy probes: a private-prefix row must come back EMPTY here.
+  readAnonRaw: async (k) => {
+    if (!SUPABASE_URL || !SUPABASE_KEY) return null;
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/kv_shared?key=eq.${encodeURIComponent(k)}&select=value`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (!r.ok) return null;
+    const rows = await r.json().catch(() => []);
+    return Array.isArray(rows) && rows.length && rows[0].value != null ? String(rows[0].value) : null;
+  },
 };
 
 export default function AdminStorageCheck({ onBack }) {
@@ -46,9 +60,10 @@ export default function AdminStorageCheck({ onBack }) {
               <Database size={18} style={{ color: T.primary }} />
             </div>
             <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-              Checks that admin-authored content can actually be <b>read back</b> by the app.
-              It writes a hidden probe, reads it through the same path students use, then deletes it.
-              Run this after any Supabase policy or Edge-Function change.
+              Checks that admin-authored content can actually be <b>read back</b> by the app,
+              and that <b>private data stays hidden</b> from anonymous reads: it plants a hidden
+              probe under every protected prefix and proves the public path cannot see it,
+              then deletes everything. Run this after any Supabase policy or Edge-Function change.
             </div>
           </div>
         </Card>
@@ -71,6 +86,16 @@ export default function AdminStorageCheck({ onBack }) {
               <Step label="Broker write" state={res.write} T={T} />
               <Step label="Anon read-back" state={res.read} T={T} />
             </div>
+            {Array.isArray(res.privacy) && res.privacy.length > 0 && (
+              <>
+                <div className="text-[11px] uppercase tracking-wider font-semibold mt-3 mb-1.5" style={{ color: T.muted }}>
+                  Private prefixes · anon must see nothing
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[12px]">
+                  {res.privacy.map(p => <PrivacyStep key={p.prefix} row={p} T={T} />)}
+                </div>
+              </>
+            )}
           </Card>
         )}
 
@@ -87,6 +112,20 @@ export default function AdminStorageCheck({ onBack }) {
           </div>
         </Card>
       </div>
+    </div>
+  );
+}
+
+// A privacy probe row: 'blocked' is the GOOD state here (row exists, anon
+// sees nothing); 'leaked' or 'no-probe' are failures.
+function PrivacyStep({ row, T }) {
+  const good = row.state === 'blocked';
+  const color = good ? T.success : T.error;
+  const text = good ? 'hidden' : row.state === 'leaked' ? 'LEAKED' : 'no probe';
+  return (
+    <div className="flex items-center justify-between rounded-lg px-2.5 py-2" style={{ background: T.surfaceWarm }}>
+      <span className="font-mono text-[11px]" style={{ color: T.inkSoft }}>{row.prefix}</span>
+      <span className="font-semibold" style={{ color }}>{text}</span>
     </div>
   );
 }

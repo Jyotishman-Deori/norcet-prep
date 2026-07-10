@@ -13,6 +13,8 @@ import { masteryTally } from './kmap.js';
 import { countsInNursingStats } from '../data/seed.js';
 import { weeklyGrowth, firstAttemptTotals } from './leaderboard-score.js';
 import { normalizeLevelup, progress } from './levelup.js';
+import { getConfig } from './game-config.js';
+import { isInternalAccount, normalizeInternalIds } from './internal-accounts.js';
 
 const LEADERBOARD_PREFIX = 'leaderboard:';
 const leaderboardKey = (pid) => LEADERBOARD_PREFIX + pid;
@@ -73,6 +75,9 @@ function computeLeaderboardEntry(profile, data, allQuestions) {
 // Fire-and-forget upsert of this user's row. Fails quietly when offline.
 export async function saveLeaderboardEntry(profile, data, allQuestions) {
   if (!profile || !profile.id) return;
+  // Internal (test/staff) accounts never publish a row. The kv-write broker
+  // enforces the same rule server-side; this just saves the request.
+  if (isInternalAccount(getConfig(), profile)) return;
   const entry = computeLeaderboardEntry(profile, data, allQuestions);
   // Board a user with study OR game activity (so games-only players still appear
   // on the Games board).
@@ -89,5 +94,9 @@ export async function loadLeaderboard() {
     try { const r = await safeStorage.get(k, true); if (r && r.value) return JSON.parse(r.value); } catch (e) {}
     return null;
   }));
-  return items.filter(Boolean);
+  // Hide internal (test/staff) accounts even if an old row still exists on the
+  // server: flagging an account takes effect on the next board load, before
+  // any manual row cleanup.
+  const internal = normalizeInternalIds(getConfig().internalIds);
+  return items.filter(e => e && !(e.id && internal.includes(String(e.id).toLowerCase())));
 }

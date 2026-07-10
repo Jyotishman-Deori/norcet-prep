@@ -8,6 +8,7 @@
 // 'premium.plans.0.priceInr' or 'crateOdds.2.coins'.
 // =====================================================================
 import { DEFAULTS } from './game-config.js';
+import { normalizeInternalIds } from './internal-accounts.js';
 
 export function getAtPath(obj, path) {
   let cur = obj;
@@ -35,7 +36,7 @@ export function setAtPath(obj, path, value) {
 }
 
 // Field/section schema. Each field: { path, label, type, min, max, step, help, prefix, suffix }.
-// type: 'slider' | 'int' | 'money' (₹) | 'toggle'.
+// type: 'slider' | 'int' | 'money' (₹) | 'toggle' | 'idlist' (array of account ids).
 export const SECTIONS = [
   {
     id: 'xp', title: 'Levelling & XP', icon: 'Gauge',
@@ -82,6 +83,14 @@ export const SECTIONS = [
     fields: [
       { path: 'security.singleSession', label: 'Single-device sessions', type: 'toggle',
         help: 'ON = logging in on a new device signs out all older devices at their next sync (anti account-sharing for paid plans). Keep OFF during testing, testers use multiple devices.' },
+    ],
+  },
+  {
+    id: 'internal', title: 'Test accounts', icon: 'FlaskConical',
+    blurb: 'Internal accounts kept out of every shared surface real students see.',
+    fields: [
+      { path: 'internalIds', label: 'Test account ids', type: 'idlist',
+        help: 'These accounts never appear on the leaderboard, trending, engagement, or usage analytics. Enter the profile id (or uid) of each tester. Server-enforced by the kv-write broker.' },
     ],
   },
   {
@@ -141,6 +150,9 @@ export function sanitizeConfig(cfg) {
   for (const f of ALL_FIELDS) {
     if (f.type === 'toggle') {
       out = setAtPath(out, f.path, !!getAtPath(out, f.path));
+    } else if (f.type === 'idlist') {
+      // accepts an array or a comma/whitespace string; stores a clean array
+      out = setAtPath(out, f.path, normalizeInternalIds(getAtPath(out, f.path)));
     } else {
       out = setAtPath(out, f.path, clampNum(getAtPath(out, f.path), f));
     }
@@ -152,7 +164,7 @@ export function sanitizeConfig(cfg) {
 export function validateConfig(cfg) {
   const errors = [];
   for (const f of ALL_FIELDS) {
-    if (f.type === 'toggle') continue;
+    if (f.type === 'toggle' || f.type === 'idlist') continue;
     const raw = getAtPath(cfg, f.path);
     const n = Number(raw);
     if (!Number.isFinite(n)) { errors.push(`${f.label}: must be a number`); continue; }
@@ -176,7 +188,11 @@ export function changedFields(baseline, working) {
   for (const f of ALL_FIELDS) {
     const a = getAtPath(baseline, f.path);
     const b = getAtPath(working, f.path);
-    if (a !== b) changed.push(f.path);
+    // arrays (idlist) are re-created by the editor's clone, so !== would flag
+    // a permanent phantom change; compare by value instead
+    if (f.type === 'idlist') {
+      if (JSON.stringify(a ?? []) !== JSON.stringify(b ?? [])) changed.push(f.path);
+    } else if (a !== b) changed.push(f.path);
   }
   return changed;
 }

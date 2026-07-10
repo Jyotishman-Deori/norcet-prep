@@ -56,8 +56,14 @@ export const RECENCY_BUCKETS = [
 ];
 
 // computeEngagement(metas, now, opts?) -> aggregates for the admin view.
-export function computeEngagement(rawMetas, now, { weeks = 8, dormantDays = 14, dormantMax = 15 } = {}) {
-  const metas = normalizeMetas(rawMetas);
+// opts.excludeIds: internal (test/staff) account ids left out of every
+// aggregate, so the owner's own testing never inflates the numbers.
+export function computeEngagement(rawMetas, now, { weeks = 8, dormantDays = 14, dormantMax = 15, excludeIds = [] } = {}) {
+  let metas = normalizeMetas(rawMetas);
+  if (Array.isArray(excludeIds) && excludeIds.length) {
+    const skip = new Set(excludeIds.map(x => String(x).toLowerCase()));
+    metas = metas.filter(m => !skip.has(m.id.toLowerCase()));
+  }
   const total = metas.length;
 
   const within = (ts, days) => ts != null && (now - ts) < days * DAY;

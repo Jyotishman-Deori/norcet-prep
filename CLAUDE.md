@@ -19,6 +19,10 @@ unless a change is explicitly requested. This is a live production app with real
   **esbuild** bundle-with-stubs as the compile gate (target: 0 errors / 0 warnings).
   Every new `src/lib` module ships with a focused test.
 - **Local loop:** `npm install` → `npm run dev` to test → `git add . && commit && push`.
+  Dev serves target the **nurseholic-dev** Supabase project via the local-only
+  `.env.development` (see `docs/dev-environment.md`); a red **LIVE DATA** chip on a dev
+  serve means that file is missing and you are touching PRODUCTION data — stop and fix.
+  Production builds never read `.env.development`.
 
 ---
 
@@ -143,7 +147,11 @@ from UI and from storage. Server/shared state is the source of truth, not the cl
   = multiple equal admins. Verification is **server-side and fail-closed** (`checkServerAdmin`).
 - **The student bundle ships ZERO admin code.** `isAdmin` has no path to `true` in the
   student app; the admin app is a separate build (`dist-admin`). Don't reintroduce an admin
-  surface into the student app.
+  surface into the student app. Enforced by `scripts/check-student-bundle.mjs` in `npm test`
+  (sentinel scan of `dist/`); if you rename an admin Edge-Function action, update its list.
+- **Internal (test) accounts:** `game_config.internalIds` (admin Live config → Test
+  accounts) lists tester ids/uids excluded from the leaderboard, trending, engagement and
+  Umami — client-side in `src/lib/internal-accounts.js` AND server-side in kv-write.
 - **Server-side enforcement is the real lock:** the `kv-write` Edge Function broker rejects
   non-admin `bank:` writes. Frontend hiding of admin UI is **cosmetic only** — never rely on
   it for security.

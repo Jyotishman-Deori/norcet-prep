@@ -20,6 +20,7 @@
 // =====================================================================
 import { safeStorage } from './safe-storage.js';
 import { KEYS } from './keys.js';
+import { isInternalSession } from './internal-accounts.js';
 
 const RETAIN_DAYS = 8;         // today + 7 trailing days
 const MAX_UIDS_PER_DAY = 400;  // bound blob size (broker also caps the payload)
@@ -57,6 +58,9 @@ function parseBlob(value) {
 // never throws (safe to call un-awaited).
 export async function recordInteraction(kind, id, uid, event = 'open') {
   if (!kind || !id || !uid) return false;
+  // Internal (test/staff) accounts don't move the trending needle. One guard
+  // here covers every call site; the kv-write broker also skips them.
+  if (isInternalSession()) return false;
   const bucket = event === 'complete' ? 'c' : 'o';
   const key = KEYS.trend(kind, id);
   try {

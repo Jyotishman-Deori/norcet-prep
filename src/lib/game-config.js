@@ -98,6 +98,13 @@ export const DEFAULTS = {
     singleSession: false,
   },
 
+  // Internal (test/staff) accounts — profile ids or uids. These accounts are
+  // excluded from the leaderboard, trending, engagement stats and analytics,
+  // client-side (internal-accounts.js) AND server-side (kv-write skips their
+  // leaderboard:/trend:/analytics:user: writes). Ships empty; the owner adds
+  // testers via the admin Live config editor, no redeploy.
+  internalIds: [],
+
   // In-game combo banner milestones (consecutive correct answers).
   comboTiers: [
     { at: 3,  label: 'On a roll!',    tone: '#0CA678' },

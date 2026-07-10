@@ -137,10 +137,15 @@ async function verifyToken(token: unknown): Promise<Session | null> {
 //     the flag on never strands an already-logged-in tester;
 //   • any lookup/config failure → allow (fail-open: this guards revenue,
 //     it must never take the app down).
-let _ssFlag: { v: boolean; ts: number } | null = null;
-async function singleSessionEnabled(): Promise<boolean> {
-  if (_ssFlag && Date.now() - _ssFlag.ts < 60_000) return _ssFlag.v;
-  let v = false;
+// Shared 60s-cached game_config read (single-session flag + internal ids both
+// ride the same fetch, so the second consumer costs nothing extra).
+// deno-lint-ignore no-explicit-any
+let _cfgCache: { v: any; ts: number } | null = null;
+// deno-lint-ignore no-explicit-any
+async function gameConfigCached(): Promise<any> {
+  if (_cfgCache && Date.now() - _cfgCache.ts < 60_000) return _cfgCache.v;
+  // deno-lint-ignore no-explicit-any
+  let v: any = null;
   try {
     const r = await fetch(
       `${SUPABASE_URL}/rest/v1/kv_shared?key=eq.game_config&select=value`,
@@ -148,14 +153,41 @@ async function singleSessionEnabled(): Promise<boolean> {
     );
     if (r.ok) {
       const rows = await r.json();
-      if (Array.isArray(rows) && rows.length) {
-        const cfg = JSON.parse(String(rows[0].value));
-        v = !!(cfg && cfg.security && cfg.security.singleSession === true);
-      }
+      if (Array.isArray(rows) && rows.length) v = JSON.parse(String(rows[0].value));
     }
-  } catch { /* fail-open */ }
-  _ssFlag = { v, ts: Date.now() };
+  } catch { /* fail-open: null config */ }
+  _cfgCache = { v, ts: Date.now() };
   return v;
+}
+async function singleSessionEnabled(): Promise<boolean> {
+  const cfg = await gameConfigCached();
+  return !!(cfg && cfg.security && cfg.security.singleSession === true);
+}
+
+// INTERNAL (TEST) ACCOUNTS — game_config.internalIds lists tester profile ids
+// or uids (the admin edits it in the Live config editor). Their leaderboard:,
+// analytics:user: and trend: writes are silently ACCEPTED but NOT persisted
+// ({ok:true, skipped:'internal'}), so test traffic can never pollute the
+// shared surfaces real students see. Fire-and-forget clients must never see
+// an error, and a stale client can't tell the difference. Fail-open: config
+// unreadable → empty list → normal write.
+function normalizeInternalIds(raw: unknown): string[] {
+  const parts = Array.isArray(raw)
+    ? raw
+    : typeof raw === "string" ? raw.split(/[\s,]+/) : [];
+  const out: string[] = [];
+  for (const p of parts) {
+    const v = String(p ?? "").trim().toLowerCase();
+    if (v && !out.includes(v)) out.push(v);
+  }
+  return out;
+}
+async function internalIdList(): Promise<string[]> {
+  const cfg = await gameConfigCached();
+  return normalizeInternalIds(cfg && cfg.internalIds);
+}
+function skippedInternal(): Response {
+  return json({ ok: true, skipped: "internal" });
 }
 async function sessionSidOk(s: Session): Promise<boolean> {
   if (!(await singleSessionEnabled())) return true;
@@ -369,6 +401,21 @@ Deno.serve(async (req: Request) => {
       if (key.startsWith(p)) {
         const crossOk = p === "myfeedback:" ? atLeast(role, "moderator") : admin;
         if (crossOk || suffix(key, p) === session.id) {
+          // Internal (test) accounts: swallow their board/analytics rows.
+          // Matched on the TARGET row's id, or on the writer's uid when the
+          // writer publishes their own row (covers a uid-only listing across
+          // renames). Deletes pass through so cleanup stays possible.
+          if (op !== "del" && (p === "leaderboard:" || p === "analytics:user:")) {
+            const ids = await internalIdList();
+            if (ids.length) {
+              const target = suffix(key, p).toLowerCase();
+              const ownRow = suffix(key, p) === session.id;
+              const uid = String(session.uid ?? "").toLowerCase();
+              if (ids.includes(target) || (ownRow && uid && ids.includes(uid))) {
+                return skippedInternal();
+              }
+            }
+          }
           return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
         }
         return json({ error: "Forbidden: not your row" }, 403);
@@ -425,6 +472,16 @@ Deno.serve(async (req: Request) => {
       if (op === "del") {
         if (!admin) return json({ error: "Forbidden: admin only" }, 403);
         return await deleteRow(key);
+      }
+      // Internal (test) accounts never move the trending needle (matched on
+      // the WRITER here: trend keys are per-item, not per-user).
+      {
+        const ids = await internalIdList();
+        const sid = String(session.id ?? "").toLowerCase();
+        const uid = String(session.uid ?? "").toLowerCase();
+        if (ids.length && ((sid && ids.includes(sid)) || (uid && ids.includes(uid)))) {
+          return skippedInternal();
+        }
       }
       const val = String(body.value ?? "");
       if (val.length > 20000) return json({ error: "Forbidden: trend payload too large" }, 413);

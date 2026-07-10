@@ -13,22 +13,30 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from './primitives.jsx';
 import { loadProfileIndex } from '../lib/profiles.js';
 import { computeEngagement, agoLabel, RECENCY_BUCKETS } from '../lib/engagement.js';
+import { loadGameConfig, getConfig } from '../lib/game-config.js';
+import { normalizeInternalIds } from '../lib/internal-accounts.js';
 
 export default function AdminEngagement({ onBack }) {
   const { theme: T } = useTheme();
   const [metas, setMetas] = useState(null); // null = loading
+  const [internalIds, setInternalIds] = useState([]);
   const [spin, setSpin] = useState(false);
 
   const load = async () => {
     setSpin(true);
-    try { setMetas(await loadProfileIndex()); }
+    try {
+      // Internal (test/staff) accounts are excluded from every aggregate; the
+      // list lives in the same game_config row the Live config editor edits.
+      try { await loadGameConfig(); setInternalIds(normalizeInternalIds(getConfig().internalIds)); } catch (e) {}
+      setMetas(await loadProfileIndex());
+    }
     catch (e) { setMetas([]); }
     finally { setSpin(false); }
   };
   useEffect(() => { load(); }, []);
 
   const now = Date.now();
-  const eng = useMemo(() => (metas ? computeEngagement(metas, now) : null), [metas]); // eslint-disable-line react-hooks/exhaustive-deps
+  const eng = useMemo(() => (metas ? computeEngagement(metas, now, { excludeIds: internalIds }) : null), [metas, internalIds]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const bucketTones = {
     today: T.success, week: T.primary, month: T.accent, dormant: T.error, never: T.muted,

@@ -9,9 +9,12 @@ import ReactDOM from 'react-dom/client';
 import AdminApp, { ErrorBoundary } from './AdminApp.jsx';
 import './index.css';
 import { installGlobalErrorCapture } from './lib/errorlog.js';
+import { initDevBadge } from './lib/dev-env.js';
 
 // Group uncaught errors for the same crash dashboard the student app feeds.
 installGlobalErrorCapture();
+// Dev-environment indicator — inert in production builds (see src/lib/dev-env.js).
+initDevBadge(import.meta.env);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

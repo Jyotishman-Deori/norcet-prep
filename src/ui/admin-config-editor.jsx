@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Save, RotateCcw, Check, Loader2, ChevronDown, SlidersHorizontal,
-  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle, Shield, Ticket,
+  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle, Shield, Ticket, FlaskConical, X,
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
@@ -21,7 +21,7 @@ import {
 } from '../lib/game-config-edit.js';
 import { logAdminAction } from '../lib/admin-audit.js';
 
-const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket };
+const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket, FlaskConical };
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 export default function AdminConfigEditor({ onBack, actorName }) {
@@ -220,6 +220,8 @@ function FieldRow({ f, value, edited, onChange, T }) {
 
       {f.type === 'toggle' ? (
         <ToggleRow value={!!value} onChange={onChange} help={f.help} T={T} />
+      ) : f.type === 'idlist' ? (
+        <IdListEditor value={value} onChange={onChange} help={f.help} T={T} />
       ) : f.type === 'slider' ? (
         <>
           <input type="range" min={f.min} max={f.max} step={f.step} value={value}
@@ -234,6 +236,55 @@ function FieldRow({ f, value, edited, onChange, T }) {
           {f.help && <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{f.help}</div>}
         </>
       )}
+    </div>
+  );
+}
+
+// idlist — removable chips + an add box. Ids are normalized (trim/lowercase/
+// dedupe) on add and again by sanitizeConfig on save, so pasted lists are fine.
+function IdListEditor({ value, onChange, help, T }) {
+  const [draft, setDraft] = useState('');
+  const ids = Array.isArray(value) ? value : [];
+  const add = () => {
+    const parts = draft.split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean);
+    if (parts.length === 0) return;
+    const next = [...ids];
+    for (const p of parts) if (!next.includes(p)) next.push(p);
+    onChange(next);
+    setDraft('');
+  };
+  return (
+    <div>
+      {ids.length > 0 ? (
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {ids.map(id => (
+            <span key={id} className="inline-flex items-center gap-1 pl-2.5 pr-1 py-1 rounded-full text-[12px] font-semibold"
+                  style={{ background: T.surfaceWarm, color: T.ink, border: `1px solid ${T.border}` }}>
+              {id}
+              <button type="button" onClick={() => onChange(ids.filter(x => x !== id))}
+                      className="no-tap-highlight w-5 h-5 rounded-full flex items-center justify-center active:scale-90 transition"
+                      style={{ color: T.muted }} aria-label={`Remove ${id}`}>
+                <X size={12} />
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : (
+        <div className="text-[12px] mb-2" style={{ color: T.muted }}>No test accounts marked yet.</div>
+      )}
+      <div className="flex items-center gap-2">
+        <input value={draft} onChange={(e) => setDraft(e.target.value)}
+               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } }}
+               placeholder="profile id or uid"
+               className="flex-1 h-9 rounded-lg px-3 text-[13px] outline-none"
+               style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
+        <button type="button" onClick={add} disabled={!draft.trim()}
+                className="no-tap-highlight h-9 px-3 rounded-lg text-[12px] font-bold inline-flex items-center gap-1 active:scale-95 transition disabled:opacity-50"
+                style={{ background: T.primary, color: '#FFF' }}>
+          <Plus size={13} /> Add
+        </button>
+      </div>
+      {help && <div className="text-[11px] mt-1.5" style={{ color: T.muted }}>{help}</div>}
     </div>
   );
 }
