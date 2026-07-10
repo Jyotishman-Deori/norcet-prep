@@ -10633,6 +10633,47 @@ any Level Up drill or on the Knowledge Map must produce nothing.
 
 ---
 
+## 2026-07-10 — UX feedback round (LIVE) + Advanced Stats tab (dev)
+
+**UX round (bbb08ab, deployed to PRODUCTION same day on owner's order,
+along with the whole i18n build; admin app deployed via deploy:admin):**
+1. TM stripped from every visual brand lockup; survives only in (c)
+   lines + the student tab title.
+2. Desktop footer language switcher (Globe pill -> 16-language popover,
+   same setLocale contract as Settings -> Language).
+3. Library rethought for students: chips All / In my practice / Not
+   added; per-card status chips (In use / Update available / Paused /
+   Not added) + status accent bar; admin app keeps ownership chips.
+4. Bank detail: practice-status card first, preview now shows OPTIONS
+   with the correct answer marked, CTA "Add to practice - N questions".
+5. Admin bank editor: MULTI-file .json/.csv upload + drag-drop; files
+   parsed independently, merged into one batch, per-file report;
+   duplicate review runs across the merged set.
+6. BackToTop FAB rebuilt: shows at 240px, springy in/out, scroll
+   progress ring (rAF, no re-renders), hover lift; crib-sheet inline
+   copy replaced with the shared component; added to Library.
+Render smoke grew to 13 screens.
+
+**Advanced Stats tab (f882cff, dev only pending owner QA) — master-plan
+NEW-07:** Stats gains Overview/Advanced tabs (Overview unchanged).
+Advanced tab = What-If v2 (dual sliders: attempted + doubtful-blank,
+coarse honest percentile band; math extracted to src/lib/whatif.js, v1
+card on Advanced results untouched), Doubt Mapping 2x2 (doubt-matrix.js
+over the already-captured conf tags; Fatal Danger Zone taps into a
+mode:'wrong' review), Clinical System Leak Radar (clinical-systems.js:
+keyword sub->system map + topic fallback + Other; severity = wrongRate
+* log2(1+attempts), min 3; GK/apt excluded), Strategic Benchmarks
+(benchmark.js vs topper targets, every metric degrades to honest "no
+data"; blind guesses null until conf is tagged). StatsScreen gets
+BackToTop; smoke gained 'stats' + 'stats-advanced' entries via a new
+__setSmokeData fixture hook (DEFAULT_DATA is empty and would skip the
+new hooks). 36 test files green. FEAT-03 (short trend ranges) was
+found ALREADY BUILT during the audit; analytics-prototype.html never
+existed in the repo. Explicitly deferred: NEW-07.4 High-Stress Drill /
+18-min section locks, NEW-04 three-wave pacing, NEW-08 CBT simulator.
+
+---
+
 ## 2026-07-10 — Multi-language UI: 15 languages shipped to dev (i18n complete)
 
 Full UI internationalization built and verified overnight across 4 commits
