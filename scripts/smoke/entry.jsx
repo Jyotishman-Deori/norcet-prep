@@ -181,6 +181,27 @@ const SCREENS = {
     const m = await import('../../src/screens/legal.jsx');
     return React.createElement(m.LegalScreen, { doc: 'disclaimer', onBack: noop });
   },
+  // Top-bar revamp (2026-07-11): persistent DesktopNav with active-section
+  // highlight, bell swing and the golden Premium pill. Rendered on a CHILD
+  // screen (crib-sheet → Revision lights up via SECTION_OF) with unread
+  // notifications; the member variant exercises the gold tier-badge branch.
+  'desktop-nav': async () => {
+    const m = await import('../../src/ui/desktop-nav.jsx');
+    return React.createElement(m.default, {
+      screen: 'crib-sheet', onTab: noop, onNavigate: noop, onOpenMenu: noop,
+      onOpenNote: noop, unreadNotifCount: 3, onOpenNotifications: noop,
+    });
+  },
+  'desktop-nav-member': async () => {
+    const stub = await import('./stub-app-context.jsx');
+    stub.__setSmokeProfile({ premium: { active: true, tier: 'MAX', expiresAt: Date.now() + 86400000 } });
+    const m = await import('../../src/ui/desktop-nav.jsx');
+    const el = React.createElement(m.default, {
+      screen: 'premium', onTab: noop, onNavigate: noop, onOpenMenu: noop,
+      onOpenNote: noop, unreadNotifCount: 0, onOpenNotifications: noop,
+    });
+    return el;
+  },
   // NEW-07 Advanced analytics. DEFAULT_DATA is empty (totalAttempted 0), which
   // would early-return StatsScreen and skip every new hook — so these two
   // entries install a POPULATED fixture via the stub's __setSmokeData first.
@@ -244,11 +265,21 @@ const SCREENS = {
   },
 };
 
+// Optional per-entry content markers: strings that MUST appear in the
+// rendered HTML, so a silently-empty branch (e.g. a gated pill) fails loud.
+const MARKERS = {
+  'desktop-nav': ['dnav-gold', 'dnav-link-active', 'dnav-bell-ring', 'Premium'],
+  'desktop-nav-member': ['dnav-gold', 'MAX'],
+};
+
 let failed = 0;
 for (const [name, make] of Object.entries(SCREENS)) {
   try {
     const html = renderToString(await make());
     if (!html || html.length < 200) throw new Error(`suspiciously empty render (${html.length} chars)`);
+    for (const mark of (MARKERS[name] || [])) {
+      if (!html.includes(mark)) throw new Error(`rendered without expected marker "${mark}"`);
+    }
     console.log(`ok   - ${name} rendered (${html.length} chars)`);
   } catch (e) {
     failed++;

@@ -1,28 +1,46 @@
 // =====================================================================
 // src/ui/desktop-nav.jsx — the persistent DESKTOP top navbar (≥1024px).
 //
-// The PC counterpart of the mobile bottom tab bar (Duolingo/Playo-style):
-// App mounts it only when `isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen)`
-// — the same four tab-root screens the bottom bar owns, so quiz/test/game
-// screens stay chrome-free. On these screens the phone-era headers hide on
-// lg (Home header `lg:hidden`; TopBar's `desktopHidden` prop) and this bar
-// takes over their actions: brand → Home, section links, Search, notes,
-// notifications bell, Favourites, profile chip → Settings, and Menu for
-// the full drawer.
+// LinkedIn-style shell: App mounts it on EVERY desktop screen EXCEPT the
+// immersive surfaces in DNAV_EXCLUDED_SCREENS below, so users can hop
+// between sections from anywhere without backing out first. On the four
+// tab roots the phone-era headers hide on lg (Home header `lg:hidden`;
+// TopBar's `desktopHidden` prop); on other screens the screen's own
+// TopBar simply sits BELOW this bar via the `--dnav-h` offset it
+// publishes. Bar contents: brand → Home, section links, Search, notes,
+// notifications bell, Favourites, golden Premium pill, profile chip →
+// Settings, and Menu for the full drawer.
 //
 // Mechanics mirror bottom-nav.jsx: publishes `--dnav-h` on <html> while
 // mounted (sub-view TopBars offset below it via that var) and renders an
-// in-flow spacer. Micro-interactions (`dnav-*`): bar settle-in, hover
-// underline slide on links, icon pop — all in the reduced-motion block.
+// in-flow spacer. Micro-interactions (`dnav-*` + `brand-pop`): bar
+// settle-in, hover underline slide + persistent active underline on
+// links, icon press pop, bell swing on new unread, gold sheen sweep on
+// Premium, brand spring pop on click — all in the reduced-motion block.
 // =====================================================================
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Search, Heart, Settings, Menu, Bell, Plus,
+  Search, Heart, Settings, Menu, Bell, Plus, Crown,
 } from 'lucide-react';
 import { useTheme, useProfile, useI18n } from '../lib/app-context.jsx';
 import { playTapSound } from '../lib/sound.js';
+import { isPremiumEnabled, isPremiumUser, getPremiumState } from '../lib/premium.js';
 
 const BAR_H = 64;
+
+// Screens that stay chrome-free on desktop: exam players, clinical games
+// and full-canvas surfaces where a persistent bar would break focus (or
+// layout), plus the auth/waitlist gates. Everything else gets the bar.
+// ⚠ RULE: any NEW immersive screen (game, timed test, full-canvas view)
+// must join this set — same convention as RAGE_EXCLUDED_SCREENS.
+export const DNAV_EXCLUDED_SCREENS = new Set([
+  'auth', 'waitlist',                                   // gates
+  'quiz', 'advanced-test', 'paper-test', 'dosage-run',  // active test players
+  'skill-setup', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter',
+  'distractor-assassin', 'three-am-chart', 'shift-survival', 'tie-breaker',
+  'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',       // clinical games
+  'knowledge-map',                                      // full-canvas map
+]);
 
 // Section links (center cluster). Routes are nav objects via onNavigate
 // (the drawer's dispatcher), so quiz-spec style entries would work too.
@@ -34,6 +52,22 @@ const LINKS = [
   { labelKey: 'nav.links.library',  screen: 'library' },
   { labelKey: 'nav.links.stats',    screen: 'stats' },
 ];
+
+// Child screens that light up a section link while open, so the bar shows
+// where you are even deep in a flow. Exact-match wins; unmapped screens
+// simply highlight nothing.
+const SECTION_OF = {
+  'learn-cards': 'learn-topics',
+  'crib-sheet': 'revision-sheet',
+  'bank-detail': 'library',
+  'bank-editor': 'library',
+  'add-question': 'library',
+};
+
+// Premium gold (matches premium.jsx GOLD + the cosmetics gold ring).
+const GOLD = '#D97706';
+const GOLD_BRIGHT = '#FCD34D';
+const GOLD_DEEP = '#B45309';
 
 export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOpenNote, unreadNotifCount = 0, onOpenNotifications }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -49,6 +83,35 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
 
   const name = (profile && (profile.displayName || profile.id)) || t('common.guest');
   const initial = String(name).trim().charAt(0).toUpperCase() || 'N';
+
+  // Brand spring pop: re-keying the tile restarts the animation each click.
+  const [brandPop, setBrandPop] = useState(0);
+  const onBrand = () => {
+    playTapSound();
+    setBrandPop((c) => c + 1);
+    if (screen === 'home') {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    } else {
+      onTab('home');
+    }
+  };
+
+  const activeSection = SECTION_OF[screen] || screen;
+
+  // Re-clicking the section you are already on scrolls to top (mirrors the
+  // bottom bar's re-tap); otherwise a normal stack push so back always works.
+  const onLink = (l) => {
+    playTapSound();
+    if (screen === l.screen) {
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+    } else {
+      onNavigate({ screen: l.screen });
+    }
+  };
+
+  const premiumOn = isPremiumEnabled();
+  const isMember = isPremiumUser(profile);
+  const tier = isMember ? (getPremiumState(profile).tier || 'SUPER') : null;
 
   const iconBtn = (active) => ({
     background: active ? T.primary + '1A' : 'transparent',
@@ -66,11 +129,12 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               }}>
         <div className="max-w-6xl mx-auto h-full px-8 flex items-center gap-6">
 
-          {/* Brand → Home (tab-root switch, clears the back stack) */}
-          <button onClick={() => { playTapSound(); onTab('home'); }}
+          {/* Brand → Home (tab-root switch, clears the back stack); on Home
+              a re-click scrolls to top. Each click springs the tile. */}
+          <button onClick={onBrand}
                   className="no-tap-highlight flex items-center gap-2.5 flex-shrink-0 dnav-brand"
                   aria-label={t('nav.tabs.home')} aria-current={screen === 'home' ? 'page' : undefined}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-display text-base font-bold"
+            <div key={brandPop} className={'w-9 h-9 rounded-xl flex items-center justify-center font-display text-base font-bold' + (brandPop ? ' brand-pop' : '')}
                  style={{ background: T.primary, color: '#FFF' }}>
               N
             </div>
@@ -79,16 +143,22 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
             </span>
           </button>
 
-          {/* Section links — hover underline slides in; Home is via the brand. */}
+          {/* Section links — hover underline slides in; the CURRENT section
+              keeps its underline lit even on child screens (SECTION_OF).
+              Home is via the brand. */}
           <nav className="flex items-center gap-1 flex-1" aria-label={t('nav.mainNavigation')}>
-            {LINKS.map((l) => (
-              <button key={l.screen}
-                      onClick={() => { playTapSound(); onNavigate({ screen: l.screen }); }}
-                      className="dnav-link no-tap-highlight relative px-3.5 py-2 rounded-lg text-[13.5px] font-semibold transition-colors"
-                      style={{ color: T.inkSoft, '--dnav-underline': T.primary }}>
-                {t(l.labelKey)}
-              </button>
-            ))}
+            {LINKS.map((l) => {
+              const active = activeSection === l.screen;
+              return (
+                <button key={l.screen}
+                        onClick={() => onLink(l)}
+                        aria-current={active ? 'page' : undefined}
+                        className={'dnav-link no-tap-highlight relative px-3.5 py-2 rounded-lg text-[13.5px] font-semibold transition-colors' + (active ? ' dnav-link-active' : '')}
+                        style={{ color: active ? T.primary : T.inkSoft, '--dnav-underline': T.primary }}>
+                  {t(l.labelKey)}
+                </button>
+              );
+            })}
           </nav>
 
           {/* Right cluster — mirrors the hidden Home header + bottom bar. */}
@@ -107,7 +177,10 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
             <button onClick={() => { playTapSound(); onOpenNotifications(); }} aria-label={t('nav.notifications')}
                     className="dnav-icon no-tap-highlight relative p-2.5 rounded-xl transition-colors"
                     style={iconBtn(false)}>
-              <Bell size={19} strokeWidth={2.2} />
+              {/* keyed on the count: the bell swings once whenever unread changes */}
+              <span key={unreadNotifCount} className={'inline-block' + (unreadNotifCount > 0 ? ' dnav-bell-ring' : '')} style={{ lineHeight: 0 }}>
+                <Bell size={19} strokeWidth={2.2} />
+              </span>
               {unreadNotifCount > 0 && (
                 <span className="absolute top-1 right-1 min-w-[16px] h-4 px-1 rounded-full text-[9px] font-bold flex items-center justify-center"
                       style={{ background: T.error, color: '#FFF' }}>
@@ -121,6 +194,25 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
                     style={iconBtn(screen === 'favorites')}>
               <Heart size={19} strokeWidth={2.2} />
             </button>
+
+            {/* Golden Premium pill — for members it turns into a solid gold
+                tier badge (SUPER/MAX) that opens the same manage screen. */}
+            {premiumOn && (
+              <button onClick={() => { playTapSound(); onNavigate({ screen: 'premium' }); }}
+                      aria-label={t('nav.drawer.premium.label')}
+                      aria-current={screen === 'premium' ? 'page' : undefined}
+                      className="dnav-gold no-tap-highlight flex items-center gap-1.5 ml-1 px-3 py-1.5 rounded-full text-[12.5px] font-bold transition-all"
+                      style={isMember
+                        ? { background: `linear-gradient(135deg, ${GOLD_BRIGHT}, ${GOLD})`,
+                            border: `1px solid ${GOLD}`, color: '#FFFFFF',
+                            textShadow: '0 1px 2px rgba(0,0,0,0.18)' }
+                        : { background: `linear-gradient(135deg, ${GOLD_BRIGHT}${IS_DARK ? '1F' : '26'}, ${GOLD}14)`,
+                            border: `1px solid ${GOLD}${IS_DARK ? '66' : '55'}`,
+                            color: IS_DARK ? GOLD_BRIGHT : GOLD_DEEP }}>
+                <Crown size={14} strokeWidth={2.4} fill={isMember ? 'currentColor' : 'none'} />
+                {isMember ? tier : t('nav.drawer.premium.label')}
+              </button>
+            )}
 
             {/* Profile chip → Settings */}
             <button onClick={() => { playTapSound(); onTab('settings'); }}

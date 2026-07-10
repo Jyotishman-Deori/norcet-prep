@@ -9,7 +9,7 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Crown, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
 import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
@@ -35,6 +35,9 @@ import { Tip } from '../ui/tooltip.jsx';
 // LAUNCH WAITLIST — guest-only "reserve your seat" card, shown only while
 // game_config waitlist.collect is ON and this device hasn't joined yet.
 import { getConfig } from '../lib/game-config.js';
+import { isPremiumEnabled } from '../lib/premium.js';
+import { haptic, HAPTIC } from '../lib/juice.js';
+import { playTapSound } from '../lib/sound.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 
@@ -91,6 +94,25 @@ function AllCaughtUpCard() {
         <div className="text-xs" style={{ color: T.muted }}>{t('home.caughtUpSub')}</div>
       </div>
     </div>
+  );
+}
+
+// The "NurseHolic" eyebrow above the greeting: tapping it springs the
+// wordmark (brand-pop, shared with the DesktopNav tile) with a soft haptic.
+// Pure delight, no navigation; self-contained so Home's hook order is safe.
+function BrandMark() {
+  const { theme: T } = useTheme();
+  const [pop, setPop] = useState(0);
+  return (
+    <button onClick={() => { playTapSound(); haptic(HAPTIC.PLACE); setPop((c) => c + 1); }}
+            aria-label="NurseHolic"
+            className="no-tap-highlight text-left">
+      <span key={pop}
+            className={'inline-block text-[11px] uppercase tracking-[0.2em] font-semibold' + (pop ? ' brand-pop' : '')}
+            style={{ color: T.muted }}>
+        Nurse<span style={{ color: T.primary }}>Holic</span>
+      </span>
+    </button>
   );
 }
 
@@ -539,6 +561,15 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               {/* AI Learning Notes — fixed access point on Home (custom header,
                   not the shared TopBar). Same leftmost slot as elsewhere. */}
               <NoteButton />
+              {/* Golden Premium shortcut (mobile counterpart of the DesktopNav
+                  pill; desktop hides this whole header on lg). */}
+              {isPremiumEnabled() && (
+                <button onClick={() => { playTapSound(); onNavigate({ screen: 'premium' }); }}
+                        className="no-tap-highlight p-2 rounded-full active:bg-black/5 pressable"
+                        aria-label={t('nav.drawer.premium.label')}>
+                  <Crown size={20} style={{ color: '#D97706' }} />
+                </button>
+              )}
               {onOpenNotifications && (
                 <Tip title={t('home.todayTipTitle')} text={t('home.todayTip')}>
                 <button onClick={() => { onNotifRead && onNotifRead(); onOpenNotifications(); }}
@@ -738,7 +769,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       {/* Greeting */}
       <div className="mb-6 mt-2 lg:mt-4">
-        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NurseHolic</div>
+        <BrandMark />
         <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
           {t('home.greeting.' + timeOfDay)}{userName ? `, ${userName}` : ''}
         </h1>

@@ -819,6 +819,40 @@ export const fontStyles = `
 .dnav-icon { transition: background 0.15s ease, transform 0.15s ease; }
 .dnav-icon:hover { background: var(--surface-warm) !important; transform: translateY(-1px); }
 .dnav-chip:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+/* Top-bar revamp micro-interactions: press pops, persistent active
+   underline, bell swing on new unread, gold sheen sweep on Premium, and
+   the shared brand spring pop (also used by the Home "NurseHolic" eyebrow).
+   Keyframes end at transform:none (containing-block rule, see header). */
+.dnav-link:active { transform: scale(0.96); }
+.dnav-link-active::after { transform: scaleX(1); }
+.dnav-icon:active { transform: scale(0.9); }
+@keyframes brandPop {
+  0%   { transform: none; }
+  30%  { transform: scale(1.14) rotate(-7deg); }
+  60%  { transform: scale(0.97) rotate(2deg); }
+  100% { transform: none; }
+}
+.brand-pop { animation: brandPop 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+@keyframes dnavBellRing {
+  0%, 100% { transform: none; }
+  15% { transform: rotate(14deg); }
+  30% { transform: rotate(-12deg); }
+  45% { transform: rotate(8deg); }
+  60% { transform: rotate(-5deg); }
+  75% { transform: rotate(2deg); }
+}
+.dnav-bell-ring { animation: dnavBellRing 0.7s ease-in-out; transform-origin: top center; }
+.dnav-gold { position: relative; overflow: hidden; }
+.dnav-gold::after {
+  content: ''; position: absolute; top: 0; bottom: 0; left: -70%; width: 45%;
+  background: linear-gradient(105deg, transparent, rgba(255,255,255,0.38), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.55s cubic-bezier(0.22,1,0.36,1);
+  pointer-events: none;
+}
+.dnav-gold:hover::after { left: 125%; }
+.dnav-gold:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(217,119,6,0.28); }
+.dnav-gold:active { transform: scale(0.95); }
 .foot-link { position: relative; }
 .foot-link:hover { color: var(--foot-hover, var(--primary)) !important; }
 .foot-link::after {
@@ -854,11 +888,12 @@ export const fontStyles = `
   .bnav-in, .bnav-pop, .search-row-in,
   .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
   .nnudge-in, .nnudge-bell, .nnudge-done,
-  .about-in, .dnav-in,
+  .about-in, .dnav-in, .brand-pop, .dnav-bell-ring,
   .wl-in, .wl-bloom, .wl-ring, .wl-tick { animation: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
-  .dnav-icon, .dnav-chip { transition: none !important; }
-  .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child { transform: none !important; }
+  .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after { transition: none !important; }
+  .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child,
+  .dnav-gold:hover, .dnav-gold:active, .dnav-icon:active, .dnav-link:active { transform: none !important; }
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }

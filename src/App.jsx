@@ -270,7 +270,7 @@ import { recordMilestone, levelUpMilestone, streakMilestone, crossedStreakMilest
 import BottomNav, { BOTTOM_NAV_SCREENS } from './ui/bottom-nav.jsx';
 // DESKTOP SHELL — the persistent top navbar + Duolingo-style footer that
 // replace the bottom bar (and the phone-era headers) on ≥1024px screens.
-import DesktopNav from './ui/desktop-nav.jsx';
+import DesktopNav, { DNAV_EXCLUDED_SCREENS } from './ui/desktop-nav.jsx';
 import AppFooter from './ui/app-footer.jsx';
 import { useBreakpoint } from './lib/responsive.js';
 // Study-companion rename modal (opened from the note popup pencil + Settings).
@@ -2423,8 +2423,12 @@ export default function App() {
   // tab-hopping trail. Each tab restores its own last scroll position.
   const { isDesktop } = useBreakpoint();
   const bottomNavVisible = !isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen);
-  // Desktop shell (top navbar + footer) mirrors the bottom bar's scope: the
-  // four tab-root screens only — quiz/test/game screens stay chrome-free.
+  // Desktop top navbar is LinkedIn-style persistent: every screen EXCEPT the
+  // immersive surfaces (exam players, games, canvas, gates) listed in
+  // DNAV_EXCLUDED_SCREENS. Sub-screen TopBars sit below it via --dnav-h.
+  const desktopNavVisible = isDesktop && !DNAV_EXCLUDED_SCREENS.has(nav.screen);
+  // The desktop FOOTER keeps the narrower tab-root scope (a footer under
+  // every list/flow screen would be noise).
   const desktopShellVisible = isDesktop && BOTTOM_NAV_SCREENS.has(nav.screen);
   const goTabDirect = useCallback((screen) => {
     navStackRef.current = [];
@@ -4354,13 +4358,14 @@ export default function App() {
       <CompanionRenameHost />
       {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && !bottomNavVisible && <NoteFab />}
 
-      {/* DESKTOP SHELL (≥1024px) — the persistent top navbar, the PC
-          counterpart of the bottom tab bar: same four tab-root screens,
-          quiz/test/game screens stay chrome-free. Mounted BEFORE the screen
+      {/* DESKTOP SHELL (≥1024px) — the persistent top navbar, LinkedIn-style:
+          mounted on every screen except DNAV_EXCLUDED_SCREENS (exam players,
+          games, canvas, gates stay chrome-free). Mounted BEFORE the screen
           so its in-flow spacer pushes content below the fixed bar; the
-          phone-era headers on these screens hide on lg (Home header,
-          TopBar desktopHidden). */}
-      {desktopShellVisible && (
+          phone-era headers on the tab roots hide on lg (Home header,
+          TopBar desktopHidden), and other screens' TopBars offset below
+          the bar via --dnav-h. */}
+      {desktopNavVisible && (
         <DesktopNav screen={nav.screen}
                     onTab={goTabDirect}
                     onNavigate={handleHomeNavigate}

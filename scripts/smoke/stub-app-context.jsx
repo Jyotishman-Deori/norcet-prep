@@ -41,10 +41,15 @@ export function useData() {
   };
 }
 
+// Smoke-only profile override (e.g. a premium member for the DesktopNav
+// gold-tier pill). Merged over the default smoke profile.
+let smokeProfile = null;
+export function __setSmokeProfile(p) { smokeProfile = p; }
+
 export function useProfile() {
   return {
     profileId: 'smoke-test',
-    profile: { uid: 'smoke', id: 'smoke-test', displayName: 'Smoke' },
+    profile: { uid: 'smoke', id: 'smoke-test', displayName: 'Smoke', ...(smokeProfile || {}) },
   };
 }
 
