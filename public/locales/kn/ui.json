@@ -1,5 +1,10 @@
 {
-  "_meta": { "code": "kn", "version": 1, "status": "DRAFT - needs native speaker review before production use", "script": "kannada" },
+  "_meta": {
+    "code": "kn",
+    "version": 1,
+    "status": "DRAFT - needs native speaker review before production use",
+    "script": "kannada"
+  },
   "common.back": "ಹಿಂದೆ",
   "common.cancel": "ರದ್ದು",
   "common.close": "ಮುಚ್ಚಿ",
@@ -130,6 +135,7 @@
   "quiz.flagTip": "ಫ್ಲಾಗ್ ಮಾಡಿದ ಪ್ರಶ್ನೆಗಳು My Doubts ನಲ್ಲಿ ಉಳಿಸಲಾಗುತ್ತದೆ, ಸೈಡ್‌ಬಾರ್‌ನಲ್ಲಿ ಹುಡುಕಿ.",
   "quiz.flagged": "ಫ್ಲಾಗ್ ಆಗಿದೆ: ವಿವರಣೆ ಅಸ್ಪಷ್ಟ (ಅನ್‌ಫ್ಲಾಗ್ ಮಾಡಲು ಟ್ಯಾಪ್ ಮಾಡಿ)",
   "quiz.flagCta": "ಇನ್ನೂ ಗೊಂದಲವೇ? ಈ ವಿವರಣೆ ಫ್ಲಾಗ್ ಮಾಡಿ",
+  "quiz.reportErrorCta": "ಯಾವುದೇ ತಪ್ಪು ಕಂಡಿತೇ? ವರದಿ ಮಾಡಿ, ಪ್ರತಿ ವರದಿಯನ್ನು ಒಬ್ಬ ವ್ಯಕ್ತಿ ಪರಿಶೀಲಿಸುತ್ತಾರೆ.",
   "quiz.memoryTip": "ನೆನಪಿನ ಟಿಪ್",
   "quiz.whyOthersWrong": "ಇತರವು ಏಕೆ ತಪ್ಪು",
   "quiz.stillDontGetIt": "ಇನ್ನೂ ಅರ್ಥವಾಗುತ್ತಿಲ್ಲ",
@@ -292,6 +298,7 @@
   "welcome.demo.windowTitle": "ನೀವು ಯಾವಾಗ ಚೆನ್ನಾಗಿ ಓದುತ್ತೀರಿ?",
   "welcome.demo.windowTrust": "ನಿಮ್ಮ ದೈನಂದಿನ ರಿಮೈಂಡರ್ ಈ ಸಮಯಕ್ಕೆ ಹೊಂದಿಸುತ್ತೇವೆ, ನೀವು ನಿಜವಾಗಿ ಬಿಡುವಿರುವಾಗ ಬರುವ ರಿಮೈಂಡರ್ ನೀವು ನಿರ್ಲಕ್ಷಿಸುವ ಒಂದಕ್ಕಿಂತ ಉತ್ತಮ. ಯಾವಾಗ ಬೇಕಾದರೂ ಬದಲಾಯಿಸಿ.",
   "welcome.demo.privacyNote": "ಐಚ್ಛಿಕ ಮತ್ತು ಖಾಸಗಿ · Settings → Profile ನಲ್ಲಿ ಯಾವಾಗ ಬೇಕಾದರೂ ಬದಲಾಯಿಸಿ.",
+  "welcome.demo.contentNote": "ಪ್ರತಿ ಪ್ರಶ್ನೆಯನ್ನು ಮನುಷ್ಯರೇ ಬರೆದು ಪರಿಶೀಲಿಸುತ್ತಾರೆ. ತಪ್ಪು ಕಂಡರೆ? ಒಂದು ಟ್ಯಾಪ್‌ನಲ್ಲಿ ವರದಿ ಮಾಡಿ.",
   "welcome.ikigai.kicker": "ಕೊನೆಯ ಒಂದು ವಿಷಯ",
   "welcome.ikigai.title": "ನಿಮ್ಮ ಕಾರಣ ಏನು?",
   "welcome.ikigai.bodyPre": "ನಿಮ್ಮ",
@@ -546,6 +553,8 @@
   "settings.legal.guidelinesSub": "FAQ ಥ್ರೆಡ್‌ಗಳು ಮತ್ತು ಲೀಡರ್‌ಬೋರ್ಡ್ ಸ್ನೇಹಪರವಾಗಿಡುವ ವಿಧಾನ",
   "settings.legal.refunds": "ರದ್ದತಿ ಮತ್ತು ರೀಫಂಡ್",
   "settings.legal.refundsSub": "ಪೇಯ್ಡ್ ಪ್ಲಾನ್‌ಗಳು ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತವೆ (ಇಂದು ಎಲ್ಲವೂ ಉಚಿತ)",
+  "settings.legal.disclaimer": "ಕಂಟೆಂಟ್ ಡಿಸ್‌ಕ್ಲೈಮರ್",
+  "settings.legal.disclaimerSub": "ನಮ್ಮ ಕಂಟೆಂಟ್ ಏನು, ಏನಲ್ಲ, ಮತ್ತು ತಪ್ಪುಗಳನ್ನು ಹೇಗೆ ಸರಿಪಡಿಸಲಾಗುತ್ತದೆ",
   "settings.legal.rowTip": "ಗೌಪ್ಯತಾ ನೀತಿ ಮತ್ತು ಬಳಕೆ ನಿಯಮಗಳನ್ನು ಓದಿ. ಏನು ಸಂಗ್ರಹವಾಗುತ್ತದೆ, ಹೇಗೆ ಬಳಸಲಾಗುತ್ತದೆ, ಮತ್ತು ಆ್ಯಪ್‌ನ ಸರಳ ನಿಯಮಗಳು.",
   "settings.legal.rowSub": "ಗೌಪ್ಯತಾ ನೀತಿ ಮತ್ತು ಬಳಕೆ ನಿಯಮಗಳು",
   "settings.support.aria": "ಆ್ಯಪ್‌ಗೆ ಬೆಂಬಲ ನೀಡಿ",

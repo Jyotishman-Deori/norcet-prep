@@ -8,7 +8,7 @@
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Cloud, CloudOff, Copy, Download, Edit3,
+  AlertCircle, AlertTriangle, ArrowUpDown, BadgeCheck, Bell, BellRing, Check, ChevronRight, Cloud, CloudOff, Copy, Download, Edit3,
   Fingerprint, FileText, GraduationCap, Hand, Heart, Languages, Lock, LogIn, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
   Shield, Sigma, SquarePlus, Trash2, Undo2, User, UserPlus, Volume2
 } from 'lucide-react';
@@ -532,6 +532,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
       { key: 'terms',      Icon: FileText,    title: t('auth.termsOfUse'),             sub: t('settings.legal.termsSub') },
       { key: 'guidelines', Icon: Heart,       title: t('settings.legal.guidelines'),   sub: t('settings.legal.guidelinesSub') },
       { key: 'refunds',    Icon: RotateCcw,   title: t('settings.legal.refunds'),      sub: t('settings.legal.refundsSub') },
+      { key: 'disclaimer', Icon: BadgeCheck,  title: t('settings.legal.disclaimer'),   sub: t('settings.legal.disclaimerSub') },
     ];
     return (
       <div className="space-y-2.5">

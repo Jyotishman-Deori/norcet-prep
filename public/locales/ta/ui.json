@@ -1,5 +1,10 @@
 {
-  "_meta": { "code": "ta", "version": 1, "status": "DRAFT - needs native speaker review before production use", "script": "tamil" },
+  "_meta": {
+    "code": "ta",
+    "version": 1,
+    "status": "DRAFT - needs native speaker review before production use",
+    "script": "tamil"
+  },
   "common.back": "பின் செல்",
   "common.cancel": "ரத்து செய்",
   "common.close": "மூடு",
@@ -130,6 +135,7 @@
   "quiz.flagTip": "Flag செய்யப்பட்ட கேள்விகள் My Doubts-இல் சேமிக்கப்படும், sidebar-இல் காணலாம்.",
   "quiz.flagged": "Flag செய்யப்பட்டது: விளக்கம் தெளிவில்லை (unflag செய்ய தட்டவும்)",
   "quiz.flagCta": "இன்னும் குழப்பமா? இந்த விளக்கத்தை Flag செய்யுங்கள்",
+  "quiz.reportErrorCta": "ஏதேனும் பிழை கண்டீர்களா? ரிப்போர்ட் செய்யுங்கள், ஒவ்வொரு ரிப்போர்ட்டையும் ஒருவர் சரிபார்க்கிறார்.",
   "quiz.memoryTip": "நினைவு உதவிக்குறிப்பு",
   "quiz.whyOthersWrong": "மற்றவை ஏன் தவறு",
   "quiz.stillDontGetIt": "இன்னும் எனக்கு புரியவில்லை",
@@ -292,6 +298,7 @@
   "welcome.demo.windowTitle": "எப்போது சிறப்பாக படிக்கிறீர்கள்?",
   "welcome.demo.windowTrust": "இந்த window-க்கு உங்கள் தினசரி நினைவூட்டலை நேரம் குறிப்போம், நீங்கள் உண்மையில் free ஆக இருக்கும்போது வரும் நினைவூட்டல், நீங்கள் புறக்கணிப்பதை விட சிறந்தது. எப்போது வேண்டுமானாலும் மாற்றலாம்.",
   "welcome.demo.privacyNote": "விருப்பமானது & தனிப்பட்டது · Settings → Profile-இல் எப்போது வேண்டுமானாலும் மாற்றலாம்.",
+  "welcome.demo.contentNote": "ஒவ்வொரு கேள்வியும் மனிதர்களால் எழுதப்பட்டு சரிபார்க்கப்படுகிறது. பிழை கண்டால் ஒரே தட்டில் ரிப்போர்ட் செய்யலாம்.",
   "welcome.ikigai.kicker": "கடைசி விஷயம்",
   "welcome.ikigai.title": "உங்கள் காரணம் என்ன?",
   "welcome.ikigai.bodyPre": "உங்கள்",
@@ -546,6 +553,8 @@
   "settings.legal.guidelinesSub": "FAQ threads மற்றும் leaderboard-ஐ நட்பாக வைத்திருப்பது எப்படி",
   "settings.legal.refunds": "Cancellation & Refunds",
   "settings.legal.refundsSub": "Paid திட்டங்கள் எப்படி வேலை செய்யும் (இன்று அனைத்தும் இலவசம்)",
+  "settings.legal.disclaimer": "Content Disclaimer",
+  "settings.legal.disclaimerSub": "எங்கள் கன்டென்ட் என்ன, என்ன இல்லை, பிழைகள் எப்படி சரி செய்யப்படுகின்றன",
   "settings.legal.rowTip": "Privacy Policy மற்றும் Terms of Use படியுங்கள். என்ன சேமிக்கப்படுகிறது, எப்படி பயன்படுத்தப்படுகிறது, மற்றும் ஆப்பின் எளிய விதிகள்.",
   "settings.legal.rowSub": "Privacy Policy மற்றும் Terms of Use",
   "settings.support.aria": "ஆப்பை ஆதரி",

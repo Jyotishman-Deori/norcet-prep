@@ -38,7 +38,7 @@ import { KEYS } from './keys.js';
 // Bump whenever ANY public/locales/*/ui.json or public/fonts/*.woff2
 // changes. Busts the IndexedDB key, the network query, and the font URL
 // at once (same contract as CONTENT_VERSION in content.js).
-export const LOCALE_VERSION = 1;
+export const LOCALE_VERSION = 2;
 
 // Ordered locale registry — all 16 languages (owner-approved 2026-07-09).
 // `font` names a subsetted /fonts/<font>.woff2 built by

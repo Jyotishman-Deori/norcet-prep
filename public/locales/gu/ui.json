@@ -1,5 +1,10 @@
 {
-  "_meta": { "code": "gu", "version": 1, "status": "DRAFT - needs native speaker review before production use", "script": "gujarati" },
+  "_meta": {
+    "code": "gu",
+    "version": 1,
+    "status": "DRAFT - needs native speaker review before production use",
+    "script": "gujarati"
+  },
   "common.back": "પાછળ",
   "common.cancel": "રદ કરો",
   "common.close": "બંધ કરો",
@@ -130,6 +135,7 @@
   "quiz.flagTip": "ફ્લેગ કરેલા પ્રશ્નો My Doubts માં સેવ થાય છે, સાઈડબારમાં જુઓ.",
   "quiz.flagged": "ફ્લેગ કરેલું: સ્પષ્ટીકરણ અસ્પષ્ટ છે (ફ્લેગ કાઢવા ટેપ કરો)",
   "quiz.flagCta": "હજુ સમજાયું નથી? આ સ્પષ્ટીકરણ ફ્લેગ કરો",
+  "quiz.reportErrorCta": "કોઈ ભૂલ દેખાઈ? રિપોર્ટ કરો, દરેક રિપોર્ટ એક વ્યક્તિ તપાસે છે.",
   "quiz.memoryTip": "યાદ રાખવાની ટિપ",
   "quiz.whyOthersWrong": "બીજા વિકલ્પો કેમ ખોટા છે",
   "quiz.stillDontGetIt": "મને હજુ સમજાયું નથી",
@@ -292,6 +298,7 @@
   "welcome.demo.windowTitle": "તમે ક્યારે સૌથી સારું ભણો છો?",
   "welcome.demo.windowTrust": "અમે તમારો રોજિંદો નજ આ સમય પ્રમાણે ટાઈમ કરીશું, જ્યારે તમે ખરેખર ફ્રી હો ત્યારે આવતું રિમાઈન્ડર, અવગણેલા રિમાઈન્ડર કરતાં વધુ સારું. ગમે ત્યારે બદલો.",
   "welcome.demo.privacyNote": "વૈકલ્પિક અને ખાનગી · ગમે ત્યારે Settings → Profile માં બદલો.",
+  "welcome.demo.contentNote": "દરેક પ્રશ્ન માણસો દ્વારા લખાયેલો અને તપાસાયેલો છે. ભૂલ દેખાય? એક ટૅપમાં રિપોર્ટ કરો.",
   "welcome.ikigai.kicker": "છેલ્લી એક વાત",
   "welcome.ikigai.title": "તમારું કારણ શું છે?",
   "welcome.ikigai.bodyPre": "તમારું",
@@ -546,6 +553,8 @@
   "settings.legal.guidelinesSub": "અમે FAQ થ્રેડ્સ અને લીડરબોર્ડને કેવી રીતે મૈત્રીપૂર્ણ રાખીએ છીએ",
   "settings.legal.refunds": "કેન્સલેશન અને રિફંડ",
   "settings.legal.refundsSub": "પેઈડ પ્લાન કેવી રીતે કામ કરશે (આજે બધું ફ્રી છે)",
+  "settings.legal.disclaimer": "કન્ટેન્ટ ડિસ્ક્લેમર",
+  "settings.legal.disclaimerSub": "અમારું કન્ટેન્ટ શું છે, શું નથી, અને ભૂલો કેવી રીતે સુધારાય છે",
   "settings.legal.rowTip": "Privacy Policy અને Terms of Use વાંચો. શું સ્ટોર થાય છે, એ કેવી રીતે વપરાય છે, અને એપના સાદા નિયમો.",
   "settings.legal.rowSub": "Privacy Policy અને Terms of Use",
   "settings.support.aria": "એપને સપોર્ટ કરો",

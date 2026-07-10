@@ -1,10 +1,11 @@
 // =====================================================================
 // src/lib/legal.js — plain-language legal documents (single source of truth).
 //
-// Four documents: Privacy Policy, Terms of Use, Community Guidelines, and
-// Cancellation & Refunds. Settings → Legal, the footer, and the onboarding
-// consent step all render the SAME text from here. Each document is a list
-// of { h, body } sections; `body` may contain blank lines.
+// Five documents: Privacy Policy, Terms of Use, Community Guidelines,
+// Cancellation & Refunds, and the Content Disclaimer. Settings → Legal, the
+// footer, and the onboarding consent step all render the SAME text from here.
+// Each document is a list of { h, body } sections; `body` may contain blank
+// lines.
 //
 // NOTE FOR THE MAINTAINER: this is written to match how the app actually
 // behaves (local guest mode via IndexedDB, Supabase sync, Umami cookieless
@@ -15,7 +16,7 @@
 // are re-prompted to accept.
 // =====================================================================
 
-export const LEGAL_VERSION = 4;       // v4 (July 2026): named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
+export const LEGAL_VERSION = 5;       // v5 (July 2026): new Content Disclaimer doc (accuracy, fictional names, dosage practice-only, no exam-body affiliation); v4 named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
 export const LEGAL_UPDATED = 'July 2026';   // last reviewed
 
 // Support contact — the public-facing address (About "Email us", Privacy +
@@ -103,7 +104,7 @@ export const LEGAL = {
     sections: [
       {
         h: 'The app is a study aid',
-        body: 'Questions, explanations, dosage drills and reference values are provided to help you practise. They may contain errors and are not a substitute for your official syllabus, textbooks or professional/clinical judgement. Always verify anything you’ll rely on in practice against an authoritative source.',
+        body: 'Questions, explanations, dosage drills and reference values are provided to help you practise. They may contain errors and are not a substitute for your official syllabus, textbooks or professional/clinical judgement. Always verify anything you’ll rely on in practice against an authoritative source. See the Content Disclaimer under Legal for full details.',
       },
       {
         h: 'No guarantee of results',
@@ -202,6 +203,41 @@ export const LEGAL = {
       {
         h: 'Contact',
         body: `For any billing question use Settings → Send feedback or email ${SUPPORT_EMAIL}. Include the date and amount of the charge so we can find it quickly.`,
+      },
+    ],
+  },
+  disclaimer: {
+    title: 'Content Disclaimer',
+    updated: LEGAL_UPDATED,
+    intro: 'We want you to trust what you study here. This page says plainly what our content is, what it is not, and what we do when something is wrong.',
+    sections: [
+      {
+        h: 'A study aid, not medical advice',
+        body: 'Everything in the app, questions, explanations, dosage drills, reference values and study guides, exists to help you prepare for an exam. It is not medical advice and it is not a clinical resource. It never replaces your official syllabus, your textbooks, your teachers or your own clinical judgement. Before you rely on anything in real practice, verify it against an authoritative, current source.',
+      },
+      {
+        h: 'Mistakes can happen, and how we fix them',
+        body: 'Our content is written and reviewed by humans, across thousands of questions and explanations. We work hard to keep it accurate, but an occasional error can still slip through, a dated guideline, a typo in an option, a debatable answer key.\n\nThat is why every question carries a one-tap report. When you flag something, a person reads it, checks it against reliable references, and ships a correction if you were right. Your reports are a big part of why the bank keeps getting better.',
+      },
+      {
+        h: 'Names and scenarios are illustrative',
+        body: 'Patients, nurses, doctors, wards and hospitals that appear in questions are fictional teaching scenarios, invented to make a concept concrete. Any resemblance to a real person, living or dead, is coincidental and unintended. Where a real institution, examination body or public figure is mentioned, it is only in a factual, syllabus-related context.',
+      },
+      {
+        h: 'Dosage and reference values are for practice only',
+        body: 'Drug doses, drip rates, lab ranges and other numbers in drills are exam-practice values. Never use them to make a real clinical decision. In practice, always follow your institution’s protocols, the prescriber’s orders and current official references.',
+      },
+      {
+        h: 'No affiliation with exam bodies',
+        body: 'Exam names such as NORCET or AIIMS are used only to describe what the content prepares you for. This app is an independent study tool. It is not affiliated with, endorsed by or connected to AIIMS, any examination authority or any government body. All trademarks belong to their respective owners.',
+      },
+      {
+        h: 'Community content',
+        body: 'Posts in the FAQ and other community spaces are written by fellow aspirants and reflect their authors’ own views, not ours. Treat community answers the same way you would a classmate’s notes: helpful, but worth verifying.',
+      },
+      {
+        h: 'Found something wrong?',
+        body: `Tell us. Use the report button on any question, or Settings → Send feedback, or email ${SUPPORT_EMAIL}. Every report is read by a person, and real errors get fixed.`,
       },
     ],
   },

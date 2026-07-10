@@ -1,5 +1,10 @@
 {
-  "_meta": { "code": "te", "version": 1, "status": "DRAFT - needs native speaker review before production use", "script": "telugu" },
+  "_meta": {
+    "code": "te",
+    "version": 1,
+    "status": "DRAFT - needs native speaker review before production use",
+    "script": "telugu"
+  },
   "common.back": "వెనుకకు",
   "common.cancel": "రద్దు చేయండి",
   "common.close": "మూసివేయండి",
@@ -130,6 +135,7 @@
   "quiz.flagTip": "ఫ్లాగ్ చేసిన ప్రశ్నలు నా సందేహాలలో సేవ్ అవుతాయి, వాటిని సైడ్‌బార్‌లో చూడండి.",
   "quiz.flagged": "ఫ్లాగ్ చేయబడింది: వివరణ అస్పష్టం (అన్‌ఫ్లాగ్ చేయడానికి నొక్కండి)",
   "quiz.flagCta": "ఇంకా అర్థం కాలేదా? ఈ వివరణను ఫ్లాగ్ చేయండి",
+  "quiz.reportErrorCta": "ఏదైనా తప్పు కనిపించిందా? రిపోర్ట్ చేయండి, ప్రతి రిపోర్ట్‌ను ఒక వ్యక్తి పరిశీలిస్తారు.",
   "quiz.memoryTip": "గుర్తుంచుకునే చిట్కా",
   "quiz.whyOthersWrong": "మిగతావి ఎందుకు తప్పు",
   "quiz.stillDontGetIt": "నాకు ఇంకా అర్థం కాలేదు",
@@ -292,6 +298,7 @@
   "welcome.demo.windowTitle": "మీరు ఎప్పుడు బాగా చదువుతారు?",
   "welcome.demo.windowTrust": "మేము మీ రోజువారీ నడ్జ్‌ను ఈ సమయానికి సెట్ చేస్తాము, మీరు నిజంగా ఖాళీగా ఉన్నప్పుడు వచ్చే రిమైండర్, మీరు వదిలేసే దానికంటే మెరుగ్గా పనిచేస్తుంది. దీన్ని ఎప్పుడైనా మార్చుకోవచ్చు.",
   "welcome.demo.privacyNote": "ఐచ్ఛికం & ప్రైవేట్ · Settings → Profile లో ఎప్పుడైనా మార్చుకోండి.",
+  "welcome.demo.contentNote": "ప్రతి ప్రశ్న మనుషులు రాసి పరిశీలించినదే. తప్పు కనిపిస్తే ఒక్క ట్యాప్‌తో రిపోర్ట్ చేయండి.",
   "welcome.ikigai.kicker": "చివరిగా ఒకటి",
   "welcome.ikigai.title": "మీ కారణం ఏమిటి?",
   "welcome.ikigai.bodyPre": "మీ",
@@ -546,6 +553,8 @@
   "settings.legal.guidelinesSub": "FAQ థ్రెడ్‌లు మరియు లీడర్‌బోర్డ్‌ను స్నేహపూర్వకంగా ఎలా ఉంచుతాము",
   "settings.legal.refunds": "రద్దు & రీఫండ్‌లు",
   "settings.legal.refundsSub": "పెయిడ్ ప్లాన్‌లు ఎలా పనిచేస్తాయి (ఈరోజు అంతా ఉచితం)",
+  "settings.legal.disclaimer": "కంటెంట్ డిస్‌క్లైమర్",
+  "settings.legal.disclaimerSub": "మా కంటెంట్ ఏమిటి, ఏమి కాదు, తప్పులు ఎలా సరిచేయబడతాయి",
   "settings.legal.rowTip": "గోప్యతా విధానం మరియు వినియోగ నిబంధనలు చదవండి. ఏం స్టోర్ చేయబడుతుంది, ఎలా వాడబడుతుంది, యాప్ యొక్క సాధారణ నియమాలు.",
   "settings.legal.rowSub": "గోప్యతా విధానం మరియు వినియోగ నిబంధనలు",
   "settings.support.aria": "యాప్‌కు మద్దతు ఇవ్వండి",

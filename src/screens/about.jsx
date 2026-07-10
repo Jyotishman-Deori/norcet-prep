@@ -205,6 +205,29 @@ function AboutScreen({ onBack, onNavigate }) {
           </div>
         </div>
 
+        {/* ── Our content promise (trust: accuracy is a feature; links the
+            Content Disclaimer so the legal page has a human face) ───── */}
+        <div {...stag(7)}>
+          <Card className="p-5 mb-4">
+            <div className="flex items-center gap-2.5 mb-2.5">
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.success + '14' }}>
+                <ShieldCheck size={17} style={{ color: T.success }} />
+              </div>
+              <div className="font-display text-base font-semibold" style={{ color: T.ink }}>Our content promise</div>
+            </div>
+            <p className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
+              Every question and explanation is written and reviewed by humans, and we treat accuracy
+              as a feature. If an error ever slips through, the report button on any question reaches
+              a real person: we check it against reliable references and fix it fast.
+            </p>
+            <button onClick={() => goLegal('disclaimer')}
+                    className="no-tap-highlight mt-3 inline-flex items-center gap-1 text-[12.5px] font-semibold hover:underline"
+                    style={{ color: T.primary }}>
+              Read the full Content Disclaimer <ChevronRight size={14} />
+            </button>
+          </Card>
+        </div>
+
         {/* ── Contact & more ───────────────────────────────────────── */}
         <div {...stag(7)}>
           <Card className="p-0 overflow-hidden mb-4">
@@ -233,6 +256,7 @@ function AboutScreen({ onBack, onNavigate }) {
             {[
               ['privacy', 'Privacy'], ['terms', 'Terms'],
               ['guidelines', 'Community Guidelines'], ['refunds', 'Cancellation & Refunds'],
+              ['disclaimer', 'Content Disclaimer'],
             ].map(([doc, label]) => (
               <button key={doc} onClick={() => goLegal(doc)}
                       className="no-tap-highlight font-medium hover:underline" style={{ color: T.muted }}>

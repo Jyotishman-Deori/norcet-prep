@@ -1,5 +1,10 @@
 {
-  "_meta": { "code": "ml", "version": 1, "status": "DRAFT - needs native speaker review before production use", "script": "malayalam" },
+  "_meta": {
+    "code": "ml",
+    "version": 1,
+    "status": "DRAFT - needs native speaker review before production use",
+    "script": "malayalam"
+  },
   "common.back": "തിരികെ",
   "common.cancel": "റദ്ദാക്കുക",
   "common.close": "അടയ്ക്കുക",
@@ -130,6 +135,7 @@
   "quiz.flagTip": "ഫ്ലാഗ് ചെയ്ത ചോദ്യങ്ങൾ My Doubts-ൽ സേവ് ചെയ്യും, സൈഡ്ബാറിൽ കണ്ടെത്താം.",
   "quiz.flagged": "ഫ്ലാഗ് ചെയ്തു: വിശദീകരണം വ്യക്തമല്ല (അൺഫ്ലാഗ് ചെയ്യാൻ ടാപ്പ് ചെയ്യുക)",
   "quiz.flagCta": "ഇപ്പോഴും കൺഫ്യൂഷനോ? ഈ വിശദീകരണം ഫ്ലാഗ് ചെയ്യുക",
+  "quiz.reportErrorCta": "എന്തെങ്കിലും തെറ്റ് കണ്ടോ? റിപ്പോർട്ട് ചെയ്യൂ, ഓരോ റിപ്പോർട്ടും ഒരാൾ പരിശോധിക്കുന്നു.",
   "quiz.memoryTip": "മെമ്മറി ടിപ്പ്",
   "quiz.whyOthersWrong": "മറ്റുള്ളവ എന്തുകൊണ്ട് തെറ്റ്",
   "quiz.stillDontGetIt": "എനിക്ക് ഇപ്പോഴും മനസ്സിലായില്ല",
@@ -292,6 +298,7 @@
   "welcome.demo.windowTitle": "എപ്പോഴാണ് നിങ്ങൾ ഏറ്റവും നന്നായി പഠിക്കുന്നത്?",
   "welcome.demo.windowTrust": "നിങ്ങളുടെ ദിവസേനയുള്ള നഡ്ജ് ഈ സമയത്തേക്ക് സെറ്റ് ചെയ്യും, യഥാർത്ഥത്തിൽ ഫ്രീ ആയിരിക്കുമ്പോൾ എത്തുന്ന റിമൈൻഡർ അവഗണിക്കുന്ന ഒന്നിനെക്കാൾ മികച്ചതാണ്. എപ്പോൾ വേണമെങ്കിലും മാറ്റാം.",
   "welcome.demo.privacyNote": "ഓപ്ഷണൽ & സ്വകാര്യം · Settings → Profile-ൽ എപ്പോൾ വേണമെങ്കിലും മാറ്റാം.",
+  "welcome.demo.contentNote": "ഓരോ ചോദ്യവും മനുഷ്യർ എഴുതി പരിശോധിച്ചതാണ്. തെറ്റ് കണ്ടാൽ ഒറ്റ ടാപ്പിൽ റിപ്പോർട്ട് ചെയ്യാം.",
   "welcome.ikigai.kicker": "അവസാനത്തെ ഒരു കാര്യം",
   "welcome.ikigai.title": "നിങ്ങളുടെ കാരണം എന്താണ്?",
   "welcome.ikigai.bodyPre": "നിങ്ങളുടെ",
@@ -546,6 +553,8 @@
   "settings.legal.guidelinesSub": "FAQ ത്രെഡുകളും ലീഡർബോർഡും ഫ്രണ്ട്‌ലി ആയി സൂക്ഷിക്കുന്ന വിധം",
   "settings.legal.refunds": "Cancellation & Refunds",
   "settings.legal.refundsSub": "പെയ്ഡ് പ്ലാനുകൾ എങ്ങനെ പ്രവർത്തിക്കും (ഇന്ന് എല്ലാം സൗജന്യമാണ്)",
+  "settings.legal.disclaimer": "Content Disclaimer",
+  "settings.legal.disclaimerSub": "ഞങ്ങളുടെ കണ്ടന്റ് എന്താണ്, എന്തല്ല, തെറ്റുകൾ എങ്ങനെ തിരുത്തുന്നു",
   "settings.legal.rowTip": "Privacy Policy ഉം Terms of Use ഉം വായിക്കുക. എന്ത് സൂക്ഷിക്കുന്നു, എങ്ങനെ ഉപയോഗിക്കുന്നു, ആപ്പിന്റെ ലളിതമായ നിയമങ്ങൾ.",
   "settings.legal.rowSub": "Privacy Policy ഉം Terms of Use ഉം",
   "settings.support.aria": "ആപ്പിനെ സപ്പോർട്ട് ചെയ്യുക",

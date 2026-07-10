@@ -171,6 +171,16 @@ const SCREENS = {
     const m = await import('../../src/ui/app-footer.jsx');
     return React.createElement(m.default, { onNavigate: noop });
   },
+  // Content Disclaimer round (2026-07-10): About gained the "Our content
+  // promise" card; the legal screen gained the 5th doc. Render both.
+  'about': async () => {
+    const m = await import('../../src/screens/about.jsx');
+    return React.createElement(m.default, { onBack: noop, onNavigate: noop });
+  },
+  'legal-disclaimer': async () => {
+    const m = await import('../../src/screens/legal.jsx');
+    return React.createElement(m.LegalScreen, { doc: 'disclaimer', onBack: noop });
+  },
   // NEW-07 Advanced analytics. DEFAULT_DATA is empty (totalAttempted 0), which
   // would early-return StatsScreen and skip every new hook — so these two
   // entries install a POPULATED fixture via the stub's __setSmokeData first.

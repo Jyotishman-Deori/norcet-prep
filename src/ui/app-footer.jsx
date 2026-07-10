@@ -135,6 +135,7 @@ export default function AppFooter({ onNavigate }) {
         { label: 'Terms of Use', go: () => onNavigate({ screen: 'legal', doc: 'terms' }) },
         { label: 'Community Guidelines', go: () => onNavigate({ screen: 'legal', doc: 'guidelines' }) },
         { label: 'Cancellation & Refunds', go: () => onNavigate({ screen: 'legal', doc: 'refunds' }) },
+        { label: 'Content Disclaimer', go: () => onNavigate({ screen: 'legal', doc: 'disclaimer' }) },
       ],
     },
   ];

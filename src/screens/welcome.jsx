@@ -382,6 +382,9 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <div className="text-[10.5px] text-center mt-2" style={{ color: T.muted }}>
           {t('welcome.demo.privacyNote')}
         </div>
+        <div className="text-[10.5px] text-center mt-1" style={{ color: T.muted }}>
+          {t('welcome.demo.contentNote')}
+        </div>
       </div>
     );
   }

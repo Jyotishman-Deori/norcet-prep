@@ -10960,3 +10960,42 @@ window math) + 17-screen smoke (recently-deleted with populated fixture;
 settings guest view exercising both new rows) + build + bundle guard.
 NOT built (flagged): undo for own FAQ posts + own feedback reports (shared
 rows, rare deletes); admin-side deletes keep confirm-only.
+
+## 2026-07-10 - Referral abuse defense: assessment now, reward-payout spec for later (owner found the delete-rejoin loophole)
+
+Owner question: user deletes account, rejoins via a referral link, referrer
+(or the user himself) benefits again, repeatable in mass = huge loss.
+
+ASSESSMENT (verified in code, nothing shipped, no reward exists to steal yet):
+- No self-serve account deletion exists (only admin delete + local Erase
+  everything, which keeps the account). The real vector is unlimited FRESH
+  signups through your own link, not delete-rejoin.
+- Delete-rejoin does NOT compound: my-referrals (referral-intel) counts live
+  profile: blobs with referredBy, so deleting the referee DROPS the count.
+- signup_events rows (ip_hash + fp_hash per registration) SURVIVE account
+  deletion; referral-intel anomaly engine already flags device clusters
+  (>=2/fp), IP clusters, link velocity (>20/hr). Turnstile costs a solve per
+  account. "confirmed" already requires >=1 attempted question.
+- Current referral value: waitlist priority (refs x 100, 3 = fast-track) and
+  a counts-only stats card. Nothing spendable. Loss today = queue jumping.
+- REAL GAP: detection without enforcement (flagged clusters still count) and
+  zero payout machinery (fine, none needed yet).
+
+SPEC to build WHEN referral rewards go live (freemium), agreed with owner:
+1. referral_credits ledger (service-role table, signup_events pattern): one
+   row per (referrer, referee uid, referee fp_hash), SURVIVES account
+   deletion; existing fp row = no second credit ever. Credit the device/
+   person, not the account.
+2. Pay on ACTIVATION, not signup: raise the gate for paid rewards (e.g.
+   active on 3 separate days), time-cost kills farming.
+3. Hold period + revocation: spendable after 7 days; referee deleted or
+   flagged inside the window = credit voided (a reward is a state, not an
+   event, same philosophy as the trash system).
+4. Self-referral check at credit time: referee fp/ip matching any of the
+   referrer's own signup_events = counted but never paid.
+5. Caps + diminishing returns: max paid referrals/month (~10) + lifetime cap
+   on referral-earned premium days (Dropbox model) = bounded worst case.
+6. Flags become enforcement: anomaly-clustered credits land pending-review,
+   not paid.
+Build order when the time comes: ledger + activation gate + caps first.
+Recorded in memory (referral-abuse-defense.md); no code changed this round.

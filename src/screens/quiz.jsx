@@ -20,7 +20,7 @@ import { arraysEqualUnordered } from '../lib/utils.js';
 import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
 // TIP — hold (mobile) / hover (PC) info bubbles on quiz chrome.
 import { Tip } from '../ui/tooltip.jsx';
-import { Card, Button, Pill, PyqBadge, TopBar } from '../ui/primitives.jsx';
+import { Card, Button, Pill, PyqBadge, TopBar, requestFeedback } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
@@ -723,6 +723,13 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
               )}
               {/* P8 — "Was this helpful?" (question is finished + explanation visible) */}
               <HelpfulToggle questionId={q.id} explanation={q.exp} profileId={profileId} />
+              {/* Content-trust line: opens the existing report modal pre-tagged
+                  with this question's id (FeedbackModal resolves source:'question'). */}
+              <button onClick={() => requestFeedback({ screen: 'Quiz', questionId: q.id })}
+                      className="no-tap-highlight w-full mt-2 text-center text-[11px] font-medium hover:underline"
+                      style={{ color: T.muted }}>
+                {t('quiz.reportErrorCta')}
+              </button>
             </Card>
             {/* Memory tip (Intuition anchor) — fixed amber across all themes so
                 students learn amber = memory hook. Renders only when present. */}
