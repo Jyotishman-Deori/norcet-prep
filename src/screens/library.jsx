@@ -1,15 +1,26 @@
 // =====================================================================
 // src/screens/library.jsx — Question Bank Library (list) + VisibilityPill
-// Extracted from App.jsx (A1 batch 1b, slice 11). Bodies are byte-identical
-// to the originals; the only changes are the A7 hook lines and Library's
-// signature dropping `isAdmin` (now from useProfile). `profileId` stays a prop.
+// Extracted from App.jsx (A1 batch 1b, slice 11), then REVAMPED (UX round
+// 2026-07-10): banks are curated by the team and only admins upload, so
+// ownership filters (Mine / From others) mean nothing to a student. The
+// student view now filters and badges by what she actually cares about:
+// is this bank IN MY PRACTICE right now?
+//   · In use            imported + active (green accent bar + chip)
+//   · Update available  imported, but the bank moved on (amber)
+//   · Paused            imported, toggled off on the bank page (grey)
+//   · Not added         browsable, one tap away (dashed "Add" chip)
+// The ADMIN app also renders this list (browse → edit); it keeps the old
+// ownership chips + visibility pills, since that's what an editor needs.
+// `profileId` stays a prop; import state comes from data.customQuestions
+// (same sourceBank/sourceBankVersion contract as App's bank-detail route).
 // =====================================================================
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye, PenLine, Target } from 'lucide-react';
+import { Plus, ChevronRight, RefreshCw, Layers, EyeOff, Eye, PenLine, Target, Check, Pause } from 'lucide-react';
 import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { bankVisibility, isBankOwner } from '../lib/banks.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
+import BackToTop from '../ui/back-to-top.jsx';
 
 function VisibilityPill({ bank }) {
   const { theme: T } = useTheme();
@@ -23,31 +34,96 @@ function VisibilityPill({ bank }) {
   );
 }
 
+// One glanceable chip per practice status (student view).
+function StatusChip({ status }) {
+  const { theme: T } = useTheme();
+  if (status === 'inuse') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+          style={{ background: T.success + '18', color: T.success }}>
+      <Check size={10} /> In use
+    </span>
+  );
+  if (status === 'update') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+          style={{ background: T.accent + '18', color: T.accent }}>
+      <RefreshCw size={10} /> Update available
+    </span>
+  );
+  if (status === 'paused') return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+          style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>
+      <Pause size={10} /> Paused
+    </span>
+  );
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider flex-shrink-0"
+          style={{ background: 'transparent', color: T.muted, border: `1px dashed ${T.border}` }}>
+      <Plus size={10} /> Not added
+    </span>
+  );
+}
+
 function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, onBack, disabledBanks }) {
   const { theme: T } = useTheme();
   const { isAdmin } = useProfile();
   // Issues round — the Custom-questions + Total-practice counters moved here
   // from Settings (this is where question content lives).
   const { data } = useData();
-  // Filter chips: All / Mine / From others. "Mine" = banks I uploaded.
-  // "From others" = banks anyone else uploaded (including admin's seeds).
-  // Default to All so the user immediately sees discoverable content.
   const [filter, setFilter] = useState('all');
 
-  const counts = useMemo(() => {
-    let mine = 0, others = 0;
-    banks.forEach(b => {
-      if (isBankOwner(b, profileId)) mine++;
-      else others++;
+  // bankId → { count, version } of what the user has imported from it.
+  const importStatus = useMemo(() => {
+    const map = {};
+    (data.customQuestions || []).forEach(q => {
+      if (!q.sourceBank) return;
+      const m = map[q.sourceBank] || (map[q.sourceBank] = { count: 0, version: 0 });
+      m.count++;
+      if ((q.sourceBankVersion || 0) > m.version) m.version = q.sourceBankVersion || 0;
     });
-    return { all: banks.length, mine, others };
-  }, [banks, profileId]);
+    return map;
+  }, [data.customQuestions]);
 
-  const visibleBanks = useMemo(() => {
-    if (filter === 'mine')   return banks.filter(b => isBankOwner(b, profileId));
-    if (filter === 'others') return banks.filter(b => !isBankOwner(b, profileId));
-    return banks;
-  }, [banks, profileId, filter]);
+  const statusOf = (b) => {
+    const imp = importStatus[b.id];
+    if (!imp) return 'new';
+    if (disabledBanks && disabledBanks[b.id]) return 'paused';
+    if (imp.version && imp.version < b.version) return 'update';
+    return 'inuse';
+  };
+
+  // Student chips answer "what's in my practice?"; admin chips (the admin
+  // app reuses this list as its browse-to-edit index) keep ownership.
+  const CHIP_SETS = {
+    student: [
+      { id: 'all',   label: 'All' },
+      { id: 'inuse', label: 'In my practice' },
+      { id: 'new',   label: 'Not added' },
+    ],
+    admin: [
+      { id: 'all',    label: 'All' },
+      { id: 'mine',   label: 'Mine' },
+      { id: 'others', label: 'From others' },
+    ],
+  };
+  const chips = isAdmin ? CHIP_SETS.admin : CHIP_SETS.student;
+
+  const matches = (b, f) => {
+    if (f === 'mine')   return isBankOwner(b, profileId);
+    if (f === 'others') return !isBankOwner(b, profileId);
+    if (f === 'inuse')  return statusOf(b) !== 'new';       // in practice, incl. paused / needs update
+    if (f === 'new')    return statusOf(b) === 'new';
+    return true;
+  };
+
+  const counts = useMemo(() => {
+    const c = {};
+    chips.forEach(ch => { c[ch.id] = banks.filter(b => matches(b, ch.id)).length; });
+    return c;
+  }, [banks, profileId, importStatus, disabledBanks, isAdmin]);
+
+  const visibleBanks = useMemo(
+    () => banks.filter(b => matches(b, filter)),
+    [banks, profileId, filter, importStatus, disabledBanks]);
 
   // #26/1.4 — enrich the count label with the total question count.
   const totalQs = useMemo(() => visibleBanks.reduce((a, b) => a + ((b.questions && b.questions.length) || 0), 0), [visibleBanks]);
@@ -122,16 +198,14 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
         </div>
 
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
-          Browse banks and import them into your own practice.{' '}
           {isAdmin
-            ? 'As admin you can upload banks and edit, delete, or change the visibility of any of them.'
-            : 'Banks are curated by the team. Browse any bank and import it into your own practice. Only an admin can upload, edit, or delete banks.'}
+            ? 'Browse banks and import them into your own practice. As admin you can upload banks and edit, delete, or change the visibility of any of them.'
+            : 'Question banks curated by the team. Open one to preview it and add it to your practice: its questions then appear in Quick test, topics, and stats.'}
         </div>
 
-        {/* Filter chips — quickly switch between everything, just mine, just others.
-            #26/1.2 — a sliding active pill travels between chips (left + width
-            morph, spring) instead of an abrupt colour swap. Only shown when
-            there's something to filter (>1 bank or mixed ownership). */}
+        {/* Filter chips — a sliding active pill travels between chips (left +
+            width morph, spring). Students filter by practice status; the
+            admin app keeps ownership chips. */}
         {banks.length > 1 && (
           <div className="relative flex gap-2 mb-3">
             {pill && (
@@ -142,11 +216,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
                      transition: 'left 0.32s cubic-bezier(0.34,1.56,0.64,1), width 0.32s cubic-bezier(0.34,1.56,0.64,1)',
                    }} aria-hidden="true" />
             )}
-            {[
-              { id: 'all',    label: 'All',         count: counts.all },
-              { id: 'mine',   label: 'Mine',        count: counts.mine },
-              { id: 'others', label: 'From others', count: counts.others }
-            ].map(opt => {
+            {chips.map(opt => {
               const active = filter === opt.id;
               return (
                 <button key={opt.id} onClick={() => setFilter(opt.id)}
@@ -158,7 +228,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
                           border: `1px solid ${active ? 'transparent' : T.border}`,
                           transition: 'color 0.25s',
                         }}>
-                  {opt.label} <span style={{ opacity: 0.7 }}>· {opt.count}</span>
+                  {opt.label} <span style={{ opacity: 0.7 }}>· {counts[opt.id]}</span>
                 </button>
               );
             })}
@@ -170,7 +240,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
         <div className="flex items-center justify-between mb-3 px-1">
           <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
             {banks.length > 0
-              ? `${visibleBanks.length} ${filter === 'mine' ? 'mine' : filter === 'others' ? 'from others' : (visibleBanks.length === 1 ? 'bank' : 'banks')}${totalQs > 0 ? ` · ${totalQs} questions` : ''}`
+              ? `${visibleBanks.length} bank${visibleBanks.length === 1 ? '' : 's'}${totalQs > 0 ? ` · ${totalQs} questions` : ''}`
               : 'Available banks'}
           </div>
           <button onClick={onRefresh} disabled={loading}
@@ -198,7 +268,10 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           <div className="text-center py-10">
             <Layers size={32} className="mx-auto mb-3" style={{ color: T.muted, opacity: 0.3 }} />
             <div className="text-sm mb-3" style={{ color: T.muted }}>
-              {filter === 'mine' ? "You haven't uploaded any banks yet." : 'No banks from other users yet.'}
+              {filter === 'mine' ? "You haven't uploaded any banks yet."
+                : filter === 'others' ? 'No banks from other users yet.'
+                : filter === 'inuse' ? "Nothing in your practice yet. Open a bank and tap Add to practice."
+                : "You've added every bank. Nothing new right now."}
             </div>
             <button onClick={() => setFilter('all')}
                     className="no-tap-highlight text-xs font-medium underline"
@@ -213,34 +286,37 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
               const mine = isBankOwner(b, profileId);
               const owner = mine ? 'You' : (b.ownerName || 'Admin');
               const priv = bankVisibility(b) === 'private';
+              const status = statusOf(b);
+              const imp = importStatus[b.id];
+              /* Accent bar speaks PRACTICE STATUS for students (green = in
+                 use, amber = update available, grey otherwise); the admin
+                 list keeps the old public/private encoding. */
+              const bar = isAdmin
+                ? (priv ? T.border : T.success)
+                : (status === 'inuse' ? T.success : status === 'update' ? T.accent : T.border);
               return (
-                /* #26/1.3 — left accent bar (green = public, grey = private,
-                   same language as topic rows), question count as a badge,
-                   and the global sequential entrance (#22). */
                 <Card key={b.id} className="p-4 seq-item" onClick={() => onOpen(b.id)}
-                      style={{ borderLeft: `3px solid ${priv ? T.border : T.success}`, animationDelay: `${Math.min(bi, 8) * 110}ms` }}>
+                      style={{ borderLeft: `3px solid ${bar}`, animationDelay: `${Math.min(bi, 8) * 110}ms` }}>
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <div className="font-display text-base font-semibold truncate" style={{ color: T.ink }}>{b.name}</div>
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
-                              style={{ background: T.primary + '15', color: T.primary }}>v{b.version}</span>
-                        <VisibilityPill bank={b} />
-                        {disabledBanks && disabledBanks[b.id] && (
-                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider inline-flex items-center gap-1"
-                                style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.border}` }}>
-                            <EyeOff size={9} /> Paused
-                          </span>
+                        {isAdmin && (
+                          <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider"
+                                style={{ background: T.primary + '15', color: T.primary }}>v{b.version}</span>
                         )}
+                        {isAdmin ? <VisibilityPill bank={b} /> : <StatusChip status={status} />}
                       </div>
                       <div className="text-xs leading-relaxed flex items-center gap-1.5 flex-wrap" style={{ color: T.muted }}>
                         <span className="font-semibold px-1.5 py-0.5 rounded"
                               style={{ background: T.surfaceWarm, color: T.inkSoft }}>
                           {b.questions.length} question{b.questions.length === 1 ? '' : 's'}
                         </span>
-                        <span>by {owner}</span>
-                        {date && <span>· {date}</span>}
-                        <span>· {priv ? 'Only you' : 'Shared with everyone'}</span>
+                        {isAdmin && <span>by {owner}</span>}
+                        {date && <span>{isAdmin ? '· ' : ''}updated {date}</span>}
+                        {!isAdmin && status === 'update' && imp && (
+                          <span style={{ color: T.accent, fontWeight: 600 }}>· you have v{imp.version}, v{b.version} is out</span>
+                        )}
                       </div>
                       {b.description && (
                         <div className="text-xs mt-1.5 leading-snug" style={{ color: T.inkSoft }}>{b.description}</div>
@@ -254,6 +330,7 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           </div>
         )}
       </PageContainer>
+      <BackToTop />
     </div>
   );
 }

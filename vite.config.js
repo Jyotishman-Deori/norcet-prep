@@ -36,8 +36,8 @@ export default defineConfig(({ mode }) => {
       // Inject the manifest reference. Static icons live under /public.
       includeAssets: ['favicon.svg', 'apple-touch-icon.png'],
       manifest: {
-        name: 'NurseHolic™',
-        short_name: 'NurseHolic™',
+        name: 'NurseHolic',
+        short_name: 'NurseHolic',
         description: 'NORCET nursing exam practice: quick tests, mocks, topic drills, spaced revision.',
         // App background colour the OS uses while the splash is up. Matches
         // LIGHT_THEME.bg so the boot screen feels continuous.

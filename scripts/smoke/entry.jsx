@@ -116,6 +116,58 @@ const SCREENS = {
       onSaveDemographics: noop, onDismiss: noop, onLaunch: noop,
     });
   },
+  // Library UX revamp (2026-07-10): practice-status chips + badges derive
+  // from data.customQuestions/sourceBank — exercise that path with one
+  // bank in each state (in use / update available / not added).
+  'library': async () => {
+    const m = await import('../../src/screens/library.jsx');
+    const bank = (id, name, version) => ({
+      id, name, version, visibility: 'public', ownerId: 'admin-x', ownerName: 'Admin',
+      updatedAt: Date.now(), questions: SEED_QUESTIONS.slice(0, 3),
+    });
+    return React.createElement(m.default, {
+      banks: [bank('b1', 'Pharmacology', 1), bank('b2', 'Pediatrics', 3), bank('b3', 'Microbiology', 1)],
+      profileId: 'smoke-test', loading: false, disabledBanks: {},
+      onRefresh: noop, onOpen: noop, onCreateNew: noop, onBack: noop,
+    });
+  },
+  // Bank detail + editor pair (UX revamp: status card, options-in-preview;
+  // editor gained multi-file upload + per-file report).
+  'bank-detail': async () => {
+    const m = await import('../../src/screens/bank-screens.jsx');
+    return React.createElement(m.BankDetail, {
+      bank: {
+        id: 'b1', name: 'Pharmacology', version: 2, visibility: 'public',
+        ownerId: 'admin-x', ownerName: 'Admin', updatedAt: Date.now(),
+        description: 'Smoke bank', questions: SEED_QUESTIONS.slice(0, 5),
+      },
+      isAdmin: false, isOwner: false, canToggleVisibility: false,
+      alreadyImported: { count: 5, version: 1 }, isDisabled: false,
+      onImport: noop, onUpdate: noop, onEdit: noop, onDelete: noop,
+      onToggleVisibility: noop, onToggleEnabled: noop, onBack: noop,
+    });
+  },
+  'bank-editor': async () => {
+    const m = await import('../../src/screens/bank-screens.jsx');
+    return React.createElement(m.BankEditor, {
+      existingBank: null, profile: { id: 'smoke-test', displayName: 'Smoke' },
+      onSave: noop, onBack: noop,
+    });
+  },
+  // Crib sheet now mounts the shared BackToTop FAB (progress-ring rework).
+  'crib-sheet': async () => {
+    const m = await import('../../src/screens/crib-sheet.jsx');
+    return React.createElement(m.default, {
+      title: 'Smoke crib', subtitle: '4 questions',
+      items: SEED_QUESTIONS.slice(0, 4).map(q => ({ q, selected: [q.correct[0]], status: 'correct' })),
+      profileId: 'smoke-test', onBack: noop, onHome: noop,
+    });
+  },
+  // Desktop footer gained the language popover (FooterLanguage).
+  'app-footer': async () => {
+    const m = await import('../../src/ui/app-footer.jsx');
+    return React.createElement(m.default, { onNavigate: noop });
+  },
 };
 
 let failed = 0;

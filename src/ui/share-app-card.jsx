@@ -41,7 +41,7 @@ const STEPS = {
 function buildMessage(audience, shareUrl) {
   const head = [
     '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
-    '  N U R S E H O L I C \u2122',
+    '  N U R S E H O L I C',
     '\u2727\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2727',
     '',
     "I've been preparing for AIIMS NORCET with this. It's completely free, no ads: tests, revision notes, PYQs, dosage drills and more.",

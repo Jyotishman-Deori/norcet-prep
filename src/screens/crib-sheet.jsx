@@ -17,8 +17,9 @@
 // an IntersectionObserver sentinel — never all at once on load.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowUp, BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X, Headphones } from 'lucide-react';
+import { BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X, Headphones } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
+import BackToTop from '../ui/back-to-top.jsx';
 // #5 — save this sheet into the Revision section (dated, printable).
 import { addCrib, cribSignature, findCribBySig } from '../lib/cribs.js';
 import { Tip } from '../ui/tooltip.jsx';
@@ -221,16 +222,6 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     return () => obs.disconnect();
   }, [limit, items.length]);
 
-  // Floating scroll-to-top — appears once the user is a little way down (long
-  // crib sheets scroll a lot; surface it early so getting back up is one tap).
-  const [showTop, setShowTop] = useState(false);
-  useEffect(() => {
-    const onScroll = () => setShowTop((window.scrollY || 0) > 420);
-    onScroll();
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
-
   const correctRef = useRef(null);
   const wrongRef = useRef(null);
   const naRef = useRef(null);
@@ -266,7 +257,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     const foot = [
       items.length > 50 ? `\u2026and ${items.length - 50} more questions inside the app.` : null,
       RULE,
-      'NurseHolic™: Free NORCET exam prep:',
+      'NurseHolic: Free NORCET exam prep:',
       'tests, revision notes, PYQs, dosage drills.',
       `\u27a4 ${baseUrl}`,
     ].filter(Boolean);
@@ -462,16 +453,8 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       {/* #8 — Listen player, floated above the action bar */}
       <ListenBar ctl={listen} label="Revision" bottomOffset={76} />
 
-      {/* floating scroll-to-top — premium pill, sits above the action bar */}
-      {showTop && (
-        <button onClick={() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); } }}
-                aria-label="Back to top"
-                className="crib-no-print no-tap-highlight fixed right-4 z-30 inline-flex items-center gap-1.5 rounded-full pl-3 pr-3.5 py-2.5 active:scale-95 transition-transform anim-fadeup"
-                style={{ bottom: 80, background: T.primary, color: '#FFF', boxShadow: `0 8px 24px ${T.primary}66` }}>
-          <ArrowUp size={16} />
-          <span className="text-xs font-semibold">Top</span>
-        </button>
-      )}
+      {/* floating scroll-to-top — shared premium FAB, lifted above the action bar */}
+      <BackToTop bottomOffset={60} className="crib-no-print" />
     </div>
   );
 }

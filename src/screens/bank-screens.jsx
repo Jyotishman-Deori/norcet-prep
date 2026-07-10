@@ -53,11 +53,15 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
                   style={{ background: 'rgba(255,255,255,0.15)', color: '#FFF' }}>v{bank.version}</span>
           </div>
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
-                  style={{ background: 'rgba(255,255,255,0.18)', color: '#FFF' }}>
-              {priv ? <EyeOff size={10} /> : <Eye size={10} />}
-              {priv ? 'Private' : 'Public'}
-            </span>
+            {/* Public/Private is an editor concern — students only ever see
+                public banks, so the chip only renders for admin/owner. */}
+            {canToggleVisibility && (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider"
+                    style={{ background: 'rgba(255,255,255,0.18)', color: '#FFF' }}>
+                {priv ? <EyeOff size={10} /> : <Eye size={10} />}
+                {priv ? 'Private' : 'Public'}
+              </span>
+            )}
             <span className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>by {ownerLabel}</span>
           </div>
           <div className="text-xs" style={{ color: 'rgba(255,255,255,0.7)' }}>
@@ -69,16 +73,29 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
           )}
         </Card>
 
-        {/* Import status */}
-        {alreadyImported.count > 0 && (
+        {/* Practice status — the FIRST thing under the hero: am I using this
+            bank or not? Mirrors the In use / Not added chips in the Library
+            list so the two screens speak the same language. */}
+        {alreadyImported.count > 0 ? (
           <Card className="p-3 mb-3" style={{ background: T.successSoft, border: `1px solid ${T.success}40` }}>
             <div className="flex items-start gap-2.5">
               <Check size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />
               <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
-                You've imported {alreadyImported.count} question{alreadyImported.count === 1 ? '' : 's'} from this bank
-                {alreadyImported.version && ` (v${alreadyImported.version})`}.
+                <span className="font-semibold" style={{ color: T.success }}>In your practice.</span>{' '}
+                {alreadyImported.count} question{alreadyImported.count === 1 ? '' : 's'} from this bank
+                {alreadyImported.version ? ` (v${alreadyImported.version})` : ''} are part of your quizzes.
                 {alreadyImported.version && alreadyImported.version < bank.version &&
-                  <span style={{ color: T.accent, fontWeight: 600 }}> A newer version is available, tap "Update" to refresh.</span>}
+                  <span style={{ color: T.accent, fontWeight: 600 }}> A newer version is available, tap "Update" below to refresh.</span>}
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <Card className="p-3 mb-3" style={{ background: T.surfaceWarm, border: `1px dashed ${T.border}` }}>
+            <div className="flex items-start gap-2.5">
+              <Download size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.muted }} />
+              <div className="text-xs leading-relaxed" style={{ color: T.inkSoft }}>
+                <span className="font-semibold" style={{ color: T.ink }}>Not in your practice yet.</span>{' '}
+                Preview the questions below, then add all {bank.questions.length} with one tap. They'll appear in Quick test, topics, and stats.
               </div>
             </div>
           </Card>
@@ -131,6 +148,28 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
               {previewQ.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{previewQ.sub}</Pill>}
             </div>
             <div className="text-sm leading-snug" style={{ color: T.ink }}>{previewQ.q}</div>
+            {/* Options with the correct answer(s) marked — the point of the
+                preview is judging question quality BEFORE importing, and you
+                can't judge an MCQ without its options and answer. */}
+            {Array.isArray(previewQ.options) && previewQ.options.length > 0 && (
+              <div className="space-y-1.5 mt-3">
+                {previewQ.options.map((opt, oi) => {
+                  const right = Array.isArray(previewQ.correct) && previewQ.correct.includes(oi);
+                  return (
+                    <div key={oi} className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-xs leading-snug"
+                         style={right
+                           ? { background: T.success + '12', border: `1px solid ${T.success}40`, color: T.ink }
+                           : { background: T.surface, border: `1px solid ${T.borderSoft}`, color: T.inkSoft }}>
+                      <span className="font-bold flex-shrink-0" style={{ color: right ? T.success : T.muted }}>
+                        {String.fromCharCode(65 + oi)}.
+                      </span>
+                      <span className="flex-1">{opt}</span>
+                      {right && <Check size={13} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex gap-2 mt-3">
               <button onClick={() => setPreviewIndex(Math.max(0, previewIndex - 1))} disabled={previewIndex === 0}
                       className="no-tap-highlight flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
@@ -221,7 +260,7 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
             </Button>
           ) : (
             <Button onClick={onImport} size="lg" className="flex-1" icon={<Download size={18} />}>
-              Import {bank.questions.length} question{bank.questions.length === 1 ? '' : 's'}
+              Add to practice · {bank.questions.length} question{bank.questions.length === 1 ? '' : 's'}
             </Button>
           )}
         </div>
@@ -313,6 +352,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
   const parse = () => {
     setError(null);
     setLastAdded(null);
+    setFileReport(null);
     const result = processQuestionInput(text, format, 'bank');
     if (result.parseError) {
       setPreview({ valid: [], invalid: [], message: result.parseError });
@@ -321,28 +361,58 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     }
   };
 
-  // Upload a .json/.csv file from phone, tablet or laptop, then validate it just
-  // like a paste. Format is inferred from the extension; the existing
-  // Append/Replace flow below the preview takes over from there.
+  // Upload one or MANY .json/.csv files at once (AI drafting tools emit
+  // small 10-question files, so admins arrive with a folder full of them).
+  // Every file is parsed independently by its extension, the valid
+  // questions are MERGED into one batch, and a per-file report shows
+  // exactly what each file contributed. The existing Append/Replace flow
+  // (with cross-file duplicate detection) takes over from there.
   const fileRef = useRef(null);
-  const onFile = async (e) => {
-    const file = e.target.files && e.target.files[0];
-    e.target.value = ''; // allow re-picking the same file
-    if (!file) return;
+  const [fileReport, setFileReport] = useState(null); // [{ name, valid, invalid, error }]
+  const [dragOver, setDragOver] = useState(false);
+
+  const ingestFiles = async (fileList) => {
+    const files = Array.from(fileList || []).filter(f => /\.(json|csv)$/i.test(f.name));
+    if (files.length === 0) {
+      setError('Only .json and .csv files are supported.');
+      return;
+    }
     setError(null);
     setLastAdded(null);
-    const fmt = /\.csv$/i.test(file.name) ? 'csv' : 'json';
-    try {
-      const content = await file.text();
-      setFormat(fmt);
-      setText(content);
-      const result = processQuestionInput(content, fmt, 'bank');
-      if (result.parseError) setPreview({ valid: [], invalid: [], message: result.parseError });
-      else setPreview({ valid: result.valid, invalid: result.invalid });
-    } catch (err) {
-      setPreview(null);
-      setError('Could not read that file: ' + (err.message || String(err)));
+    setText('');
+    const report = [];
+    const allValid = [];
+    const allInvalid = [];
+    for (const file of files) {
+      const fmt = /\.csv$/i.test(file.name) ? 'csv' : 'json';
+      try {
+        const content = await file.text();
+        const result = processQuestionInput(content, fmt, 'bank');
+        if (result.parseError) {
+          report.push({ name: file.name, valid: 0, invalid: 0, error: result.parseError });
+        } else {
+          report.push({ name: file.name, valid: result.valid.length, invalid: result.invalid.length, error: null });
+          allValid.push(...result.valid);
+          allInvalid.push(...result.invalid.map(inv => ({ ...inv, file: file.name })));
+        }
+      } catch (err) {
+        report.push({ name: file.name, valid: 0, invalid: 0, error: err.message || String(err) });
+      }
     }
+    setFileReport(report);
+    setPreview({ valid: allValid, invalid: allInvalid });
+  };
+
+  const onFile = async (e) => {
+    const list = e.target.files;
+    await ingestFiles(list);
+    e.target.value = ''; // allow re-picking the same files
+  };
+
+  const clearFiles = () => {
+    setFileReport(null);
+    setPreview(null);
+    setError(null);
   };
 
   // Replace: blow away current and use only the parsed valid set (no duplicates by definition).
@@ -352,6 +422,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     setLastAdded({ added: preview.valid.length, flagged: 0, skipped: 0, kept: 0, flaggedDetails: [], replaced: true });
     setText('');
     setPreview(null);
+    setFileReport(null);
   };
 
   // Append: check each new question against the bank's current questions (and already-accepted from
@@ -376,6 +447,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
       setLastAdded({ added: unique.length, flagged: 0, skipped: 0, kept: 0, flaggedDetails: [] });
       setText('');
       setPreview(null);
+      setFileReport(null);
     } else {
       setDupReview({ unique, duplicates });
     }
@@ -406,6 +478,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     setDupReview(null);
     setText('');
     setPreview(null);
+    setFileReport(null);
   };
 
   const removeQuestion = (i) => setQuestions(questions.filter((_, idx) => idx !== i));
@@ -588,15 +661,58 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
           </Card>
         )}
 
-        {/* Upload a file straight from phone, tablet or laptop — validated like a paste */}
+        {/* Upload files straight from phone, tablet or laptop — multi-select
+            AND drag-and-drop; every file is validated like a paste and the
+            valid questions merge into one batch. */}
         <input ref={fileRef} type="file" accept=".json,.csv,application/json,text/csv"
-               onChange={onFile} className="hidden" />
+               multiple onChange={onFile} className="hidden" />
         <button onClick={() => fileRef.current && fileRef.current.click()}
-                className="no-tap-highlight w-full flex items-center justify-center gap-2 py-3 mb-2 rounded-xl text-sm font-semibold active:scale-[0.99] transition"
-                style={{ background: T.primary + '12', color: T.primary, border: `1.5px dashed ${T.primary}66` }}>
-          <Upload size={16} /> Upload a .json or .csv file
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => { e.preventDefault(); setDragOver(false); ingestFiles(e.dataTransfer && e.dataTransfer.files); }}
+                className="no-tap-highlight w-full flex flex-col items-center justify-center gap-1 py-4 mb-2 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: dragOver ? T.primary + '22' : T.primary + '12',
+                  color: T.primary,
+                  border: `1.5px dashed ${dragOver ? T.primary : T.primary + '66'}`,
+                  transform: dragOver ? 'scale(1.01)' : 'none',
+                }}>
+          <span className="inline-flex items-center gap-2"><Upload size={16} /> Upload .json or .csv files</span>
+          <span className="text-[11px] font-normal" style={{ color: T.muted }}>
+            Select several at once, or drop them here: they merge into one batch
+          </span>
         </button>
         <div className="text-[11px] text-center mb-3" style={{ color: T.muted }}>or paste below</div>
+
+        {/* Per-file report — what each uploaded file contributed. */}
+        {fileReport && (
+          <Card className="p-3 mb-3 anim-fadeup">
+            <div className="flex items-center justify-between mb-2">
+              <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>
+                {fileReport.length} file{fileReport.length === 1 ? '' : 's'} · {fileReport.reduce((a, f) => a + f.valid, 0)} questions ready
+              </div>
+              <button onClick={clearFiles} className="no-tap-highlight p-1 -m-1" aria-label="Clear uploaded files">
+                <X size={14} style={{ color: T.muted }} />
+              </button>
+            </div>
+            <div className="space-y-1.5 max-h-44 overflow-y-auto">
+              {fileReport.map((f, i) => (
+                <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs"
+                     style={{ background: T.surface, border: `1px solid ${f.error ? T.error + '55' : T.borderSoft}` }}>
+                  <span className="flex-1 truncate font-mono" style={{ color: T.inkSoft }}>{f.name}</span>
+                  {f.error ? (
+                    <span className="flex-shrink-0 font-medium" style={{ color: T.error }}>{f.error}</span>
+                  ) : (
+                    <span className="flex-shrink-0 inline-flex items-center gap-2">
+                      <span className="font-semibold" style={{ color: T.success }}>✓ {f.valid}</span>
+                      {f.invalid > 0 && <span className="font-semibold" style={{ color: T.error }}>✗ {f.invalid}</span>}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </Card>
+        )}
 
         <div className="grid grid-cols-2 gap-2 mb-3 p-1 rounded-xl" style={{ background: T.surfaceWarm }}>
           {['json', 'csv'].map(f => (
@@ -707,9 +823,11 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
                       Errors (these will be rejected)
                     </div>
                     <div className="space-y-2 max-h-40 overflow-y-auto">
-                      {preview.invalid.slice(0, 20).map(({ index, errors, preview: p }) => (
-                        <div key={index} className="text-xs">
-                          <div className="font-medium" style={{ color: T.error }}>#{index}: {errors.join(', ')}</div>
+                      {preview.invalid.slice(0, 20).map(({ index, errors, preview: p, file }, ii) => (
+                        <div key={ii} className="text-xs">
+                          <div className="font-medium" style={{ color: T.error }}>
+                            {file ? `${file} · ` : ''}#{index}: {errors.join(', ')}
+                          </div>
                           <div className="truncate" style={{ color: T.muted }}>{p}</div>
                         </div>
                       ))}

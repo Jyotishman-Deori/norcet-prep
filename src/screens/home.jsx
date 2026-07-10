@@ -738,7 +738,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       {/* Greeting */}
       <div className="mb-6 mt-2 lg:mt-4">
-        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NurseHolic™</div>
+        <div className="text-[11px] uppercase tracking-[0.2em] font-semibold" style={{ color: T.muted }}>NurseHolic</div>
         <h1 className="font-display text-3xl lg:text-[2.6rem] lg:leading-[1.08] font-semibold mt-1.5" style={{ color: T.ink }}>
           {t('home.greeting.' + timeOfDay)}{userName ? `, ${userName}` : ''}
         </h1>

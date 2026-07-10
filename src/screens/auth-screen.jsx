@@ -402,7 +402,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
                style={{ background: T.primary }}>
             <GraduationCap size={28} color="#FFF" />
           </div>
-          <div className="font-display text-3xl font-semibold" style={{ color: T.ink }}>NurseHolic™</div>
+          <div className="font-display text-3xl font-semibold" style={{ color: T.ink }}>NurseHolic</div>
           <div className="text-sm mt-1" style={{ color: T.muted }}>
             {loginOnly ? t('auth.staffSignIn') : mode === 'create' ? t('auth.createSub') : t('auth.welcomeBack')}
           </div>
@@ -865,7 +865,7 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
             <div className="flex items-start justify-between gap-3 px-5 py-4 flex-shrink-0"
                  style={{ borderBottom: `1px solid ${T.border}`, background: T.primary + '0A' }}>
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NurseHolic™</div>
+                <div className="text-[10px] uppercase tracking-widest font-semibold mb-0.5" style={{ color: T.primary }}>NurseHolic</div>
                 <div className="font-display text-lg font-semibold leading-tight" style={{ color: T.ink }}>
                   {legalDoc(legalView)?.title || t('auth.legal')}
                 </div>

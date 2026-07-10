@@ -75,7 +75,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               N
             </div>
             <span className="font-display text-lg font-semibold tracking-tight" style={{ color: T.ink }}>
-              Nurse<span style={{ color: T.primary }}>Holic</span>™
+              Nurse<span style={{ color: T.primary }}>Holic</span>
             </span>
           </button>
 

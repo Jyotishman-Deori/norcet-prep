@@ -126,7 +126,7 @@ function brandHeader(ctx, cx, theme) {
   ctx.textAlign = 'center';
   ctx.fillStyle = '#FFFFFF';
   ctx.font = `700 62px ${SERIF}`;
-  ctx.fillText('NurseHolic™', cx, 138);
+  ctx.fillText('NurseHolic', cx, 138);
   ctx.font = `500 27px ${SANS}`;
   ctx.fillStyle = 'rgba(255,255,255,0.80)';
   ctx.fillText('Free AIIMS NORCET nursing prep, no ads', cx, 184);
@@ -270,7 +270,7 @@ export async function shareOrSavePng(blob, filename, meta = {}) {
   if (!blob) return 'error';
   try {
     const file = new File([blob], filename, { type: 'image/png' });
-    const data = { files: [file], title: meta.title || 'NurseHolic™', ...(meta.text ? { text: meta.text } : {}) };
+    const data = { files: [file], title: meta.title || 'NurseHolic', ...(meta.text ? { text: meta.text } : {}) };
     if (typeof navigator !== 'undefined' && navigator.share && navigator.canShare && navigator.canShare(data)) {
       try { await navigator.share(data); return 'shared'; }
       catch (e) { return 'cancelled'; }   // user dismissed the sheet

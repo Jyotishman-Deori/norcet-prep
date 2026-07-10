@@ -8,9 +8,93 @@
 // routing. A Socials column is DELIBERATELY absent — the owner will add
 // channels at launch (journaled reminder).
 // =====================================================================
-import React from 'react';
-import { useTheme } from '../lib/app-context.jsx';
+import React, { useState, useRef, useEffect } from 'react';
+import { Globe, Check, RefreshCw, ChevronUp } from 'lucide-react';
+import { useTheme, useI18n } from '../lib/app-context.jsx';
+import { LOCALES } from '../lib/i18n.js';
 import { requestFeedback, requestSupport } from './primitives.jsx';
+
+// Desktop footer language switcher — same data + pick contract as the
+// Settings → Language page (settings-language.jsx), condensed into an
+// upward popover so the choice is one click from any tab root.
+function FooterLanguage() {
+  const { theme: T } = useTheme();
+  const { lang, setLang, langLoading, t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [busyCode, setBusyCode] = useState(null);
+  const [failed, setFailed] = useState(false);
+  const wrapRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false); };
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => { document.removeEventListener('mousedown', onDown); document.removeEventListener('keydown', onKey); };
+  }, [open]);
+
+  const current = LOCALES.find(l => l.code === lang) || LOCALES[0];
+
+  const pick = async (code) => {
+    if (busyCode || langLoading) return;
+    if (code === lang) { setOpen(false); return; }
+    setBusyCode(code);
+    setFailed(false);
+    try { await setLang(code); setOpen(false); }
+    catch (e) { setFailed(true); }
+    finally { setBusyCode(null); }
+  };
+
+  return (
+    <div ref={wrapRef} className="relative">
+      {open && (
+        <div className="absolute bottom-full right-0 mb-2 p-2 rounded-2xl anim-fadeup z-40"
+             style={{ background: T.surface, border: `1px solid ${T.border}`,
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.14)', width: 420 }}
+             role="menu" aria-label={t('settings.language.title')}>
+          {failed && (
+            <div className="text-[11px] px-2 py-1.5 mb-1 rounded-lg" style={{ background: T.errorSoft, color: T.error }}>
+              {t('settings.language.downloadFailed')}
+            </div>
+          )}
+          <div className="grid grid-cols-3 gap-1">
+            {LOCALES.map(l => {
+              const active = l.code === lang;
+              const busy = busyCode === l.code;
+              return (
+                <button key={l.code} onClick={() => pick(l.code)} role="menuitem"
+                        aria-pressed={active} lang={l.bcp47}
+                        className="no-tap-highlight rounded-xl px-2.5 py-2 text-left transition-colors"
+                        style={active
+                          ? { background: T.primary + '12', border: `1px solid ${T.primary}` }
+                          : { background: 'transparent', border: '1px solid transparent' }}>
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-[13px] font-semibold truncate" style={{ color: active ? T.primary : T.ink }}>
+                      {l.native}
+                    </span>
+                    {busy
+                      ? <RefreshCw size={12} className="animate-spin flex-shrink-0" style={{ color: T.primary }} />
+                      : active && <Check size={12} className="flex-shrink-0" style={{ color: T.primary }} />}
+                  </div>
+                  <div className="text-[10px] truncate" style={{ color: T.muted }}>{l.name}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      <button onClick={() => setOpen(o => !o)}
+              aria-haspopup="menu" aria-expanded={open}
+              className="no-tap-highlight inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium transition-colors"
+              style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+        <Globe size={13} style={{ color: T.muted }} />
+        <span lang={current.bcp47}>{current.native}</span>
+        <ChevronUp size={13} style={{ color: T.muted, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+      </button>
+    </div>
+  );
+}
 
 export default function AppFooter({ onNavigate }) {
   const { theme: T } = useTheme();
@@ -67,7 +151,7 @@ export default function AppFooter({ onNavigate }) {
                 N
               </div>
               <span className="font-display text-base font-semibold" style={{ color: T.ink }}>
-                Nurse<span style={{ color: T.primary }}>Holic</span>™
+                Nurse<span style={{ color: T.primary }}>Holic</span>
               </span>
             </div>
             <div className="text-[12px] leading-relaxed" style={{ color: T.muted }}>
@@ -96,8 +180,12 @@ export default function AppFooter({ onNavigate }) {
           ))}
         </div>
 
-        <div className="mt-10 pt-6 text-[12px]" style={{ borderTop: `1px solid ${T.borderSoft}`, color: T.muted }}>
-          © 2026 NurseHolic™. All rights reserved.
+        <div className="mt-10 pt-6 flex items-center justify-between gap-4"
+             style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+          <div className="text-[12px]" style={{ color: T.muted }}>
+            © 2026 NurseHolic™. All rights reserved.
+          </div>
+          <FooterLanguage />
         </div>
       </div>
     </footer>

@@ -90,7 +90,7 @@ function AboutScreen({ onBack, onNavigate }) {
               N
             </div>
             <h1 className="font-display text-3xl md:text-4xl font-semibold leading-tight" style={{ color: T.ink }}>
-              NurseHolic™
+              NurseHolic
             </h1>
             <p className="text-sm md:text-base mt-2 leading-relaxed max-w-md mx-auto" style={{ color: T.inkSoft }}>
               Serious NORCET preparation: free, ad-free, and built to feel like exam day.
