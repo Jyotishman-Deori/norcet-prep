@@ -68,6 +68,9 @@ export default function AdminPushComposer({ onBack, actorName }) {
             <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft }}>
               Sends a notification to <b>every subscribed device</b>, even with the app closed.
               Use it sparingly: announcements inside the app are gentler. Capped at 4 per hour.
+              <div className="text-[12px] mt-1.5" style={{ color: T.muted }}>
+                Timing tip: most students are on clinical duty from 8 am to 4 pm with phones locked away. Pushes land best between <b style={{ color: T.inkSoft }}>7 pm and 10 pm IST</b>, back in the hostel.
+              </div>
             </div>
           </div>
         </Card>

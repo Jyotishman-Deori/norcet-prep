@@ -10815,3 +10815,45 @@ BOTH apps deployed:
 6. SECURITY headers on both apps: X-Frame-Options DENY, nosniff,
    Referrer-Policy (student via vercel.json, admin generated into dist-admin
    by post-admin-build). VERIFIED live via curl on www.nurseholic.in.
+
+---
+
+## 2026-07-10 — Master plan CLOSED: NEW-04 dropped, NEW-08 covered, post-waitlist audit + broadcast timing hint
+
+NEW-04 "Three Waves" pacing drill was fully built locally (src/lib/three-wave.js
++ test, screens/three-wave.jsx Sprint 25s / Deep Dive 75s / Calculated Risk
+eliminate-2-or-blank with real +1 / -1/3 / 0 marking, opt-in PulseTimer copy
+override) and then DELETED before wiring, never committed. Owner rule set this
+session, now standing policy: "if a feature is already done or is a copy,
+inform before proceeding; upgrade the original only if the copy beats it,
+else remove it." Verdict per overlap: Pulse/Flashpoint owns timer pressure,
+Distractor Assassin teaches elimination better (per-strike rationales),
+High-Stress Drill is truer exam-clock training, What-If already proves
+restraint on real mock data. Originals won on all four; removed. NEW-08 CBT
+simulator closed too: owner says CBT is already covered in-app. The
+master-plan revamp arc is COMPLETE; memory master-plan-closed.md supersedes
+older "remaining deferred" journal lines.
+
+Owner then pasted external AI advice ("what comes after the waitlist").
+Read-only audit vs codebase: ~90% already built or incompatible. user_progress
+table + streak API assume Supabase Auth (we use custom auth-secure; streaks
+live in the synced blob with grace + merge). Claim tokens, hybrid referral
+capture, priority score (same referralsx100 + daysx10 formula), Tue/Fri batch
+drops, abuse clusters: all shipped 07-05. Sentry duplicated by the errlog
+pipeline + Resend owner alerts (live). 48h dropout hunt = Engagement
+"Never seen" bucket + WhatsApp nudge (per-user quiz counts stay behind the
+privacy boundary, deliberate). Flagged as contrary to owner decisions:
+OET/NCLEX bridge (NORCET-only) and Viva/NCP builder (college-exam audience,
+NORCET has no viva). Approved plan = launch OPS runbook, not engineering.
+
+Shipped (the one genuine gap): clinical-shift timing hint in the admin Push
+broadcast composer (src/ui/admin-push-composer.jsx): students on duty
+~8am-4pm with phones locked away, pushes land best 7-10pm IST. Admin app
+only; student bundle untouched. Verified: npm test green (38 files + smoke +
+both builds) + one-off SSR render smoke of the composer (hint present,
+dash-free).
+
+Owner ops still pending from the runbook: flip waitlist.collect when ready
+(gate stays off until launch), Tue/Fri batch cadence via the admin waitlist
+control room, and the pre-launch register (test toggles, key rotation,
+cribVault flip, locale review).
