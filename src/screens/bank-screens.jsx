@@ -134,7 +134,9 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
           </Card>
         )}
 
-        {/* Preview */}
+        {/* Preview — question STEMS only (owner decision 2026-07-10): no
+            options and no answers here, so nothing is spoiled before
+            practice. The stem alone shows the bank's style and depth. */}
         {previewQ && (
           <Card className="p-4 mb-3">
             <div className="flex items-center justify-between mb-2">
@@ -148,28 +150,6 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
               {previewQ.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{previewQ.sub}</Pill>}
             </div>
             <div className="text-sm leading-snug" style={{ color: T.ink }}>{previewQ.q}</div>
-            {/* Options with the correct answer(s) marked — the point of the
-                preview is judging question quality BEFORE importing, and you
-                can't judge an MCQ without its options and answer. */}
-            {Array.isArray(previewQ.options) && previewQ.options.length > 0 && (
-              <div className="space-y-1.5 mt-3">
-                {previewQ.options.map((opt, oi) => {
-                  const right = Array.isArray(previewQ.correct) && previewQ.correct.includes(oi);
-                  return (
-                    <div key={oi} className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg text-xs leading-snug"
-                         style={right
-                           ? { background: T.success + '12', border: `1px solid ${T.success}40`, color: T.ink }
-                           : { background: T.surface, border: `1px solid ${T.borderSoft}`, color: T.inkSoft }}>
-                      <span className="font-bold flex-shrink-0" style={{ color: right ? T.success : T.muted }}>
-                        {String.fromCharCode(65 + oi)}.
-                      </span>
-                      <span className="flex-1">{opt}</span>
-                      {right && <Check size={13} className="flex-shrink-0 mt-0.5" style={{ color: T.success }} />}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
             <div className="flex gap-2 mt-3">
               <button onClick={() => setPreviewIndex(Math.max(0, previewIndex - 1))} disabled={previewIndex === 0}
                       className="no-tap-highlight flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
