@@ -11084,3 +11084,46 @@ contain dnav-gold/dnav-link-active/dnav-bell-ring/Premium/MAX). Verified:
 41 tests + smoke + compile + bundle guard; shipped c6f4809, live-verified
 (dnav-gold in served bundle). Owner: eyeball desktop nav on a few deep
 screens + check errlog after this one.
+
+## 2026-07-11 - Desktop polish round: global back-to-top, Where-you-stand fix, PC widths, TopBar alignment
+
+Four owner asks from a prod Stats screenshot, all shipped 5f11df4.
+
+BACK-TO-TOP: the premium FAB (progress ring, spring in/out) existed on only
+5 screens. Now ONE global App-root mount for every screen and device:
+exported BTT_EXCLUDED_SCREENS (test players, clinical games, knowledge-map;
+gates omitted, threshold never trips there) + BTT_SCREEN_PROPS (crib-sheet
+keeps bottomOffset 60 + crib-no-print). RULE: new immersive screens join
+BTT_EXCLUDED_SCREENS (same convention as DNAV/RAGE sets). New micro-
+interaction: .btt-launch arrow darts up/out and drops back per click +
+haptic + tap sound. Rides --bnav-h on mobile, safe-areas, z-40 under the
+draggable NoteFab. The 5 local mounts removed.
+
+WHERE-YOU-STAND (ui/where-you-stand-card.jsx): the "You 0%" pill used to
+overflow the SVG left edge (marker clamps to x0 but the 52px pill centred
+on it, overflow:visible). Fix: pill is a CALLOUT, stem stays at the true
+mark x, pill body clamped inside the plot (clampPill, halves 27/31 real/
+est). Below-window marks (<30%) get a left chevron cue at the track start
++ a hint line "The scale zooms into the 30 to 70% band. Your mark sits
+left of it for now." Ladder width-capped max-w-xl on desktop. projection
+math untouched.
+
+PC WIDTHS: 23 phone-only screens widened from max-w-md to the standard
+desktop single column (md:max-w-3xl + md:px-6 lg:px-8), 39 containers
+total INCLUDING their fixed bottom bars and pyq-read's sticky sub-header
+(bars must always match content width). Modal sheets (notification-center
+sheet, reference viewer) deliberately untouched. Left as-is: immersive/
+game screens, welcome/sign-in-gate, the 7 md:max-w-2xl form screens.
+
+TOPBAR: inner row lg:max-w-5xl -> lg:max-w-6xl so back/title/actions line
+up flush with the DesktopNav rail above (both max-w-6xl px-8). Action
+chips (back, Note, Help, Report) share new .tbar-btn hover lift + press
+scale (replaces per-button Tailwind active:scale to avoid transform
+fights), uniform h-9, gap-2. FavHeart untouched (own animation system).
+
+Verified: full gate + 3 new where-you-stand smoke entries with content
+markers (zero case asserts translate(41 = clamped pill + hint line; NOTE:
+renderToString comment-separates adjacent JSX text children, so markers
+must be single-string literals like the aria-label). Live-verified
+(btt-launch in served bundle). Owner: check errlog after this shell-wide
+round.
