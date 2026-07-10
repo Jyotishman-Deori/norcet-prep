@@ -96,6 +96,8 @@ import { AppProviders, useTheme, useProfile } from './lib/app-context.jsx';
 // [A1 s3 / Pipeline step 37] Extracted leaf primitives, helpers & setup/stats
 // screens. App keeps only the symbols its remaining (un-extracted) screens use.
 import { isPYQ } from './lib/pyq.js';
+// NEW-07.4 — sectional clock for the High-Stress Drill (advanced-test).
+import { buildSections, totalSeconds } from './lib/section-lock.js';
 // [A1 slice 45] topics.js no longer referenced by App — AdminPanel was App's last consumer of topicName/topicColor/topicIcon/getWeakTopics.
 import { useFocusTrap } from './lib/use-focus-trap.js';
 // [A1 slice 45] helpful-votes.js no longer referenced by App — loadHelpfulnessReport was used only by AdminPanel (now in admin-panel.jsx).
@@ -2826,11 +2828,15 @@ export default function App() {
   const startAdvancedTest = useCallback((spec) => {
     const pool = spec.pool && spec.pool.length >= spec.count ? spec.pool : allQuestions;
     const qs = shuffle(pool).slice(0, spec.count);
+    // NEW-07.4 High-Stress Drill: sectional 18-min locks (buildSections is
+    // pure + tested; null keeps the engine on its classic single clock).
+    const sections = spec.stress ? buildSections(qs.length) : null;
     setNav({
       screen: 'advanced-test',
       questions: qs,
-      timeMinutes: spec.timeMinutes,
+      timeMinutes: sections ? Math.round(totalSeconds(sections) / 60) : spec.timeMinutes,
       strict: !!spec.strict,
+      sections,
       filters: { count: spec.count, difficulty: spec.difficulty, pyqOnly: spec.pyqOnly }
     });
   }, [allQuestions]);
@@ -4632,6 +4638,7 @@ export default function App() {
                       bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById}
                       onSubmit={submitAdvancedTest}
                       strict={nav.strict}
+                      sections={nav.sections || null}
                       onAbort={goHome} />
       )}
 

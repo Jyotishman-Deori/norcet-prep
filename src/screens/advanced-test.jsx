@@ -44,6 +44,8 @@ import {
 import { isPYQ } from '../lib/pyq.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { arraysEqualUnordered } from '../lib/utils.js';
+// NEW-07.4 High-Stress Drill — sectional clock math (pure, tested).
+import { SECTION_MINUTES, buildSections, totalSeconds, stressPhase, sectionLabel } from '../lib/section-lock.js';
 import GhostShiftCard from '../ui/ghost-shift-card.jsx';
 import WhatIfCard from '../ui/what-if-card.jsx';
 
@@ -59,6 +61,7 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   const [customTime, setCustomTime] = useState(null);
   const [customOpen, setCustomOpen] = useState(false);
   const [strict, setStrict] = useState(false); // #2 — no-exit exam-day mode
+  const [stress, setStress] = useState(false); // NEW-07.4 — sectional High-Stress Drill
 
   const filtered = useMemo(() => {
     return allQuestions.filter(q => {
@@ -73,7 +76,11 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 
   const canStart = filtered.length >= count;
   const defaultMinutes = count === 50 ? 45 : count === 200 ? 180 : 90;
-  const timeMinutes = customTime ?? defaultMinutes;
+  // High-Stress Drill overrides the free-form clock with the real exam's
+  // sectional one: ceil(count/20) sections of 18 rigid minutes each.
+  const stressSections = useMemo(() => buildSections(count), [count]);
+  const stressMinutes = Math.round(totalSeconds(stressSections) / 60);
+  const timeMinutes = stress ? stressMinutes : (customTime ?? defaultMinutes);
 
   // Time preset chips. The full 6-chip ladder felt over-busy; cut to two
   // sensible defaults (matching the count) + a Custom toggle that reveals a
@@ -181,10 +188,20 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
           </Row>
 
           <Row label="Strict mode"
-               hint={strict ? 'No exit until you submit. Real exam conditions' : 'You can quit mid-test'}
-               last>
+               hint={strict ? 'No exit until you submit. Real exam conditions' : 'You can quit mid-test'}>
             <Segmented value={strict ? 'on' : 'off'}
                        onChange={(v) => setStrict(v === 'on')}
+                       options={[{ id: 'off', label: 'Off' }, { id: 'on', label: 'On' }]} />
+          </Row>
+
+          {/* NEW-07.4 — the sectional stamina trainer. */}
+          <Row label="High-Stress Drill"
+               hint={stress
+                 ? `${stressSections.length} section${stressSections.length === 1 ? '' : 's'} of ${SECTION_MINUTES} min. Each locks for good, like the real Prelims clock`
+                 : 'Sectional locks: 20 questions per section, 18 rigid minutes each'}
+               last>
+            <Segmented value={stress ? 'on' : 'off'}
+                       onChange={(v) => setStress(v === 'on')}
                        options={[{ id: 'off', label: 'Off' }, { id: 'on', label: 'On' }]} />
           </Row>
         </Card>
@@ -195,6 +212,17 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
             Timing
           </div>
 
+          {stress && (
+            <Row label="Sectional clock"
+                 hint={`${stressSections.length} x ${SECTION_MINUTES} min · ~54 sec per question. The clock is the drill: no custom time.`}>
+              <div className="flex items-center gap-1.5 text-xs font-semibold tabular-nums px-3 py-1.5 rounded-lg"
+                   style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}>
+                <Lock size={12} /> {timeMinutes} min total
+              </div>
+            </Row>
+          )}
+
+          {!stress && (
           <Row label="Time limit"
                hint={timeMinutes === 45 ? '~54 sec per question (sprint)'
                      : timeMinutes === 90 ? '~54 sec per question'
@@ -229,8 +257,9 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
               </button>
             </div>
           </Row>
+          )}
 
-          {customOpen && (
+          {!stress && customOpen && (
             <div className="-mt-2 mb-4 flex items-center gap-2 pl-1 anim-fadeup">
               <input type="number" min={5} max={300}
                      value={isCustom ? customTime : ''}
@@ -268,7 +297,9 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
         <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8">
           {canStart ? (
             <div className="text-xs text-center mb-2 tabular-nums" style={{ color: T.muted }}>
-              {count} questions · {timeMinutes} min · ready to start
+              {stress
+                ? `${count} questions · ${stressSections.length} section${stressSections.length === 1 ? '' : 's'} x ${SECTION_MINUTES} min · ready to start`
+                : `${count} questions · ${timeMinutes} min · ready to start`}
             </div>
           ) : (
             <div className="flex items-start gap-2 mb-2 px-2 py-2 rounded-lg"
@@ -282,9 +313,9 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
               </div>
             </div>
           )}
-          <Button onClick={() => onStart({ count, difficulty: Array.from(difficulty), pyqOnly, timeMinutes, pool: filtered, strict })}
-                  disabled={!canStart} size="lg" className="w-full" icon={<Hourglass size={18} />}>
-            Start advanced test
+          <Button onClick={() => onStart({ count, difficulty: Array.from(difficulty), pyqOnly, timeMinutes, pool: filtered, strict, stress })}
+                  disabled={!canStart} size="lg" className="w-full" icon={stress ? <Lock size={18} /> : <Hourglass size={18} />}>
+            {stress ? 'Start High-Stress Drill' : 'Start advanced test'}
           </Button>
         </div>
       </div>
@@ -295,15 +326,22 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 // =====================================================================
 // ADVANCED TEST — ENGINE
 // =====================================================================
-function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookmarks = [], onToggleBookmark, strict = false }) {
+function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookmarks = [], onToggleBookmark, strict = false, sections = null }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
+  // NEW-07.4 — sectional High-Stress Drill. When `sections` is provided
+  // (buildSections output), the clock runs PER SECTION, a finished section
+  // locks for good, and navigation is confined to the open section. With
+  // sections = null every code path below is byte-identical to before.
+  const sectioned = Array.isArray(sections) && sections.length > 0;
+  const [activeSec, setActiveSec] = useState(0);
+  const [lockFlash, setLockFlash] = useState(null); // section index that just locked
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [marked, setMarked] = useState({});
   const [visited, setVisited] = useState({});
-  const [timeRemaining, setTimeRemaining] = useState(timeMinutes * 60);
+  const [timeRemaining, setTimeRemaining] = useState(sectioned ? sections[0].seconds : timeMinutes * 60);
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [confirm, setConfirm] = useState(null); // 'abort' | 'submit' | null
+  const [confirm, setConfirm] = useState(null); // 'abort' | 'submit' | 'lockSection' | null
   const [bmAnim, setBmAnim] = useState(null);    // #4 — 'pop' | 'deflate' | null
   // CBT premium UX: question-transition direction, a Save flash counter, and a
   // keyboard-shortcut helper popover.
@@ -317,6 +355,14 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   // #2 — flip tracker: qIds the user has had correct at any point, so the
   // post-mortem can flag answers they changed from right to wrong.
   const everCorrectRef = useRef(new Set());
+  // The timer interval is created once, so everything it reads at expiry
+  // must come through refs. `answersRef` also FIXES a latent bug: the old
+  // auto-submit closed over the mount-time `answers` and a timeout would
+  // have submitted an empty sheet.
+  const answersRef = useRef(answers);
+  useEffect(() => { answersRef.current = answers; }, [answers]);
+  const activeSecRef = useRef(0);
+  const elapsedBeforeRef = useRef(0); // seconds consumed by already-locked sections
 
   const q = questions[index];
 
@@ -340,7 +386,10 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
     }
   }, [q?.id]);
 
-  // Timer — single interval; reads currentQId from ref to attribute time correctly
+  // Timer — single interval; reads currentQId from ref to attribute time correctly.
+  // At expiry everything comes through refs (answersRef fixes the stale-closure
+  // auto-submit). Sectioned mode: an expiring non-final section LOCKS and the
+  // clock restarts for the next one; only the final section's expiry submits.
   useEffect(() => {
     const interval = setInterval(() => {
       const now = Date.now();
@@ -350,27 +399,44 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       if (cid) timePerQ.current[cid] = (timePerQ.current[cid] || 0) + delta;
 
       setTimeRemaining(t => {
-        if (t <= 1) {
+        if (t > 1) return t - 1;
+        const cur = activeSecRef.current;
+        const isFinal = !sectioned || cur >= sections.length - 1;
+        if (isFinal) {
           clearInterval(interval);
           // Defer the submit by one tick so state has flushed
           setTimeout(() => {
             onSubmit({
-              answers,
+              answers: answersRef.current,
               timePerQ: { ...timePerQ.current },
-              elapsedSec: timeMinutes * 60,
+              elapsedSec: sectioned ? totalSeconds(sections) : timeMinutes * 60,
               timeMinutes,
               everCorrectIds: [...everCorrectRef.current],
+              sectioned,
               auto: true
             });
           }, 50);
           return 0;
         }
-        return t - 1;
+        // Section lock: bank the spent clock, open the next section.
+        elapsedBeforeRef.current += sections[cur].seconds;
+        const next = cur + 1;
+        activeSecRef.current = next;
+        setTimeout(() => {
+          setActiveSec(next);
+          setDir(1);
+          setIndex(sections[next].start);
+          setPaletteOpen(false);
+          setConfirm(c => (c === 'lockSection' ? null : c));
+          setLockFlash(cur);
+          setTimeout(() => setLockFlash(f => (f === cur ? null : f)), 2200);
+        }, 0);
+        return sections[next].seconds;
       });
     }, 1000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeMinutes]);
+  }, [timeMinutes, sectioned]);
 
   // CBT keyboard control — number keys pick options, arrows / N / P navigate,
   // M marks, C clears, G opens the palette, Enter saves & advances. Ignored
@@ -400,20 +466,25 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
         return;
       }
       const k = e.key.toLowerCase();
-      if (e.key === 'ArrowRight' || k === 'n') { e.preventDefault(); setDir(1); setIndex(i => Math.min(questions.length - 1, i + 1)); }
-      else if (e.key === 'ArrowLeft' || k === 'p') { e.preventDefault(); setDir(-1); setIndex(i => Math.max(0, i - 1)); }
+      // Sectioned drill: arrows and Enter respect the open section's fences.
+      const lo = sectioned ? sections[activeSec].start : 0;
+      const hi = sectioned ? sections[activeSec].end - 1 : questions.length - 1;
+      const lastSec = !sectioned || activeSec === sections.length - 1;
+      if (e.key === 'ArrowRight' || k === 'n') { e.preventDefault(); setDir(1); setIndex(i => Math.min(hi, i + 1)); }
+      else if (e.key === 'ArrowLeft' || k === 'p') { e.preventDefault(); setDir(-1); setIndex(i => Math.max(lo, i - 1)); }
       else if (k === 'm') { e.preventDefault(); setMarked(prev => ({ ...prev, [cq.id]: !prev[cq.id] })); }
       else if (k === 'c') { e.preventDefault(); setAnswers(prev => ({ ...prev, [cq.id]: [] })); }
       else if (k === 'g') { e.preventDefault(); setPaletteOpen(true); }
       else if (e.key === 'Enter') {
         e.preventDefault();
-        if (index < questions.length - 1) { setDir(1); setSavedKey(s => s + 1); setIndex(i => i + 1); }
-        else setConfirm('submit');
+        if (index < hi) { setDir(1); setSavedKey(s => s + 1); setIndex(i => i + 1); }
+        else if (lastSec) setConfirm('submit');
+        else setConfirm('lockSection');
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, paletteOpen, confirm, questions]);
+  }, [index, paletteOpen, confirm, questions, activeSec, sectioned]);
 
   if (!q) return <div className="p-6 max-w-md mx-auto text-center">No questions.</div>;
 
@@ -436,26 +507,55 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
     });
   };
 
+  // Sectioned drill: the open section's fences (whole paper otherwise).
+  const secNow = sectioned ? sections[activeSec] : null;
+  const secLo = secNow ? secNow.start : 0;
+  const secHi = secNow ? secNow.end - 1 : questions.length - 1;
+  const isLastSection = !sectioned || activeSec === sections.length - 1;
+
   const clearAnswer = () => setAnswers(prev => ({ ...prev, [q.id]: [] }));
   const toggleMark = () => setMarked(prev => ({ ...prev, [q.id]: !prev[q.id] }));
-  const goNext = () => { setDir(1); setIndex(Math.min(questions.length - 1, index + 1)); };
-  const goPrev = () => { setDir(-1); setIndex(Math.max(0, index - 1)); };
-  const goTo = (i) => { setDir(i >= index ? 1 : -1); setIndex(i); setPaletteOpen(false); };
+  const goNext = () => { setDir(1); setIndex(Math.min(secHi, index + 1)); };
+  const goPrev = () => { setDir(-1); setIndex(Math.max(secLo, index - 1)); };
+  const goTo = (i) => {
+    if (sectioned && (i < secLo || i > secHi)) return; // locked / not yet open
+    setDir(i >= index ? 1 : -1); setIndex(i); setPaletteOpen(false);
+  };
   // CBT "Save & Next" — flashes a Saved confirmation when an answer is recorded,
   // then advances (the answer itself was saved live on selection).
   const saveAndNext = () => {
     if ((answers[q.id] || []).length > 0) setSavedKey(s => s + 1);
     setDir(1);
-    setIndex(Math.min(questions.length - 1, index + 1));
+    setIndex(Math.min(secHi, index + 1));
+  };
+
+  // Early section lock (user chose not to sit out the clock). The real exam
+  // has no such button, but idling a practice drill teaches nothing: the
+  // confirm dialog states the questions lock for good either way.
+  const lockSectionNow = () => {
+    if (!sectioned || isLastSection) return;
+    elapsedBeforeRef.current += (secNow.seconds - timeRemaining);
+    const next = activeSec + 1;
+    activeSecRef.current = next;
+    setActiveSec(next);
+    setDir(1);
+    setIndex(sections[next].start);
+    setTimeRemaining(sections[next].seconds);
+    setPaletteOpen(false);
+    setLockFlash(activeSec);
+    setTimeout(() => setLockFlash(f => (f === activeSec ? null : f)), 2200);
   };
 
   const doManualSubmit = () => {
     onSubmit({
       answers,
       timePerQ: { ...timePerQ.current },
-      elapsedSec: timeMinutes * 60 - timeRemaining,
+      elapsedSec: sectioned
+        ? elapsedBeforeRef.current + (secNow.seconds - timeRemaining)
+        : timeMinutes * 60 - timeRemaining,
       timeMinutes,
       everCorrectIds: [...everCorrectRef.current],
+      sectioned,
       auto: false
     });
   };
@@ -469,7 +569,16 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   const notSeenCount = blankCount - seenBlankCount;
 
   const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-  const timeColor = timeRemaining < 60 ? T.error : timeRemaining < 300 ? T.accent : T.ink;
+  // Stress phases. Sectioned drill: the spec's subtle trigger arms in the
+  // final 90 seconds of EACH section (amber), escalating in the last 30
+  // (red + heartbeat). Plain tests keep the original thresholds.
+  const phase = sectioned
+    ? stressPhase(timeRemaining)
+    : (timeRemaining < 60 ? 'critical' : timeRemaining < 300 ? 'tense' : 'calm');
+  const STRESS_AMBER = '#F59E0B';
+  const timeColor = phase === 'critical' ? T.error : phase === 'tense' ? STRESS_AMBER : T.ink;
+  const timerBg = phase === 'critical' ? T.errorSoft : (sectioned && phase === 'tense') ? STRESS_AMBER + '22' : T.surfaceWarm;
+  const timerBeat = !reducedRef.current && (sectioned ? phase !== 'calm' : timeRemaining < 60);
   const selected = answers[q.id] || [];
   const isMarked = !!marked[q.id];
 
@@ -497,8 +606,8 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               <X size={20} style={{ color: T.muted }} />
             </button>
           )}
-          <div className={'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold tabular-nums' + (timeRemaining < 60 && !reducedRef.current ? ' timer-beat-fast' : '')}
-               style={{ background: timeRemaining < 60 ? T.errorSoft : T.surfaceWarm, color: timeColor }}>
+          <div className={'flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold tabular-nums' + (timerBeat ? ' timer-beat-fast' : '')}
+               style={{ background: timerBg, color: timeColor }}>
             <Hourglass size={14} />
             {fmtTime(timeRemaining)}
           </div>
@@ -549,7 +658,41 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </span>
           </div>
         </div>
+        {/* NEW-07.4 — sectional strip: which section is open, its remaining
+            clock as a draining bar, and the final-90s stress cue. */}
+        {sectioned && (
+          <div className="max-w-md mx-auto px-4 pb-2">
+            <div className="flex items-center justify-between text-[10.5px] mb-1">
+              <span className="font-semibold" style={{ color: T.inkSoft }}>
+                <Lock size={10} style={{ display: 'inline', verticalAlign: '-1px', color: T.muted }} />{' '}
+                {sectionLabel(secNow, sections)}
+              </span>
+              {phase !== 'calm' && (
+                <span className="font-bold" style={{ color: timeColor }}>
+                  {phase === 'critical' ? 'Locking. Bank your sure answers.' : 'Section locks soon. No panic guesses.'}
+                </span>
+              )}
+            </div>
+            <div className="h-1 rounded-full overflow-hidden" style={{ background: T.borderSoft }}>
+              <div className="h-1 rounded-full"
+                   style={{ width: `${Math.max(1, Math.round((timeRemaining / secNow.seconds) * 100))}%`,
+                            background: phase === 'critical' ? T.error : phase === 'tense' ? STRESS_AMBER : T.primary,
+                            transition: reducedRef.current ? 'none' : 'width 1s linear, background 0.4s' }} />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Section-lock flash — brief confirmation that the clock moved on. */}
+      {sectioned && lockFlash !== null && (
+        <div className="fixed inset-x-0 top-24 z-50 flex justify-center pointer-events-none">
+          <div className={'flex items-center gap-2 px-4 py-2.5 rounded-2xl ' + (reducedRef.current ? '' : 'anim-scalein')}
+               style={{ background: T.ink, color: T.bg, boxShadow: '0 12px 32px rgba(0,0,0,0.35)' }}>
+            <Lock size={15} />
+            <span className="text-sm font-semibold">Section {lockFlash + 1} locked. Section {Math.min(lockFlash + 2, sections.length)} is open.</span>
+          </div>
+        </div>
+      )}
 
       {/* keyboard shortcut popover */}
       {showKeys && (
@@ -661,7 +804,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </span>
           )}
           <div className="flex items-center gap-2">
-            <button onClick={goPrev} disabled={index === 0} aria-label="Previous question"
+            <button onClick={goPrev} disabled={index === secLo} aria-label="Previous question"
                     className="no-tap-highlight w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 active:scale-90 transition disabled:opacity-35"
                     style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
               <ChevronLeft size={18} />
@@ -677,13 +820,17 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               <Flag size={14} fill={isMarked ? '#FFF' : 'none'} />
               {isMarked ? 'Marked' : 'Mark'}
             </button>
-            {index < questions.length - 1 ? (
+            {index < secHi ? (
               <Button onClick={saveAndNext} className="flex-1" icon={<ChevronRight size={16} />}>
                 Save &amp; Next
               </Button>
-            ) : (
+            ) : isLastSection ? (
               <Button variant="accent" onClick={() => setConfirm('submit')} className="flex-1" icon={<Send size={16} />}>
                 Submit test
+              </Button>
+            ) : (
+              <Button variant="accent" onClick={() => setConfirm('lockSection')} className="flex-1" icon={<Lock size={16} />}>
+                Lock section
               </Button>
             )}
           </div>
@@ -711,12 +858,21 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               </div>
             </div>
             <div className="p-4 overflow-y-auto">
+              {sectioned && (
+                <div className="flex items-center gap-1.5 mb-3 text-[11px]" style={{ color: T.muted }}>
+                  <Lock size={11} />
+                  Only Section {activeSec + 1} (Q{secLo + 1} to {secHi + 1}) is open. Locked and upcoming sections can't be visited.
+                </div>
+              )}
               <div className="grid grid-cols-6 gap-2 mb-4">
                 {questions.map((qq, i) => {
                   const ans = answers[qq.id] && answers[qq.id].length > 0;
                   const mk = !!marked[qq.id];
                   const seen = !!visited[qq.id];
                   const isCurrent = i === index;
+                  // Sectioned drill: cells outside the open section are inert
+                  // (past = locked for good, future = not open yet).
+                  const outside = sectioned && (i < secLo || i > secHi);
                   // Precedence: Marked (violet) → Answered (green) → Seen-but-blank
                   // (solid RED) → Not seen (neutral). Current adds a primary ring.
                   let bg, textColor, border = 'none';
@@ -725,14 +881,16 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
                   else if (seen) { bg = T.error; textColor = '#FFF'; }
                   else { bg = T.surfaceWarm; textColor = T.muted; border = `1px solid ${T.border}`; }
                   return (
-                    <button key={qq.id} onClick={() => goTo(i)}
-                            className="no-tap-highlight relative w-full aspect-square rounded-lg text-sm font-semibold active:scale-90 transition-transform seq-item"
+                    <button key={qq.id} onClick={() => goTo(i)} disabled={outside}
+                            className="no-tap-highlight relative w-full aspect-square rounded-lg text-sm font-semibold active:scale-90 transition-transform seq-item disabled:active:scale-100"
                             style={{ background: bg, color: textColor, border,
+                                     opacity: outside ? 0.35 : 1,
+                                     cursor: outside ? 'not-allowed' : 'pointer',
                                      animationDelay: `${Math.min(i, 24) * 14}ms`,
                                      boxShadow: isCurrent ? `0 0 0 2.5px ${T.primary}, 0 4px 12px ${T.primary}44` : 'none' }}>
-                      {i + 1}
+                      {outside ? <Lock size={12} style={{ display: 'inline' }} /> : i + 1}
                       {/* answered AND marked → small green corner dot */}
-                      {mk && ans && (
+                      {mk && ans && !outside && (
                         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
                               style={{ background: T.success, border: `1.5px solid ${T.bg}` }} />
                       )}
@@ -748,28 +906,42 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
         </div>
       )}
 
-      {confirm && (
+      {confirm && (() => {
+        // Lock-section confirm needs counts for the OPEN section only.
+        const secBlank = sectioned
+          ? questions.slice(secLo, secHi + 1).filter(qq => !(answers[qq.id] && answers[qq.id].length > 0)).length
+          : 0;
+        return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setConfirm(null)}>
           <Card className="p-5 max-w-sm w-full anim-scalein" onClick={e => e.stopPropagation()}>
             <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>
-              {confirm === 'abort' ? 'Quit the test?' : 'Submit your test?'}
+              {confirm === 'abort' ? 'Quit the test?'
+                : confirm === 'lockSection' ? `Lock section ${activeSec + 1}?`
+                : 'Submit your test?'}
             </div>
             <div className="text-sm mb-4 leading-relaxed" style={{ color: T.muted }}>
               {confirm === 'abort'
                 ? 'Your progress in this test will be lost. The main app data is unaffected.'
+                : confirm === 'lockSection'
+                ? `Questions ${secLo + 1} to ${secHi + 1} lock for good, exactly like the real exam${secBlank > 0 ? `, and ${secBlank} of them ${secBlank === 1 ? 'is' : 'are'} still blank` : ''}. Section ${activeSec + 2} opens with a fresh ${Math.round(sections[activeSec + 1].seconds / 60)}-minute clock.`
                 : `You answered ${answeredCount} of ${questions.length}${blankCount > 0 ? `, leaving ${blankCount} blank` : ''}. ${markedCount > 0 ? `${markedCount} marked for review.` : ''}`}
             </div>
             <div className="flex gap-2">
               <Button variant="ghost" onClick={() => setConfirm(null)} className="flex-1">Cancel</Button>
-              <Button variant={confirm === 'abort' ? 'accent' : 'primary'}
-                      onClick={() => { if (confirm === 'abort') onAbort(); else doManualSubmit(); }}
+              <Button variant={confirm === 'submit' ? 'primary' : 'accent'}
+                      onClick={() => {
+                        if (confirm === 'abort') onAbort();
+                        else if (confirm === 'lockSection') { setConfirm(null); lockSectionNow(); }
+                        else doManualSubmit();
+                      }}
                       className="flex-1">
-                {confirm === 'abort' ? 'Quit' : 'Submit'}
+                {confirm === 'abort' ? 'Quit' : confirm === 'lockSection' ? 'Lock it' : 'Submit'}
               </Button>
             </div>
           </Card>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

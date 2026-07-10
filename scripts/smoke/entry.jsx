@@ -201,6 +201,18 @@ const SCREENS = {
     const m = await import('../../src/screens/stats-advanced.jsx');
     return React.createElement(m.default, { onReviewQuestions: noop, onStartAdvanced: noop });
   },
+  // NEW-07.4 High-Stress Drill: the AdvancedTest engine in SECTIONED mode
+  // (per-section clock, locked palette, section strip). First render must
+  // not throw with a sections array installed.
+  'advanced-test-stress': async () => {
+    const m = await import('../../src/screens/advanced-test.jsx');
+    const { buildSections } = await import('../../src/lib/section-lock.js');
+    const qs = SEED_QUESTIONS.slice(0, 40);
+    return React.createElement(m.AdvancedTest, {
+      questions: qs, timeMinutes: 36, sections: buildSections(qs.length),
+      bookmarks: [], onToggleBookmark: noop, onSubmit: noop, onAbort: noop, strict: false,
+    });
+  },
 };
 
 let failed = 0;
