@@ -11164,3 +11164,60 @@ for docs/security/findings.md + revisit at payments launch; (b) CONTENT_/
 LOCALE_VERSION bumps rely on human discipline (already a CLAUDE.md hard
 rule); (c) no shared cross-isolate cache possible on free tier, 60s TTL
 stays the convergence bound (deliberate, documented).
+
+## 2026-07-12 - Evergrowing content pipeline: R2 media questions, paper upload, Content Studio (738b31a)
+
+Owner discussion round first: mapped which sections were admin-uploadable
+(banks feed ALL tests incl. Advanced/Distractor; previous_paper banks were
+ALREADY merged into the archive by allPapers) vs deploy-locked (dosage/
+concept-cards/reference JSONs, quotes, game data). Decisions: media on
+CLOUDFLARE R2 (corrected from Cloudinary mid-round; Cloudinary reserved for
+FUTURE dynamic transforms like avatars/share cards; ML Kit OCR scan-to-solve
+is a future NATIVE-wrapper idea, ML Kit does not run in a PWA, web
+alternative is Tesseract.js). Scope shipped = Phase 1 media/papers + Phase 2
+Content Studio. SECURITY NOTE: owner pasted a screenshot exposing their
+Cloudinary API SECRET; reminded to regenerate it (added to launch key
+rotation).
+
+MEDIA: q.video joins q.image (question-import preserves both; new
+QuestionVideo card: YouTube thumb -> tap -> nocookie embed; https link
+fallback card) rendered in quiz + advanced-test review + pyq-read. NEW
+src/lib/media.js (+test): URL/YouTube helpers + uploadViaSigner. NEW
+supabase/functions/media-sign (DEPLOYED): coadmin+ (roleOf per call),
+presigned R2 PUT via self-contained SigV4 (crypto.subtle), image/video
+only, 20MB, key q/<yyyymm>/<slug>-<rand>.<ext>; secrets R2_ACCOUNT_ID/
+ACCESS_KEY_ID/SECRET_ACCESS_KEY/BUCKET/PUBLIC_BASE (owner runbook
+docs/media-r2.md: bucket, public access, CORS PUT rule, token). Live config
+gained media.publicBase via a NEW generic `text` field type. MediaFields
+(image URL + upload + video link) in AddQuestion; MediaUploadHelper batch
+figure uploader in BankEditor. media-sign URL in the student bundle is
+FINE (server-gated, same model as bank: writes) so it is NOT a sentinel.
+
+PAPERS: BankEditor "Set type" selector; paper mode = year (required) +
+timeMinutes (default 1/question) + type:'previous_paper', exp OPTIONAL via
+question-import processQuestionInput(..., {requireExp:false}) (+test).
+pyq-read now renders figures/videos; exp already rendered everywhere when
+present. docs/content/pyq-image-questions.md = the ~53 excluded image PYQs:
+NORCET 2021 fully transcribed as paste-ready JSON (16 questions, answer key,
+figure descriptions), remaining papers as key+figure checklists. Owner will
+generate figures and upload to R2.
+
+CONTENT STUDIO (admin, coadmin+): NEW cpack:<type> packs for dosage/
+conceptCards/reference/quotes. src/lib/content-packs.js (+test): per-type
+validators (REJECT em dashes at the source) + pure mergers (dosage id-dedupe
+base-wins, quotes text-dedupe, reference append, concept cards append into
+matching topic/sub). content.js: ensureMergedContent overlay = base
+(versioned cache) + pack (shared anon read with cpackcache:<type> offline
+mirror); quotes.js merges the pack lazily. kv-write: cpack: joined the
+coadmin+ branch (20/hr admin-write cap) and was REDEPLOYED. New
+admin-content-studio.jsx (4 tabs, JSON paste + per-item validation report,
+quick-add forms for quotes/reference, append/replace, format guides,
+audit-logged) + dashboard tile. docs/content/formats.md = the handbook.
+
+Verified: 44 test files (media, content-packs, question-import new) + smoke
++ compile + bundle guard + admin build; brokers deployed; student live
+(cpack marker in served bundle); deploy:admin run. Owner actions: R2 bucket
+setup per docs/media-r2.md, then upload the 2021 image paper; regenerate
+the exposed Cloudinary secret. Deferred: admin drill packs (Phase 3; user
+drillPacks structure exists for 5 game kinds), admin dashboard tile
+regrouping (cosmetic), Cloudinary dynamic transforms, OCR.
