@@ -8,6 +8,7 @@
 // =====================================================================
 import { safeStorage } from './safe-storage.js';
 import { KEY_PREFIXES } from './keys.js';
+import { markDeleted, liveItems, deletedItems, restoreIn, dropExpired, dropItem } from './trash.js';
 
 const CAP = 12;
 
@@ -34,12 +35,28 @@ const slimItem = (it) => {
   };
 };
 
-export async function loadCribs(profileId) {
+// The raw shelf: live cribs AND soft-deleted ones still inside their undo
+// window (trash.js). Expired deletions are hard-dropped (and persisted) here,
+// so "gone for real" happens lazily on the next load.
+async function loadAllCribs(profileId) {
   try {
     const r = await safeStorage.get(`${KEY_PREFIXES.CRIBS}${profileId || 'guest'}`, false);
     const v = r && r.value ? JSON.parse(r.value) : [];
-    return Array.isArray(v) ? v.filter(c => c && c.id && Array.isArray(c.items)) : [];
+    const all = Array.isArray(v) ? v.filter(c => c && c.id && Array.isArray(c.items)) : [];
+    const kept = dropExpired(all);
+    if (kept.length !== all.length) await persist(profileId, kept);
+    return kept;
   } catch (e) { return []; }
+}
+
+// The visible shelf (what Revision renders): live cribs only.
+export async function loadCribs(profileId) {
+  return liveItems(await loadAllCribs(profileId));
+}
+
+// The undo shelf (Recently deleted screen): soft-deleted, window still open.
+export async function loadDeletedCribs(profileId) {
+  return deletedItems(await loadAllCribs(profileId));
 }
 
 async function persist(profileId, cribs) {
@@ -68,7 +85,8 @@ export async function findCribBySig(profileId, sig) {
 // true) and nothing new is written — the same test session is never
 // persisted twice no matter how the user navigates back and forth.
 export async function addCrib(profileId, { title, subtitle, items }) {
-  const cribs = await loadCribs(profileId);
+  const all = await loadAllCribs(profileId);
+  const cribs = liveItems(all);
   const sig = cribSignature(title, items);
   const existing = cribs.find(c => c.sig === sig);
   if (existing) return { entry: existing, cribs, duplicate: true };
@@ -97,16 +115,37 @@ export async function addCrib(profileId, { title, subtitle, items }) {
     createdAt: Date.now(),
     items: (items || []).map(slimItem),
   };
-  const next = [entry, ...cribs].slice(0, CAP);
+  // The CAP applies to LIVE cribs; overflow beyond it is SOFT-deleted (an
+  // undo window instead of the old silent drop). Soft-deleted cribs ride
+  // along in the store until their window closes (purged on load).
+  const liveNext = [entry, ...cribs];
+  let next = [entry, ...all];
+  const nowTs = Date.now();
+  for (const c of liveNext.slice(CAP)) next = markDeleted(next, c.id, nowTs);
   await persist(profileId, next);
-  return { entry, cribs: next, duplicate: false };
+  return { entry, cribs: liveItems(next), duplicate: false };
 }
 
+// Soft delete: the crib disappears from Revision but stays restorable from
+// the Recently deleted screen for the trash.js retention window.
 export async function removeCrib(profileId, id) {
-  const cribs = await loadCribs(profileId);
-  const next = cribs.filter(c => c.id !== id);
+  const next = markDeleted(await loadAllCribs(profileId), id);
   await persist(profileId, next);
-  return next;
+  return liveItems(next);
+}
+
+// Undo a deletion (no-op for unknown ids). Returns both shelves.
+export async function restoreCrib(profileId, id) {
+  const next = restoreIn(await loadAllCribs(profileId), id);
+  await persist(profileId, next);
+  return { live: liveItems(next), deleted: deletedItems(next) };
+}
+
+// "Delete forever" from the Recently deleted screen.
+export async function purgeCrib(profileId, id) {
+  const next = dropItem(await loadAllCribs(profileId), id);
+  await persist(profileId, next);
+  return deletedItems(next);
 }
 
 export const daysAgo = (ts) => {

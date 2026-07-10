@@ -10917,3 +10917,46 @@ expect 6x hidden; (3) optional one-off cleanup of old tester board rows:
 DELETE FROM kv_shared WHERE key IN ('leaderboard:<id>', ...); (4) stand up
 the nurseholic-dev project per docs/dev-environment.md; (5) kv-write must be
 redeployed (done this session) for the server-side skip.
+
+---
+
+## 2026-07-10 — Undo on delete: "Recently deleted" trash + erase lifeline (owner: deletion is a state, not an event)
+
+Audit first (standing rule): every user delete had CONFIRM friction (2-tap
+Sure?, type-RESET confirm word on erase) but ZERO undo anywhere. Built a
+7-day undo window (owner asked for at least 24h).
+
+NEW src/lib/trash.js (pure, tested): two patterns behind one module.
+(1) TRASH LIST for small items: data.trash in the SYNCED blob
+[{id,kind,label,sub,payload,deletedAt}], addToTrash/purgeTrash/takeFromTrash,
+capped 60, purged on load (hydrateLoaded) + merged cross-device by id
+(_gunionTrash in merge.js, never resurrects nor loses a restorable item).
+(2) SOFT DELETE IN PLACE for big items: markDeleted/liveItems/deletedItems/
+restoreIn/dropExpired over any {id,deletedAt?} list.
+
+Wired: Knowledge-Map note delete -> data.trash (restore puts it back on the
+node; if a NEWER note exists there, restore displaces it INTO the trash
+instead of overwriting, nothing is ever lost). Saved crib sheets ->
+soft-deleted in their LOCAL store (no sync bloat; cribs can be 200-question
+papers): removeCrib now marks deletedAt, loadCribs filters live, expired
+purge on load; BONUS: the 12-crib CAP overflow is now soft-deleted too
+(was a silent hard drop). restoreCrib/purgeCrib added.
+
+NEW screens/recently-deleted.jsx (Settings -> Recently deleted): unified
+newest-first list (notes + cribs), days-left pill (red at 1), Restore +
+Delete-now (the only irreversible act here, so IT carries the 2-tap
+confirm), restored-confirmation line, honest empty state.
+
+ERASE LIFELINE: clearAll (Settings type-RESET erase + Stats reset) now
+snapshots the profile blob to a LOCAL device-only key (trashsnap:{pid},
+never synced) before wiping. Settings shows a green "Restore erased
+progress" row while a fresh (<7d) snapshot exists; restore runs the
+snapshot through hydrateLoaded and deletes it.
+
+Copy is English-first in Settings/new screen (locale parity pass pending,
+flag for the native review). Verified: 41 test files (trash.test.js new:
+retention >= 24h asserted, cap, same-ms id uniqueness, soft-delete
+window math) + 17-screen smoke (recently-deleted with populated fixture;
+settings guest view exercising both new rows) + build + bundle guard.
+NOT built (flagged): undo for own FAQ posts + own feedback reports (shared
+rows, rare deletes); admin-side deletes keep confirm-only.

@@ -68,10 +68,12 @@ const SCREENS = {
       onComplete: noop, onBack: noop, profileId: 'smoke-test',
     });
   },
+  // isGuest: true renders the inline data zone, exercising the new
+  // Recently-deleted row + the restore-erased-progress row (trash build).
   'settings': async () => {
     const m = await import('../../src/screens/settings.jsx');
     return React.createElement(m.default, {
-      themeMode: 'dark', isGuest: false, onGuestSignIn: noop,
+      themeMode: 'dark', isGuest: true, onGuestSignIn: noop,
       onClearAll: noop, onLogout: noop, onSwitchProfile: noop,
       onToggleTheme: noop, onSetColorTheme: noop, onShowWelcome: noop,
       onOpenFeedbackInbox: noop, onOpenMyReports: noop, onOpenShare: noop,
@@ -79,6 +81,7 @@ const SCREENS = {
       onRenameProfile: noop, onToggleReviewReminders: noop,
       onToggleIncludeGkInStats: noop, onSetDailyReminder: noop,
       onSetDemographics: noop, unseenReplyCount: 0, onBack: noop,
+      onOpenTrash: noop, progressSnapshotAt: Date.now() - 3600e3, onRestoreProgress: noop,
     });
   },
   'level-up': async () => {
@@ -200,6 +203,22 @@ const SCREENS = {
   'stats-advanced': async () => {
     const m = await import('../../src/screens/stats-advanced.jsx');
     return React.createElement(m.default, { onReviewQuestions: noop, onStartAdvanced: noop });
+  },
+  // Recently deleted (trash build): renders with a populated data.trash via
+  // the __setSmokeData fixture, so the row-mapping useMemo bodies execute.
+  'recently-deleted': async () => {
+    const stub = await import('./stub-app-context.jsx');
+    const { DEFAULT_DATA } = await import('../../src/data/seed.js');
+    stub.__setSmokeData({
+      ...DEFAULT_DATA,
+      mindmapNotes: { 'sub:cardio': { text: 'existing note', updatedAt: Date.now() } },
+      trash: [
+        { id: 't-1', kind: 'kmap-note', label: 'Cardiac', sub: '', payload: { key: 'sub:cardio', text: 'old mnemonic' }, deletedAt: Date.now() - 3600e3 },
+        { id: 't-2', kind: 'kmap-note', label: 'Renal', sub: '', payload: { key: 'sub:renal', text: 'loop of henle' }, deletedAt: Date.now() - 86400e3 },
+      ],
+    });
+    const m = await import('../../src/screens/recently-deleted.jsx');
+    return React.createElement(m.default, { onBack: noop });
   },
   // NEW-07.4 High-Stress Drill: the AdvancedTest engine in SECTIONED mode
   // (per-section clock, locked palette, section strip). First render must

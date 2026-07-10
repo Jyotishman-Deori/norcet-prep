@@ -74,6 +74,7 @@ import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCra
 import { framePrice } from './lib/cosmetics.js';
 import { loadGameConfig, getConfig } from './lib/game-config.js';
 import { isInternalAccount, setInternalSessionProfile } from './lib/internal-accounts.js';
+import { purgeTrash, takeFromTrash, TRASH_RETENTION_MS } from './lib/trash.js';
 // LAUNCH WAITLIST — ?claim=<uuid> invite links (parsed once at mount, like
 // the family ?join= tokens above).
 import { parseClaimParam } from './lib/waitlist.js';
@@ -242,6 +243,9 @@ const PremiumScreen = lazy(() => import('./screens/premium.jsx'));
 // route ('waitlist'), and the pre-auth launch wall for brand-new visitors
 // while game_config waitlist.gate is ON (early return before the app tree).
 const WaitlistScreenLazy = lazy(() => import('./screens/waitlist.jsx'));
+// RECENTLY DELETED — the undo shelf (deleted notes + crib sheets, restorable
+// for the trash.js retention window). Opened from Settings.
+const RecentlyDeletedLazy = lazy(() => import('./screens/recently-deleted.jsx'));
 // [A1 slice 36] CoverageMap extracted (data/allQuestions->useData).
 const CoverageMap = lazy(() => import('./screens/coverage-map.jsx'));
 // [A1 slice 37] support modal extracted (its QR encoder lives in ./lib/qr.js, used internally there).
@@ -1002,6 +1006,8 @@ function hydrateLoaded(rawData) {
     bankPublishedSeen: migrated.bankPublishedSeen || {},
     disabledBanks: migrated.disabledBanks || {},
     revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
+    // Recently deleted — entries past their undo window are gone for real here.
+    trash: purgeTrash(migrated.trash),
     preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
   };
   let out = loaded;
@@ -3303,10 +3309,60 @@ export default function App() {
     });
   }, []);
 
+  // "Erase everything" undo lifeline — before wiping, the profile's blob is
+  // snapshotted to a LOCAL (device-only, never synced) key, restorable from
+  // Settings for the trash.js retention window. Best-effort: the wipe never
+  // waits on the snapshot.
+  const [progressSnapshotAt, setProgressSnapshotAt] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    setProgressSnapshotAt(null);
+    const pid = profile && profile.id;
+    if (!pid) return undefined;
+    safeStorage.get(`trashsnap:${pid}`, false).then(r => {
+      if (!alive || !r || !r.value) return;
+      try {
+        const snap = JSON.parse(r.value);
+        if (snap && typeof snap.ts === 'number' && Date.now() - snap.ts < TRASH_RETENTION_MS) {
+          setProgressSnapshotAt(snap.ts);
+        } else {
+          safeStorage.delete(`trashsnap:${pid}`, false).catch(() => {});
+        }
+      } catch (e) { /* corrupt snapshot: ignore */ }
+    }).catch(() => {});
+    return () => { alive = false; };
+  }, [profile]);
+
   const clearAll = useCallback(() => {
     // Only resets THIS profile's progress. Other profiles untouched.
+    try {
+      const pid = profileRef.current && profileRef.current.id;
+      const blob = dataRef.current;
+      if (pid && blob) {
+        safeStorage.set(`trashsnap:${pid}`, JSON.stringify({ ts: Date.now(), data: blob }), false).catch(() => {});
+        setProgressSnapshotAt(Date.now());
+      }
+    } catch (e) { /* snapshot is best-effort */ }
     setData(DEFAULT_DATA);
     goHome();
+  }, [goHome]);
+
+  // Bring the erased progress back (Settings → Restore erased progress).
+  const restoreProgress = useCallback(async () => {
+    const pid = profileRef.current && profileRef.current.id;
+    if (!pid) return;
+    try {
+      const r = await safeStorage.get(`trashsnap:${pid}`, false);
+      if (r && r.value) {
+        const snap = JSON.parse(r.value);
+        if (snap && snap.data) {
+          setData(hydrateLoaded(snap.data));
+          safeStorage.delete(`trashsnap:${pid}`, false).catch(() => {});
+          setProgressSnapshotAt(null);
+          goHome();
+        }
+      }
+    } catch (e) { /* restore is user-triggered; a failure just keeps the row */ }
   }, [goHome]);
 
   // Commit a real account session. `finalData` is the account's canonical data
@@ -4943,7 +4999,18 @@ export default function App() {
                   onSetDailyReminder={setDailyReminder}
                   onSetDemographics={setDemographics}
                   unseenReplyCount={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
+                  onOpenTrash={() => setNav({ screen: 'recently-deleted' })}
+                  progressSnapshotAt={progressSnapshotAt}
+                  onRestoreProgress={restoreProgress}
                   onBack={goHome} />
+      )}
+
+      {/* RECENTLY DELETED — the undo shelf: deleted notes + crib sheets stay
+          restorable for the trash retention window (opened from Settings). */}
+      {nav.screen === 'recently-deleted' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <RecentlyDeletedLazy onBack={() => setNav({ screen: 'settings' })} />
+        </Suspense>
       )}
 
       {/* MISTAKE VAULT — every ever-wrong question, due-first review queue,

@@ -20,6 +20,7 @@ import { attemptStats } from '../lib/compact.js';
 import { clampNum, todayStr } from '../lib/utils.js';
 import { topicIcon } from '../lib/topics.js';
 import { loadMindmapNotes, mergeNotes, mindmapNoteMatch, sanitizeNoteText } from '../lib/notes.js';
+import { addToTrash } from '../lib/trash.js';
 import { recordMilestone, masteryMilestone } from '../lib/milestones.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
 import {
@@ -744,8 +745,22 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
       return { ...prev, mindmapNotes: next };
     });
   }, [setData]);
-  const deleteNote = useCallback((id) => {
-    setData(prev => { const next = { ...(prev.mindmapNotes || {}) }; delete next[id]; return { ...prev, mindmapNotes: next }; });
+  // Delete = move the note to the Recently deleted shelf (data.trash, synced),
+  // where it stays restorable for the trash.js retention window.
+  const deleteNote = useCallback((id, label) => {
+    setData(prev => {
+      const notes0 = prev.mindmapNotes || {};
+      const existing = notes0[id];
+      const next = { ...notes0 }; delete next[id];
+      const out = { ...prev, mindmapNotes: next };
+      if (existing && existing.text) {
+        out.trash = addToTrash(prev.trash, {
+          kind: 'kmap-note', label: label || 'Topic note',
+          payload: { key: id, text: existing.text },
+        });
+      }
+      return out;
+    });
   }, [setData]);
 
   // Long-press (mobile) / right-click (desktop) -> open the note editor. A drag
@@ -1952,7 +1967,12 @@ function KnowledgeMap({ onPracticeTopic, onPracticeSub, onBack }) {
         <MindmapNoteEditor node={noteEditor}
                            initialText={noteTextFor(noteEditor.id)}
                            onSave={(text) => { saveNote(noteEditor.id, text); setNoteEditor(null); }}
-                           onDelete={() => { deleteNote(noteEditor.id); setNoteEditor(null); }}
+                           onDelete={() => {
+                             const label = noteEditor.kind === 'sub'
+                               ? (noteEditor.data && noteEditor.data.sub)
+                               : (noteEditor.data && noteEditor.data.name);
+                             deleteNote(noteEditor.id, label); setNoteEditor(null);
+                           }}
                            onClose={() => setNoteEditor(null)} />
       )}
     </div>

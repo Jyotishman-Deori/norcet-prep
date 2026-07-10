@@ -10,7 +10,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   AlertCircle, AlertTriangle, ArrowUpDown, Bell, BellRing, Check, ChevronRight, Cloud, CloudOff, Copy, Download, Edit3,
   Fingerprint, FileText, GraduationCap, Hand, Heart, Languages, Lock, LogIn, LogOut, Palette, RefreshCw, RotateCcw, Share, Share2,
-  Shield, Sigma, SquarePlus, Trash2, User, UserPlus, Volume2
+  Shield, Sigma, SquarePlus, Trash2, Undo2, User, UserPlus, Volume2
 } from 'lucide-react';
 import { useTheme, useProfile, useData, useI18n } from '../lib/app-context.jsx';
 import { getLocale } from '../lib/i18n.js';
@@ -41,7 +41,7 @@ import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
 // PWA install row — replays the captured native install sheet on tap.
 import { hasDeferredPrompt, promptInstall, isInstalledDevice } from '../lib/install-prompt.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onOpenTrash, progressSnapshotAt = null, onRestoreProgress, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile } = useProfile();
@@ -226,8 +226,50 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
 
   // Reset + Share — shown to guests inline, and inside the Profile sub-page
   // for logged-in users (so it's reachable from one place either way).
+  // The undo shelf + the erase lifeline live right next to the destructive
+  // action they protect. English-first copy (locale pass pending).
   const renderReset = () => (
     <>
+      {onOpenTrash && (
+        <Card className="mb-3 p-0 overflow-hidden">
+          <button onClick={onOpenTrash}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+              <Trash2 size={16} style={{ color: T.inkSoft }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm" style={{ color: T.ink }}>Recently deleted</div>
+              <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
+                Deleted notes and crib sheets stay restorable for 7 days.
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+          </button>
+        </Card>
+      )}
+      {progressSnapshotAt != null && onRestoreProgress && (
+        <Card className="mb-3 p-0 overflow-hidden" style={{ borderColor: T.success + '55' }}>
+          <button onClick={() => requestConfirm({
+                    icon: <Undo2 size={20} style={{ color: T.success }} />,
+                    title: 'Restore erased progress?',
+                    body: `Brings back everything from ${new Date(progressSnapshotAt).toLocaleString()}. Progress made after the erase will be replaced.`,
+                    confirmLabel: 'Restore',
+                    cancelLabel: t('common.cancel'),
+                    onConfirm: () => onRestoreProgress(),
+                  })}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.successSoft }}>
+              <Undo2 size={16} style={{ color: T.success }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm" style={{ color: T.success }}>Restore erased progress</div>
+              <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
+                A backup from {new Date(progressSnapshotAt).toLocaleDateString()} is still available on this device.
+              </div>
+            </div>
+          </button>
+        </Card>
+      )}
       <Card className="mb-3 p-0 overflow-hidden">
         <button onClick={() => requestConfirm({
                   icon: <Trash2 size={20} style={{ color: '#E5484D' }} />,

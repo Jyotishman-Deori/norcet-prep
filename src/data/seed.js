@@ -797,5 +797,9 @@ export const DEFAULT_DATA = {
   // Kept INSIDE the synced blob (was a device-local shared:false key) so they
   // cloud-sync and follow the user across devices like everything else. Shape:
   // { nodeId: { text, updatedAt } }. Merged newest-per-node in lib/merge.js.
-  mindmapNotes: {}
+  mindmapNotes: {},
+  // RECENTLY DELETED — small deleted items (e.g. topic notes) kept restorable
+  // for the trash.js retention window, then purged on load. Shape:
+  // [{ id, kind, label, sub, payload, deletedAt }] (newest first, capped).
+  trash: []
 };

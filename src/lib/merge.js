@@ -96,6 +96,18 @@ export function _gunionMilestones(a, b) {
   out.sort((x, y) => _gnum(x && x.ts) - _gnum(y && y.ts));
   return out.slice(-200);
 }
+export function _gunionTrash(a, b) {
+  // Recently deleted entries: union by id (a merge must never resurrect nor
+  // lose a restorable item), newest deletion first, same cap as lib/trash.js.
+  const out = []; const seen = new Set();
+  const push = (arr) => (Array.isArray(arr) ? arr : []).forEach(e => {
+    if (!e || !e.id || seen.has(e.id) || typeof e.deletedAt !== 'number') return;
+    seen.add(e.id); out.push(e);
+  });
+  push(a); push(b);
+  out.sort((x, y) => _gnum(y.deletedAt) - _gnum(x.deletedAt));
+  return out.slice(0, 60);
+}
 export function _gunionNotes(a, b) {
   // Topic notes { nodeId: { text, updatedAt } }: union by node, newest
   // updatedAt wins per node (mirror of lib/notes.js mergeNotes). Additive —
@@ -185,6 +197,7 @@ export function normalizeUserData(raw) {
     revisionLog: Array.isArray(migrated.revisionLog) ? migrated.revisionLog : DEFAULT_DATA.revisionLog,
     milestones: Array.isArray(migrated.milestones) ? migrated.milestones : [],
     mindmapNotes: isObj(migrated.mindmapNotes) ? migrated.mindmapNotes : {},
+    trash: Array.isArray(migrated.trash) ? migrated.trash : [],
     preferences: { ...DEFAULT_DATA.preferences, ...(migrated.preferences || {}) }
   };
 }
@@ -230,6 +243,9 @@ export function mergeGuestIntoAccount(account, guest) {
     revisionLog: _gunionRevisionLog(a.revisionLog, g.revisionLog),
     milestones: _gunionMilestones(a.milestones, g.milestones),
     mindmapNotes: _gunionNotes(a.mindmapNotes, g.mindmapNotes),
+    // Recently deleted — union by id, newest first, capped (a merge must never
+    // resurrect nor lose a restorable item; expiry is purged on load).
+    trash: _gunionTrash(a.trash, g.trash),
     advancedTestHistory: _gconcatCappedByTs(a.advancedTestHistory, g.advancedTestHistory, 50),
     previousPapers: _gmergePreviousPapers(a.previousPapers, g.previousPapers),
     bankVersionsSeen: _gmergeMaxMap(a.bankVersionsSeen, g.bankVersionsSeen),
