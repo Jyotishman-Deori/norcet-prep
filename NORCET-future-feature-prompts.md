@@ -11039,3 +11039,48 @@ the pending native locale review.
 
 Verified: 41 tests + render smoke now including two NEW entries (about,
 legal-disclaimer) + compile gate + bundle guard. Shipped 2524d2d.
+
+## 2026-07-11 - Desktop top bar revamp: LinkedIn-style persistence + golden Premium + micro-interactions
+
+Owner asked for the LinkedIn PC pattern (top bar fixed on every page, less
+back-and-forth friction), a logo-tap micro-interaction on Home, the Premium
+button relocated into the bar with a golden premium look, and animated
+micro-interactions on the bar sections.
+
+Finding first: DesktopNav (src/ui/desktop-nav.jsx) was ALREADY a fixed
+64px blur bar, but mounted only on the 4 tab roots. The revamp made it
+persistent: new exported DNAV_EXCLUDED_SCREENS set (auth/waitlist gates,
+active test players quiz/advanced-test/paper-test/dosage-run, all clinical
+games incl. skill-setup/skill-drill, knowledge-map). RULE: new immersive
+screens must join this set (same convention as RAGE_EXCLUDED_SCREENS).
+App.jsx gate split: desktopNavVisible (bar, broad) vs desktopShellVisible
+(footer, still tab roots only). Sub-screen TopBars sit below the bar via
+the existing --dnav-h model (already proven in prod on settings sub-views).
+
+Bar upgrades: SECTION_OF child->section map keeps the active link underlined
+deep in a flow (learn-cards->Learn, crib-sheet->Revision, bank screens->
+Library); re-click of active link or brand scrolls to top (mirrors bottom
+bar); brand tile spring-pops on every click (new .brand-pop keyframe,
+re-keyed to restart); bell swings once per unread-count change
+(.dnav-bell-ring, keyed span); golden Premium pill between Favourites and
+profile chip: free users see a gold-tinted Crown+"Premium" pill (reuses
+nav.drawer.premium.label, NO new locale keys), members see a solid gold
+tier badge (SUPER/MAX via getPremiumState) opening the same manage screen;
+hover = one sheen sweep (.dnav-gold::after transition) + soft gold glow,
+no looping animation. Gold = #D97706 / #FCD34D / #B45309 (premium.jsx +
+cosmetics precedents).
+
+Home: the "NurseHolic" eyebrow is now a BrandMark button (self-contained
+component, own state): tap = brand-pop spring + haptic(HAPTIC.PLACE) +
+tap sound, two-tone wordmark, no navigation. Mobile home header gained a
+gold Crown shortcut to premium (drawer row kept, it is the full index).
+
+All new CSS lives after the dnav block in font-styles.js, keyframes end at
+transform:none (containing-block rule), everything registered in the
+reduced-motion opt-out. Smoke harness upgraded: __setSmokeProfile in the
+stub + desktop-nav (child screen, unread=3) and desktop-nav-member (MAX)
+entries + NEW per-entry MARKERS content assertions (rendered HTML must
+contain dnav-gold/dnav-link-active/dnav-bell-ring/Premium/MAX). Verified:
+41 tests + smoke + compile + bundle guard; shipped c6f4809, live-verified
+(dnav-gold in served bundle). Owner: eyeball desktop nav on a few deep
+screens + check errlog after this one.
