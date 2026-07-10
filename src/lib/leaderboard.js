@@ -11,7 +11,7 @@ import { todayStr, weekStartStr } from './utils.js';
 import { attemptStats } from './compact.js';
 import { masteryTally } from './kmap.js';
 import { countsInNursingStats } from '../data/seed.js';
-import { weeklyGrowth } from './leaderboard-score.js';
+import { weeklyGrowth, firstAttemptTotals } from './leaderboard-score.js';
 import { normalizeLevelup, progress } from './levelup.js';
 
 const LEADERBOARD_PREFIX = 'leaderboard:';
@@ -38,11 +38,18 @@ function computeLeaderboardEntry(profile, data, allQuestions) {
   // belongs to the CURRENT week (normalizeLevelup doesn't auto-roll the window).
   const lu = normalizeLevelup(data && data.levelup);
   const weekXp = lu.weekStart === weekStartStr() ? (lu.weekXp || 0) : 0;
+  // Leaderboard integrity (2026-07-10): the Accuracy board ranks on FIRST
+  // attempts only, so re-answering questions with known answers can't buy
+  // rank. Computed from history (pure fn, tainted/compacted excluded).
+  let first = { attempted: 0, correct: 0 };
+  try { first = firstAttemptTotals(data && data.history); } catch (e) {}
   return {
     id: profile.id,
     displayName: profile.displayName || profile.id,
     totalAnswered: s.totalAttempted || 0,
     totalCorrect: s.totalCorrect || 0,
+    firstAttempted: first.attempted,
+    firstCorrect: first.correct,
     currentStreak: s.streakCurrent || 0,
     weeklyAnswered: growth.weeklyAnswered,
     weeklyCorrect: growth.weeklyCorrect,

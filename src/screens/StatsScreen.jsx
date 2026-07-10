@@ -10,7 +10,7 @@ import { BarChart3, ChevronDown, ChevronRight, ChevronUp, Flame, Layers, RotateC
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
-import { topicName, topicColor, topicIcon } from '../lib/topics.js';
+import { topicName, topicColor, topicIcon, resolveTopicId } from '../lib/topics.js';
 import { Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import WhereYouStandCard from '../ui/where-you-stand-card.jsx';
@@ -96,9 +96,11 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
       // P15 — attemptStats returns accurate pre-compaction totals.
       const s = attemptStats(h);
       if (s.total === 0) return;
-      if (!acc[q.topic]) acc[q.topic] = { id: q.topic, correct: 0, total: 0, name: topicName(q.topic), color: topicColor(q.topic) };
-      acc[q.topic].total += s.total;
-      acc[q.topic].correct += s.correct;
+      // resolveTopicId merges alias topic ids ("aptitude") into one bucket.
+      const tid = resolveTopicId(q.topic);
+      if (!acc[tid]) acc[tid] = { id: tid, correct: 0, total: 0, name: topicName(tid), color: topicColor(tid) };
+      acc[tid].total += s.total;
+      acc[tid].correct += s.correct;
     });
     return Object.values(acc).map(x => ({
       ...x, accuracy: x.total > 0 ? Math.round((x.correct / x.total) * 100) : 0
@@ -143,7 +145,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
   // #5 — lifetime pacing entries: every timed attempt joined with its topic.
   const pacingEntries = useMemo(() => {
     const topicById = {};
-    allQuestions.forEach(q => { if (q && q.id != null) topicById[q.id] = q.topic; });
+    allQuestions.forEach(q => { if (q && q.id != null) topicById[q.id] = resolveTopicId(q.topic); });
     const out = [];
     Object.entries(data.history).forEach(([qId, h]) => {
       const topic = topicById[qId];
@@ -179,7 +181,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
     const weak = [...practiced].sort((x, y) => x.accuracy - y.accuracy)[0];
     if (weak && weak.accuracy < 70) return { kind: 'weak', topicId: weak.id, name: weak.name, accuracy: weak.accuracy };
     const practicedIds = new Set(byTopic.map(t => t.id));
-    const poolTopicIds = Array.from(new Set(allQuestions.map(q => q.topic)));
+    const poolTopicIds = Array.from(new Set(allQuestions.map(q => resolveTopicId(q.topic))));
     const untouched = poolTopicIds.find(id => !practicedIds.has(id));
     if (untouched) return { kind: 'new', topicId: untouched, name: topicName(untouched) };
     return { kind: 'sharp' };
@@ -210,15 +212,16 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
     Object.entries(data.history).forEach(([qId, h]) => {
       const q = allQuestions.find(x => x.id === qId);
       if (!q || !h) return;
+      const tid = resolveTopicId(q.topic);
       (h.attempts || []).forEach(at => {
         if (typeof at.ts !== 'number' || at.ts < windowStart) return;
         if (at.revealed) return; // neutral reveal — excluded from accuracy
         const bk = bucketKeyOf(at.ts);
         if (!bk) return;
-        acc[q.topic] = acc[q.topic] || {};
-        acc[q.topic][bk] = acc[q.topic][bk] || { c: 0, t: 0 };
-        acc[q.topic][bk].t++; if (at.correct) acc[q.topic][bk].c++;
-        totals[q.topic] = (totals[q.topic] || 0) + 1;
+        acc[tid] = acc[tid] || {};
+        acc[tid][bk] = acc[tid][bk] || { c: 0, t: 0 };
+        acc[tid][bk].t++; if (at.correct) acc[tid][bk].c++;
+        totals[tid] = (totals[tid] || 0) + 1;
       });
     });
 

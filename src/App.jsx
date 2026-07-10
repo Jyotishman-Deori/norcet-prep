@@ -125,7 +125,7 @@ import { NavDrawer } from './ui/nav-drawer.jsx';
 import Home from './screens/home.jsx';
 import { getDueQuestions } from './lib/selectors.js';
 // [F-D] weak-topic ranking for Quick Revision.
-import { getWeakTopics } from './lib/topics.js';
+import { getWeakTopics, resolveTopicId } from './lib/topics.js';
 // [A1 s4 / batch 1b slice 11] bank permission helpers + Library screen extracted.
 import { isBankOwner, canSeeBank } from './lib/banks.js';
 // [A1 slice 48 / tidy-up] bank shared-storage CRUD extracted.
@@ -2576,13 +2576,15 @@ export default function App() {
       // ordering. Kept here defensively in case future code paths invoke
       // `startQuiz({ mode: 'quick' })` directly.
       const pool = spec.topic && spec.topic !== 'all'
-        ? allQuestions.filter(q => q.topic === spec.topic)
+        ? allQuestions.filter(q => resolveTopicId(q.topic) === spec.topic)
         : allQuestions;
       qs = selectWithRepeats(pool, spec.count || 5, data ? data.history : {});
     } else if (spec.mode === 'topic') {
       // P16 — optional PYQ-only narrowing for Topic-wise practice.
       const base = spec.pyqOnly ? allQuestions.filter(isPYQ) : allQuestions;
-      let pool = base.filter(q => q.topic === spec.topic);
+      // resolveTopicId: imported questions with alias topic ids ("aptitude")
+      // still belong to their canonical topic's practice pool.
+      let pool = base.filter(q => resolveTopicId(q.topic) === spec.topic);
       // Optional sub-topic filter — comes from the Coverage map's per-sub
       // Start button. "General" matches questions that have no `sub` field.
       if (spec.sub) {
@@ -2651,9 +2653,20 @@ export default function App() {
       const newHistory = { ...prev.history };
       const today = todayStr();
       let attemptedToday = 0, correctToday = 0;
+      // Leaderboard integrity — FIRST attempts only. A question answered
+      // after its answer was already shown (any earlier attempt or reveal)
+      // still counts toward effort/learning stats, but not toward the
+      // leaderboard accuracy: re-answering known questions can't game rank.
+      let freshAttemptedToday = 0, freshCorrectToday = 0;
 
       results.forEach(r => {
-        const h = newHistory[r.qId] || { attempts: [], reviewCount: 0, nextDue: null, lastResult: null };
+        const existing = newHistory[r.qId];
+        // "Fresh" = the question was NEVER interacted with before, reveals
+        // included (a revealed answer already showed the solution, so a
+        // later attempt is not a fair first try).
+        const isFirstAttempt = !existing ||
+          (!existing.compacted && (!Array.isArray(existing.attempts) || existing.attempts.length === 0));
+        const h = existing || { attempts: [], reviewCount: 0, nextDue: null, lastResult: null };
         h.attempts = [...h.attempts, {
           ts: Date.now(),
           correct: r.correct,
@@ -2685,15 +2698,23 @@ export default function App() {
         // for review so the user revisits what they didn't know.
         if (!r.revealed) attemptedToday++;
         if (r.correct) correctToday++;
+        if (isFirstAttempt && !r.revealed) {
+          freshAttemptedToday++;
+          if (r.correct) freshCorrectToday++;
+        }
       });
 
       const newDaily = [...prev.stats.dailyHistory];
       const todayIdx = newDaily.findIndex(d => d.date === today);
       if (todayIdx >= 0) {
-        newDaily[todayIdx] = { date: today, attempted: newDaily[todayIdx].attempted + attemptedToday,
-                               correct: newDaily[todayIdx].correct + correctToday };
+        const d = newDaily[todayIdx];
+        newDaily[todayIdx] = { date: today, attempted: d.attempted + attemptedToday,
+                               correct: d.correct + correctToday,
+                               freshAttempted: (d.freshAttempted || 0) + freshAttemptedToday,
+                               freshCorrect: (d.freshCorrect || 0) + freshCorrectToday };
       } else {
-        newDaily.push({ date: today, attempted: attemptedToday, correct: correctToday });
+        newDaily.push({ date: today, attempted: attemptedToday, correct: correctToday,
+                        freshAttempted: freshAttemptedToday, freshCorrect: freshCorrectToday });
       }
       // Keep last 60 days
       const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 60);

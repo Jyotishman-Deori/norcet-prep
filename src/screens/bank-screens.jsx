@@ -20,17 +20,35 @@ import {
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar } from '../ui/primitives.jsx';
 import { newBankId, bankVisibility } from '../lib/banks.js';
-import { topicName, topicColor, topicIcon } from '../lib/topics.js';
+import { topicName, topicColor, topicIcon, resolveTopicId } from '../lib/topics.js';
 import { processQuestionInput, validateQuestionFields, EXAMPLE_QUESTIONS_JSON, EXAMPLE_QUESTIONS_CSV } from '../lib/question-import.js';
 import { findDuplicateStem } from '../lib/utils.js';
+import { isPYQ } from '../lib/pyq.js';
 
 function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImported, isDisabled, onImport, onUpdate, onEdit, onDelete, onToggleVisibility, onToggleEnabled, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [previewIndex, setPreviewIndex] = useState(0);
   const [visBusy, setVisBusy] = useState(false);
   const date = bank.updatedAt ? new Date(bank.updatedAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '';
-  const previewQ = bank.questions[previewIndex];
+  // "What's inside" — the leaderboard-safe preview (owner decision
+  // 2026-07-10): show the bank's SHAPE (topic mix, difficulty split, PYQ
+  // share), never its content. Nothing here can be searched in advance,
+  // and it answers the real question: is this bank worth adding for MY
+  // weak areas? Same approach as Duolingo's skill outline or an Anki
+  // deck page: curriculum metadata, zero exercises.
+  const inside = React.useMemo(() => {
+    const topics = {};
+    const diff = { easy: 0, medium: 0, hard: 0, unrated: 0 };
+    let pyq = 0;
+    (bank.questions || []).forEach((q) => {
+      const tid = resolveTopicId(q.topic) || 'fund';
+      topics[tid] = (topics[tid] || 0) + 1;
+      diff[q.difficulty && diff[q.difficulty] !== undefined ? q.difficulty : 'unrated'] += 1;
+      if (isPYQ(q)) pyq += 1;
+    });
+    const rows = Object.entries(topics).sort((a, b) => b[1] - a[1]);
+    return { rows: rows.slice(0, 5), moreTopics: Math.max(0, rows.length - 5), diff, pyq, total: (bank.questions || []).length };
+  }, [bank.questions]);
   const priv = bankVisibility(bank) === 'private';
   const ownerLabel = isOwner ? 'You' : (bank.ownerName || 'Admin');
 
@@ -134,34 +152,47 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
           </Card>
         )}
 
-        {/* Preview — question STEMS only (owner decision 2026-07-10): no
-            options and no answers here, so nothing is spoiled before
-            practice. The stem alone shows the bank's style and depth. */}
-        {previewQ && (
+        {/* What's inside — curriculum metadata instead of question content.
+            Leaderboard integrity: no stem, option, or answer ever previews,
+            so nothing can be looked up before it's practised. */}
+        {inside.total > 0 && (
           <Card className="p-4 mb-3">
-            <div className="flex items-center justify-between mb-2">
-              <div className="text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>Preview</div>
-              <div className="text-xs tabular-nums" style={{ color: T.muted }}>{previewIndex + 1} / {bank.questions.length}</div>
+            <div className="text-xs uppercase tracking-wider font-semibold mb-3" style={{ color: T.muted }}>What's inside</div>
+
+            {/* Topic mix — proportional bars in each topic's colour */}
+            <div className="space-y-2 mb-1.5">
+              {inside.rows.map(([tid, n]) => (
+                <div key={tid}>
+                  <div className="flex items-center justify-between text-[12.5px] mb-1">
+                    <span className="flex items-center gap-1.5 min-w-0 pr-2" style={{ color: T.ink }}>
+                      <span className="flex-shrink-0">{topicIcon(tid)}</span>
+                      <span className="font-medium truncate">{topicName(tid)}</span>
+                    </span>
+                    <span className="tabular-nums flex-shrink-0" style={{ color: T.muted }}>{n} Q{n === 1 ? '' : 's'}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full" style={{ background: T.borderSoft }}>
+                    <div className="h-1.5 rounded-full"
+                         style={{ width: `${Math.max(4, Math.round((n / inside.total) * 100))}%`, background: topicColor(tid) }} />
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="flex flex-wrap items-center gap-1.5 mb-2">
-              <Pill bg={topicColor(previewQ.topic) + '15'} color={topicColor(previewQ.topic)}>
-                {topicIcon(previewQ.topic)} {topicName(previewQ.topic)}
-              </Pill>
-              {previewQ.sub && <Pill bg={T.surfaceWarm} color={T.inkSoft}>{previewQ.sub}</Pill>}
+            {inside.moreTopics > 0 && (
+              <div className="text-[11px] mb-2" style={{ color: T.muted }}>and {inside.moreTopics} more topic{inside.moreTopics === 1 ? '' : 's'}</div>
+            )}
+
+            {/* Difficulty + PYQ chips */}
+            <div className="flex flex-wrap items-center gap-1.5 mt-3">
+              {inside.diff.easy > 0 && <Pill bg={T.success + '15'} color={T.success}>{inside.diff.easy} easy</Pill>}
+              {inside.diff.medium > 0 && <Pill bg={T.accent + '18'} color={T.accent}>{inside.diff.medium} medium</Pill>}
+              {inside.diff.hard > 0 && <Pill bg={T.error + '15'} color={T.error}>{inside.diff.hard} hard</Pill>}
+              {inside.diff.unrated > 0 && <Pill bg={T.surfaceWarm} color={T.muted}>{inside.diff.unrated} unrated</Pill>}
+              {inside.pyq > 0 && <Pill bg={T.primary + '15'} color={T.primary}>{inside.pyq} PYQ</Pill>}
             </div>
-            <div className="text-sm leading-snug" style={{ color: T.ink }}>{previewQ.q}</div>
-            <div className="flex gap-2 mt-3">
-              <button onClick={() => setPreviewIndex(Math.max(0, previewIndex - 1))} disabled={previewIndex === 0}
-                      className="no-tap-highlight flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-                ← Prev
-              </button>
-              <button onClick={() => setPreviewIndex(Math.min(bank.questions.length - 1, previewIndex + 1))}
-                      disabled={previewIndex === bank.questions.length - 1}
-                      className="no-tap-highlight flex-1 py-1.5 rounded-lg text-xs font-medium disabled:opacity-40"
-                      style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.inkSoft }}>
-                Next →
-              </button>
+
+            <div className="flex items-center gap-1.5 mt-3 text-[10.5px]" style={{ color: T.muted }}>
+              <EyeOff size={11} className="flex-shrink-0" />
+              Questions stay hidden until you practise, so every attempt counts fairly.
             </div>
           </Card>
         )}

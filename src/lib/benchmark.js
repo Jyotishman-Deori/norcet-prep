@@ -17,6 +17,7 @@
 // =====================================================================
 
 import { systemForQuestion } from './clinical-systems.js';
+import { resolveTopicId } from './topics.js';
 
 export const TOPPER_TARGETS = [
   { id: 'attempts', label: 'Attempts per 100 Qs', target: '78 to 85', why: 'Toppers attempt selectively. Blanket attempting feeds the negative penalty.' },
@@ -56,7 +57,8 @@ export function userBenchmarks(advancedTestHistory, history, allQuestions) {
     for (const [qId, h] of Object.entries(history)) {
       const atts = h && Array.isArray(h.attempts) ? h.attempts : [];
       const q = byId[qId];
-      const clinical = q && q.topic !== 'gk' && q.topic !== 'apt' && systemForQuestion(q) !== 'other';
+      const qTopic = q && resolveTopicId(q.topic);
+      const clinical = q && qTopic !== 'gk' && qTopic !== 'apt' && systemForQuestion(q) !== 'other';
       for (const a of atts) {
         if (!a || a.revealed) continue;
         attempts += 1;

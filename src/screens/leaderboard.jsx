@@ -36,7 +36,7 @@ const NOTE = {
   growth:        'Answer some questions this week to join the Growth board.',
   mastery:       'Master your first topic in the Knowledge Map to claim a spot here.',
   streak:        'Start a streak: study today to appear here.',
-  accuracy:      'Answer at least 50 questions to qualify for the accuracy board.',
+  accuracy:      'Answer at least 50 new questions to qualify: only first tries count here.',
   flashpoint:    'Play a test in Flashpoint pace to score points and rank here.',
   'games-week':  'Play a clinical game this week to rank on weekly XP.',
   'games-level': 'Play Level Up games to earn XP and climb the levels.',
@@ -45,7 +45,7 @@ const EMPTY = {
   growth:        { title: 'Your name belongs on this board', text: 'Study this week to join the Growth board, it rewards effort and improvement, not just raw totals, and resets every Monday.' },
   mastery:       { title: 'Light up your first constellation', text: 'Master a topic in the Knowledge Map to appear here and compare your progress with other aspirants.' },
   streak:        { title: 'Start your streak', text: 'Study today to start a streak and appear on this board.' },
-  accuracy:      { title: 'Earn your accuracy rank', text: 'Answer at least 50 questions to qualify for the accuracy board.' },
+  accuracy:      { title: 'Earn your accuracy rank', text: 'Answer at least 50 new questions to qualify: only your first try on each question counts, so accuracy here is earned, never replayed.' },
   flashpoint:    { title: 'Ignite the Flashpoint board', text: 'Finish a test in Flashpoint pace, half the time, double the points, to claim your spot here.' },
   'games-week':  { title: 'Play to rank this week', text: 'Finish a clinical game in Level Up to score weekly XP. Daily-capped and reset every Monday, so it rewards play, not grinding.' },
   'games-level': { title: 'Climb the levels', text: 'Earn XP in Level Up games to raise your level and tier, and rank on the all-time Level board.' },
@@ -88,8 +88,17 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
         return list.filter(e => (e.currentStreak || 0) > 0)
                    .sort((a, b) => (b.currentStreak || 0) - (a.currentStreak || 0) || byTotal(a, b));
       case 'accuracy':
-        return list.filter(e => (e.totalAnswered || 0) >= 50)
-                   .map(e => ({ ...e, acc: e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0 }))
+        // Integrity (2026-07-10): rank on FIRST-attempt accuracy when the
+        // entry publishes it (firstAttempted/firstCorrect), so re-answering
+        // known questions can't buy rank. Legacy entries (no first fields)
+        // fall back to lifetime accuracy until their next session refresh.
+        return list.map(e => {
+                     const useFirst = (e.firstAttempted || 0) > 0;
+                     const denom = useFirst ? e.firstAttempted : (e.totalAnswered || 0);
+                     const numer = useFirst ? e.firstCorrect : (e.totalCorrect || 0);
+                     return { ...e, accDenom: denom, acc: denom > 0 ? numer / denom : 0 };
+                   })
+                   .filter(e => e.accDenom >= 50)
                    .sort((a, b) => b.acc - a.acc || byTotal(a, b));
       case 'games-week':
         return list.filter(e => (e.weekXp || 0) > 0)
@@ -109,7 +118,9 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
       case 'flashpoint':  return `${(e.flashpointPoints || 0).toLocaleString()} pts`;
       case 'mastery':     return `${e.masteredTopics || 0} ★`;
       case 'streak':      return `${e.currentStreak || 0}d`;
-      case 'accuracy':    return `${Math.round((e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0) * 100)}%`;
+      case 'accuracy':    return `${Math.round(((e.firstAttempted || 0) > 0
+                            ? e.firstCorrect / e.firstAttempted
+                            : (e.totalAnswered ? e.totalCorrect / e.totalAnswered : 0)) * 100)}%`;
       case 'games-week':  return `${(e.weekXp || 0).toLocaleString()} XP`;
       case 'games-level': return `Lvl ${e.level || 1}`;
       case 'growth':
@@ -123,6 +134,7 @@ function LeaderboardScreen({ profileId, isGuest = false, onGuestSignIn, onBack, 
     mastery:       <>Ranked by topics mastered in your <span style={{ color: T.ink, fontWeight: 600 }}>Knowledge Map</span>, see how your constellation compares.</>,
     'games-week':  <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>XP earned this week</span>, daily-capped and reset every Monday, so it rewards play, not grinding.</>,
     'games-level': <>Ranked by all-time <span style={{ color: T.ink, fontWeight: 600 }}>level</span> across the Level Up games.</>,
+    accuracy:      <>Ranked by <span style={{ color: T.ink, fontWeight: 600 }}>first-try accuracy</span>: only the first attempt on each question counts, so repeats and revealed answers can't buy rank.</>,
   }[tab];
   const contextIcon = tab === 'flashpoint' ? <Zap size={12} style={{ color: '#F59E0B' }} />
     : tab === 'mastery' ? <Sparkles size={12} style={{ color: T.accent }} />

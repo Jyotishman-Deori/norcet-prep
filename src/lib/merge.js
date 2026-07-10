@@ -54,9 +54,13 @@ export function _gunionDailyHistory(a, b) {
   const map = new Map();
   const add = (arr) => (Array.isArray(arr) ? arr : []).forEach(e => {
     if (!e || !e.date) return;
-    const cur = map.get(e.date) || { date: e.date, attempted: 0, correct: 0 };
+    const cur = map.get(e.date) || { date: e.date, attempted: 0, correct: 0, freshAttempted: 0, freshCorrect: 0 };
     cur.attempted += _gnum(e.attempted);
     cur.correct += _gnum(e.correct);
+    // First-attempt counters (leaderboard integrity, 2026-07-10) survive a
+    // cross-device merge the same way the raw counts do.
+    cur.freshAttempted += _gnum(e.freshAttempted);
+    cur.freshCorrect += _gnum(e.freshCorrect);
     map.set(e.date, cur);
   });
   add(a); add(b);

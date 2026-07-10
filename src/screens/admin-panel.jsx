@@ -46,7 +46,7 @@ import { listErrorGroups, setErrorResolved, deleteErrorGroup } from '../lib/erro
 import { loadReferralGraph, CHANNEL_LABEL } from '../lib/referral-admin.js';
 import { loadSignupAnomalies } from '../lib/referral-stats.js';
 import { fmtWhen } from '../lib/format.js';
-import { topicName } from '../lib/topics.js';
+import { topicName, resolveTopicId } from '../lib/topics.js';
 // #24 — bank demand vs supply uses the exam-weightage distribution.
 import { examTopicWeightage } from '../lib/weightage.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
@@ -217,7 +217,9 @@ function AdminPanel({
     const weights = examTopicWeightage(PREVIOUS_YEAR_PAPERS, false);
     const total = allQuestions.length || 0;
     const bankByTopic = {};
-    allQuestions.forEach(q => { if (q && q.topic) bankByTopic[q.topic] = (bankByTopic[q.topic] || 0) + 1; });
+    // resolveTopicId merges uploaded alias topics ("aptitude") into their
+    // canonical row ('apt') so Bank health can't show duplicate sections.
+    allQuestions.forEach(q => { if (q && q.topic) { const id = resolveTopicId(q.topic); bankByTopic[id] = (bankByTopic[id] || 0) + 1; } });
     const ids = new Set([...Object.keys(bankByTopic), ...Object.keys(weights)]);
     const rows = [];
     ids.forEach(id => {

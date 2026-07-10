@@ -2,7 +2,7 @@
 //   node src/lib/leaderboard-score.test.js
 // Pure module (only utils.weekStartStr), so no storage/DOM stubs are needed.
 import assert from 'node:assert/strict';
-import { weeklyGrowth, GROWTH_DEFAULTS } from './leaderboard-score.js';
+import { weeklyGrowth, firstAttemptTotals, GROWTH_DEFAULTS } from './leaderboard-score.js';
 import { weekStartStr } from './utils.js';
 
 // Fixed "now" inside a known week so date math is deterministic.
@@ -51,6 +51,70 @@ const weeksAgo = (n, off = 0) =>
   // growthScore effort term is capped at effortCap (no baseline → no improvement term).
   const maxEffortTerm = GROWTH_DEFAULTS.effortCap * (0.5 + 0.5 * 0.5);
   assert.ok(g.growthScore <= Math.round(maxEffortTerm) + 1, `grind score ${g.growthScore} is effort-capped`);
+}
+
+// LEADERBOARD INTEGRITY (2026-07-10): accuracy counts FIRST attempts only
+// when the fresh counters are present. Re-answering questions whose answers
+// were already shown boosts attempted/correct but not board accuracy.
+{
+  const gamer = [{
+    date: dayInWeek(0),
+    attempted: 100, correct: 95,          // 90 repeats of known answers
+    freshAttempted: 10, freshCorrect: 5,  // real first tries: 50%
+  }];
+  const g = weeklyGrowth(gamer, {}, NOW);
+  assert.equal(g.weeklyAnswered, 100, 'effort still counts every attempt');
+  assert.ok(Math.abs(g.weeklyAccuracy - 0.5) < 1e-9, 'accuracy uses first attempts only');
+}
+
+// Legacy rows without fresh fields fall back to all-attempts accuracy.
+{
+  const legacy = [{ date: dayInWeek(0), attempted: 20, correct: 15 }];
+  const g = weeklyGrowth(legacy, {}, NOW);
+  assert.ok(Math.abs(g.weeklyAccuracy - 0.75) < 1e-9, 'pre-migration rows keep working');
+}
+
+// Mixed window (legacy + fresh rows): fresh data wins once any exists.
+{
+  const mixed = [
+    { date: dayInWeek(0), attempted: 20, correct: 20 },                                  // legacy row
+    { date: dayInWeek(1), attempted: 10, correct: 2, freshAttempted: 10, freshCorrect: 2 }, // fresh row
+  ];
+  const g = weeklyGrowth(mixed, {}, NOW);
+  assert.ok(Math.abs(g.weeklyAccuracy - 0.2) < 1e-9, 'fresh counters dominate the transition week');
+}
+
+// Baseline uses the same rule, so improvement stays like-for-like.
+{
+  const hist = [
+    { date: weeksAgo(2, 1), attempted: 50, correct: 45, freshAttempted: 20, freshCorrect: 8 },  // baseline fresh 40%
+    { date: dayInWeek(0),   attempted: 30, correct: 12, freshAttempted: 30, freshCorrect: 18 }, // this week fresh 60%
+  ];
+  const g = weeklyGrowth(hist, {}, NOW);
+  assert.ok(Math.abs(g.weeklyAccuracy - 0.6) < 1e-9);
+  // improvement = 0.6 - 0.4 = 0.2 → visible in the score vs a no-improvement twin
+  const flat = weeklyGrowth([
+    { date: weeksAgo(2, 1), attempted: 50, correct: 45, freshAttempted: 20, freshCorrect: 12 }, // baseline 60%
+    { date: dayInWeek(0),   attempted: 30, correct: 12, freshAttempted: 30, freshCorrect: 18 }, // week 60%
+  ], {}, NOW);
+  assert.ok(g.growthScore > flat.growthScore, 'first-attempt improvement is rewarded');
+}
+
+// firstAttemptTotals — the all-time Accuracy board's un-gameable base.
+{
+  const att = (correct, extra = {}) => ({ ts: 1, correct, ...extra });
+  const history = {
+    q1: { attempts: [att(true), att(false), att(false)] },      // first try right (repeats ignored)
+    q2: { attempts: [att(false), att(true), att(true)] },       // first try wrong (later wins ignored)
+    q3: { attempts: [att(true, { revealed: true }), att(true)] }, // revealed first -> tainted, excluded
+    q4: { compacted: true, attempts: [att(true)], attemptsTotal: 40, attemptsCorrect: 39 }, // compacted -> skipped
+    q5: { attempts: [] },                                        // never tried -> skipped
+  };
+  const t = firstAttemptTotals(history);
+  assert.equal(t.attempted, 2);
+  assert.equal(t.correct, 1);
+  assert.ok(Math.abs(t.accuracy - 0.5) < 1e-9);
+  assert.deepEqual(firstAttemptTotals(null), { attempted: 0, correct: 0, accuracy: 0 });
 }
 
 console.log('leaderboard-score.test.js: all assertions passed');

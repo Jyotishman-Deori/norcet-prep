@@ -6,6 +6,7 @@
 // parseQuestionInput + normalizeQuestion stay module-internal.
 // =====================================================================
 import { parseCsvLine } from './utils.js';
+import { resolveTopicId } from './topics.js';
 
 export function validateQuestionFields(q) {
   const errs = [];
@@ -25,7 +26,9 @@ export function validateQuestionFields(q) {
 function normalizeQuestion(raw, idPrefix) {
   return {
     id: `${idPrefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-    topic: raw.topic || 'fund',
+    // Canonicalise drafted topic variants ("aptitude", "Pharmacology", …)
+    // onto registry ids at upload time, so phantom topics can't be created.
+    topic: resolveTopicId(raw.topic) || 'fund',
     sub: raw.sub || 'General',
     type: raw.type || 'mcq',
     q: raw.q.trim(),

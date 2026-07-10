@@ -22,6 +22,7 @@
 // 2-attempt 100%-wrong fluke cannot outrank a 40-attempt 55%-wrong leak.
 // Systems with fewer than MIN_ATTEMPTS attempts are not reported.
 // =====================================================================
+import { resolveTopicId } from './topics.js';
 
 export const CLINICAL_SYSTEMS = [
   { id: 'cardio',    label: 'Cardiovascular & Blood',      icon: '🫀' },
@@ -76,7 +77,7 @@ export function systemForQuestion(q) {
       if (re.test(sub)) return id;
     }
   }
-  return TOPIC_FALLBACK[q.topic] || 'other';
+  return TOPIC_FALLBACK[resolveTopicId(q.topic)] || 'other';
 }
 
 // history: data.history ({ qId: { attempts: [{ correct, revealed, ... }] } })
@@ -90,7 +91,7 @@ export function clinicalLeaks(history, allQuestions) {
   if (history && typeof history === 'object') {
     for (const [qId, h] of Object.entries(history)) {
       const q = byId[qId];
-      if (!q || NON_CLINICAL_TOPICS[q.topic]) continue;
+      if (!q || NON_CLINICAL_TOPICS[resolveTopicId(q.topic)]) continue;
       const attempts = h && Array.isArray(h.attempts) ? h.attempts : [];
       if (attempts.length === 0) continue;
       const sys = systemForQuestion(q);
