@@ -9,7 +9,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Save, RotateCcw, Check, Loader2, ChevronDown, SlidersHorizontal,
-  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle, Shield, Ticket, FlaskConical, X,
+  Gauge, Crown, Sparkles, Gift, Target, Minus, Plus, AlertTriangle, Shield, Ticket, FlaskConical, X, Image,
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
@@ -21,7 +21,7 @@ import {
 } from '../lib/game-config-edit.js';
 import { logAdminAction } from '../lib/admin-audit.js';
 
-const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket, FlaskConical };
+const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket, FlaskConical, Image };
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 export default function AdminConfigEditor({ onBack, actorName }) {
@@ -222,6 +222,15 @@ function FieldRow({ f, value, edited, onChange, T }) {
         <ToggleRow value={!!value} onChange={onChange} help={f.help} T={T} />
       ) : f.type === 'idlist' ? (
         <IdListEditor value={value} onChange={onChange} help={f.help} T={T} />
+      ) : f.type === 'text' ? (
+        <>
+          <input type="text" value={typeof value === 'string' ? value : ''}
+                 onChange={(e) => onChange(e.target.value)}
+                 spellCheck={false} autoCapitalize="off" autoCorrect="off"
+                 className="w-full text-sm rounded-xl px-3 py-2.5 outline-none"
+                 style={{ background: T.surface, border: `1px solid ${T.border}`, color: T.ink }} />
+          {f.help && <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>{f.help}</div>}
+        </>
       ) : f.type === 'slider' ? (
         <>
           <input type="range" min={f.min} max={f.max} step={f.step} value={value}

@@ -24,6 +24,7 @@ import { topicName, topicColor, topicIcon, resolveTopicId } from '../lib/topics.
 import { processQuestionInput, validateQuestionFields, EXAMPLE_QUESTIONS_JSON, EXAMPLE_QUESTIONS_CSV } from '../lib/question-import.js';
 import { findDuplicateStem } from '../lib/utils.js';
 import { isPYQ } from '../lib/pyq.js';
+import { MediaUploadHelper } from '../ui/media-fields.jsx';
 
 function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImported, isDisabled, onImport, onUpdate, onEdit, onDelete, onToggleVisibility, onToggleEnabled, onBack }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -348,6 +349,15 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
   const [description, setDescription] = useState(existingBank ? (existingBank.description || '') : '');
   const [questions, setQuestions] = useState(existingBank ? existingBank.questions : []);
   const [visibility, setVisibility] = useState(existingBank ? bankVisibility(existingBank) : 'public');
+  // PAPER MODE — a bank tagged type:'previous_paper' merges into the Previous
+  // Papers archive (App allPapers) and runs through the timed paper engine in
+  // its original order. Papers may ship ANSWER-ONLY (exp optional; authored
+  // over time), matching how official memory-based papers circulate.
+  const [bankType, setBankType] = useState(existingBank && existingBank.type === 'previous_paper' ? 'previous_paper' : 'practice');
+  const isPaper = bankType === 'previous_paper';
+  const [paperYear, setPaperYear] = useState(existingBank && existingBank.year ? String(existingBank.year) : '');
+  const [paperMinutes, setPaperMinutes] = useState(existingBank && existingBank.timeMinutes ? String(existingBank.timeMinutes) : '');
+  const importOpts = { requireExp: !isPaper };
 
   const [format, setFormat] = useState('json');
   const [text, setText] = useState('');
@@ -364,7 +374,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     setError(null);
     setLastAdded(null);
     setFileReport(null);
-    const result = processQuestionInput(text, format, 'bank');
+    const result = processQuestionInput(text, format, 'bank', importOpts);
     if (result.parseError) {
       setPreview({ valid: [], invalid: [], message: result.parseError });
     } else {
@@ -398,7 +408,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
       const fmt = /\.csv$/i.test(file.name) ? 'csv' : 'json';
       try {
         const content = await file.text();
-        const result = processQuestionInput(content, fmt, 'bank');
+        const result = processQuestionInput(content, fmt, 'bank', importOpts);
         if (result.parseError) {
           report.push({ name: file.name, valid: 0, invalid: 0, error: result.parseError });
         } else {
@@ -500,17 +510,33 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
     if (questions.length === 0) { setError('Add at least one question first'); return; }
     // Re-validate every question to make sure nothing got into the array malformed
     for (const q of questions) {
-      const errs = validateQuestionFields(q);
+      const errs = validateQuestionFields(q, importOpts);
       if (errs.length > 0) {
         setError(`Invalid question "${(q.q || '').slice(0, 40)}…": ${errs.join(', ')}`);
         return;
       }
     }
+    const yearNum = parseInt(paperYear, 10);
+    const minutesNum = parseInt(paperMinutes, 10);
+    if (isPaper && (!Number.isFinite(yearNum) || yearNum < 2000 || yearNum > 2100)) {
+      setError('A previous paper needs its exam year (e.g. 2024).');
+      return;
+    }
     setSaving(true);
     try {
       const now = Date.now();
+      // Paper metadata rides on the bank row; allPapers reads exactly these
+      // fields (type/year/timeMinutes; time defaults to ~1 min per question).
+      const paperFields = isPaper ? {
+        type: 'previous_paper',
+        year: yearNum,
+        ...(Number.isFinite(minutesNum) && minutesNum > 0 ? { timeMinutes: minutesNum } : {}),
+      } : {};
       const bank = isEdit ? {
         ...existingBank,
+        ...paperFields,
+        // Switching an existing paper back to a practice set must SHED the tag.
+        ...(!isPaper && existingBank.type === 'previous_paper' ? { type: undefined, year: undefined, timeMinutes: undefined } : {}),
         name: name.trim(),
         description: description.trim(),
         questions,
@@ -521,6 +547,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
         name: name.trim(),
         description: description.trim(),
         questions,
+        ...paperFields,
         version: 1,
         visibility: visibility === 'private' ? 'private' : 'public',
         // Brand-new public banks should be discoverable via the home "What's new"
@@ -543,9 +570,44 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
       <TopBar title={isEdit ? 'Edit question set' : 'New question set'} onBack={onBack} feedback={{ screen: "Bank editor" }} />
       <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-32 pt-2">
 
+        {/* What kind of set — practice bank vs official previous paper */}
+        <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Set type</div>
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          {[
+            { val: 'practice', title: 'Practice bank', desc: 'Feeds Quick, Mock, Topic and Advanced tests. Explanations required.' },
+            { val: 'previous_paper', title: 'Previous paper', desc: 'Appears in the Previous Papers archive, timed, original order. Explanations optional.' },
+          ].map(opt => {
+            const active = bankType === opt.val;
+            return (
+              <button key={opt.val} onClick={() => setBankType(opt.val)}
+                      className="no-tap-highlight text-left p-3 rounded-xl transition-all"
+                      style={{ background: active ? T.primary + '12' : T.surface,
+                               border: `1.5px solid ${active ? T.primary : T.border}`, color: T.ink }}>
+                <div className="font-display text-sm font-semibold mb-1" style={{ color: active ? T.primary : T.ink }}>{opt.title}</div>
+                <div className="text-[11px] leading-snug" style={{ color: T.muted }}>{opt.desc}</div>
+              </button>
+            );
+          })}
+        </div>
+
+        {isPaper && (
+          <div className="grid grid-cols-2 gap-2 mb-4">
+            <div>
+              <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Exam year</div>
+              <input value={paperYear} onChange={e => setPaperYear(e.target.value)} placeholder="2024"
+                     inputMode="numeric" className="w-full rounded-xl px-4 py-3 text-sm" style={inputStyle} />
+            </div>
+            <div>
+              <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Time (minutes)</div>
+              <input value={paperMinutes} onChange={e => setPaperMinutes(e.target.value)} placeholder="auto: 1/question"
+                     inputMode="numeric" className="w-full rounded-xl px-4 py-3 text-sm" style={inputStyle} />
+            </div>
+          </div>
+        )}
+
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Set name</div>
         <input value={name} onChange={e => setName(e.target.value)}
-               placeholder="e.g. NORCET 2024 PYQ Set 1"
+               placeholder={isPaper ? 'e.g. AIIMS NORCET 2024 Mains' : 'e.g. NORCET 2024 PYQ Set 1'}
                className="w-full rounded-xl px-4 py-3 mb-4 text-sm" style={inputStyle} />
 
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Description (optional)</div>
@@ -625,6 +687,9 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>
           {isEdit || questions.length > 0 ? 'Add more questions' : 'Add questions'}
         </div>
+
+        {/* R2 figure uploader — get public URLs for the `image` fields */}
+        <MediaUploadHelper />
 
         {/* Last-import summary */}
         {lastAdded && (

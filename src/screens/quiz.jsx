@@ -22,7 +22,7 @@ import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
 import { Tip } from '../ui/tooltip.jsx';
 import { Card, Button, Pill, PyqBadge, TopBar, requestFeedback } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
-import { QuestionImage, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
+import { QuestionImage, QuestionVideo, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { ReferenceLookupModal } from './reference.jsx';
@@ -585,6 +585,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
         {/* P17 — optional image, shown between stem and options */}
         <QuestionImage q={q} />
+        <QuestionVideo q={q} />
 
         {/* Hint (Quick Practice only, and only if question has one) */}
         {hintsAllowed && q.hint && !submitted && (

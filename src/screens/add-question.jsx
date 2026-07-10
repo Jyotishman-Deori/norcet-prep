@@ -10,6 +10,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { Button, TopBar } from '../ui/primitives.jsx';
 import { TOPICS } from '../data/seed.js';
 import BulkImport from './bulk-import.jsx';
+import MediaFields from '../ui/media-fields.jsx';
 
 function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
@@ -24,6 +25,8 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
   const [memoryTip, setMemoryTip] = useState('');
   const [difficulty, setDifficulty] = useState('');
   const [source, setSource] = useState('');
+  const [image, setImage] = useState('');
+  const [video, setVideo] = useState('');
 
   const toggleCorrect = (i) => {
     if (type === 'mcq') setCorrect([i]);
@@ -47,7 +50,9 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
       custom: true,
       ...(memoryTip.trim() ? { memoryTip: memoryTip.trim() } : {}),
       ...(difficulty ? { difficulty } : {}),
-      ...(source.trim() ? { source: source.trim() } : {})
+      ...(source.trim() ? { source: source.trim() } : {}),
+      ...(image.trim() ? { image: image.trim() } : {}),
+      ...(video.trim() ? { video: video.trim() } : {})
     });
   };
 
@@ -133,6 +138,9 @@ function AddQuestion({ onSave, onSaveBulk, onBack, existingCustomCount }) {
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Source (optional)</div>
         <input value={source} onChange={e => setSource(e.target.value)} placeholder="e.g. NORCET 2023 PYQ"
                className="w-full rounded-xl px-4 py-3 mb-4 text-sm" style={inputStyle} />
+
+        {/* Media (image upload to R2 / video link) */}
+        <MediaFields image={image} video={video} onImage={setImage} onVideo={setVideo} />
 
         {/* Question */}
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Question</div>

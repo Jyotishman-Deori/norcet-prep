@@ -18,7 +18,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   Activity, AlertCircle, AlertTriangle, BellRing, Check, CheckSquare, Database, EyeOff, Flag, HelpCircle, Layers, Lightbulb, LogOut, Plus,
-  RefreshCw, ScrollText, Send, ShieldCheck, SlidersHorizontal, Square, Ticket, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles
+  RefreshCw, ScrollText, Send, ShieldCheck, SlidersHorizontal, Square, Ticket, Trash2, Upload, User, TrendingUp, TrendingDown, Award, ChevronDown, Sparkles, BookOpen
 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
@@ -32,6 +32,7 @@ import ReportedQuestionModal from './reported-question-modal.jsx';
 import ContentReview from './content-review.jsx';
 import AdminStorageCheck from '../ui/admin-storage-check.jsx';
 import AdminConfigEditor from '../ui/admin-config-editor.jsx';
+import AdminContentStudio from '../ui/admin-content-studio.jsx';
 import AdminEngagement from '../ui/admin-engagement.jsx';
 import AdminWaitlist from '../ui/admin-waitlist.jsx';
 import AdminPushComposer from '../ui/admin-push-composer.jsx';
@@ -76,6 +77,7 @@ function AdminPanel({
     growth: 'coadmin', announcement: 'coadmin', manageAdmins: 'coadmin',
     'storage-check': 'coadmin', config: 'coadmin', engagement: 'coadmin',
     waitlist: 'coadmin', push: 'coadmin', audit: 'coadmin',
+    'content-studio': 'coadmin',
   };
   useEffect(() => {
     if (view !== 'dashboard' && VIEW_MIN[view] && !can(VIEW_MIN[view])) setView('dashboard');
@@ -1387,6 +1389,10 @@ function AdminPanel({
     return <AdminStorageCheck onBack={backToDash} />;
   }
 
+  if (view === 'content-studio') {
+    return <AdminContentStudio onBack={backToDash} actorName={profile && profile.displayName} />;
+  }
+
   if (view === 'config') {
     return <AdminConfigEditor onBack={backToDash} actorName={profile && profile.displayName} />;
   }
@@ -1566,6 +1572,17 @@ function AdminPanel({
             hint="Approve AI-drafted questions"
             onClick={() => setView('content-review')}
             signal={<Sparkles size={18} style={{ color: T.muted }} />} />
+
+          {/* Content Studio — Co-Admin+ (grows dosage/cards/reference/quotes live) */}
+          {can('coadmin') && (
+          <AdminTile
+            icon={<BookOpen size={22} style={{ color: T.sec.learn }} />}
+            accent={T.sec.learn}
+            label="Content Studio"
+            hint="Dosage · cards · reference · quotes"
+            onClick={() => setView('content-studio')}
+            signal={<Plus size={18} style={{ color: T.muted }} />} />
+          )}
 
           {/* Storage self-test / Live config / Engagement / Push / Waitlist /
               Audit log — all Co-Admin+ (app-wide behavior, private data,

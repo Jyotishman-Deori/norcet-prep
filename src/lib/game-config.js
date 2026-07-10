@@ -98,6 +98,13 @@ export const DEFAULTS = {
     singleSession: false,
   },
 
+  // Media hosting (Cloudflare R2). Question images/clips live in the owner's
+  // R2 bucket (zero egress); the ADMIN app uploads via the media-sign Edge
+  // Function (presigned PUT; credentials are Supabase secrets, never here).
+  // publicBase is the bucket's public URL (r2.dev or custom domain), shown in
+  // admin help copy only. Pasting full URLs always works regardless.
+  media: { publicBase: '' },
+
   // Internal (test/staff) accounts — profile ids or uids. These accounts are
   // excluded from the leaderboard, trending, engagement stats and analytics,
   // client-side (internal-accounts.js) AND server-side (kv-write skips their

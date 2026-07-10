@@ -9,10 +9,57 @@
 // bridge). No data / profile / storage coupling — pure presentation.
 // =====================================================================
 import React, { useState, useRef, useEffect } from 'react';
-import { AlertCircle, Square, Volume2 } from 'lucide-react';
+import { AlertCircle, Square, Volume2, Play, ExternalLink } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicName } from '../lib/topics.js';
+import { youTubeId, youTubeThumb, youTubeEmbed } from '../lib/media.js';
 import HelpfulBulb from './helpful-bulb.jsx';
+
+
+// Optional video attached to a question (`q.video`, an https link). YouTube
+// links render as a thumbnail card that swaps to the privacy-enhanced embed
+// on tap (nothing loads from YouTube until the student chooses to play);
+// any other link renders as an external "Watch video" card.
+function QuestionVideo({ q }) {
+  const { theme: T } = useTheme();
+  const [playing, setPlaying] = useState(false);
+  useEffect(() => { setPlaying(false); }, [q && q.id]);
+  if (!q || !q.video) return null;
+  const id = youTubeId(q.video);
+  if (id && playing) {
+    return (
+      <div className="mb-4 rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}`, aspectRatio: '16/9' }}>
+        <iframe src={`${youTubeEmbed(id)}&autoplay=1`} title="Question video"
+                width="100%" height="100%" frameBorder="0" allow="autoplay; encrypted-media; picture-in-picture"
+                allowFullScreen style={{ display: 'block' }} />
+      </div>
+    );
+  }
+  if (id) {
+    return (
+      <button onClick={() => setPlaying(true)}
+              className="no-tap-highlight relative w-full mb-4 rounded-xl overflow-hidden active:scale-[0.99] transition"
+              style={{ border: `1px solid ${T.border}`, aspectRatio: '16/9', background: '#000' }}
+              aria-label="Play question video">
+        <img src={youTubeThumb(id)} alt="" loading="lazy"
+             className="absolute inset-0 w-full h-full" style={{ objectFit: 'cover', opacity: 0.85 }} />
+        <span className="absolute inset-0 flex items-center justify-center">
+          <span className="w-14 h-14 rounded-full flex items-center justify-center"
+                style={{ background: 'rgba(0,0,0,0.62)', border: '2px solid rgba(255,255,255,0.9)' }}>
+            <Play size={22} fill="#FFF" style={{ color: '#FFF', marginLeft: 3 }} />
+          </span>
+        </span>
+      </button>
+    );
+  }
+  return (
+    <a href={q.video} target="_blank" rel="noopener noreferrer"
+       className="no-tap-highlight mb-4 flex items-center gap-2.5 rounded-xl px-3.5 py-3 text-sm font-medium"
+       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.primary }}>
+      <Play size={16} /> Watch the video for this question <ExternalLink size={13} style={{ color: T.muted }} />
+    </a>
+  );
+}
 
 
 function QuestionImage({ q }) {
@@ -121,4 +168,4 @@ function HelpfulToggle({ questionId, explanation, profileId }) {
   );
 }
 
-export { HelpfulToggle, QuestionImage, TTSButton };
+export { HelpfulToggle, QuestionImage, QuestionVideo, TTSButton };

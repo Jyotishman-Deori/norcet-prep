@@ -425,7 +425,10 @@ Deno.serve(async (req: Request) => {
     // 3) Staff-only keys. faq: is Moderator+ (FAQ authoring is community
     // control); announcement:/qgate:/game_config stay Co-Admin+ — they change
     // what EVERY user sees or how the app behaves.
-    if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:") || key === "game_config") {
+    // cpack: = Content Studio packs (dosage/conceptCards/reference/quotes),
+    // public read, admin-authored. Co-Admin+, same 20/hr cap as other admin
+    // content writes. Growing app content without a code deploy.
+    if (key.startsWith("announcement:") || key.startsWith("faq:") || key.startsWith("qgate:") || key.startsWith("cpack:") || key === "game_config") {
       const need: StaffRole = key.startsWith("faq:") ? "moderator" : "coadmin";
       if (!atLeast(role, need)) return json({ error: `Forbidden: ${need === "moderator" ? "staff" : "co-admin or above"} only` }, 403);
       // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).

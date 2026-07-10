@@ -37,7 +37,7 @@ import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/prim
 import PageContainer from '../ui/page-container.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
-import { QuestionImage, HelpfulToggle } from '../ui/question-widgets.jsx';
+import { QuestionImage, QuestionVideo, HelpfulToggle } from '../ui/question-widgets.jsx';
 import {
   GuestSavePrompt, MotivationCard, ShareScoreButton, TimeQuadrant
 } from '../ui/result-cards.jsx';
@@ -758,6 +758,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
           <div className="font-display text-xl leading-snug mb-6" style={{ color: T.ink }}>{q.q}</div>
           {/* P17 — optional image, shown between stem and options */}
           <QuestionImage q={q} />
+          <QuestionVideo q={q} />
 
           <div className="space-y-2.5">
             {q.options.map((opt, i) => {
@@ -1158,6 +1159,7 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
                     <div className="text-sm font-medium mb-3 leading-snug" style={{ color: T.ink }}>{q.q}</div>
                     {/* P17 — optional image in review */}
                     <QuestionImage q={q} />
+                    <QuestionVideo q={q} />
 
                     <div className="space-y-1.5 mb-3">
                       {q.options.map((opt, i) => {

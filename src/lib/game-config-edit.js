@@ -36,7 +36,8 @@ export function setAtPath(obj, path, value) {
 }
 
 // Field/section schema. Each field: { path, label, type, min, max, step, help, prefix, suffix }.
-// type: 'slider' | 'int' | 'money' (₹) | 'toggle' | 'idlist' (array of account ids).
+// type: 'slider' | 'int' | 'money' (₹) | 'toggle' | 'idlist' (array of account ids)
+//       | 'text' (short free string, trimmed).
 export const SECTIONS = [
   {
     id: 'xp', title: 'Levelling & XP', icon: 'Gauge',
@@ -83,6 +84,14 @@ export const SECTIONS = [
     fields: [
       { path: 'security.singleSession', label: 'Single-device sessions', type: 'toggle',
         help: 'ON = logging in on a new device signs out all older devices at their next sync (anti account-sharing for paid plans). Keep OFF during testing, testers use multiple devices.' },
+    ],
+  },
+  {
+    id: 'media', title: 'Media hosting', icon: 'Image',
+    blurb: 'Cloudflare R2 bucket that stores question images (uploads go through the media-sign broker).',
+    fields: [
+      { path: 'media.publicBase', label: 'R2 public base URL', type: 'text',
+        help: 'The bucket public URL, e.g. https://pub-xxxx.r2.dev or your custom media domain. Upload credentials are Supabase secrets (see docs/media-r2.md), never stored here.' },
     ],
   },
   {
@@ -153,6 +162,9 @@ export function sanitizeConfig(cfg) {
     } else if (f.type === 'idlist') {
       // accepts an array or a comma/whitespace string; stores a clean array
       out = setAtPath(out, f.path, normalizeInternalIds(getAtPath(out, f.path)));
+    } else if (f.type === 'text') {
+      const v = getAtPath(out, f.path);
+      out = setAtPath(out, f.path, typeof v === 'string' ? v.trim() : '');
     } else {
       out = setAtPath(out, f.path, clampNum(getAtPath(out, f.path), f));
     }
@@ -164,7 +176,7 @@ export function sanitizeConfig(cfg) {
 export function validateConfig(cfg) {
   const errors = [];
   for (const f of ALL_FIELDS) {
-    if (f.type === 'toggle' || f.type === 'idlist') continue;
+    if (f.type === 'toggle' || f.type === 'idlist' || f.type === 'text') continue;
     const raw = getAtPath(cfg, f.path);
     const n = Number(raw);
     if (!Number.isFinite(n)) { errors.push(`${f.label}: must be a number`); continue; }

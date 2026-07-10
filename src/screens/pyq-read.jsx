@@ -18,6 +18,7 @@ import { topicName, topicColor } from '../lib/topics.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
+import { QuestionImage, QuestionVideo } from '../ui/question-widgets.jsx';
 
 const WINDOW = 20;
 
@@ -132,6 +133,10 @@ function PyqRead({ paper, bookmarks, onToggleBookmark, profileId, isAdmin = fals
                     </button>
                   )}
                 </div>
+
+                {/* Media round — image PYQs render their figure/video in read mode too. */}
+                <QuestionImage q={q} />
+                <QuestionVideo q={q} />
 
                 <div className="space-y-1.5 mb-3">
                   {q.options.map((opt, oi) => {

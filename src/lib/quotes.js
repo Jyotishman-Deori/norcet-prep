@@ -10,6 +10,7 @@
 // =====================================================================
 import { safeStorage } from './safe-storage.js';
 import { KEYS } from './keys.js';
+import { cpackKey, normalizePack, mergeQuotes } from './content-packs.js';
 
 export const QUOTES = [
   // Marcus Aurelius — Meditations
@@ -85,21 +86,47 @@ export const QUOTES = [
   { text: "I am the master of my fate, I am the captain of my soul.", source: "William Ernest Henley, Invictus" },
 ];
 
+// Admin-authored extra quotes (cpack:quotes), merged OVER the bundled base.
+// Loaded lazily on first getNextQuote and refreshed in the background so the
+// list keeps growing without a code deploy. The sync-ish API is preserved:
+// the first call may still use base only; subsequent calls include the pack.
+let _quotes = QUOTES;
+let _packLoaded = false;
+async function loadQuotePack() {
+  if (_packLoaded) return;
+  _packLoaded = true;
+  try {
+    const r = await safeStorage.get(cpackKey('quotes'), true);   // shared read
+    let raw = r && r.value ? r.value : null;
+    if (raw) { try { await safeStorage.set('cpackcache:quotes', raw, false); } catch (e) {} }
+    else {
+      const m = await safeStorage.get('cpackcache:quotes', false);
+      raw = m && m.value ? m.value : null;
+    }
+    if (raw) {
+      const pack = normalizePack(JSON.parse(raw));
+      if (pack && Array.isArray(pack.items) && pack.items.length) _quotes = mergeQuotes(QUOTES, pack.items);
+    }
+  } catch (e) { /* base only */ }
+}
+
 // Pick the next unseen quote; reset the cycle once every quote has shown.
 export async function getNextQuote() {
+  loadQuotePack();   // fire-and-forget; applies from the next call once resolved
+  const list = _quotes;
   let shown = [];
   try {
     const r = await safeStorage.get(KEYS.QUOTES_SHOWN);
     if (r && r.value) shown = JSON.parse(r.value);
   } catch (e) {}
 
-  if (!Array.isArray(shown) || shown.length >= QUOTES.length) shown = [];
+  if (!Array.isArray(shown) || shown.length >= list.length) shown = [];
 
-  const available = QUOTES.map((_, i) => i).filter(i => !shown.includes(i));
-  const pool = available.length ? available : QUOTES.map((_, i) => i);
+  const available = list.map((_, i) => i).filter(i => !shown.includes(i));
+  const pool = available.length ? available : list.map((_, i) => i);
   const pick = pool[Math.floor(Math.random() * pool.length)];
   shown.push(pick);
 
   try { await safeStorage.set(KEYS.QUOTES_SHOWN, JSON.stringify(shown)); } catch (e) {}
-  return QUOTES[pick];
+  return list[pick];
 }

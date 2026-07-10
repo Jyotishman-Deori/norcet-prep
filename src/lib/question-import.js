@@ -8,14 +8,18 @@
 import { parseCsvLine } from './utils.js';
 import { resolveTopicId } from './topics.js';
 
-export function validateQuestionFields(q) {
+export function validateQuestionFields(q, opts = {}) {
+  // requireExp=false is the PREVIOUS-PAPER concession: official papers ship
+  // answer-only; explanations get authored over time. Everything else keeps
+  // demanding an explanation (the app's core promise).
+  const requireExp = opts.requireExp !== false;
   const errs = [];
   if (!q.q || typeof q.q !== 'string' || !q.q.trim()) errs.push('Missing question text');
   if (!Array.isArray(q.options) || q.options.length < 2) errs.push('Need ≥2 options');
   else if (q.options.some(o => !o || typeof o !== 'string' || !o.trim())) errs.push('Empty option');
   if (!Array.isArray(q.correct) || q.correct.length === 0) errs.push('Missing correct answer(s)');
   else if (q.correct.some(c => !Number.isInteger(c) || c < 0 || c >= (q.options?.length || 0))) errs.push('Correct index out of range');
-  if (!q.exp || typeof q.exp !== 'string' || !q.exp.trim()) errs.push('Missing explanation');
+  if (requireExp && (!q.exp || typeof q.exp !== 'string' || !q.exp.trim())) errs.push('Missing explanation');
   if (q.type && !['mcq', 'msq'].includes(q.type)) errs.push('type must be mcq or msq');
   if (q.type === 'mcq' && q.correct && q.correct.length !== 1) errs.push('mcq needs exactly 1 correct');
   if (q.difficulty && !['easy', 'medium', 'hard'].includes(q.difficulty)) errs.push('difficulty must be easy/medium/hard');
@@ -34,7 +38,7 @@ function normalizeQuestion(raw, idPrefix) {
     q: raw.q.trim(),
     options: raw.options.map(o => o.trim()),
     correct: raw.correct,
-    exp: raw.exp.trim(),
+    exp: typeof raw.exp === 'string' ? raw.exp.trim() : '',
     wrong: raw.wrong || {},
     // Session 1 — optional memory tip (intuition anchor). Accept either the
     // CSV column `memory_tip` or a JSON `memoryTip` field; omit when blank.
@@ -44,6 +48,9 @@ function normalizeQuestion(raw, idPrefix) {
     ...(raw.source ? { source: String(raw.source).trim() } : {}),
     // P17 — preserve an optional image URL / data-URI if the bank provides one.
     ...(raw.image ? { image: String(raw.image).trim() } : {}),
+    // Media round — optional VIDEO link (YouTube preferred; any https URL).
+    // Rendered by QuestionVideo between the stem and the options.
+    ...(raw.video ? { video: String(raw.video).trim() } : {}),
     // P16 — preserve optional PYQ provenance fields when an imported bank
     // supplies them (matches the documented bank schema). Purely additive: a
     // question without these stays exactly as before. No stored-schema change
@@ -106,12 +113,13 @@ function parseQuestionInput(text, format) {
 }
 
 // Run parse + validate together. Returns { valid, invalid, parseError }
-export function processQuestionInput(text, format, idPrefix = 'q') {
+// opts.requireExp=false relaxes the explanation rule (previous papers only).
+export function processQuestionInput(text, format, idPrefix = 'q', opts = {}) {
   const parsed = parseQuestionInput(text, format);
   if (parsed.parseError) return { valid: [], invalid: [], parseError: parsed.parseError };
   const valid = [], invalid = [];
   parsed.items.forEach((q, i) => {
-    const errs = validateQuestionFields(q);
+    const errs = validateQuestionFields(q, opts);
     if (errs.length === 0) {
       valid.push(normalizeQuestion(q, idPrefix));
     } else {
@@ -152,9 +160,10 @@ export const EXAMPLE_QUESTIONS_JSON = JSON.stringify([
     source: "Park textbook"
   },
   {
-    // P17 — image-based example. `image` is OPTIONAL: a public URL (host in a
-    // Supabase `pyq-images` bucket) or, as here, an inline data URI for a quick
-    // test. The figure renders between the stem and the options.
+    // P17 — image-based example. `image` is OPTIONAL: a public URL (host on
+    // your Cloudflare R2 bucket via the admin uploader) or, as here, an inline
+    // data URI for a quick test. The figure renders between the stem and the
+    // options. `video` (also optional) takes a YouTube or https link.
     q: "Identify the figure shown above.",
     type: "mcq",
     topic: "fund",
@@ -168,7 +177,7 @@ export const EXAMPLE_QUESTIONS_JSON = JSON.stringify([
   }
 ], null, 2);
 
-export const EXAMPLE_QUESTIONS_CSV = `q,type,topic,sub,options,correct,exp,wrong,difficulty,source,image
-"Normal adult pulse rate?",mcq,fund,Vital Signs,"40-60 bpm|60-100 bpm|100-120 bpm|120-140 bpm","1","Normal adult pulse is 60-100 bpm.","0:Bradycardia;2:Mild tachycardia;3:Significant tachycardia",easy,"NORCET 2023 PYQ",
-"Signs of digoxin toxicity?",msq,pharm,Cardiac,"Yellow halos|Bradycardia|Nausea|Hypertension","0,1,2","Visual + brady + GI.","3:HTN is not digoxin toxicity",medium,"Park textbook",
-"Identify the instrument shown above.",mcq,fund,Equipment,"Laryngoscope|Otoscope|Ophthalmoscope|Stethoscope","0","Replace the image URL with your hosted PYQ image.","",easy,"Image demo","https://YOUR-PROJECT.supabase.co/storage/v1/object/public/pyq-images/example.png"`;
+export const EXAMPLE_QUESTIONS_CSV = `q,type,topic,sub,options,correct,exp,wrong,difficulty,source,image,video
+"Normal adult pulse rate?",mcq,fund,Vital Signs,"40-60 bpm|60-100 bpm|100-120 bpm|120-140 bpm","1","Normal adult pulse is 60-100 bpm.","0:Bradycardia;2:Mild tachycardia;3:Significant tachycardia",easy,"NORCET 2023 PYQ",,
+"Signs of digoxin toxicity?",msq,pharm,Cardiac,"Yellow halos|Bradycardia|Nausea|Hypertension","0,1,2","Visual + brady + GI.","3:HTN is not digoxin toxicity",medium,"Park textbook",,
+"Identify the instrument shown above.",mcq,fund,Equipment,"Laryngoscope|Otoscope|Ophthalmoscope|Stethoscope","0","Replace the image URL with your hosted image (R2 public URL).","",easy,"Image demo","https://pub-YOURBUCKET.r2.dev/q/example.png","https://youtu.be/dQw4w9WgXcQ"`;
