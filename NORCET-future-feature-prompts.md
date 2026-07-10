@@ -10999,3 +10999,43 @@ SPEC to build WHEN referral rewards go live (freemium), agreed with owner:
    not paid.
 Build order when the time comes: ledger + activation gate + caps first.
 Recorded in memory (referral-abuse-defense.md); no code changed this round.
+
+## 2026-07-11 - Content Disclaimer: 5th legal doc + trust-building surfaces (owner: legally safe without breaking trust)
+
+Owner asked for a disclaimer (real-person names, possible wrong answers,
+general safety) implemented premium-class so it BUILDS trust. Strategy:
+every "content may contain errors" statement is paired with "and here is
+how we fix it fast" (the per-question report flow already existed).
+
+LEGAL (src/lib/legal.js): new 5th doc `disclaimer` ("Content Disclaimer"),
+plain-language, 7 sections: study aid not medical advice; mistakes can
+happen + how we fix them (human review, one-tap report, corrections ship);
+names/scenarios are fictional teaching scenarios, resemblance coincidental;
+dosage/reference values are exam-practice only, never clinical; NO
+affiliation with AIIMS/NORCET (independent tool, trademarks theirs);
+community content is authors' own; found something wrong -> report/email.
+LEGAL_VERSION 5 (bookkeeping only, version is consumed nowhere, no
+re-accept gate exists, flagged as future decision). Terms study-aid clause
+now cross-references the doc.
+
+WIRED into all legal entry points: Settings -> Legal (BadgeCheck row),
+About legal links, desktop footer. Auth consent line intentionally
+unchanged (privacy+terms is the standard pair).
+
+TRUST SURFACES: About gains "Our content promise" card (humans write and
+review, accuracy is a feature, report reaches a real person, link to full
+doc). Quiz explanation card gains a muted one-line CTA under HelpfulToggle:
+"Spot an error? Report it, every report is checked by a person." ->
+requestFeedback({screen:'Quiz', questionId}) (FeedbackModal auto-resolves
+source:'question'). Welcome onboarding gains a tiny second note line
+(human-reviewed, one tap reports). No popups, no forced re-accept anywhere.
+
+i18n: 4 new keys (quiz.reportErrorCta, welcome.demo.contentNote,
+settings.legal.disclaimer(+Sub)) in en.js + all 15 ui.json (draft quality,
+title kept English where the locale keeps legal titles English);
+LOCALE_VERSION 1 -> 2; check-locales green; fonts re-subset (8 woff2).
+Legal doc BODY stays English-only (established pattern). New strings join
+the pending native locale review.
+
+Verified: 41 tests + render smoke now including two NEW entries (about,
+legal-disclaimer) + compile gate + bundle guard. Shipped 2524d2d.
