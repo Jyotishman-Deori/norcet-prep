@@ -192,6 +192,29 @@ const SCREENS = {
       onOpenNote: noop, unreadNotifCount: 3, onOpenNotifications: noop,
     });
   },
+  // Where-you-stand fix (2026-07-11): the You pill must stay INSIDE the
+  // 30-70 plot even at 0% (the screenshot overflow bug). Render all three
+  // phases; markers asserted below.
+  'where-you-stand-zero': async () => {
+    const m = await import('../../src/ui/where-you-stand-card.jsx');
+    return React.createElement(m.default, {
+      history: [{ netScore: 0, count: 100, ts: Date.now() }],
+      estimate: null, onStartAdvanced: noop, onQuick: noop,
+    });
+  },
+  'where-you-stand-mid': async () => {
+    const m = await import('../../src/ui/where-you-stand-card.jsx');
+    return React.createElement(m.default, {
+      history: [{ netScore: 47, count: 100, ts: Date.now() }],
+      estimate: null, onStartAdvanced: noop, onQuick: noop,
+    });
+  },
+  'where-you-stand-placeholder': async () => {
+    const m = await import('../../src/ui/where-you-stand-card.jsx');
+    return React.createElement(m.default, {
+      history: [], estimate: null, onStartAdvanced: noop, onQuick: noop,
+    });
+  },
   'desktop-nav-member': async () => {
     const stub = await import('./stub-app-context.jsx');
     stub.__setSmokeProfile({ premium: { active: true, tier: 'MAX', expiresAt: Date.now() + 86400000 } });
@@ -270,6 +293,13 @@ const SCREENS = {
 const MARKERS = {
   'desktop-nav': ['dnav-gold', 'dnav-link-active', 'dnav-bell-ring', 'Premium'],
   'desktop-nav-member': ['dnav-gold', 'MAX'],
+  // pill clamped inside the plot (translate(41 = x0+27) not translate(14)),
+  // plus the off-scale hint line. Markers must be SINGLE JSX strings
+  // (renderToString comment-separates adjacent text children), so the SVG
+  // aria-label template literals stand in for the pill text.
+  'where-you-stand-zero': ['about 0 percent', 'translate(41', 'sits left of it for now'],
+  'where-you-stand-mid': ['about 47 percent'],
+  'where-you-stand-placeholder': ['You appear here'],
 };
 
 let failed = 0;

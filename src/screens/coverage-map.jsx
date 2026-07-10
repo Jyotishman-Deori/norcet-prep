@@ -113,7 +113,7 @@ function CoverageMap({ onBack, onDrill }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Syllabus Coverage" onBack={onBack} feedback={{ screen: "Coverage map" }} />
-        <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-24 text-center">
           <Activity size={48} className="mx-auto mb-4" style={{ color: T.muted, opacity: 0.4 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No coverage yet</div>
           <div className="text-sm mb-6" style={{ color: T.muted }}>
@@ -130,7 +130,7 @@ function CoverageMap({ onBack, onDrill }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Syllabus Coverage" onBack={onBack} feedback={{ screen: "Coverage map" }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2">
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
           Tap a topic to see its sub-topics. Use the start button to practise just that area.
         </div>

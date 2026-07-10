@@ -134,7 +134,7 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="FAQ & Help" onBack={onBack} feedback={{ screen: 'FAQ' }} />
-      <div className="max-w-md mx-auto px-4 pb-28 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-28 pt-2">
         {/* Chat-style intro */}
         <div className="flex gap-2.5 mb-4">
           <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.primary }}>

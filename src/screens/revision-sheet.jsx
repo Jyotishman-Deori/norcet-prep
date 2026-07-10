@@ -27,7 +27,6 @@ import { buildMistakes, unresolvedCount } from '../lib/mistakes.js';
 import PremiumCribSheetModal from '../ui/premium-gate-modal.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { useBackHandler } from '../lib/back-handler.js';
-import BackToTop from '../ui/back-to-top.jsx';
 
 const PRINT_STYLES = `
 @media print {
@@ -188,7 +187,7 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
                 feedback={{ screen: tab === 'cribs' ? 'Crib sheet' : 'Revision sheet' }} />
       </div>
 
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2 revision-print-page">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2 revision-print-page">
 
         <div className="no-print mb-5">
           {/* Intro + Print/PDF (digest only — saved sheets print from their
@@ -579,7 +578,6 @@ function RevisionSheet({ onLogVisit, onBack, onOpenCrib, onStartReview, onOpenPl
         )}
         </>)}
       </div>
-      <BackToTop />
     </div>
   );
 }

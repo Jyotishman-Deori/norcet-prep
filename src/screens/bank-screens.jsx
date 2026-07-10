@@ -62,7 +62,7 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
   return (
     <div className="anim-fadeup">
       <TopBar title={bank.name} onBack={onBack} feedback={{ screen: "Bank detail" }} />
-      <div className="max-w-md mx-auto px-4 pb-32 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-32 pt-2">
 
         <Card className="p-4 mb-4" style={{ background: T.primary, border: 'none' }}>
           <div className="flex items-start justify-between gap-3 mb-2">
@@ -260,7 +260,7 @@ function BankDetail({ bank, isAdmin, isOwner, canToggleVisibility, alreadyImport
 
       {/* Bottom import bar */}
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto flex gap-2">
+        <div className="max-w-md md:max-w-3xl mx-auto flex gap-2">
           {alreadyImported.count > 0 && alreadyImported.version && alreadyImported.version < bank.version ? (
             <Button onClick={onUpdate} size="lg" className="flex-1" icon={<RefreshCw size={18} />}>
               Update to v{bank.version}
@@ -541,7 +541,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title={isEdit ? 'Edit question set' : 'New question set'} onBack={onBack} feedback={{ screen: "Bank editor" }} />
-      <div className="max-w-md mx-auto px-4 pb-32 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-32 pt-2">
 
         <div className="text-xs uppercase tracking-wider font-semibold mb-2" style={{ color: T.muted }}>Set name</div>
         <input value={name} onChange={e => setName(e.target.value)}
@@ -892,7 +892,7 @@ function BankEditor({ existingBank, profile, onSave, onBack }) {
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto">
+        <div className="max-w-md md:max-w-3xl mx-auto">
           <Button onClick={handleSave} disabled={saving || !name.trim() || questions.length === 0}
                   size="lg" className="w-full"
                   icon={saving ? <RefreshCw size={18} className="animate-spin" /> : <Save size={18} />}>

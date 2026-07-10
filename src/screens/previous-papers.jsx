@@ -229,7 +229,7 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
     <div className="anim-fadeup">
       <style>{PPR_CSS}</style>
       <TopBar title="Previous Year Papers" onBack={onBack} feedback={{ screen: "Previous year papers" }} />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
         <div className="text-sm leading-relaxed mb-3" style={{ color: T.muted }}>
           <b style={{ color: T.inkSoft }}>Attempt</b> a paper as a full computer-based test, or{' '}
           <b style={{ color: T.inkSoft }}>Read</b> through its questions and answers for calm,

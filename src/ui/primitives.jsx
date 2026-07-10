@@ -204,12 +204,12 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
          style={{ top: 'var(--dnav-h, 0px)',
                   background: tbBg, borderBottom: `1px solid ${T.borderSoft}`,
                   paddingTop: 'env(safe-area-inset-top, 0px)' }}>
-      {/* Inner content tracks the app content width on PC (matches PageContainer
-          size="app": max-w-5xl + px-8), so the back button aligns to the left
-          edge of the page and the actions to the right edge — a proper app
-          header instead of a tiny 448px island floating mid-screen. Mobile and
-          tablet widths are unchanged. */}
-      <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-3 max-w-md md:max-w-3xl lg:max-w-5xl mx-auto">
+      {/* Inner content tracks the DESKTOP NAV width on PC (max-w-6xl + px-8),
+          so the back button lines up flush under the DesktopNav brand and the
+          action chips under its Menu button — the two stacked bars read as one
+          coherent header instead of two misaligned rails. Mobile and tablet
+          widths are unchanged. */}
+      <div className="flex items-center justify-between px-4 md:px-6 lg:px-8 py-3 max-w-md md:max-w-3xl lg:max-w-6xl mx-auto">
         <div className="flex items-center gap-3 min-w-0 flex-1">
           {onBack && (
             <Tip text={t('topbar.backTip')}>
@@ -218,7 +218,7 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
                   left with a soft spring, plus a light haptic tap. */}
               <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} onBack(); }}
                       aria-label={t('topbar.back')}
-                      className="no-tap-highlight group flex items-center justify-center w-9 h-9 -ml-1 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
+                      className="no-tap-highlight tbar-btn group flex items-center justify-center w-9 h-9 -ml-1 flex-shrink-0 rounded-full"
                       style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
                 <ArrowLeft size={18} color={T.ink}
                            className="transition-transform duration-200 ease-[cubic-bezier(.34,1.56,.64,1)] group-active:-translate-x-[3px]" />
@@ -227,7 +227,7 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
           )}
           <div className="font-display text-lg lg:text-xl truncate" style={{ color: T.ink }}>{title}</div>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {/* AI Learning Notes — FIRST (leftmost) action so it holds the same
               slot on every screen regardless of which other actions are present.
               Home has a custom header that renders <NoteButton/> too. */}
@@ -275,7 +275,7 @@ function NoteButton() {
     <Tip text={t('topbar.noteTip')}>
       <button onClick={() => { try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(6); } catch (e) {} requestNote(); }}
               aria-label={t('nav.openStudyNotes')}
-              className="no-tap-highlight flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-full active:scale-90 transition-transform duration-150"
+              className="no-tap-highlight tbar-btn flex items-center justify-center w-9 h-9 flex-shrink-0 rounded-full"
               style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
         <NotebookPen size={16} style={{ color: T.primary }} />
       </button>
@@ -294,7 +294,7 @@ function FeedbackButton({ screen, questionId, profileId, profileName }) {
   return (
     <Tip text={t('topbar.reportTip')}>
     <button onClick={() => requestFeedback({ screen, questionId, profileId: pid, profileName: pname })}
-            className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
+            className="no-tap-highlight tbar-btn flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-full flex-shrink-0"
             style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}
             aria-label={t('topbar.reportAria')}>
       <AlertCircle size={15} style={{ color: T.accent }} />
@@ -312,7 +312,7 @@ function HelpButton({ screen }) {
   return (
     <Tip text={t('topbar.helpTip')}>
       <button onClick={() => requestHelp({ screen })}
-              className="no-tap-highlight flex items-center gap-1.5 pl-2 pr-2.5 py-1.5 rounded-full active:scale-95 transition-transform flex-shrink-0"
+              className="no-tap-highlight tbar-btn flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-full flex-shrink-0"
               style={{ background: T.surfaceWarm, border: `1px solid ${T.border}`, color: T.inkSoft }}
               aria-label={t('topbar.helpAria')}>
         <HelpCircle size={15} style={{ color: T.primary }} />

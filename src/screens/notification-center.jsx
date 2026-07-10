@@ -380,7 +380,7 @@ function NotificationCenter({ onBack, onNavigate }) {
                 ) : null
               } />
 
-      <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-24">
         {/* 1 — Daily Briefing (always present) */}
         <BriefingCard />
 

@@ -107,7 +107,7 @@ function StudyMethods({ onBack, onNavigate, progress }) {
     return (
       <div className="min-h-screen" style={{ background: T.bg }}>
         <TopBar title="Study method" onBack={() => setOpenId(null)} feedback={{ screen: 'Study methods' }} />
-        <div className="max-w-md mx-auto px-4 pt-3 pb-28">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-28">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
                  style={{ background: T.primary + '15' }}>
@@ -162,7 +162,7 @@ function StudyMethods({ onBack, onNavigate, progress }) {
   return (
     <div className="min-h-screen" style={{ background: T.bg }}>
       <TopBar title="Study Methods" onBack={onBack} feedback={{ screen: 'Study methods' }} />
-      <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-24">
         <div className="mb-4">
           <div className="font-display text-lg font-semibold mb-1" style={{ color: T.ink }}>
             Study smarter, not just harder

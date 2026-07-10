@@ -75,7 +75,7 @@ function DoubtsScreen({ onBack, onNavigate }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="My Doubts" onBack={onBack} feedback={{ screen: 'Doubts' }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>Doubts</div>
           <div className="text-sm leading-relaxed" style={{ color: T.muted }}>

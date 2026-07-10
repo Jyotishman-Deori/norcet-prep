@@ -27,7 +27,7 @@ function MyReports({ reports, loading, seenMap, onRefresh, onBack }) {
                   <RefreshCw size={18} style={{ color: T.muted }} className={loading ? 'animate-spin' : ''} />
                 </button>
               } />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2">
         <div className="text-xs leading-relaxed mb-3 px-1" style={{ color: T.muted }}>
           Reports and suggestions you've sent, newest first, with any reply from the admin.
         </div>

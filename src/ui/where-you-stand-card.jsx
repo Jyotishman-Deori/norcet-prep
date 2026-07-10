@@ -125,10 +125,18 @@ export default function WhereYouStandCard({ history, estimate, onStartAdvanced, 
         </div>
       )}
 
-      {/* The self-locating ladder — reference scale always; marker per phase. */}
-      <Ladder T={T} accent={accent} mode={mode} pct={markPct}
-              low={hasData ? proj.low : null} high={hasData ? proj.high : null}
-              hasBand={hasBand} grown={grown} groups={groups} />
+      {/* The self-locating ladder — reference scale always; marker per phase.
+          Width-capped so the zoomed 30-70 window doesn't stretch on desktop. */}
+      <div className="max-w-xl mx-auto">
+        <Ladder T={T} accent={accent} mode={mode} pct={markPct}
+                low={hasData ? proj.low : null} high={hasData ? proj.high : null}
+                hasBand={hasBand} grown={grown} groups={groups} />
+        {markPct != null && markPct < LO && (
+          <div className="text-[10.5px] text-center mt-1" style={{ color: T.muted }}>
+            The scale zooms into the 30 to 70% band. Your mark sits left of it for now.
+          </div>
+        )}
+      </div>
 
       {/* Legend: each distinct threshold + the categories that share it */}
       <div className="mt-2.5 space-y-1">
@@ -233,6 +241,15 @@ function Ladder({ T, accent, mode = 'placeholder', pct, low, high, hasBand, grow
   const hasMark = isReal || isEst;
   const xPct = hasMark ? xOf(pct) : 0;
   const fillW = (isReal && grown) ? xPct - x0 : 0;
+  // The pill is a callout: its stem stays at the true (clamped) mark x, but
+  // the pill body itself never leaves the plot. Without this, a mark at or
+  // below the 30% window start drew the pill half outside the SVG (the
+  // "You 0%" overflow bug). Half-widths match the rect widths below.
+  const clampPill = (x, half) => Math.max(x0 + half, Math.min(x1 - half, x));
+  const pillX = clampPill(xPct, 27);
+  const estPillX = clampPill(xPct, 31);
+  // Marks under the window start get an explicit "off scale to the left" cue.
+  const belowWindow = hasMark && pct < LO;
 
   return (
     <svg viewBox={`0 0 ${W} 112`} width="100%" role="img"
@@ -271,11 +288,17 @@ function Ladder({ T, accent, mode = 'placeholder', pct, low, high, hasBand, grow
         );
       })}
 
+      {/* off-scale cue: a small chevron at the window start pointing left */}
+      {belowWindow && (
+        <path d={`M ${x0 + 11} ${trackY + r - 4.5} L ${x0 + 4.5} ${trackY + r} L ${x0 + 11} ${trackY + r + 4.5} Z`}
+              fill={accent} opacity="0.75" />
+      )}
+
       {isReal && (
         <>
-          {/* solid "You" pill + stem */}
+          {/* solid "You" pill (kept inside the plot) + stem at the true mark */}
           <line x1={xPct} y1={36} x2={xPct} y2={trackY - 1} stroke={accent} strokeWidth="1.5" opacity="0.5" />
-          <g transform={`translate(${xPct}, 24)`}>
+          <g transform={`translate(${pillX}, 24)`}>
             <rect x="-26" y="-13" width="52" height="22" rx="11" fill={accent} />
             <text x="0" y="2" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff">You {Math.round(pct)}%</text>
           </g>
@@ -283,9 +306,9 @@ function Ladder({ T, accent, mode = 'placeholder', pct, low, high, hasBand, grow
       )}
       {isEst && (
         <>
-          {/* dashed, pulsing estimate marker */}
+          {/* dashed, pulsing estimate marker (pill kept inside the plot) */}
           <line x1={xPct} y1={36} x2={xPct} y2={trackY - 1} stroke={accent} strokeWidth="1.5" opacity="0.45" strokeDasharray="3 2.5" />
-          <g transform={`translate(${xPct}, 24)`}>
+          <g transform={`translate(${estPillX}, 24)`}>
             <rect x="-30" y="-13" width="60" height="22" rx="11" fill="none" stroke={accent} strokeWidth="1.4" strokeDasharray="3 2.5">
               <animate attributeName="opacity" values="0.5;1;0.5" dur="2.2s" repeatCount="indefinite" />
             </rect>

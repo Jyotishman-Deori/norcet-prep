@@ -14,7 +14,6 @@ import {
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { TopBar } from '../ui/primitives.jsx';
 import { buildActivityFeed } from '../lib/milestones.js';
-import BackToTop from '../ui/back-to-top.jsx';
 
 const PAGE = 30; // rows revealed per scroll "page"
 
@@ -128,7 +127,6 @@ export default function ActivityLog({ onBack }) {
           </>
         )}
       </div>
-      <BackToTop />
     </div>
   );
 }

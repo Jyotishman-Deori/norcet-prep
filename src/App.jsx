@@ -271,6 +271,7 @@ import BottomNav, { BOTTOM_NAV_SCREENS } from './ui/bottom-nav.jsx';
 // DESKTOP SHELL — the persistent top navbar + Duolingo-style footer that
 // replace the bottom bar (and the phone-era headers) on ≥1024px screens.
 import DesktopNav, { DNAV_EXCLUDED_SCREENS } from './ui/desktop-nav.jsx';
+import BackToTop, { BTT_EXCLUDED_SCREENS, BTT_SCREEN_PROPS } from './ui/back-to-top.jsx';
 import AppFooter from './ui/app-footer.jsx';
 import { useBreakpoint } from './lib/responsive.js';
 // Study-companion rename modal (opened from the note popup pencil + Settings).
@@ -4357,6 +4358,13 @@ export default function App() {
       <NoteHost />
       <CompanionRenameHost />
       {showFab && !NOTE_FAB_HIDDEN.has(nav.screen) && !bottomNavVisible && <NoteFab />}
+
+      {/* Back-to-top FAB — ONE global mount for every scrollable screen on
+          every device (window-scroll; rides above the bottom nav via
+          --bnav-h). Immersive screens opt out via BTT_EXCLUDED_SCREENS. */}
+      {!BTT_EXCLUDED_SCREENS.has(nav.screen) && (
+        <BackToTop key={nav.screen} {...(BTT_SCREEN_PROPS[nav.screen] || {})} />
+      )}
 
       {/* DESKTOP SHELL (≥1024px) — the persistent top navbar, LinkedIn-style:
           mounted on every screen except DNAV_EXCLUDED_SCREENS (exam players,

@@ -853,6 +853,19 @@ export const fontStyles = `
 .dnav-gold:hover::after { left: 125%; }
 .dnav-gold:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(217,119,6,0.28); }
 .dnav-gold:active { transform: scale(0.95); }
+/* Back-to-top "launch": the arrow darts up and out, then drops back in —
+   plays once per click (element re-keyed). Ends at transform:none. */
+@keyframes bttLaunch {
+  0%   { transform: none; opacity: 1; }
+  38%  { transform: translateY(-14px); opacity: 0; }
+  40%  { transform: translateY(12px); opacity: 0; }
+  100% { transform: none; opacity: 1; }
+}
+.btt-launch { animation: bttLaunch 0.55s cubic-bezier(0.22,1,0.36,1); }
+/* Shared TopBar action chips: same hover lift language as .dnav-icon. */
+.tbar-btn { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.tbar-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.10); }
+.tbar-btn:active { transform: scale(0.92); }
 .foot-link { position: relative; }
 .foot-link:hover { color: var(--foot-hover, var(--primary)) !important; }
 .foot-link::after {
@@ -888,12 +901,13 @@ export const fontStyles = `
   .bnav-in, .bnav-pop, .search-row-in,
   .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
   .nnudge-in, .nnudge-bell, .nnudge-done,
-  .about-in, .dnav-in, .brand-pop, .dnav-bell-ring,
+  .about-in, .dnav-in, .brand-pop, .dnav-bell-ring, .btt-launch,
   .wl-in, .wl-bloom, .wl-ring, .wl-tick { animation: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
-  .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after { transition: none !important; }
+  .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after, .tbar-btn { transition: none !important; }
   .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child,
-  .dnav-gold:hover, .dnav-gold:active, .dnav-icon:active, .dnav-link:active { transform: none !important; }
+  .dnav-gold:hover, .dnav-gold:active, .dnav-icon:active, .dnav-link:active,
+  .tbar-btn:hover, .tbar-btn:active { transform: none !important; }
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }

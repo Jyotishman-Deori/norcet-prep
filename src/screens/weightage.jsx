@@ -124,7 +124,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} />
-        <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-24 text-center">
           <Activity size={48} className="mx-auto mb-4" style={{ color: T.muted, opacity: 0.4 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>Not enough papers yet</div>
           <div className="text-sm mb-6" style={{ color: T.muted }}>
@@ -146,7 +146,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Exam weightage" onBack={onBack} feedback={{ screen: "Exam weightage" }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-4">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-4">
 
         <div className="text-xs mb-3" style={{ color: T.muted }}>
           Derived from {loaded.length} previous year paper{loaded.length === 1 ? '' : 's'}

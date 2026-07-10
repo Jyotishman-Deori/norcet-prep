@@ -61,7 +61,7 @@ function WeakAreasScreen({ onBack, onStartWeakQuiz }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Weak areas" onBack={onBack} feedback={{ screen: "Weak areas" }} />
-        <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-24 text-center">
           <AlertCircle size={48} className="mx-auto mb-4" style={{ color: T.muted, opacity: 0.4 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>Nothing to fix yet</div>
           <div className="text-sm mb-6" style={{ color: T.muted }}>
@@ -76,7 +76,7 @@ function WeakAreasScreen({ onBack, onStartWeakQuiz }) {
     return (
       <div className="anim-fadeup">
         <TopBar title="Weak areas" onBack={onBack} feedback={{ screen: "Weak areas" }} />
-        <div className="max-w-md mx-auto px-4 pt-12 pb-24 text-center">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-12 pb-24 text-center">
           <Check size={48} className="mx-auto mb-4" style={{ color: T.success, opacity: 0.6 }} />
           <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No weak areas right now</div>
           <div className="text-sm" style={{ color: T.muted }}>
@@ -90,7 +90,7 @@ function WeakAreasScreen({ onBack, onStartWeakQuiz }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Weak areas" onBack={onBack} feedback={{ screen: "Weak areas" }} />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
         <div className="text-xs mb-4 leading-relaxed px-1" style={{ color: T.muted }}>
           Topics where your accuracy is below 80%, worst first. Tap Start on any row to drill 5 questions. Questions you've previously got wrong are prioritised.
         </div>

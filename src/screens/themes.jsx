@@ -46,7 +46,7 @@ function ThemesScreen({ themeMode, onSetColorTheme, onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Themes" onBack={onBack} feedback={{ screen: 'Settings' }} />
-      <div className="max-w-md mx-auto px-4 pt-3 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-3 pb-24">
 
         <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
           Pick a mode and a colour. Changes apply instantly across the whole app.

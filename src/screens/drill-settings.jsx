@@ -49,7 +49,7 @@ function DrillSettings({ onBack }) {
   return (
     <div className="anim-fadeup">
       <TopBar title="Drill Tests settings" onBack={onBack} feedback={{ screen: 'Drill Tests settings' }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-3">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-3">
         <Card className="p-3.5 mb-4" style={{ background: T.primary + '0C', border: `1px solid ${T.primary}26` }}>
           <div className="flex items-start gap-2.5">
             <Sparkles size={16} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />

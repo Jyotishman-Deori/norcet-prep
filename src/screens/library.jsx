@@ -20,7 +20,6 @@ import { useTheme, useProfile, useData } from '../lib/app-context.jsx';
 import { bankVisibility, isBankOwner } from '../lib/banks.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
-import BackToTop from '../ui/back-to-top.jsx';
 
 function VisibilityPill({ bank }) {
   const { theme: T } = useTheme();
@@ -330,7 +329,6 @@ function Library({ banks, profileId, loading, onRefresh, onOpen, onCreateNew, on
           </div>
         )}
       </PageContainer>
-      <BackToTop />
     </div>
   );
 }

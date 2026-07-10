@@ -169,7 +169,7 @@ function LearnTopics({ onPick, onBack, onOpenDoubts, onStartQuickTest, weakTopic
   return (
     <div className="anim-fadeup">
       <TopBar title="Learn topic wise" onBack={onBack} feedback={{ screen: "Learn: topics" }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2">
         <div className="px-1 mb-4">
           <div className="font-display text-2xl font-semibold mb-1" style={{ color: T.ink }}>
             {mode === 'quick' ? 'Quick revision' : mode === 'path' ? 'Your learning path' : 'Concept cards'}

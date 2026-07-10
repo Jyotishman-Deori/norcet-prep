@@ -106,14 +106,14 @@ function LearnCards({ topicId, subFilter, onBack }) {
       return (
         <div className="anim-fadeup">
           <TopBar title="Concept cards" onBack={onBack} />
-          <div className="max-w-md mx-auto px-4">
+          <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8">
             <ContentGate loading={loading} error={error} onRetry={reload} label="concept cards" />
           </div>
         </div>
       );
     }
     return (
-      <div className="p-6 max-w-md mx-auto text-center anim-fadeup">
+      <div className="p-6 max-w-md md:max-w-3xl mx-auto text-center anim-fadeup">
         <div className="font-display text-xl mb-3" style={{ color: T.ink }}>Cards coming soon</div>
         <div className="text-sm mb-6" style={{ color: T.muted }}>This topic's concept cards are being prepared.</div>
         <Button onClick={onBack}>Back</Button>
@@ -174,7 +174,7 @@ function LearnCards({ topicId, subFilter, onBack }) {
       <TopBar title={subFilter ? `${topicName(topicId)} · ${subFilter}` : topicName(topicId)} onBack={onBack}
               feedback={{ screen: 'Learn: cards' }}
               right={<div className="text-xs font-semibold tabular-nums" style={{ color: T.muted }}>{index + 1} / {allCards.length}</div>} />
-      <div className="max-w-md mx-auto px-4 pb-36 pt-4">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-36 pt-4">
         {/* Progress — tappable segments jump to any card */}
         {useDots ? (
           <div className="flex gap-1.5 mb-2">
@@ -293,7 +293,7 @@ function LearnCards({ topicId, subFilter, onBack }) {
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3 backdrop-blur-md"
            style={{ background: IS_DARK ? 'rgba(21,19,15,0.9)' : T.bg + 'E6', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto flex gap-3">
+        <div className="max-w-md md:max-w-3xl mx-auto flex gap-3">
           <Button variant="ghost" onClick={goPrev} disabled={!canPrev} size="lg" className="flex-1"
                   icon={<ChevronLeft size={18} />}>
             Previous

@@ -88,7 +88,7 @@ function IkigaiScreen({ onBack, onStartQuick, ikigaiQuest = null, onStartQuest, 
   return (
     <div className="anim-fadeup">
       <TopBar title="Ikigai Compass" onBack={onBack} feedback={{ screen: 'Ikigai Compass' }} />
-      <div className="max-w-md mx-auto px-4 pb-24 pt-2">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pb-24 pt-2">
         <div className="text-[12px] leading-relaxed mb-2 px-1 text-center" style={{ color: T.muted }}>
           <span style={{ color: T.ink, fontWeight: 600 }}>Ikigai</span>: your reason for being. Four sides of readiness,
           drifting together as you practise.

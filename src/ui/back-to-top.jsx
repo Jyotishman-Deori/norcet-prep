@@ -13,15 +13,37 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowUp } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
-import { prefersReducedMotion } from '../lib/juice.js';
+import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
+import { playTapSound } from '../lib/sound.js';
 
 const RING_R = 15;
 const RING_C = 2 * Math.PI * RING_R;
+
+// Screens where the global FAB (App root) must NOT float: active test
+// players and clinical games own their bottom edge (fixed action bars,
+// gameplay), and the Knowledge Map is a full canvas. Gates (auth/waitlist)
+// are short pages where the 240px threshold simply never trips, so they
+// need no entry. ⚠ RULE: new immersive screens must join this set (same
+// convention as DNAV_EXCLUDED_SCREENS / RAGE_EXCLUDED_SCREENS).
+export const BTT_EXCLUDED_SCREENS = new Set([
+  'quiz', 'advanced-test', 'paper-test', 'dosage-run',
+  'skill-setup', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter',
+  'distractor-assassin', 'three-am-chart', 'shift-survival', 'tie-breaker',
+  'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
+  'knowledge-map',
+]);
+
+// Per-screen tweaks for the global mount (screens with extra fixed chrome
+// at the bottom edge that the FAB should clear).
+export const BTT_SCREEN_PROPS = {
+  'crib-sheet': { bottomOffset: 60, className: 'crib-no-print' },
+};
 
 export default function BackToTop({ threshold = 240, label = 'Top', bottomOffset = 0, className = '' }) {
   const { theme: T } = useTheme();
   const [show, setShow] = useState(false);
   const [hover, setHover] = useState(false);
+  const [launch, setLaunch] = useState(0); // re-keys the arrow to replay the launch animation
   const ringRef = useRef(null);
   const raf = useRef(0);
 
@@ -50,6 +72,9 @@ export default function BackToTop({ threshold = 240, label = 'Top', bottomOffset
   }, [threshold]);
 
   const toTop = () => {
+    playTapSound();
+    haptic(HAPTIC.PLACE);
+    setLaunch((c) => c + 1); // the arrow "launches" as the page starts moving
     try { window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); }
     catch (e) { window.scrollTo(0, 0); }
   };
@@ -80,7 +105,9 @@ export default function BackToTop({ threshold = 240, label = 'Top', bottomOffset
                   strokeLinecap="round" strokeDasharray={RING_C} strokeDashoffset={RING_C}
                   transform="rotate(-90 18 18)" />
         </svg>
-        <ArrowUp size={13} style={{ transform: hover && !reduced ? 'translateY(-1px)' : 'none', transition: reduced ? 'none' : 'transform 0.2s' }} />
+        <span key={launch} className={'inline-flex' + (launch ? ' btt-launch' : '')} style={{ lineHeight: 0 }}>
+          <ArrowUp size={13} style={{ transform: hover && !reduced ? 'translateY(-1px)' : 'none', transition: reduced ? 'none' : 'transform 0.2s' }} />
+        </span>
       </span>
       <span className="text-xs font-semibold">{label}</span>
     </button>

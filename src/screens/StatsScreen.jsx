@@ -21,7 +21,6 @@ import EmptyState from '../ui/empty-state.jsx';
 // NEW-07 — the Advanced analytics tab (what-if v2, doubt matrix, leak radar,
 // topper benchmarks). Rides in this screen's existing lazy chunk.
 import AdvancedStatsPanel from './stats-advanced.jsx';
-import BackToTop from '../ui/back-to-top.jsx';
 
 // FEAT-03 — Topic-trend ranges. Short ranges bucket by day/week, longer ones by
 // calendar month, with thresholds scaled to how much data a window can hold
@@ -719,7 +718,6 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
         )}
         </>)}
       </PageContainer>
-      <BackToTop />
     </div>
   );
 }

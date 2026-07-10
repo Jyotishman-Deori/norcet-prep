@@ -136,7 +136,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
       return (
         <div className="anim-fadeup">
           <TopBar title="Bookmark" onBack={() => setSelectedId(null)} feedback={{ screen: "Bookmark detail" }} />
-          <div className="max-w-md mx-auto px-4 pt-16 pb-24 text-center">
+          <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-16 pb-24 text-center">
             <div className="text-sm" style={{ color: T.muted }}>This bookmark is no longer available.</div>
             <Button onClick={() => setSelectedId(null)} className="mt-4">Back to index</Button>
           </div>
@@ -154,7 +154,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
         <div className="anim-fadeup">
           <TopBar title="Bookmark" onBack={() => setSelectedId(null)}
                   feedback={{ screen: "Bookmark detail", questionId: q.id }} />
-          <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+          <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
             <div className="inline-flex items-center gap-1.5 mb-3 px-2.5 py-1 rounded-full text-[11px] font-medium"
                  style={{ background: T.primary + '18', color: T.primary }}>
               <Calculator size={12} /> Dosage calc{q.type ? ` · ${q.type}` : ''}
@@ -202,7 +202,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
       <div className="anim-fadeup">
         <TopBar title="Bookmark" onBack={() => setSelectedId(null)}
                 feedback={{ screen: "Bookmark detail", questionId: q.id }} />
-        <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+        <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
 
           {/* Topic pill */}
           {topic && (
@@ -341,7 +341,7 @@ function BookmarksScreen({ onToggleBookmark, onBack, onStartQuiz }) {
     <div className="anim-fadeup">
       <TopBar title={`Bookmarks (${itemIds.size})`} onBack={onBack}
               feedback={{ screen: "Bookmarks" }} />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
 
         <div className="text-xs leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
           Tap a question below to open it with its full answer and explanation.

@@ -19,7 +19,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { BookmarkPlus, CalendarDays, Check, ChevronLeft, Home, Lightbulb, Minus, Printer, Share2, X, Headphones } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
-import BackToTop from '../ui/back-to-top.jsx';
 // #5 — save this sheet into the Revision section (dated, printable).
 import { addCrib, cribSignature, findCribBySig } from '../lib/cribs.js';
 import { Tip } from '../ui/tooltip.jsx';
@@ -328,7 +327,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
                   </div>
                 } />
       </div>
-      <div className="max-w-md mx-auto px-4 pt-2 pb-28">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-28">
         {/* PREMIUM RESULTS HEADER (issues round) — clear typographic
             hierarchy, structured score summary and an intentional Add-to-
             Revision action, instead of the old plain metadata list. */}
@@ -428,7 +427,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       {/* fixed bottom bar */}
       <div className="crib-no-print fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
-        <div className="max-w-md mx-auto flex gap-2">
+        <div className="max-w-md md:max-w-3xl mx-auto flex gap-2">
           <button onClick={onBack}
                   className="no-tap-highlight flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-medium active:scale-95 transition"
                   style={{ background: T.surface, color: T.inkSoft, border: `1px solid ${T.border}` }}>
@@ -454,7 +453,6 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       <ListenBar ctl={listen} label="Revision" bottomOffset={76} />
 
       {/* floating scroll-to-top — shared premium FAB, lifted above the action bar */}
-      <BackToTop bottomOffset={60} className="crib-no-print" />
     </div>
   );
 }

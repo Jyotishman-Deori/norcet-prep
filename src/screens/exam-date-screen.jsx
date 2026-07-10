@@ -170,7 +170,7 @@ function ExamDateScreen({ allQuestionsCount, onSave, onClear, onSaveTarget, onBa
   return (
     <div className="anim-fadeup">
       <TopBar title="Study plan" onBack={onBack} feedback={{ screen: "Study plan" }} />
-      <div className="max-w-md mx-auto px-4 pt-2 pb-24">
+      <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-2 pb-24">
         <ExamDateEditor allQuestionsCount={allQuestionsCount} onSave={onSave} onClear={onClear} onSaveTarget={onSaveTarget} />
       </div>
     </div>

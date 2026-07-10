@@ -31,7 +31,7 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
   const scoreColor = pct >= 75 ? T.success : pct >= 50 ? T.primary : T.error;
 
   return (
-    <div className="anim-fadeup max-w-md mx-auto px-4 pt-8 pb-24">
+    <div className="anim-fadeup max-w-md md:max-w-3xl mx-auto px-4 md:px-6 lg:px-8 pt-8 pb-24">
       <MotivationCard pct={pct} label="calc" />
 
       {/* Score summary */}
