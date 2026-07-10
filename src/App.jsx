@@ -4509,7 +4509,8 @@ export default function App() {
                      onQuick={() => navigate({ screen: 'quick-setup' })}
                      onResetData={clearAll}
                      onStartAdvanced={() => navigate({ screen: 'advanced-setup' })}
-                     onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })} />
+                     onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })}
+                     onReviewQuestions={(qIds) => startQuiz({ mode: 'wrong', qIds })} />
         </Suspense>
       )}
 

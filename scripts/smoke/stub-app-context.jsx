@@ -26,9 +26,16 @@ export function useTheme() {
   return { theme: themeProxy, isDark: true, themeMode: 'dark', setThemeMode: () => {} };
 }
 
+// Smoke-only data override: entry.jsx can install a populated fixture so
+// screens whose interesting code paths need real history (Stats Advanced
+// tab: doubt matrix, leak radar, benchmarks) actually EXECUTE them instead
+// of early-returning on the empty DEFAULT_DATA.
+let smokeData = null;
+export function __setSmokeData(d) { smokeData = d; }
+
 export function useData() {
   return {
-    data: DEFAULT_DATA,
+    data: smokeData || DEFAULT_DATA,
     allQuestions: SEED_QUESTIONS,
     setData: () => {},
   };

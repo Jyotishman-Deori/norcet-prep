@@ -18,6 +18,10 @@ import CalibrationCard from '../ui/calibration-card.jsx';
 import { calibrationFromItems } from '../lib/calibration.js';
 import PacingCard from '../ui/pacing-card.jsx';
 import EmptyState from '../ui/empty-state.jsx';
+// NEW-07 — the Advanced analytics tab (what-if v2, doubt matrix, leak radar,
+// topper benchmarks). Rides in this screen's existing lazy chunk.
+import AdvancedStatsPanel from './stats-advanced.jsx';
+import BackToTop from '../ui/back-to-top.jsx';
 
 // FEAT-03 — Topic-trend ranges. Short ranges bucket by day/week, longer ones by
 // calendar month, with thresholds scaled to how much data a window can hold
@@ -72,9 +76,12 @@ function buildTrendBuckets(range, nowMs) {
   return { buckets, windowStart: buckets.length ? buckets[0].start : nowMs };
 }
 
-function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced }) {
+function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced, onReviewQuestions }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
+  // NEW-07 — Overview keeps today's dashboard byte-for-byte; Advanced holds
+  // the analytics engine. Local state on purpose: tabs are not back-intercepted.
+  const [statsTab, setStatsTab] = useState('overview'); // 'overview' | 'advanced'
   const [topicSort, setTopicSort] = useState('weak'); // 'weak' | 'strong'
   const [chartReady, setChartReady] = useState(false);
   useEffect(() => { const t = setTimeout(() => setChartReady(true), 280); return () => clearTimeout(t); }, []);
@@ -276,6 +283,29 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
     <div className="anim-fadeup">
       <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
       <PageContainer size="content" className="pb-24 pt-2">
+
+        {/* NEW-07 — Overview / Advanced tab rail (leaderboard pill pattern). */}
+        <div className="flex gap-1.5 mb-4">
+          {[{ id: 'overview', label: 'Overview' }, { id: 'advanced', label: 'Advanced' }].map(tb => {
+            const active = statsTab === tb.id;
+            return (
+              <button key={tb.id} onClick={() => setStatsTab(tb.id)}
+                      className="no-tap-highlight flex-1 text-[13px] font-semibold px-3 py-2 rounded-full transition-all active:scale-95"
+                      style={{ background: active ? T.primary : T.surface,
+                               color: active ? '#FFF' : T.inkSoft,
+                               border: `1.5px solid ${active ? T.primary : T.border}`,
+                               boxShadow: active ? `0 2px 8px ${T.primary}33` : 'none' }}>
+                {tb.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {statsTab === 'advanced' && (
+          <AdvancedStatsPanel onReviewQuestions={onReviewQuestions} onStartAdvanced={onStartAdvanced} />
+        )}
+
+        {statsTab === 'overview' && (<>
 
         {/* #1 — Where you stand: real marks (Advanced Test) OR an estimate from
             everyday practice, on the official ladder. Estimate = accuracy with
@@ -684,7 +714,9 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
             </button>
           </div>
         )}
+        </>)}
       </PageContainer>
+      <BackToTop />
     </div>
   );
 }

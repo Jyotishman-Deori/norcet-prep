@@ -168,6 +168,39 @@ const SCREENS = {
     const m = await import('../../src/ui/app-footer.jsx');
     return React.createElement(m.default, { onNavigate: noop });
   },
+  // NEW-07 Advanced analytics. DEFAULT_DATA is empty (totalAttempted 0), which
+  // would early-return StatsScreen and skip every new hook — so these two
+  // entries install a POPULATED fixture via the stub's __setSmokeData first.
+  // They are the last entries; the fixture staying installed afterwards is
+  // harmless. 'stats' proves the tab shell + populated Overview; the panel
+  // entry executes the doubt-matrix / leak-radar / benchmark useMemo bodies.
+  'stats': async () => {
+    const stub = await import('./stub-app-context.jsx');
+    const { DEFAULT_DATA } = await import('../../src/data/seed.js');
+    const history = {};
+    SEED_QUESTIONS.slice(0, 12).forEach((q, i) => {
+      history[q.id] = { attempts: [
+        { ts: 1000 + i, correct: i % 3 !== 0, timeMs: 42000, pick: [0], conf: ['sure', 'unsure', 'guess'][i % 3] },
+        { ts: 2000 + i, correct: i % 2 === 0, timeMs: 55000, pick: [1], conf: 'sure' },
+      ] };
+    });
+    stub.__setSmokeData({
+      ...DEFAULT_DATA,
+      stats: { ...DEFAULT_DATA.stats, totalAttempted: 24, totalCorrect: 14, streakCurrent: 3, streakBest: 5,
+               dailyHistory: [{ date: '2026-07-09', attempted: 12, correct: 7 }, { date: '2026-07-10', attempted: 12, correct: 7 }] },
+      history,
+      advancedTestHistory: [{ ts: Date.now(), count: 100, correct: 52, wrong: 30, blank: 18, netScore: 42, accuracy: 63, elapsedSec: 3200 }],
+    });
+    const m = await import('../../src/screens/StatsScreen.jsx');
+    return React.createElement(m.default, {
+      onBack: noop, onQuick: noop, onResetData: noop,
+      onPracticeTopic: noop, onStartAdvanced: noop, onReviewQuestions: noop,
+    });
+  },
+  'stats-advanced': async () => {
+    const m = await import('../../src/screens/stats-advanced.jsx');
+    return React.createElement(m.default, { onReviewQuestions: noop, onStartAdvanced: noop });
+  },
 };
 
 let failed = 0;
