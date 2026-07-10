@@ -10633,6 +10633,65 @@ any Level Up drill or on the Knowledge Map must produce nothing.
 
 ---
 
+## 2026-07-10 — Multi-language UI: 15 languages shipped to dev (i18n complete)
+
+Full UI internationalization built and verified overnight across 4 commits
+(6aa9ad4, eb43e1b, b4c4834, 680160f), all on dev, NOT promoted to main:
+every translation is machine-drafted and marked "DRAFT - needs native
+speaker review before production use"; owner device QA gates promotion.
+
+SCOPE RULE (codified in src/lib/i18n.js header): UI chrome ONLY (nav,
+buttons, headings, toasts, settings). Questions, options, explanations,
+concept cards, drug names, dosages stay English forever: NORCET is an
+English exam and mistranslated clinical terms are a safety risk.
+
+Languages (15 + en): hi, hin-en (Hinglish), bn, ta, te, mr, ml, pa, gu, kn
++ Northeast: asm (Assamese), mni (Meiteilon, Bengali script), brx (Bodo,
+Devanagari), lus (Mizo), nag (Nagamese). Urdu dropped by owner (avoids the
+RTL refactor). brx is deliberately conservative: only attested Bodo words
+translated, rest kept English (never Hindi-substituted).
+
+Architecture: dependency-free src/lib/i18n.js (flat keys, {var}
+interpolation, en bundled + statically imported, others lazy-fetched from
+public/locales/<code>/ui.json?v=LOCALE_VERSION, IndexedDB-cached mirroring
+content.js, missing key -> English never blank); I18nContext/useI18n() 4th
+context in app-context; boot restore in main.jsx (1500ms race, localStorage
+LANG_HINT fast path, IDB authoritative); 559 keys extracted from the 9
+high-traffic surfaces (bottom-nav, desktop-nav, TopBar, nav-drawer, home,
+quiz chrome, welcome, auth, settings); Spotify-style Language picker
+(settings-language.jsx) + welcome suggestion chip; <html lang> set per
+locale. Fonts: 8 subsetted Noto woff2 (23-72KB each; instancer wdth=100
+wght=400:700 + pyftsubset --layout-features='*' which is MANDATORY for
+Indic shaping) built by scripts/build-locale-fonts.mjs; shared-script
+unions (devanagari=hi+mr+brx, bengali=bn+asm+mni); FontFace runtime
+activation, system-font fallback so tofu is impossible. SW: locales/ and
+fonts/ excluded from precache (verified in dist/sw.js), runtime CacheFirst
+locale-assets-v1 serves them offline.
+
+Gates (each proven to fail on planted bad input before being trusted):
+scripts/check-locales.mjs (key+placeholder parity vs en, em-dash/-- ban,
+DRAFT marker, en mirror sync; wired into npm test) and
+scripts/verify-locales-render.mjs (server-renders real Home under all 16
+locales; asserts translations reach markup, no key leaks, no em dashes).
+
+Cost: initial bundle +~8KB gz (574.26 -> 582.33KB; en dict + module + the
+picker). Per selected language, one-time lazy download: ui.json 11-15KB gz
++ font 23-72KB (Latin locales hin-en/lus/nag: JSON only). English-only
+users download nothing extra.
+
+Ops note for future overnight runs: translation agents die silently to
+session limits and laptop sleep. What worked: WRITE-THE-FILE-FIRST agent
+prompts, wave launches, Sonnet fallback (model:"sonnet") when Fable
+exhausts, progressive dev commits after each gate-green batch, a file
+watcher instead of trusting agent notifications.
+
+Owner TODO before main: device QA per language (switch, persist across
+relaunch, offline relaunch, quiz content stays English, 320px overflow
+check in bn/ta/ml), then native-speaker passes, esp. hin-en register and
+brx depth.
+
+---
+
 ## 2026-07-09 — Connectivity pill (offline caution + back-online affirmation)
 
 src/ui/offline-indicator.jsx at the app root (75ac0f6): amber floating pill
