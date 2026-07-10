@@ -412,13 +412,26 @@ async function selectAllRows(query: string, cap = 20000): Promise<Row[]> {
   }
   return out;
 }
-async function snapshot(): Promise<Row[]> {
-  if (_snap && Date.now() - _snap.ts < 60_000) return _snap.rows;
-  const rows = await selectAllRows(
-    "select=id,status,state,created_at,own_referral_code,referred_by_code&order=created_at.asc",
-  );
-  _snap = { rows, ts: Date.now() };
-  return _snap.rows;
+// Single-flight rebuild: the snapshot is a paginated multi-request scan, and
+// its natural stampede moment is right after a batch approval nulls it while
+// many students poll `status` at once. Concurrent misses now await the ONE
+// in-flight rebuild instead of each re-scanning the table in parallel.
+let _snapInflight: Promise<Row[]> | null = null;
+function snapshot(): Promise<Row[]> {
+  if (_snap && Date.now() - _snap.ts < 60_000) return Promise.resolve(_snap.rows);
+  if (_snapInflight) return _snapInflight;
+  _snapInflight = (async () => {
+    try {
+      const rows = await selectAllRows(
+        "select=id,status,state,created_at,own_referral_code,referred_by_code&order=created_at.asc",
+      );
+      _snap = { rows, ts: Date.now() };
+      return rows;
+    } finally {
+      _snapInflight = null;
+    }
+  })();
+  return _snapInflight;
 }
 // Referral use-count per code. Rejected rows don't count (fakes); everything
 // else does — an expired row is still a real classmate who joined.

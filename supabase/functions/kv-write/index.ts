@@ -431,6 +431,10 @@ Deno.serve(async (req: Request) => {
       // Cap admin panel data writes at 20/hour per admin id (PROMPT 21).
       const rl = await rateHit("admin-write", session.id, 20, 60 * 60);
       if (!rl.allowed) return tooMany(rl.retryAfter);
+      // Event-driven invalidation: this isolate's own config cache must not
+      // serve the pre-edit flags for up to 60s after the admin just changed
+      // them here. (Other functions/isolates still converge via their TTL.)
+      if (key === "game_config") _cfgCache = null;
       return op === "del" ? await deleteRow(key) : await writeRow(key, String(body.value ?? ""));
     }
 

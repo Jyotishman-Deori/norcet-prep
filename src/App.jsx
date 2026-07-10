@@ -3523,6 +3523,28 @@ export default function App() {
     refreshEntitlement();
   }, [profile, sessionResolving, refreshEntitlement]);
 
+  // Freshness on RETURN, not on a timer (caching audit 2026-07-11): a PWA tab
+  // can stay open for days, and "once per session" quietly becomes "days
+  // stale" for the two server-owned states that must not lag: the premium
+  // entitlement (admin grant/revoke) and game_config flags (gates, waitlist,
+  // test accounts). When the app comes back to the foreground after 5+
+  // minutes away, re-pull both. Event-driven (visibility), throttled, and
+  // fully offline-safe (both refreshers keep the cached copy on failure).
+  useEffect(() => {
+    let last = Date.now();
+    const onVisible = () => {
+      if (typeof document === 'undefined' || document.visibilityState !== 'visible') return;
+      const now = Date.now();
+      if (now - last < 5 * 60 * 1000) return;
+      last = now;
+      loadGameConfig().then(() => syncInternalFlag(profileRef.current)).catch(() => {});
+      const p = profileRef.current;
+      if (p && !isGuestProfile(p)) refreshEntitlement();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refreshEntitlement]);
+
   // ===== Single-session enforcement, client half (blueprint Part 3) =====
   // The storage brokers fire this hook on any 401. Only SESSION_EXPIRED (the
   // "logged in from another device" guard) force-signs-out; a plain stale
