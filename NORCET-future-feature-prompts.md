@@ -11127,3 +11127,40 @@ renderToString comment-separates adjacent JSX text children, so markers
 must be single-string literals like the aria-label). Live-verified
 (btt-launch in served bundle). Owner: check errlog after this shell-wide
 round.
+
+## 2026-07-11 - Caching strategy audit (external prompt) + 3 targeted fixes
+
+Owner pasted caching-strategy-audit-prompt.md (written for a hypothetical
+Redis/Next.js/RevenueCat app). Audited the REAL app against its 3 questions
+(what may be stale, who busts it on change, stampede behavior) instead of
+building its imagined stack.
+
+VERDICT: the architecture was already mostly right. Money paths are
+UNCACHED by design (subscription resolveEntitlement, roleOf/admin lookups,
+all kv reads = fresh DB per request; rate limits DB/KV-backed, not
+per-isolate). Static tiers are textbook (hashed assets immutable,
+index.html/sw.js must-revalidate, CONTENT_VERSION/LOCALE_VERSION =
+write-time event invalidation). Server config caches are 7 module-level
+60s-TTL vars (game_config flags x6 + waitlist snapshot); waitlist snapshot
+was already event-invalidated on join/approve.
+
+3 REAL GAPS FIXED (71844a3 + kv-write & waitlist deployed):
+1. kv-write now nulls its own _cfgCache when an admin writes game_config
+   through it (writer busts its cache; other functions/isolates converge
+   via 60s TTL, the intended safety net).
+2. waitlist snapshot() rebuild is SINGLE-FLIGHTED: the real stampede point
+   was post-batch-approval (invalidateSnapshot then a burst of status polls
+   each re-running the up-to-20-page scan). Concurrent misses now await one
+   in-flight rebuild.
+3. Client foreground freshness: PWA tabs live for days, so "refresh once
+   per session" for premium entitlement + game_config could mean days
+   stale. New visibilitychange effect re-pulls both when the app returns
+   to foreground after 5+ min (event-driven, throttled, offline-safe).
+
+FLAGGED, NOT BUILT: (a) deleted-account tokens stay HMAC-valid up to 60d
+for owner-prefix writes (no per-request credential check unless
+singleSession is ON, and its missing-row path is fail-OPEN) - candidate
+for docs/security/findings.md + revisit at payments launch; (b) CONTENT_/
+LOCALE_VERSION bumps rely on human discipline (already a CLAUDE.md hard
+rule); (c) no shared cross-isolate cache possible on free tier, 60s TTL
+stays the convergence bound (deliberate, documented).
