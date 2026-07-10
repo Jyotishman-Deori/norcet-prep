@@ -10633,6 +10633,48 @@ any Level Up drill or on the Knowledge Map must produce nothing.
 
 ---
 
+## 2026-07-10 (later) — High-Stress Drill + integrity round (ALL LIVE)
+
+**High-Stress Drill (547cb26) — completes NEW-07:** Advanced Test setup
+toggle runs the real Prelims format via src/lib/section-lock.js (5 x 20 Q
+x 18 rigid min at 100 Qs; proportional short tail, never <1 min). Engine
+takes an opt-in `sections` prop (null = byte-identical classic path):
+per-section clock that LOCKS for good, fenced nav/keyboard/palette (lock
+glyphs), section strip + draining bar, the spec's final-90s stress cue
+(amber -> red heartbeat at 30s; reduced-motion = colours only), early
+"Lock section" with confirm. BUG FOUND+FIXED while wiring: the timer's
+auto-submit closed over mount-time answers, so a test running to 0:00
+submitted an EMPTY sheet (manual submits masked it). Answers now flow
+through a ref.
+
+**Integrity round (7a21b74) + preview fix (2143384):**
+1. Bank preview: first shipped options-with-answer-marked (mistake:
+   spoiled the bank), owner call -> stems only, then upgraded to a
+   "What's inside" card: topic mix bars, difficulty split, PYQ share,
+   zero content leak (Duolingo skill-outline approach).
+2. Duplicate "aptitude" in admin Bank health: uploads accept free-text
+   topic ids and a bank shipped `topic:"aptitude"` =/= `apt`. NEW
+   resolveTopicId() in src/lib/topics.js (aliases + display names ->
+   canonical ids) applied at upload normalization, Bank health, Stats
+   grouping/trends, topic-practice pool filters, weak topics, clinical
+   fallbacks; name/color/icon lookups resolve too. Server data still
+   holds the alias strings: views merge them; re-saving the bank in the
+   admin editor will clean the source (optional).
+3. Leaderboard accuracy = FIRST TRIES ONLY: dailyHistory rows gain
+   freshAttempted/freshCorrect (fresh = never interacted, reveals
+   included; merge.js sums them cross-device); weeklyGrowth prefers
+   fresh accuracy (legacy fallback, self-heals in a week);
+   firstAttemptTotals() publishes lifetime first-try figures on the
+   shared entry and the Accuracy tab ranks on them (copy: "only first
+   tries count"). Re-answering known questions still teaches but can't
+   buy rank.
+
+All deployed to production (student f882cff..7a21b74 on main + admin app
+via deploy:admin). 38 test files + 16-screen render smoke green.
+Remaining deferred: NEW-04 three-wave pacing, NEW-08 CBT simulator.
+
+---
+
 ## 2026-07-10 — UX feedback round (LIVE) + Advanced Stats tab (dev)
 
 **UX round (bbb08ab, deployed to PRODUCTION same day on owner's order,
