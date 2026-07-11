@@ -11643,3 +11643,77 @@ Verification: 57 test files + render smoke + compile gate + bundle guard green;
 dev boots clean and every changed module transforms. App.jsx is not smoke-rendered,
 so the deps-array declaration order was hand-checked for TDZ. Pushed to dev,
 alongside the resume commit, for the preview drive before promoting to main.
+
+## 2026-07-12 - Support Center, top-bar restructure, calculator UX, 5 fixes
+
+Nine owner review items from the live app.
+
+SUPPORT CENTER (new screens/support.jsx), owner reference: Spotify's support page.
+Hero + search, Quick help, a "Browse help articles" accordion, "Still need help"
+contact cards, and the existing donate flow as the closing CTA. The key insight is
+that the CONTENT ALREADY EXISTED: src/data/assistant-kb.js ships KB_CATEGORIES (9),
+80+ {id,cat,q,a} entries and QUICK_STARTS, which is exactly Spotify's structure. So
+this is a presentation layer, not a content job, and it cannot drift from the
+Ask-companion chat: add one KB entry and it shows up in both. Search is a local,
+rule-based filter over title/keywords/body. Spotify leads with "Search with AI"; we
+deliberately do NOT copy that. Zero AI, per the hard constraint. Note that
+"support" previously meant the buy-me-a-chai donate modal; that modal is untouched
+and now lives inside the hub.
+
+DESKTOP TOP BAR
+- the logo RELOADS the app, even when already on Home (owner request). Safe: the
+  bar is never rendered on the test/game players, so a reload cannot interrupt a run.
+- Premium is now the first section after the brand.
+- Learn / Level Up / Nursing Calc removed from the bar. All three stay in the
+  drawer, the footer (Nursing Calc added there) and their Home cards.
+- Settings became its own bordered gear button. It had been a 14px glyph buried
+  inside the profile chip, which the avatar completely upstaged; the chip is now a
+  quiet identity indicator rather than the hero.
+- the "+" became a NotebookPen. It was always the note button, it just did not look
+  like one.
+- The in-screen TopBar hides its duplicate note button at lg+ ONLY. On mobile there
+  is no DesktopNav, so removing it everywhere would have left phone users with no
+  note access outside Home.
+
+B2 REPEAT POOL now fed by the Advanced Test and previous-year papers. AdvancedTest
+already tracked `visited` by question id, so it is threaded out on submit AND abort.
+Submitted -> fold the whole set (a finished exam presented everything, so a blank
+answer should come back). Quit -> fold only what was actually visited, so bailing a
+100-question paper at Q3 cannot dump 97 unseen questions into the pool. Repeat pool
+ONLY: streak and totalAttempted are untouched, so the deliberate previous-year-paper
+stats model is preserved.
+
+NURSING CALCULATOR. Opening one showed a subtitle over blank rows and nothing else,
+because the result card only exists once every required field is filled. It read as
+broken. Now: a 3-step guidance strip, a form header with a live "1 of 3 filled"
+counter, and a dashed "Your answer will appear here" placeholder that names exactly
+what is still missing. A new smoke entry pins the EMPTY state, which is what a user
+actually sees first.
+
+FIXES
+- "e.g. Nova" was still shipping in the SEPARATE companion-rename modal (last round
+  only fixed the note modal). Also swept the 'Nova' fallback defaults in
+  lib/assistant.js and screens/assistant.jsx so it can never surface.
+- About's "practice questions" counted allQuestions.length, which includes questions
+  the USER imported from the Library, so the headline number silently inflated per
+  person: two users saw two different totals for the same product. It now counts the
+  app's own bank, and imports get their own honest line.
+- The Home quote's attribution read as part of the quote. Now "~ AUTHOR". NOT "--":
+  the house rule (and the check-locales gate) forbid double hyphens in display copy.
+- Language disclaimer (ui/language-disclaimer.jsx) on BOTH switch surfaces (the
+  desktop footer popover, which had none, and the Settings language page): the
+  drafts may be inaccurate, several languages are only partly translated, and they
+  should not be relied on completely. English on purpose, because a warning about
+  unreliable machine translation is worth the least in a machine translation of
+  itself. 3 new i18n keys were backfilled into all 15 packs (English drafts) so the
+  locale gate stays green.
+
+⚠ The render smoke earned its keep this round: a BACKTICK inside a comment I added
+to font-styles.js closed that file's CSS template literal early, so every screen
+importing it threw "chev is not defined". Tests and types would never have caught
+it. A warning comment now sits at that spot.
+
+Verification: 57 test files + render smoke (2 new entries: support, calc empty
+state) + compile gate + bundle guard + check-locales all green; dev boots clean and
+every changed module transforms. Pushed to dev alongside the resume + B2 commits,
+for the preview drive before promoting to main.
