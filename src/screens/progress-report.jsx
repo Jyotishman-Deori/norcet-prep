@@ -74,7 +74,7 @@ export default function ProgressReport({ onBack, onQuick, onOpenPremium }) {
       const code = referralCodeFor(profile);
       const url = buildReferralUrl(code, VIA.POSTER);
       const blob = await paintProgressReportCard({ report, url, displayUrl: displayAppUrl(), theme: T });
-      const res = await shareOrSavePng(blob, 'nurseholic-progress-report.png', {
+      const res = await shareOrSavePng(blob, 'nurseholic-progress-card.png', {
         title: 'My NurseHolic progress',
         text: `My practice progress on NurseHolic. Free NORCET nursing prep: ${url}`,
       });
@@ -99,15 +99,15 @@ export default function ProgressReport({ onBack, onQuick, onOpenPremium }) {
 
   return (
     <div>
-      <TopBar title="Progress report" onBack={onBack} />
+      <TopBar title="Progress card" onBack={onBack} />
       <div className="max-w-md md:max-w-3xl mx-auto px-4 md:px-6 pb-28 pt-2">
 
         {report.isEmpty ? (
           <div className="mt-6">
             <EmptyState
               icon={FileText}
-              title="Nothing to report yet"
-              text="Answer a few quiz questions and your progress report will appear here, ready to share or save as a PDF."
+              title="Nothing to show yet"
+              text="Answer a few quiz questions and your progress card will appear here, ready to share or save as a PDF."
               actionLabel="Start a Quick Test"
               onAction={onQuick}
             />
@@ -183,7 +183,7 @@ export default function ProgressReport({ onBack, onQuick, onOpenPremium }) {
             {locked ? (
               <Card className="p-4 mb-2 text-center">
                 <div className="text-sm font-semibold mb-1" style={{ color: T.ink }}>A premium feature</div>
-                <div className="text-xs mb-3" style={{ color: T.muted }}>Sharing and saving your progress report is part of premium.</div>
+                <div className="text-xs mb-3" style={{ color: T.muted }}>Sharing and saving your progress card is part of premium.</div>
                 <Button variant="primary" className="w-full" onClick={onOpenPremium}>See Premium</Button>
               </Card>
             ) : (

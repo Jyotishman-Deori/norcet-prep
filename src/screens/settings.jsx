@@ -299,7 +299,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <FileText size={16} style={{ color: T.inkSoft }} />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-sm" style={{ color: T.ink }}>Progress report</div>
+              <div className="font-medium text-sm" style={{ color: T.ink }}>Progress card</div>
               <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
                 A summary of your practice you can share, or save as a PDF. Made on your device.
               </div>

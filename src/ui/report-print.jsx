@@ -81,7 +81,7 @@ export function ReportPrintBody({ report }) {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap' }}>
           <div>
             <div style={{ fontFamily: SERIF, fontSize: '22px', fontWeight: 700, color: P.brand, letterSpacing: '0.2px' }}>NurseHolic</div>
-            <div style={{ fontFamily: SERIF, fontSize: '30px', fontWeight: 700, marginTop: '2px' }}>Progress Report</div>
+            <div style={{ fontFamily: SERIF, fontSize: '30px', fontWeight: 700, marginTop: '2px' }}>{R.title || 'Progress Card'}</div>
           </div>
           <div style={{ textAlign: 'right', fontFamily: SANS }}>
             <div style={{ fontSize: '15px', fontWeight: 600, color: P.ink }}>{meta.name || 'NORCET Aspirant'}</div>

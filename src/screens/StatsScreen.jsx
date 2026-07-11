@@ -325,7 +325,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
               <FileText size={17} style={{ color: T.primary }} />
             </div>
             <div className="min-w-0 flex-1 text-left">
-              <div className="text-sm font-semibold" style={{ color: T.ink }}>Progress report</div>
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>Progress card</div>
               <div className="text-xs" style={{ color: T.muted }}>Share it, or save a PDF</div>
             </div>
             <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />

@@ -16,7 +16,7 @@
 // are re-prompted to accept.
 // =====================================================================
 
-export const LEGAL_VERSION = 7;       // v7 (July 2026): Content Disclaimer covers self-generated progress reports and share cards (not certificates, not results, not verified, no rank/percentile); v6 covered the Nursing Calculator Suite (formula tool, reference ranges need local verification, results stay on device); v5 added the Content Disclaimer doc; v4 named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
+export const LEGAL_VERSION = 7;       // v7 (July 2026): Content Disclaimer covers the self-generated Progress Card and share images (not certificates, not transcripts, not results, not verified, no rank/percentile); v6 covered the Nursing Calculator Suite (formula tool, reference ranges need local verification, results stay on device); v5 added the Content Disclaimer doc; v4 named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
 export const LEGAL_UPDATED = 'July 2026';   // last reviewed
 
 // Support contact — the public-facing address (About "Email us", Privacy +
@@ -236,8 +236,8 @@ export const LEGAL = {
         body: 'Exam names such as NORCET or AIIMS are used only to describe what the content prepares you for. This app is an independent study tool. It is not affiliated with, endorsed by or connected to AIIMS, any examination authority or any government body. All trademarks belong to their respective owners.',
       },
       {
-        h: 'Progress reports and share cards',
-        body: 'The app can generate a progress report and a share card from the practice you have done inside it. These are self-generated summaries of your own activity, produced on your own device. They are not certificates, not transcripts, not results and not proof of any qualification. They carry no rank, score or percentile from any examination, and nobody verifies them, so no institution or employer should treat them as evidence of anything. The figures come only from what you did in this app, mainly quiz practice, with mock tests and previous-year papers listed on their own. They do not measure study time away from the app, and they cannot predict how you will do in a real exam. Please do not present them as an official record.',
+        h: 'Progress cards and share images',
+        body: 'The app can generate a progress card from the practice you have done inside it, saved as an image or a PDF. These are self-generated summaries of your own activity, produced on your own device. They are not certificates, not transcripts, not results and not proof of any qualification. They carry no rank, score or percentile from any examination, and nobody verifies them, so no institution or employer should treat them as evidence of anything. The figures come only from what you did in this app, mainly quiz practice, with mock tests and previous-year papers listed on their own. They do not measure study time away from the app, and they cannot predict how you will do in a real exam. Please do not present them as an official record.',
       },
       {
         h: 'Community content',

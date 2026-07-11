@@ -150,8 +150,8 @@ const STATIC_REGISTRY = [
     description: 'Accuracy, streaks and progress by topic.' },
   // "certificate" is a SEARCH keyword because that is what users type; the
   // title and description deliberately never claim to be one.
-  { id: 'progress-report', title: 'Progress report', category: 'Features',
-    keywords: ['report', 'progress', 'summary', 'pdf', 'print', 'share', 'card', 'certificate', 'achievement', 'download', 'transcript'],
+  { id: 'progress-report', title: 'Progress card', category: 'Features',
+    keywords: ['report', 'report card', 'progress', 'progress card', 'summary', 'pdf', 'print', 'share', 'card', 'certificate', 'achievement', 'download', 'transcript'],
     route: { screen: 'progress-report' },
     description: 'A shareable summary of your practice, as an image or a PDF.' },
   { id: 'ikigai', title: 'Ikigai Compass', category: 'Features',

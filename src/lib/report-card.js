@@ -34,7 +34,12 @@ import { resolveTopicId, topicName, topicColor } from './topics.js';
 import { buildMistakes, unresolvedCount } from './mistakes.js';
 
 export const REPORT_VERSION = 1;
-export const REPORT_TITLE = 'Progress Report';
+// User-facing name is "Progress Card". The plain word "report" collides with the
+// app's "report a problem" / "My reports" feedback surfaces, and "transcript"
+// would over-claim (it reads as an official academic record, which this is not,
+// and the legal disclaimer explicitly says "not a transcript"). Internal ids and
+// filenames keep the report-card / progress-report slugs.
+export const REPORT_TITLE = 'Progress Card';
 export const REPORT_SUBTITLE = 'A summary of your own practice in NurseHolic';
 
 // One line, baked onto the PNG canvas so a screenshot carries its own context

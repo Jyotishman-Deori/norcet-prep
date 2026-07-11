@@ -331,7 +331,7 @@ export function paintProgressReportCard({ report, url, displayUrl, theme = {} } 
       ctx.font = `600 40px ${SANS}`;
       ctx.fillText(ellipsize(ctx, (R.meta && R.meta.name) || 'NORCET Aspirant', W - 260), cx, 272);
       ctx.font = `700 50px ${SERIF}`;
-      ctx.fillText('Progress Report', cx, 328);
+      ctx.fillText(R.title || 'Progress Card', cx, 328);
       ctx.font = `500 25px ${SANS}`;
       ctx.fillStyle = 'rgba(255,255,255,0.74)';
       const genLine = (R.meta && R.meta.generatedOnDisplay) ? `Generated ${R.meta.generatedOnDisplay}` : 'Your practice so far';
