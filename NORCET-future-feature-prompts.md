@@ -11822,3 +11822,85 @@ skipping the dev-preview step. Single-surface deploy: no Edge Function, no publi
 (no CONTENT_VERSION bump), no admin redeploy (the gate ships free with no admin UI). Owner to
 eyeball the PNG + print preview + iOS-standalone in production and check the admin Crash
 reports log after the Vercel build.
+
+---
+
+## 2026-07-12 - Boot flash + cream bars (ONE bug), top-bar merge, Support hierarchy, Nursing Calc Test, JSON export removed (51ffd9c, LIVE)
+
+Owner review with screenshots produced six items. Three of the reported symptoms were the
+SAME root cause.
+
+THE HEADLINE: the reload flash and BOTH cream bars were one bug.
+`src/index.css` hardcoded `body { background: #FBF7ED }` and never re-themed it for dark,
+while the theme id lives in IndexedDB (read ASYNC, after mount) and `themeMode` defaulted to
+'light'. Consequences:
+- reload in dark mode flashed light; repeated reloads showed the light LOADING SCREEN
+  bleeding over Home (React's first paint was always the light palette);
+- the 10px custom scrollbar TRACK is transparent, so it revealed the cream body as a bar
+  welded to the right edge;
+- the body's iOS safe-area padding painted cream at the bottom edge;
+- the iOS back-gesture white flash (owner's gf reported it) is the same thing: the service
+  worker serves that same cream index.html on every navigation.
+
+FIX (4 coordinated changes, no new deps):
+1. `index.css`: background moves from <body> to <html>; body becomes transparent. The
+   scrollbar gutter and both safe-area insets now inherit a THEMED colour.
+2. `App.jsx`: theme <html> at runtime; mirror the resolved bg to localStorage
+   (`nh-bg` / `nh-theme`) in the themeMode effect.
+3. `index.html`: a SYNCHRONOUS pre-paint script reads `nh-bg` and sets the <html> background
+   BEFORE React mounts. Critical because main.jsx defers the React mount behind loadI18n()
+   for up to 1500ms, so until now ONLY the cream HTML existed in that window.
+4. `App.jsx`: seed `themeMode` synchronously from localStorage in the useState initialiser,
+   so React's FIRST render (loading screen included) is already the right palette.
+IndexedDB stays the source of truth and re-syncs on boot. New users (no hint) fall through
+to the light CSS default, unchanged.
+
+Top bar: the Settings gear and the profile chip were two adjacent buttons BOTH calling
+`onTab('settings')`. Merged into ONE bordered pill: avatar keeps its full-size primary
+circle, the name is now full-strength ink (was muted, i.e. upgraded), the gear keeps a
+bordered hoverable button. Reuses `.dnav-chip` so NO new CSS class and no font-styles.js
+edit (that file is one big template literal; a stray backtick breaks every screen).
+
+Support accordion: a category header and an article row were the SAME `sup-row` with the
+SAME chevron, separated only by `pl-2`, which is why it read as an undifferentiated wall.
+Categories are now bold section headers with a counted pill; their articles open into a
+RECESSED, left-ruled inset panel (bg T.bg + 2px primary left border); article rows are
+deliberately lighter. Same data, same animations, real hierarchy.
+
+Companion icon crop (a genuine bug): the note modal's content box uses `overflow-y-auto`,
+and CSS forces `overflow-x` to `auto` alongside it, so the box CLIPS on every side. The
+medallion is its first child and its spark (`-top-1.5`) + 6px halo ring sit ABOVE its own
+box, so they were sliced off. Added `pt-2`.
+
+Home spacing: the mobile spacer and the DesktopNav spacer each reserve EXACTLY the bar
+height, so the first banner sat flush against the bar. Added `pt-3 lg:pt-4` to the banner
+wrapper (house 16px rhythm).
+
+NURSING CALC TEST (was "Dosage Calc Test"): pool grew 18 -> 60 questions spanning the WHOLE
+Calculator Suite, not just drug math: drip rates, dose by weight, dose-on-hand, infusion
+mcg/kg/min, pediatric (Clark + Young), IBW (Devine), CrCl (Cockcroft-Gault), BMI, BSA
+(Mosteller), Holliday-Segar maintenance, 4-2-1 hourly, urine output, MAP, kg/lb + cm/in +
+C/F conversions, GCS, APGAR, Braden, Morse, gestational age, the 280-day rule. Easy/medium/
+hard spread, worked `steps` + plain-English `intuition` on every item, 60 UNIQUE ids.
+⚠ EVERY authored answer was recomputed against the REAL calc engines (calc-body / calc-fluids
+/ calc-scores / calc-units / calc-dosage / calc-obstetric) so the drill can never teach
+something the Calculator Suite would contradict. All 40 new ones matched.
+DECISION: kept the NUMERIC type-in flow (dosage-practice.jsx), not MCQ. "Calc Test" means
+computing the answer, and back-solving an MCQ defeats calc practice.
+Display renames only; route + fav id stay 'dosage' so favourites/history survive.
+⚠ CONTENT_VERSION 16 -> 17 (mandatory, or the JSON edit silently never appears).
+
+JSON EXPORT REMOVED (owner decision, reverses the Progress Card round's "keep it" note):
+India's DPDP Act has no data-portability mandate, and a raw dump exposes the app's data
+shape. Deleted `src/lib/data-export.js` + its test, stripped the Settings row, reworded the
+nav "Backup & export" entry to "Backup & sync". Downloads are now PNG/PDF ONLY (the Progress
+Card). Bank IMPORT is untouched: it brings content IN and leaks nothing.
+
+Verification: 57 test files (one fewer, data-export.test.js is gone) + render smoke +
+compile + bundle guard + check-locales green. Built AND live output verified by content: the
+inline pre-paint script ships, `html{background:#fbf7ed}` + `body{background:transparent}`
+are in the live CSS, dosage.json?v=17 serves 60 questions, and the live bundle contains zero
+"Export my data" / "user-data-export" / "Dosage Calc Test" strings.
+NOT verified headlessly (no browser automation): the dark-mode reload flash and the iOS
+back-gesture flash still need a real device drive by the owner.
+Shipped straight to production at owner's request (51ffd9c on main).
