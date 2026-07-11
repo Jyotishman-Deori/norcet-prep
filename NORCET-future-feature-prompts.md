@@ -11273,3 +11273,33 @@ Notes for later: the consent-sentence keys concatenate in English word order
 (draft locales pending native review anyway); ClinicalNote copy is hardcoded
 English (content-adjacent screens); if a legal doc materially changes, bump
 LEGAL_VERSION and the Home card does the rest.
+
+## 2026-07-12 - Popup viewport-anchoring fix: BodyPortal everywhere
+
+Owner flagged the Exam weightage start-practice sheet not centring on the
+CURRENT screen and asked for an app-wide popup audit (PC/mobile/tablet, iOS +
+Android). Root cause: position:fixed is contained by transformed ancestors and
+screen roots animate in with transforms, so overlays rendered INLINE inside a
+screen could anchor to the page instead of the viewport. The house fix was
+already documented (ConfirmDialog/KmapDialog/TopBar): portal to <body>.
+
+- NEW src/ui/body-portal.jsx: `BodyPortal` wraps an overlay's outermost fixed
+  element in createPortal(document.body); SSR-safe inline fallback (the render
+  smoke stubs createPortal to null by design, component bodies still execute).
+- Audited EVERY `fixed inset-0` in src. Converted the 12 inline ones:
+  weightage confirm sheet, welcome tour help popup, advanced-test keyboard/
+  palette/submit-confirm, ReferenceLookupModal, notification-center clear-all
+  sheet, premium coming-soon sheet, shift-survival crisis, three-am-chart
+  lifeline, drip-zone OutcomeSheet, unit-guidebook, premium-gate-modal,
+  confirm-exit-dialog. Design untouched (sheets stay bottom-docked, dialogs
+  stay centred); only the anchoring is now unconditional.
+- Left alone on purpose: already-portaled modals, App-root hosts (feedback/
+  help/support/rename/note/companion/exit/nav-drawer/join-family/guest-merge),
+  the kmap fullscreen CANVAS mode, ward-boss full-screen FX tints.
+- RULE going forward: any new popup overlay either lives in an existing
+  portaled shell (ConfirmDialog/KmapDialog/requestConfirm) or wraps its
+  outermost fixed element in BodyPortal. Never render a fixed overlay inline
+  inside a screen.
+
+Full gate green (44 suites + smoke + compile + bundle guard). Shipped dev ->
+main (fix commit + this journal commit).
