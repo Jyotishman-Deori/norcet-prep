@@ -6,7 +6,7 @@
 // is the PURE core: it decides WHICH runs are resumable, shapes the snapshot
 // record, summarises it for the Home card, and ages it out. The IO (reading /
 // writing safeStorage under KEYS.activeTest(pid), shared:false) lives in the
-// screens/App, mirroring data-export.js — so this file stays Node-testable.
+// screens/App, keeping the pure logic here — so this file stays Node-testable.
 //
 // Deliberately covers UNTIMED PRACTICE ONLY. The timed Mock and the Advanced
 // Test exam simulation are NOT resumable on purpose: pausing a clock is the very

@@ -14,17 +14,24 @@ html, body, #root {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The BACKGROUND lives on <html>, NOT <body>. Reason: the ~10px custom
+   scrollbar gutter and the iOS safe-area insets (padding on <body> below) sit
+   OUTSIDE the app root and would otherwise reveal whatever colour is behind it.
+   With the bg on <html> and <body> transparent, those regions inherit the
+   themed colour instead of a hardcoded cream, so there are no stray light bars
+   in dark mode. The default here (#FBF7ED = LIGHT_THEME.bg) is only for a
+   brand-new user with no saved theme; the inline boot script in index.html and
+   the App theme effect override it synchronously for returning users, killing
+   the reload flash. */
+html {
+  background: #FBF7ED;
+}
 body {
-  background: #FBF7ED; /* Matches LIGHT_THEME.bg so the splash before React boots looks correct */
+  background: transparent;
   font-family: 'DM Sans', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
-/* When the user's saved theme is dark, the App reads it from IndexedDB after
-   mount and re-renders with the dark palette. The body background flips at
-   that point. The initial light-on-light flash is brief and matches the
-   default state for new users. */
 
 /* Safe-area insets for iOS standalone PWAs (notch / home indicator). The App
    uses fixed bars in places; let those respect the inset by default. */

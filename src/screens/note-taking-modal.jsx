@@ -541,7 +541,13 @@ function NamingView({ T, onName, onClose }) {
         </button>
       </div>
 
-      <div className="relative z-10 px-6 pb-4 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+      {/* pt-2: this is a scroll container, and `overflow-y:auto` forces
+          `overflow-x` to `auto` too, so it CLIPS on every side. The medallion is
+          the first child and its twinkling spark (-top-1.5) plus its 6px halo
+          ring sit ABOVE its own box, so with zero top padding they were being
+          sliced off at the container's edge (the "cropped companion icon").
+          8px of top room clears both. */}
+      <div className="relative z-10 px-6 pt-2 pb-4 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
         {/* hero medallion — gradient tile that idly floats, wrapped in a soft
             halo ring, with a small accent spark twinkling at the corner. */}
         <div className={"relative w-16 h-16 mb-5 flex-shrink-0" + (reduced ? '' : ' naming-icon-enter')}>

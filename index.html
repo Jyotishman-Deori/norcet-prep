@@ -21,6 +21,21 @@
 
     <title>NurseHolic™: AIIMS NORCET Prep</title>
     <meta name="description" content="NurseHolic™: free AIIMS NORCET preparation. Mock tests, PYQs, revision notes and dosage drills for nursing students." />
+
+    <!-- Pre-paint theme, runs SYNCHRONOUSLY before React mounts (React is
+         deferred behind i18n in main.jsx, so for up to ~1.5s only this HTML
+         exists). A returning dark-theme user would otherwise see a cream frame
+         and, on reload, the light loading screen. We set the <html> background
+         from a localStorage hint the app writes on every theme change. New
+         users have no hint and fall through to the CSS default (light). -->
+    <script>
+      (function () {
+        try {
+          var bg = localStorage.getItem('nh-bg');
+          if (bg) document.documentElement.style.backgroundColor = bg;
+        } catch (e) { /* private mode / disabled storage: use the CSS default */ }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -1844,7 +1844,17 @@ export default function App() {
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [banks, setBanks] = useState([]);
   const [banksLoading, setBanksLoading] = useState(false);
-  const [themeMode, setThemeMode] = useState('light');
+  // Seed the theme SYNCHRONOUSLY from a localStorage hint so React's very first
+  // render (the loading screen + first paint) already uses the right palette,
+  // instead of flashing light then flipping to dark once IndexedDB resolves.
+  // IndexedDB (loadThemeMode) stays the source of truth and re-syncs on boot.
+  const [themeMode, setThemeMode] = useState(() => {
+    try {
+      const m = localStorage.getItem('nh-theme');
+      if (m && THEMES[m]) return m;
+    } catch (e) { /* storage disabled */ }
+    return 'light';
+  });
   // I18N — active UI language. Seeded from the module (boot restore ran in
   // main.jsx); changeLang is what the Settings language page calls. A failed
   // download (offline, never-fetched pack) rethrows so the page can show a
@@ -1928,6 +1938,12 @@ export default function App() {
   // one-frame flash. Guarded for SSR/non-DOM. Cheap (24 setProperty calls).
   if (typeof document !== 'undefined') {
     const _r = document.documentElement, _t = T;
+    // The <html> background owns the scrollbar gutter + safe-area insets (body
+    // is transparent, see index.css), so theme it here on every render (cheap,
+    // idempotent) to keep those regions themed on the first paint and on every
+    // theme switch. The localStorage boot-hint mirror lives in the themeMode
+    // effect below so it only writes when the theme actually changes.
+    _r.style.backgroundColor = _t.bg;
     _r.style.setProperty('--bg', _t.bg);
     _r.style.setProperty('--surface', _t.surface);
     _r.style.setProperty('--surface-warm', _t.surfaceWarm);
@@ -2456,6 +2472,14 @@ export default function App() {
     };
     for (const k in flat) root.style.setProperty(k, flat[k]);
     if (t.sec) for (const s in t.sec) root.style.setProperty('--sec-' + s, t.sec[s]);
+    // Keep <html> themed here too (covers any path that sets themeMode without a
+    // synchronous re-render), and mirror the resolved bg to localStorage as the
+    // pre-paint boot hint that index.html reads before React mounts next time.
+    root.style.backgroundColor = t.bg;
+    try {
+      localStorage.setItem('nh-bg', t.bg);
+      localStorage.setItem('nh-theme', themeMode);
+    } catch (e) { /* storage disabled */ }
   }, [themeMode]);
   // goHome respects the welcome-tour-origin flag: if she came from welcome,
   // route her back to welcome instead of Home. Flag clears itself in the
@@ -5237,7 +5261,7 @@ export default function App() {
                          }).filter(Boolean);
                          setNav({
                            screen: 'crib-sheet', items,
-                           cribTitle: 'Dosage Calculation',
+                           cribTitle: 'Nursing Calc Test',
                            cribSubtitle: `${items.length} questions · ${new Date().toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}`,
                            backNav: nav,
                          });

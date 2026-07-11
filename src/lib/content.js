@@ -26,7 +26,7 @@ import { cpackKey, normalizePack, mergeDosage, mergeReference, mergeConceptCards
 //      help) — user-facing copy must not read as AI-generated.
 // v15: added the "Assistant" help section (Ask-your-companion chat).
 // v16: added the "Nursing Calculator Suite" help section.
-const CONTENT_VERSION = 16;
+const CONTENT_VERSION = 17;   // v17: Nursing Calc Test pool grew 18 -> 60 questions (dosage.json)
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

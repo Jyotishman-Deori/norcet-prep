@@ -602,8 +602,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           right edges line up with the greeting and dashboard below. (They used
           to be capped narrower and left-stuck, which read as off-centre strips
           on desktop.) Premium gradient cards + a pointer hover lift keep them
-          from feeling like full-bleed OS bars. */}
-      <div>
+          from feeling like full-bleed OS bars.
+          pt-3/lg:pt-4 — the mobile spacer above and the DesktopNav's in-flow
+          spacer both reserve EXACTLY the bar height, so without this the first
+          banner sat flush against the bar with no breathing room. Matches the
+          house 16px (mb-4) card rhythm. */}
+      <div className="pt-3 lg:pt-4">
 
       {/* RESUME AN IN-PROGRESS TEST — the top-most banner (a time-sensitive
           "pick up where you left off" CTA). Full-width so its edges line up with

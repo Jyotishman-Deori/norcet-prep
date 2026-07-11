@@ -51,25 +51,30 @@ function searchArticles(query) {
   return scored.slice(0, 12).map((s) => s.e);
 }
 
-// One expandable Q&A row. The answer is plain text with \n breaks (KB house
-// style: no markdown), so it renders with pre-wrap exactly like explanations do.
-function ArticleRow({ T, entry, open, onToggle, reduced, onNavigate }) {
+// One expandable Q&A row, rendered INSIDE a category's inset panel. It is
+// deliberately lighter than a category header (medium weight, smaller type, a
+// smaller chevron) so the two levels never read as the same control, which is
+// what made the old flat accordion confusing. The answer is plain text with \n
+// breaks (KB house style: no markdown), so it renders with pre-wrap exactly
+// like explanations do.
+function ArticleRow({ T, entry, open, onToggle, reduced, onNavigate, isFirst }) {
   return (
-    <div style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+    <div style={isFirst ? undefined : { borderTop: `1px solid ${T.borderSoft}` }}>
       <button onClick={onToggle}
               aria-expanded={open}
-              className={'sup-row no-tap-highlight w-full flex items-start justify-between gap-3 text-left px-3 py-3.5 rounded-lg'}
-              style={{ background: open ? T.surfaceWarm : 'transparent' }}>
-        <span className="text-[13.5px] font-semibold leading-snug" style={{ color: open ? T.primary : T.ink }}>
+              className={'sup-row no-tap-highlight w-full flex items-start justify-between gap-3 text-left px-3 py-3 rounded-lg'}
+              style={{ background: 'transparent' }}>
+        <span className="text-[13px] leading-snug"
+              style={{ color: open ? T.primary : T.inkSoft, fontWeight: open ? 600 : 500 }}>
           {entry.q}
         </span>
-        <ChevronDown size={17} aria-hidden="true"
+        <ChevronDown size={14} aria-hidden="true"
                      className={'sup-chev flex-shrink-0 mt-0.5' + (open ? ' sup-chev-open' : '')}
                      style={{ color: open ? T.primary : T.muted }} />
       </button>
       {open && (
-        <div className={'px-3 pb-4' + (reduced ? '' : ' sup-panel')}>
-          <div className="text-[13px] leading-relaxed" style={{ color: T.inkSoft, whiteSpace: 'pre-wrap' }}>
+        <div className={'px-3 pb-3.5 -mt-0.5' + (reduced ? '' : ' sup-panel')}>
+          <div className="text-[12.5px] leading-relaxed" style={{ color: T.inkSoft, whiteSpace: 'pre-wrap' }}>
             {entry.a}
           </div>
           {entry.route && entry.routeLabel && onNavigate && (
@@ -197,8 +202,9 @@ export default function SupportScreen({ onBack, onNavigate }) {
             </SectionTitle>
             {results.length > 0 ? (
               <Card className="p-1.5">
-                {results.map((e) => (
+                {results.map((e, i) => (
                   <ArticleRow key={e.id} T={T} entry={e} reduced={reduced}
+                              isFirst={i === 0}
                               open={openArticle === e.id}
                               onToggle={() => toggleArticle(e.id)}
                               onNavigate={onNavigate} />
@@ -253,8 +259,9 @@ export default function SupportScreen({ onBack, onNavigate }) {
             <div {...stag(2)} className={(reduced ? '' : 'sup-in ') + 'mb-6'}>
               <SectionTitle T={T}>Quick help</SectionTitle>
               <Card className="p-1.5">
-                {quick.map((e) => (
+                {quick.map((e, i) => (
                   <ArticleRow key={e.id} T={T} entry={e} reduced={reduced}
+                              isFirst={i === 0}
                               open={openArticle === e.id}
                               onToggle={() => toggleArticle(e.id)}
                               onNavigate={onNavigate} />
@@ -265,31 +272,45 @@ export default function SupportScreen({ onBack, onNavigate }) {
             {/* ── Browse help articles (accordion by category) ─────────── */}
             <div {...stag(3)} className={(reduced ? '' : 'sup-in ') + 'mb-6'}>
               <SectionTitle T={T}>Browse help articles</SectionTitle>
+              {/* Two clearly different levels. A CATEGORY is a bold section
+                  header with a counted pill; its articles open into a RECESSED,
+                  left-ruled inset panel so they read as contained inside it.
+                  Previously both levels were the same row with the same chevron
+                  and only a 2px indent, which is why it looked like an
+                  undifferentiated wall. */}
               <Card className="p-1.5">
-                {Object.entries(KB_CATEGORIES).map(([catId, catLabel]) => {
+                {Object.entries(KB_CATEGORIES).map(([catId, catLabel], ci) => {
                   const entries = byCat[catId] || [];
                   if (entries.length === 0) return null;
                   const open = openCat === catId;
                   return (
-                    <div key={catId} style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+                    <div key={catId} style={ci === 0 ? undefined : { borderTop: `1px solid ${T.borderSoft}` }}>
                       <button onClick={() => { setOpenCat(open ? null : catId); setOpenArticle(null); }}
                               aria-expanded={open}
-                              className="sup-row no-tap-highlight w-full flex items-center justify-between gap-3 text-left px-3 py-4 rounded-lg"
-                              style={{ background: open ? T.surfaceWarm : 'transparent' }}>
-                        <span className="text-[14px] font-semibold" style={{ color: open ? T.primary : T.ink }}>
+                              className="sup-row no-tap-highlight w-full flex items-center justify-between gap-3 text-left px-3 py-4 rounded-xl"
+                              style={{ background: open ? T.primary + '12' : 'transparent' }}>
+                        <span className="font-display text-[15px] font-semibold"
+                              style={{ color: open ? T.primary : T.ink }}>
                           {catLabel}
                         </span>
                         <span className="flex items-center gap-2 flex-shrink-0">
-                          <span className="text-[11px] tabular-nums" style={{ color: T.muted }}>{entries.length}</span>
-                          <ChevronDown size={17} aria-hidden="true"
+                          <span className="text-[10.5px] font-semibold tabular-nums px-2 py-0.5 rounded-full"
+                                style={open
+                                  ? { background: T.primary + '20', color: T.primary }
+                                  : { background: T.surfaceWarm, color: T.muted }}>
+                            {entries.length}
+                          </span>
+                          <ChevronDown size={18} aria-hidden="true"
                                        className={'sup-chev' + (open ? ' sup-chev-open' : '')}
                                        style={{ color: open ? T.primary : T.muted }} />
                         </span>
                       </button>
                       {open && (
-                        <div className={'pl-2 pb-1' + (reduced ? '' : ' sup-panel')}>
-                          {entries.map((e) => (
+                        <div className={'ml-3 mr-1 mt-0.5 mb-2 rounded-xl overflow-hidden' + (reduced ? '' : ' sup-panel')}
+                             style={{ background: T.bg, borderLeft: `2px solid ${T.primary}55` }}>
+                          {entries.map((e, i) => (
                             <ArticleRow key={e.id} T={T} entry={e} reduced={reduced}
+                                        isFirst={i === 0}
                                         open={openArticle === e.id}
                                         onToggle={() => toggleArticle(e.id)}
                                         onNavigate={onNavigate} />

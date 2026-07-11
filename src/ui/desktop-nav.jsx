@@ -235,34 +235,33 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               <Heart size={19} strokeWidth={2.2} />
             </button>
 
-            {/* SETTINGS — its own first-class control. It used to be a 14px gear
-                buried inside the profile chip, which the avatar completely
-                upstaged; users could not find it. Now it is a proper bordered
-                icon button (owner request: "let the settings icon be more
-                prolific"), and the profile chip below is deliberately quieter. */}
+            {/* IDENTITY + SETTINGS — ONE control (owner request). These used to
+                be two adjacent buttons, a bordered gear and a quiet profile
+                chip, that both did exactly the same thing (onTab('settings')),
+                which read as a duplicate and made the pair compete. Merged into
+                a single bordered pill so NEITHER is downgraded: the avatar keeps
+                its full-size primary circle, the name is now full-strength ink
+                (it was muted), and the gear keeps a bordered, hoverable button
+                around it. Reuses .dnav-chip (hover lift + shadow, already in the
+                reduced-motion catch-all), so no new CSS class is needed. */}
             <button onClick={() => { playTapSound(); onTab('settings'); }}
-                    aria-label={t('nav.tabs.settings')} title={t('nav.tabs.settings')}
+                    aria-label={`${String(name)}, ${t('nav.tabs.settings')}`}
+                    title={t('nav.tabs.settings')}
                     aria-current={screen === 'settings' ? 'page' : undefined}
-                    className="dnav-icon no-tap-highlight ml-1 p-2.5 rounded-xl transition-all"
+                    className="dnav-chip no-tap-highlight ml-1 flex items-center gap-2 pl-1 pr-2.5 py-1 rounded-full transition-all"
                     style={screen === 'settings'
-                      ? { background: T.primary + '1A', border: `1px solid ${T.primary}55`, color: T.primary }
-                      : { background: T.surface, border: `1px solid ${T.border}`, color: T.ink }}>
-              <Settings size={19} strokeWidth={2.2} />
-            </button>
-
-            {/* Profile chip → Settings. Now an identity indicator, not the hero:
-                no border, no fill, no competing gear. */}
-            <button onClick={() => { playTapSound(); onTab('settings'); }}
-                    aria-label={String(name)}
-                    className="dnav-chip no-tap-highlight flex items-center gap-2 pl-0.5 pr-1.5 py-1 rounded-full transition-all"
-                    style={{ background: 'transparent', border: '1px solid transparent' }}>
-              <span className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
+                      ? { background: T.primary + '1A', border: `1px solid ${T.primary}55` }
+                      : { background: T.surface, border: `1px solid ${T.border}` }}>
+              <span className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold flex-shrink-0"
                     style={{ background: T.primary, color: '#FFF' }}>
                 {initial}
               </span>
-              <span className="text-[12.5px] font-medium max-w-[96px] truncate" style={{ color: T.muted }}>
+              <span className="text-[12.5px] font-semibold max-w-[96px] truncate"
+                    style={{ color: screen === 'settings' ? T.primary : T.ink }}>
                 {String(name).split(' ')[0]}
               </span>
+              <Settings size={17} strokeWidth={2.2} className="flex-shrink-0"
+                        style={{ color: screen === 'settings' ? T.primary : T.muted }} />
             </button>
 
             <button onClick={() => { playTapSound(); onOpenMenu(); }} aria-label={t('nav.openMenu')}

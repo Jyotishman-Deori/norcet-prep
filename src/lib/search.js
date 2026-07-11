@@ -21,7 +21,7 @@ export const SEARCH_GROUPS = [
   { type: 'question',  label: 'Practice questions' },
   { type: 'concept',   label: 'Concept cards' },
   { type: 'reference', label: 'Quick reference' },
-  { type: 'dosage',    label: 'Dosage practice' },
+  { type: 'dosage',    label: 'Nursing Calc Test' },
   { type: 'faq',       label: 'FAQ' },
 ];
 

@@ -272,5 +272,647 @@
       "≈ 83 mL/hr"
     ],
     "intuition": "A 24-hour infusion is the standard for maintenance fluids, and dividing by 24 rarely gives a whole number, so rounding (and the small ±1 tolerance) is expected. Quick check: 2000 ÷ 24 is just over 80, so 83 mL/hr is sensible. Always convert litres to millilitres first. Skip that and your rate will be 1000× off."
+  },
+  {
+    "id": "d19",
+    "type": "BMI",
+    "q": "A man weighs 70 kg and is 1.75 m tall. Calculate his BMI in kg/m². Give it to 1 decimal place.",
+    "answer": 22.9,
+    "unit": "kg/m²",
+    "tolerance": 0.1,
+    "steps": [
+      "Formula: BMI = weight (kg) ÷ height (m) squared",
+      "Height squared = 1.75 × 1.75 = 3.0625 m²",
+      "BMI = 70 ÷ 3.0625 = 22.857",
+      "= 22.9 kg/m² (1 decimal place)"
+    ],
+    "intuition": "BMI asks how much mass is spread over how much height. Square the height FIRST, then divide. The classic slip is dividing by 1.75 instead of 1.75², which gives 40 and should feel obviously wrong. A result near 22 sits in the normal band on the WHO international scale."
+  },
+  {
+    "id": "d20",
+    "type": "BMI",
+    "q": "A patient weighs 90 kg and is 1.80 m tall. Calculate the BMI in kg/m² to 1 decimal place.",
+    "answer": 27.8,
+    "unit": "kg/m²",
+    "tolerance": 0.1,
+    "steps": [
+      "Height squared = 1.80 × 1.80 = 3.24 m²",
+      "BMI = 90 ÷ 3.24 = 27.777",
+      "= 27.8 kg/m² (1 decimal place)"
+    ],
+    "intuition": "Same two moves every time: square the height, then divide the weight by it. Note that BMI bands differ by population. On the WHO Asian cutoffs 27.8 is already obese, while on the international scale it is only overweight, so always say which scale you are reading against."
+  },
+  {
+    "id": "d21",
+    "type": "BSA",
+    "q": "Using the Mosteller formula, calculate the body surface area of a child who is 100 cm tall and weighs 36 kg. Give it in m².",
+    "answer": 1,
+    "unit": "m²",
+    "tolerance": 0.02,
+    "steps": [
+      "Mosteller formula: BSA = square root of (height cm × weight kg ÷ 3600)",
+      "100 × 36 = 3600",
+      "3600 ÷ 3600 = 1",
+      "Square root of 1 = 1.00 m²"
+    ],
+    "intuition": "Mosteller is the one to memorise because it is just height times weight over 3600, then a square root. BSA drives chemotherapy and many paediatric doses, so it is worth being fluent. Numbers that cancel to exactly 1 are rare in real life, but they are a gift in an exam."
+  },
+  {
+    "id": "d22",
+    "type": "BSA",
+    "q": "An adult is 170 cm tall and weighs 70 kg. Calculate the BSA using Mosteller, to 2 decimal places.",
+    "answer": 1.82,
+    "unit": "m²",
+    "tolerance": 0.02,
+    "steps": [
+      "BSA = square root of (height cm × weight kg ÷ 3600)",
+      "170 × 70 = 11900",
+      "11900 ÷ 3600 = 3.3056",
+      "Square root of 3.3056 = 1.818",
+      "= 1.82 m² (2 decimal places)"
+    ],
+    "intuition": "A typical adult BSA lands near 1.7 to 1.9 m², so 1.82 passes the sanity check. If you ever get something like 18 or 0.18, you have slipped a decimal, usually by putting height in metres instead of centimetres."
+  },
+  {
+    "id": "d23",
+    "type": "BSA",
+    "q": "A child is 120 cm tall and weighs 25 kg. Calculate the BSA using the Mosteller formula, to 2 decimal places.",
+    "answer": 0.91,
+    "unit": "m²",
+    "tolerance": 0.02,
+    "steps": [
+      "BSA = square root of (height cm × weight kg ÷ 3600)",
+      "120 × 25 = 3000",
+      "3000 ÷ 3600 = 0.8333",
+      "Square root of 0.8333 = 0.9129",
+      "= 0.91 m² (2 decimal places)"
+    ],
+    "intuition": "Children have a much larger surface area for their weight than adults do, which is exactly why BSA-based dosing exists in paediatrics. A school-age child sitting near 0.9 m² is a believable figure."
+  },
+  {
+    "id": "d24",
+    "type": "age",
+    "q": "A patient was born on 12 March 2000. As of 11 July 2026, what is their age in completed years?",
+    "answer": 26,
+    "unit": "years",
+    "tolerance": 0,
+    "steps": [
+      "Subtract the birth year from the current year: 2026 − 2000 = 26",
+      "Now check whether this year's birthday has already passed",
+      "Their birthday, 12 March, falls before 11 July, so it HAS passed in 2026",
+      "No adjustment is needed, so the completed age is 26 years"
+    ],
+    "intuition": "Completed age is the year difference, minus one if the birthday has not yet arrived this year. Here 12 March is safely behind 11 July, so nothing is subtracted. Forgetting that check is what turns a 25 into a 26."
+  },
+  {
+    "id": "d25",
+    "type": "MAP",
+    "q": "A patient's blood pressure is 120/80 mmHg. Calculate the mean arterial pressure (MAP), rounded to the nearest whole number.",
+    "answer": 93,
+    "unit": "mmHg",
+    "tolerance": 1,
+    "steps": [
+      "Formula: MAP = (systolic + 2 × diastolic) ÷ 3",
+      "2 × diastolic = 2 × 80 = 160",
+      "120 + 160 = 280",
+      "280 ÷ 3 = 93.3",
+      "= 93 mmHg"
+    ],
+    "intuition": "The diastolic is doubled because the heart spends about twice as long in diastole as in systole, so MAP is a time-weighted average, not a plain midpoint. A MAP of 65 mmHg or above is the usual threshold for perfusing the organs."
+  },
+  {
+    "id": "d26",
+    "type": "MAP",
+    "q": "A hypotensive patient has a blood pressure of 90/50 mmHg. Calculate the MAP, rounded to the nearest whole number.",
+    "answer": 63,
+    "unit": "mmHg",
+    "tolerance": 1,
+    "steps": [
+      "MAP = (systolic + 2 × diastolic) ÷ 3",
+      "2 × 50 = 100",
+      "90 + 100 = 190",
+      "190 ÷ 3 = 63.3",
+      "= 63 mmHg"
+    ],
+    "intuition": "This is the answer that should make you act. A MAP of 63 mmHg is below the usual 65 mmHg perfusion floor, so the kidneys and brain may not be getting enough flow. Escalate it, do not just chart it."
+  },
+  {
+    "id": "d27",
+    "type": "MAP",
+    "q": "A patient's blood pressure is 160/95 mmHg. Calculate the MAP, rounded to the nearest whole number.",
+    "answer": 117,
+    "unit": "mmHg",
+    "tolerance": 1,
+    "steps": [
+      "MAP = (systolic + 2 × diastolic) ÷ 3",
+      "2 × 95 = 190",
+      "160 + 190 = 350",
+      "350 ÷ 3 = 116.7",
+      "= 117 mmHg"
+    ],
+    "intuition": "Work the formula the same way whether the pressure is high or low. Notice how much the doubled diastolic drags the MAP up here, which is why a stubbornly high diastolic matters as much as the headline systolic number."
+  },
+  {
+    "id": "d28",
+    "type": "maintenance fluids",
+    "q": "Using the Holliday-Segar method, calculate the 24 hour maintenance fluid requirement for a child weighing 10 kg. Give the answer in mL per day.",
+    "answer": 1000,
+    "unit": "mL/day",
+    "tolerance": 0,
+    "steps": [
+      "Holliday-Segar daily rule: 100 mL/kg for the first 10 kg",
+      "The child is exactly 10 kg, so only the first band applies",
+      "10 kg × 100 mL/kg = 1000 mL",
+      "= 1000 mL per day"
+    ],
+    "intuition": "The 100/50/20 ladder is the whole method: 100 mL/kg for the first 10 kg, 50 mL/kg for the next 10 kg, then 20 mL/kg for every kilogram after that. At exactly 10 kg you never leave the first rung."
+  },
+  {
+    "id": "d29",
+    "type": "maintenance fluids",
+    "q": "A child weighs 15 kg. Calculate the 24 hour maintenance fluid requirement using Holliday-Segar, in mL per day.",
+    "answer": 1250,
+    "unit": "mL/day",
+    "tolerance": 0,
+    "steps": [
+      "First 10 kg at 100 mL/kg = 10 × 100 = 1000 mL",
+      "The remaining 5 kg fall in the next band, at 50 mL/kg",
+      "5 kg × 50 mL/kg = 250 mL",
+      "Total = 1000 + 250 = 1250 mL per day"
+    ],
+    "intuition": "The bands are cumulative, not either/or. You do not charge all 15 kg at 50 mL/kg. The first 10 kg always keep their 100 mL/kg rate, and only the weight ABOVE 10 kg moves to the cheaper rate."
+  },
+  {
+    "id": "d30",
+    "type": "maintenance fluids",
+    "q": "A child weighs 28 kg. Using Holliday-Segar, calculate the 24 hour maintenance fluid requirement in mL per day.",
+    "answer": 1660,
+    "unit": "mL/day",
+    "tolerance": 0,
+    "steps": [
+      "First 10 kg at 100 mL/kg = 1000 mL",
+      "Next 10 kg at 50 mL/kg = 500 mL",
+      "Remaining weight = 28 − 20 = 8 kg, at 20 mL/kg = 160 mL",
+      "Total = 1000 + 500 + 160 = 1660 mL per day"
+    ],
+    "intuition": "All three rungs are in play once the child is over 20 kg. Take the weight apart into 10, then 10, then whatever is left, price each slice at its own rate, and add. Rushing straight to a single multiplication is the classic error."
+  },
+  {
+    "id": "d31",
+    "type": "maintenance fluids",
+    "q": "Using the 4-2-1 rule, calculate the hourly maintenance fluid rate for a 25 kg child, in mL per hour.",
+    "answer": 65,
+    "unit": "mL/hr",
+    "tolerance": 0,
+    "steps": [
+      "The 4-2-1 rule: 4 mL/kg/hr for the first 10 kg, 2 mL/kg/hr for the next 10 kg, 1 mL/kg/hr for the rest",
+      "First 10 kg: 10 × 4 = 40 mL/hr",
+      "Next 10 kg: 10 × 2 = 20 mL/hr",
+      "Remaining 5 kg: 5 × 1 = 5 mL/hr",
+      "Total = 40 + 20 + 5 = 65 mL/hr"
+    ],
+    "intuition": "4-2-1 is simply the hourly twin of the 100/50/20 daily rule, since 100 mL/kg/day is about 4 mL/kg/hr. Use 4-2-1 when you are setting a pump rate and 100/50/20 when you are writing a 24 hour total."
+  },
+  {
+    "id": "d32",
+    "type": "urine output",
+    "q": "A 50 kg patient passes 500 mL of urine over 10 hours. Calculate the urine output in mL/kg/hr to 1 decimal place.",
+    "answer": 1,
+    "unit": "mL/kg/hr",
+    "tolerance": 0.05,
+    "steps": [
+      "Formula: urine output = volume ÷ (weight × hours)",
+      "Weight × hours = 50 × 10 = 500",
+      "500 mL ÷ 500 = 1.0",
+      "= 1.0 mL/kg/hr"
+    ],
+    "intuition": "Urine output is always normalised to body size AND time, because 500 mL means something very different in a child than in an adult, and over 1 hour than over 10. Anything at or above 0.5 mL/kg/hr is generally reassuring, so 1.0 is comfortable."
+  },
+  {
+    "id": "d33",
+    "type": "urine output",
+    "q": "A 60 kg patient passes only 120 mL of urine over 6 hours. Calculate the urine output in mL/kg/hr to 2 decimal places.",
+    "answer": 0.33,
+    "unit": "mL/kg/hr",
+    "tolerance": 0.05,
+    "steps": [
+      "Urine output = volume ÷ (weight × hours)",
+      "Weight × hours = 60 × 6 = 360",
+      "120 mL ÷ 360 = 0.333",
+      "= 0.33 mL/kg/hr"
+    ],
+    "intuition": "This is oliguria. It is under the 0.5 mL/kg/hr threshold, which flags possible hypovolaemia or acute kidney injury, so it needs escalating. The raw 120 mL might not alarm you until you normalise it, which is exactly why the calculation exists."
+  },
+  {
+    "id": "d34",
+    "type": "conversion",
+    "q": "Convert 70 kg to pounds. Give the answer to 1 decimal place.",
+    "answer": 154.3,
+    "unit": "lb",
+    "tolerance": 0.5,
+    "steps": [
+      "1 pound = 0.45359237 kg exactly, so kg ÷ 0.45359237 = pounds",
+      "70 ÷ 0.45359237 = 154.32",
+      "= 154.3 lb"
+    ],
+    "intuition": "A kilogram is roughly 2.2 pounds, so a quick sanity check is 70 × 2.2 = 154, which matches. Use the rough 2.2 to sense-check the direction and the exact factor to finish the number."
+  },
+  {
+    "id": "d35",
+    "type": "conversion",
+    "q": "A patient's chart records their weight as 165 lb. Convert this to kilograms, to 1 decimal place.",
+    "answer": 74.8,
+    "unit": "kg",
+    "tolerance": 0.3,
+    "steps": [
+      "1 pound = 0.45359237 kg, so pounds × 0.45359237 = kg",
+      "165 × 0.45359237 = 74.84",
+      "= 74.8 kg"
+    ],
+    "intuition": "Going from pounds to kilograms the number must get SMALLER, because a kilogram is the bigger unit. If your answer came out larger than 165 you multiplied when you should have divided. Roughly, halve the pounds: 165 ÷ 2 = 82, which is in the right neighbourhood."
+  },
+  {
+    "id": "d36",
+    "type": "conversion",
+    "q": "Convert a height of 180 cm to inches, to 1 decimal place.",
+    "answer": 70.9,
+    "unit": "in",
+    "tolerance": 0.2,
+    "steps": [
+      "1 inch = 2.54 cm exactly, so cm ÷ 2.54 = inches",
+      "180 ÷ 2.54 = 70.87",
+      "= 70.9 inches"
+    ],
+    "intuition": "An inch is bigger than a centimetre, so the count of inches must be smaller than the count of centimetres. 70.9 inches is about 5 feet 11 inches, which is a believable adult height and a good final sanity check."
+  },
+  {
+    "id": "d37",
+    "type": "conversion",
+    "q": "Convert 60 inches to centimetres.",
+    "answer": 152.4,
+    "unit": "cm",
+    "tolerance": 0.1,
+    "steps": [
+      "1 inch = 2.54 cm exactly, so inches × 2.54 = cm",
+      "60 × 2.54 = 152.4",
+      "= 152.4 cm"
+    ],
+    "intuition": "Worth memorising: 60 inches, which is 5 feet, is exactly 152.4 cm. That figure also shows up as the lower height limit in the Devine ideal body weight formula, so you get two facts for the price of one."
+  },
+  {
+    "id": "d38",
+    "type": "conversion",
+    "q": "A child's temperature is 38.5°C. Convert it to Fahrenheit, to 1 decimal place.",
+    "answer": 101.3,
+    "unit": "°F",
+    "tolerance": 0.1,
+    "steps": [
+      "Formula: F = (C × 9/5) + 32",
+      "38.5 × 9/5 = 38.5 × 1.8 = 69.3",
+      "69.3 + 32 = 101.3",
+      "= 101.3°F"
+    ],
+    "intuition": "Multiply first, then add 32. Doing it the other way round is the classic slip. Anchor yourself on the two pairs you already know: 37°C is 98.6°F and 40°C is 104°F, so a fever of 38.5°C landing near 101°F feels right."
+  },
+  {
+    "id": "d39",
+    "type": "conversion",
+    "q": "A patient's temperature reads 104°F. Convert it to Celsius.",
+    "answer": 40,
+    "unit": "°C",
+    "tolerance": 0.1,
+    "steps": [
+      "Formula: C = (F − 32) × 5/9",
+      "104 − 32 = 72",
+      "72 × 5/9 = 40",
+      "= 40°C"
+    ],
+    "intuition": "Subtract 32 FIRST, then scale. 104°F is exactly 40°C, a high fever worth remembering as a landmark. If you scale before subtracting you will get a badly wrong number, so the order of operations is the whole game here."
+  },
+  {
+    "id": "d40",
+    "type": "GCS",
+    "q": "A patient opens their eyes spontaneously, is fully oriented in conversation, and obeys commands. Calculate the Glasgow Coma Scale total.",
+    "answer": 15,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "GCS = eye opening + verbal response + motor response",
+      "Eyes open spontaneously = 4",
+      "Oriented = 5",
+      "Obeys commands = 6",
+      "Total = 4 + 5 + 6 = 15 out of 15"
+    ],
+    "intuition": "15 is a fully alert patient and is the maximum. Remember the ceilings: eyes are out of 4, verbal out of 5, motor out of 6, which adds to 15. The lowest possible score is 3, never 0, because each component starts at 1."
+  },
+  {
+    "id": "d41",
+    "type": "GCS",
+    "q": "A patient opens their eyes to sound, is confused in conversation, and localises to pain. Calculate the GCS total.",
+    "answer": 12,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Eyes open to sound = 3",
+      "Confused conversation = 4",
+      "Localising to pain = 5",
+      "Total = 3 + 4 + 5 = 12 out of 15"
+    ],
+    "intuition": "12 sits in the moderate band, which is 9 to 12. Localising to pain means the patient reaches purposefully towards the stimulus, which scores 5, one better than merely withdrawing from it, which scores 4."
+  },
+  {
+    "id": "d42",
+    "type": "GCS",
+    "q": "A patient opens their eyes only to pressure, speaks words that are not conversational, and withdraws from pain with normal flexion. Calculate the GCS total.",
+    "answer": 9,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Eyes open to pressure = 2",
+      "Words, not conversational = 3",
+      "Normal flexion, withdraws = 4",
+      "Total = 2 + 3 + 4 = 9 out of 15"
+    ],
+    "intuition": "9 is the bottom edge of the moderate band. Note the motor ladder carefully, because it is where marks are won and lost: obeys 6, localises 5, withdraws 4, abnormal flexion 3, extension 2, none 1."
+  },
+  {
+    "id": "d43",
+    "type": "GCS",
+    "q": "A patient does not open their eyes, makes only incomprehensible sounds, and shows abnormal flexion to pain. Calculate the GCS total.",
+    "answer": 6,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "No eye opening = 1",
+      "Sounds only, no words = 2",
+      "Abnormal flexion = 3",
+      "Total = 1 + 2 + 3 = 6 out of 15"
+    ],
+    "intuition": "6 is a severe brain injury, since anything 8 or below is severe and usually means the airway needs protecting. Abnormal flexion, the old decorticate posture, scores 3, while extension, the decerebrate posture, is worse at 2."
+  },
+  {
+    "id": "d44",
+    "type": "APGAR",
+    "q": "At 1 minute a newborn has a heart rate of 140 bpm, a good strong cry, active motion, cries on stimulation, and is completely pink. Calculate the APGAR score.",
+    "answer": 10,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "APGAR = appearance + pulse + grimace + activity + respiration, each scored 0, 1 or 2",
+      "Completely pink = 2",
+      "Pulse 140, which is 100 or above = 2",
+      "Cries on stimulation = 2",
+      "Active motion = 2",
+      "Good strong cry = 2",
+      "Total = 2 + 2 + 2 + 2 + 2 = 10 out of 10"
+    ],
+    "intuition": "A perfect 10 is uncommon in practice, because most newborns keep slightly blue hands and feet for a while, which costs a point on appearance. Anything from 7 to 10 is reassuring."
+  },
+  {
+    "id": "d45",
+    "type": "APGAR",
+    "q": "A newborn has a heart rate of 90 bpm, slow irregular breathing with a weak cry, some flexion of the limbs, grimaces on stimulation, and has a pink body with blue extremities. Calculate the APGAR score.",
+    "answer": 5,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Body pink, extremities blue = 1",
+      "Pulse 90, which is below 100 = 1",
+      "Grimace on stimulation = 1",
+      "Some flexion = 1",
+      "Slow or irregular breathing, weak cry = 1",
+      "Total = 1 + 1 + 1 + 1 + 1 = 5 out of 10"
+    ],
+    "intuition": "A 5 is moderately abnormal, in the 4 to 6 band, and calls for stimulation and support. The heart rate is the single most important item: a pulse under 100 is the trigger for action, so read that line first."
+  },
+  {
+    "id": "d46",
+    "type": "APGAR",
+    "q": "A newborn has a heart rate of 120 bpm, a good strong cry, active motion, coughs on stimulation, but has a pink body with blue hands and feet. Calculate the APGAR score.",
+    "answer": 9,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Body pink, extremities blue = 1",
+      "Pulse 120, which is 100 or above = 2",
+      "Coughs on stimulation = 2",
+      "Active motion = 2",
+      "Good strong cry = 2",
+      "Total = 1 + 2 + 2 + 2 + 2 = 9 out of 10"
+    ],
+    "intuition": "This is the everyday healthy newborn. Blue hands and feet, called acrocyanosis, are normal in the first minutes and cost exactly one point on appearance, which is why 9 is far more common than 10."
+  },
+  {
+    "id": "d47",
+    "type": "Braden",
+    "q": "A patient scores: sensory perception slightly limited (3), moisture occasionally moist (3), activity chairfast (2), mobility very limited (2), nutrition adequate (3), friction and shear a potential problem (2). Calculate the Braden Scale total.",
+    "answer": 15,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Braden = sensory + moisture + activity + mobility + nutrition + friction and shear",
+      "3 + 3 + 2 + 2 + 3 + 2",
+      "Total = 15 out of 23"
+    ],
+    "intuition": "Braden runs backwards from most scores you know: a LOWER total means a HIGHER pressure ulcer risk. 15 falls in the mild risk band. Note that five subscales run 1 to 4, but friction and shear only runs 1 to 3, which is why the maximum is 23 and not 24."
+  },
+  {
+    "id": "d48",
+    "type": "Morse",
+    "q": "A patient has fallen in the last 3 months (25), has more than one medical diagnosis (15), walks with a walker (15), has an IV in place (20), has a weak gait (10), and overestimates their own limits (15). Calculate the Morse Fall Scale total.",
+    "answer": 100,
+    "unit": "points",
+    "tolerance": 0,
+    "steps": [
+      "Morse = history + secondary diagnosis + ambulatory aid + IV + gait + mental status",
+      "25 + 15 + 15 + 20 + 10 + 15",
+      "Total = 100 out of 125"
+    ],
+    "intuition": "Morse is weighted, not a simple 1 to 4 scale, so you must add the actual point values rather than count items. 100 is very high risk, since anything from 45 upwards is high risk on the common bands. Unlike Braden, a HIGHER Morse score means a higher risk."
+  },
+  {
+    "id": "d49",
+    "type": "obstetric",
+    "q": "Naegele's rule estimates the expected date of delivery by adding a fixed number of days to the first day of the last menstrual period. How many days is that?",
+    "answer": 280,
+    "unit": "days",
+    "tolerance": 0,
+    "steps": [
+      "Naegele's rule: EDD = LMP + 1 year − 3 months + 7 days",
+      "That shortcut is the same as simply adding 280 days to the LMP",
+      "280 days = 40 weeks"
+    ],
+    "intuition": "280 days is exactly 40 weeks, the textbook length of a pregnancy dated from the LMP, not from conception. The rule assumes a regular 28 day cycle, so a longer or shorter cycle needs the due date adjusting."
+  },
+  {
+    "id": "d50",
+    "type": "obstetric",
+    "q": "A woman's last menstrual period began on 1 January 2026. As of 11 July 2026, how many COMPLETED weeks pregnant is she?",
+    "answer": 27,
+    "unit": "weeks",
+    "tolerance": 0,
+    "steps": [
+      "Count the days from the LMP to today: 1 January to 11 July 2026 = 191 days",
+      "Formula: gestational age = days ÷ 7",
+      "191 ÷ 7 = 27 remainder 2",
+      "So she is 27 weeks and 2 days, which is 27 COMPLETED weeks"
+    ],
+    "intuition": "Gestational age is counted from the first day of the LMP, not from conception, so it runs about 2 weeks ahead of the actual embryonic age. Completed weeks means you take the whole number and discard the leftover days."
+  },
+  {
+    "id": "d51",
+    "type": "obstetric",
+    "q": "A woman's last menstrual period began on 15 February 2026. As of 11 July 2026, how many COMPLETED weeks pregnant is she?",
+    "answer": 20,
+    "unit": "weeks",
+    "tolerance": 0,
+    "steps": [
+      "Count the days from 15 February to 11 July 2026. Note 2026 is not a leap year, so February has 28 days",
+      "15 February to 1 July = 136 days, then 1 July to 11 July = 10 days",
+      "Total = 146 days",
+      "146 ÷ 7 = 20 remainder 6",
+      "So she is 20 weeks and 6 days, which is 20 COMPLETED weeks"
+    ],
+    "intuition": "20 weeks is the halfway mark of a 40 week pregnancy and the usual timing of the anomaly scan. Always check whether the year is a leap year before you count across February, since one stray day can move the whole answer."
+  },
+  {
+    "id": "d52",
+    "type": "obstetric",
+    "q": "A woman is recorded as 32 weeks and 4 days pregnant. How many days of gestation is that in total?",
+    "answer": 228,
+    "unit": "days",
+    "tolerance": 0,
+    "steps": [
+      "Convert the weeks to days: 32 × 7 = 224 days",
+      "Add the loose days: 224 + 4 = 228",
+      "= 228 days"
+    ],
+    "intuition": "Obstetric dating is written as weeks plus days, so 32+4 means 32 whole weeks and 4 extra days, never 32.4 weeks. Multiply the weeks by 7 and add the remainder. Treating it as a decimal is a common and costly slip."
+  },
+  {
+    "id": "d53",
+    "type": "IBW",
+    "q": "Using the Devine formula, calculate the ideal body weight for a MALE patient who is 175 cm tall. Give the answer in kg to 1 decimal place.",
+    "answer": 70.5,
+    "unit": "kg",
+    "tolerance": 0.5,
+    "steps": [
+      "Devine formula for a male: IBW = 50 kg + 2.3 kg for every inch above 5 feet (60 inches)",
+      "Convert the height to inches: 175 ÷ 2.54 = 68.9 inches",
+      "Inches above 60: 68.9 − 60 = 8.9",
+      "2.3 × 8.9 = 20.5 kg",
+      "IBW = 50 + 20.5 = 70.5 kg"
+    ],
+    "intuition": "Devine is built in imperial units, so the height MUST be converted to inches first. The base is 50 kg for men and 45.5 kg for women, and both then add 2.3 kg per inch over 5 feet. IBW is used for dosing drugs that do not distribute into fat."
+  },
+  {
+    "id": "d54",
+    "type": "IBW",
+    "q": "Using the Devine formula, calculate the ideal body weight for a FEMALE patient who is 160 cm tall. Give the answer in kg to 1 decimal place.",
+    "answer": 52.4,
+    "unit": "kg",
+    "tolerance": 0.5,
+    "steps": [
+      "Devine formula for a female: IBW = 45.5 kg + 2.3 kg per inch above 60 inches",
+      "Convert the height: 160 ÷ 2.54 = 63.0 inches",
+      "Inches above 60: 63.0 − 60 = 3.0",
+      "2.3 × 3.0 = 6.9 kg",
+      "IBW = 45.5 + 6.9 = 52.4 kg"
+    ],
+    "intuition": "The only thing that changes between the sexes is the 50 versus 45.5 kg base. The 2.3 kg per inch step is identical. Note how little height above 5 feet this patient has, so her IBW stays close to the base figure."
+  },
+  {
+    "id": "d55",
+    "type": "creatinine clearance",
+    "q": "Using Cockcroft-Gault, calculate the creatinine clearance for a MALE aged 60, weighing 70 kg, with a serum creatinine of 1.0 mg/dL. Give the answer in mL/min to 1 decimal place.",
+    "answer": 77.8,
+    "unit": "mL/min",
+    "tolerance": 1,
+    "steps": [
+      "Cockcroft-Gault: CrCl = ((140 − age) × weight kg) ÷ (72 × serum creatinine mg/dL)",
+      "140 − 60 = 80",
+      "80 × 70 = 5600",
+      "72 × 1.0 = 72",
+      "5600 ÷ 72 = 77.8 mL/min",
+      "The patient is male, so no 0.85 correction is applied"
+    ],
+    "intuition": "Creatinine clearance estimates kidney function and drives renal dose adjustment. Age sits on the top of the fraction as (140 − age), so clearance falls as patients get older even when their creatinine has not moved at all."
+  },
+  {
+    "id": "d56",
+    "type": "creatinine clearance",
+    "q": "Using Cockcroft-Gault, calculate the creatinine clearance for a FEMALE aged 70, weighing 60 kg, with a serum creatinine of 1.2 mg/dL. Give the answer in mL/min to 1 decimal place.",
+    "answer": 41.3,
+    "unit": "mL/min",
+    "tolerance": 1,
+    "steps": [
+      "CrCl = ((140 − age) × weight) ÷ (72 × creatinine), then × 0.85 if female",
+      "140 − 70 = 70",
+      "70 × 60 = 4200",
+      "72 × 1.2 = 86.4",
+      "4200 ÷ 86.4 = 48.6",
+      "Female, so multiply by 0.85: 48.6 × 0.85 = 41.3 mL/min"
+    ],
+    "intuition": "Do NOT forget the 0.85 female factor. It reflects lower average muscle mass, and skipping it overestimates kidney function by about 15 percent, which could mean giving a renally cleared drug at a dangerously high dose."
+  },
+  {
+    "id": "d57",
+    "type": "paediatric, Clark's rule",
+    "q": "Using Clark's rule, calculate the child's dose when the adult dose is 500 mg and the child weighs 30 lb.",
+    "answer": 100,
+    "unit": "mg",
+    "tolerance": 0,
+    "steps": [
+      "Clark's rule: child dose = adult dose × (child's weight in pounds ÷ 150)",
+      "30 ÷ 150 = 0.2",
+      "500 mg × 0.2 = 100 mg"
+    ],
+    "intuition": "Clark's rule uses WEIGHT and assumes an average adult is 150 lb, so the fraction is just the child's share of an adult body. Weight-based rules like this are generally safer than age-based ones, because children of the same age vary hugely in size."
+  },
+  {
+    "id": "d58",
+    "type": "paediatric, Young's rule",
+    "q": "Using Young's rule, calculate the child's dose when the adult dose is 400 mg and the child is 8 years old.",
+    "answer": 160,
+    "unit": "mg",
+    "tolerance": 0,
+    "steps": [
+      "Young's rule: child dose = adult dose × (age ÷ (age + 12))",
+      "8 ÷ (8 + 12) = 8 ÷ 20 = 0.4",
+      "400 mg × 0.4 = 160 mg"
+    ],
+    "intuition": "Young's rule uses AGE, and the +12 in the denominator is what makes the fraction approach 1 as the child nears adulthood. It only applies between roughly 1 and 12 years. Contrast it with Clark's rule, which uses weight instead."
+  },
+  {
+    "id": "d59",
+    "type": "mcg/kg/min",
+    "q": "An infusion is ordered at 5 mcg/kg/min for a 70 kg patient. The bag contains 250 mg of the drug in 250 mL. Calculate the pump rate in mL/hr.",
+    "answer": 21,
+    "unit": "mL/hr",
+    "tolerance": 0.5,
+    "steps": [
+      "First find the concentration: 250 mg = 250,000 mcg, in 250 mL",
+      "250,000 mcg ÷ 250 mL = 1000 mcg/mL",
+      "Now find the dose per hour: 5 mcg/kg/min × 70 kg = 350 mcg/min",
+      "350 × 60 = 21,000 mcg/hr",
+      "Rate = 21,000 mcg/hr ÷ 1000 mcg/mL = 21 mL/hr"
+    ],
+    "intuition": "Three moves, always in this order: get the concentration in mcg/mL, scale the dose to mcg per HOUR (multiply by weight, then by 60), then divide by the concentration. The units cancel to leave mL/hr, which is exactly what you set on the pump."
+  },
+  {
+    "id": "d60",
+    "type": "IV gtt/min",
+    "q": "Infuse 500 mL over 4 hours using a giving set with a drop factor of 20 gtt/mL. Calculate the drip rate in drops per minute.",
+    "answer": 42,
+    "unit": "gtt/min",
+    "tolerance": 1,
+    "steps": [
+      "Formula: gtt/min = (volume mL × drop factor) ÷ time in MINUTES",
+      "Convert the time: 4 hours × 60 = 240 minutes",
+      "500 × 20 = 10,000",
+      "10,000 ÷ 240 = 41.67",
+      "Round to a whole drop: 42 gtt/min"
+    ],
+    "intuition": "The single most common mistake is leaving the time in hours. The formula needs MINUTES, because the answer is per minute. Always round to a whole number, since you cannot count two thirds of a drop."
   }
 ]

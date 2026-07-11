@@ -145,7 +145,8 @@ const SCREENS = {
       onRenameProfile: noop, onToggleReviewReminders: noop,
       onToggleIncludeGkInStats: noop, onSetDailyReminder: noop,
       onSetDemographics: noop, unseenReplyCount: 0, onBack: noop,
-      onOpenTrash: noop, progressSnapshotAt: Date.now() - 3600e3, onRestoreProgress: noop,
+      onOpenTrash: noop, onOpenReport: noop,
+      progressSnapshotAt: Date.now() - 3600e3, onRestoreProgress: noop,
     });
   },
   'level-up': async () => {
@@ -517,7 +518,9 @@ const MARKERS = {
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
   'home-guest': ['exploring as a guest', 'Sign in / Create account'],
   'maintenance': ['Down for a quick tune-up', 'Try again'],
-  'settings': ['Export my data'],
+  // The JSON "Export my data" row was REMOVED (DPDP / data-shape privacy). These
+  // are the rows that replaced it in the data zone, so the zone still renders.
+  'settings': ['Progress card', 'Recently deleted'],
   // the hero card that replaced the Favourites strip
   'home': ['Nursing Calculator Suite'],
   // hub: a category label + calculator rows + the offline promise strip.

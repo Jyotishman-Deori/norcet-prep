@@ -39,7 +39,7 @@ export const FAV_SECTIONS = [
   { id: 'topic-select',    label: 'Topic Test',          blurb: 'Drill one subject at a time',       icon: 'target',   hue: '#0B7285' },
   { id: 'mock-setup',      label: 'Mock Test',           blurb: 'Timed exam simulation',             icon: 'timer',    hue: '#5F3DC4' },
   { id: 'advanced-setup',  label: 'Advanced Test',       blurb: 'Negative marking + palette',        icon: 'flask',    hue: '#C2255C' },
-  { id: 'dosage',          label: 'Dosage Calculation',  blurb: 'Numeric drug-math drills',          icon: 'syringe',  hue: '#2F9E44' },
+  { id: 'dosage',          label: 'Nursing Calc Test',   blurb: 'Doses, drips, BMI, GCS and more',   icon: 'syringe',  hue: '#2F9E44' },
   { id: 'previous-papers', label: 'Previous Papers',     blurb: 'Official NORCET PYQs',              icon: 'scroll',   hue: '#E67700' },
   // Interactive drill modes (the gamified "earn coins" simulators). ids match
   // their App nav screen, so a heart in the manage screen routes straight in.

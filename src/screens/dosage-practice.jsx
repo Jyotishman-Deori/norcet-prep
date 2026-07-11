@@ -64,7 +64,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
     if (!dosageData && (loading || error)) {
       return (
         <div className="anim-fadeup">
-          <TopBar title="Dosage calculation" onBack={onBack} />
+          <TopBar title="Nursing Calc Test" onBack={onBack} />
           <div className="max-w-md mx-auto px-4">
             <ContentGate loading={loading} error={error} onRetry={reload} label="dosage questions" />
           </div>
@@ -135,7 +135,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
     <div className="test-enter">
       {/* Issues round — the counter is a separated chip (was running straight
           into the title as "Dosage calculation test1/10"). */}
-      <TopBar title="Dosage calculation" onBack={onBack} feedback={{ screen: "Dosage calc" }}
+      <TopBar title="Nursing Calc Test" onBack={onBack} feedback={{ screen: "Nursing calc" }}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full flex-shrink-0"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {index + 1} / {questions.length}

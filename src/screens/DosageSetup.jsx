@@ -44,7 +44,7 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
 
   return (
     <div className="anim-fadeup">
-      <TopBar title="Dosage calculation" onBack={onBack} feedback={{ screen: 'Dosage setup' }} solid />
+      <TopBar title="Nursing Calc Test" onBack={onBack} feedback={{ screen: 'Nursing calc setup' }} solid />
       <PageContainer size="content" className="pt-2 pb-32">
         {/* Hero — reads like a drug-math drill brief */}
         <Card className="p-4 mb-5" style={{ background: T.sec.stats, border: 'none' }}>
@@ -54,8 +54,8 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
               <Calculator size={18} color="#FFF" />
             </div>
             <div style={{ color: '#FFF' }}>
-              <div className="font-display text-lg font-semibold">Numeric drug-math</div>
-              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Type-in answers · step-by-step working after each</div>
+              <div className="font-display text-lg font-semibold">Numeric nursing maths</div>
+              <div className="text-xs" style={{ color: 'rgba(255,255,255,0.85)' }}>Doses, drips, BMI, fluids, GCS and more · working shown after each</div>
             </div>
           </div>
         </Card>

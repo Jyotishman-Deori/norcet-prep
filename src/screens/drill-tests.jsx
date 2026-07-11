@@ -103,9 +103,13 @@ function DrillTests({ onBack, onNavigate }) {
             <TopCard icon={Timer}      color={T.sec.mock}  title="Mock Test"
                      sub="Timed simulation" onClick={() => go('mock-setup')} fav="mock-setup"
                      tip="A timed run under exam pressure, fixed clock, no hints, score at the end." />
-            <TopCard icon={Calculator} color={T.sec.stats} title="Dosage Calc Test"
+            {/* Renamed from "Dosage Calc Test": the pool now spans the whole
+                Nursing Calculator Suite (drips, doses, BMI, BSA, fluids, MAP,
+                GCS, APGAR, conversions, obstetric dating), not just drug math.
+                Route + fav id stay 'dosage' so favourites and history survive. */}
+            <TopCard icon={Calculator} color={T.sec.stats} title="Nursing Calc Test"
                      sub="Pick count + pace" onClick={() => go('dosage')} fav="dosage"
-                     tip="Type-in dosage calculations with step-by-step working shown after each answer, the NORCET drug-math staple." />
+                     tip="Type-in nursing calculations across the whole Calculator Suite: drip rates, doses, BMI, BSA, fluids, MAP, GCS, APGAR and conversions, with step-by-step working after each answer." />
           </div>
         </Reveal>
 

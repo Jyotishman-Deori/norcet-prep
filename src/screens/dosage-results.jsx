@@ -53,7 +53,7 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
           <div className="min-w-0">
             <div className="flex items-center gap-1.5 mb-1">
               <Calculator size={13} style={{ color: T.muted }} />
-              <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>Dosage test complete</div>
+              <div className="text-[10px] uppercase tracking-widest font-semibold" style={{ color: T.muted }}>Nursing Calc Test complete</div>
             </div>
             <div className="font-display text-xl font-semibold" style={{ color: T.ink }}>
               {total > 0 ? `${correct} of ${total} correct` : 'No questions attempted'}
@@ -143,7 +143,7 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
             Review answers: Crib Sheet
           </Button>
         )}
-        <ShareScoreButton correct={correct} total={total} quizType="Dosage Drill"
+        <ShareScoreButton correct={correct} total={total} quizType="Nursing Calc"
                           displayName={displayName} streak={streak} referralCode={referralCode} />
         <Button onClick={onHome} size="lg" className="w-full">Back to home</Button>
       </div>
