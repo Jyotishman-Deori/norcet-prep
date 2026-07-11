@@ -99,6 +99,14 @@ export const SECTIONS = [
     ],
   },
   {
+    id: 'resume', title: 'Resume in-progress tests', icon: 'RotateCcw',
+    blurb: 'Let students pick up an untimed practice run they stepped away from.',
+    fields: [
+      { path: 'resumeTests', label: 'Resume practice sessions', type: 'toggle',
+        help: 'ON = an untimed practice run a student leaves part-way is saved on their device and offered back on Home, with a friendly reminder. The timed Mock and the Advanced Test exam simulation are never resumable. Turn this OFF to switch the whole feature off instantly, no redeploy.' },
+    ],
+  },
+  {
     id: 'media', title: 'Media hosting', icon: 'Image',
     blurb: 'Cloudflare R2 bucket that stores question images (uploads go through the media-sign broker).',
     fields: [

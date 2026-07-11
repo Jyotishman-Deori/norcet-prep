@@ -23,8 +23,13 @@ import { Tip } from '../ui/tooltip.jsx';
 import { Card, Button, Pill, PyqBadge, TopBar, requestFeedback, EduTag } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { QuestionImage, QuestionVideo, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
-import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
+import { ConfirmExitDialog, ResumeWelcomeDialog } from '../ui/confirm-exit-dialog.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
+import { getConfig } from '../lib/game-config.js';
+import { safeStorage } from '../lib/safe-storage.js';
+import { KEYS } from '../lib/keys.js';
+import { isResumable, buildSnapshot } from '../lib/test-session.js';
+import { buildCaution } from '../lib/resume-cautions.js';
 import { ReferenceLookupModal } from './reference.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import VitalsCheck from '../ui/vitals-check.jsx';
@@ -79,11 +84,19 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false, flashpoint = false }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false, flashpoint = false, resumeState = null }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const { t } = useI18n();
-  const [index, setIndex] = useState(0);
+  // RESUME — when relaunched from a saved snapshot, seed the position + answers
+  // so the user lands exactly where they left off. App rebuilds `questions` in
+  // the saved play order, so `schedule` (0..n-1) stays correct and `index` is
+  // just the saved position, clamped to the surviving pool.
+  const [index, setIndex] = useState(() => {
+    if (!resumeState) return 0;
+    const n = resumeState.index | 0;
+    return Math.max(0, Math.min(n, Math.max(0, questions.length - 1)));
+  });
   const [selected, setSelected] = useState([]);
   const [submitted, setSubmitted] = useState(false);
   const [revealed, setRevealed] = useState(false);   // user tapped "Show answer" without selecting
@@ -93,14 +106,14 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   // outcome; `whyBonus` drives the celebratory toast.
   const [lastCorrect, setLastCorrect] = useState(false);
   const [whyBonus, setWhyBonus] = useState(false);
-  const [results, setResults] = useState([]);        // per question { qId, correct, selected, timeMs, revealed? }
+  const [results, setResults] = useState(() => (resumeState && Array.isArray(resumeState.results) ? resumeState.results : []));        // per question { qId, correct, selected, timeMs, revealed? }
   const [bookmarkedLocal, setBookmarkedLocal] = useState(new Set(data.bookmarks));
   // For count-down (mock): seconds remaining. For count-up (legacy): seconds elapsed.
   // `isCountdown` is the single switch: true iff timeLimitMin > 0.
   const isCountdown = !!(timed && timeLimitMin && timeLimitMin > 0);
   const totalSeconds = isCountdown ? timeLimitMin * 60 : 0;
   const [secondsRemaining, setSecondsRemaining] = useState(totalSeconds);
-  const [elapsed, setElapsed] = useState(0);
+  const [elapsed, setElapsed] = useState(() => (resumeState ? Math.max(0, resumeState.elapsed | 0) : 0));
   const [hintShown, setHintShown] = useState(false);
   const [altShown, setAltShown] = useState(false);
   // #18 — question solution flags ("explanation still unclear"). Loaded once;
@@ -132,6 +145,64 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   // continues to the next item.
   const [schedule, setSchedule] = useState(() => questions.map((_, i) => i));
   const [skipCounts, setSkipCounts] = useState({});   // qId -> number of times skipped
+
+  // ---- RESUME AN IN-PROGRESS TEST (untimed practice only) --------------------
+  // A run the user steps away from is snapshotted locally and offered back from
+  // the Home screen. The timed Mock and the Advanced Test exam simulation are
+  // NEVER resumable (pausing a clock is the "unfair means" the caution warns
+  // against). Instantly killable via the game_config.resumeTests flag.
+  const canResume = !!(getConfig() && getConfig().resumeTests) && isResumable(mode, timed);
+  const startedAtRef = useRef(resumeState && resumeState.startedAt ? resumeState.startedAt : Date.now());
+  // Rotating mentor caution. `cursorRef` advances each time a caution is shown so
+  // the gentle nudge differs every session; the fixed integrity line never rotates.
+  const cursorRef = useRef(0);
+  const [caution, setCaution] = useState(null);
+  useEffect(() => {
+    let alive = true;
+    if (!profileId) return undefined;
+    safeStorage.get(KEYS.resumeCursor(profileId), false)
+      .then((r) => {
+        if (!alive) return;
+        const c = r && Number.isFinite(r.value) ? Math.trunc(r.value) : 0;
+        cursorRef.current = c;
+        setCaution({ exit: buildCaution({ kind: 'exit', cursor: c }), resume: buildCaution({ kind: 'resume', cursor: c }) });
+      })
+      .catch(() => { if (alive) setCaution({ exit: buildCaution({ kind: 'exit', cursor: 0 }), resume: buildCaution({ kind: 'resume', cursor: 0 }) }); });
+    return () => { alive = false; };
+  }, [profileId]);
+  const bumpCursor = () => {
+    const nextC = (cursorRef.current | 0) + 1;
+    cursorRef.current = nextC;
+    if (profileId) { try { safeStorage.set(KEYS.resumeCursor(profileId), nextC, false); } catch (e) {} }
+  };
+  // The warm "welcome back" note, shown once when a saved run is reopened.
+  const [showResumeWelcome, setShowResumeWelcome] = useState(!!resumeState);
+
+  // Persist / clear the snapshot. Persist is fire-and-forget (local IndexedDB);
+  // a storage failure must never block the quiz.
+  const persistSnapshot = () => {
+    if (!canResume || !profileId) return;
+    try {
+      const ids = schedule.map((i) => questions[i] && questions[i].id).filter(Boolean);
+      if (ids.length === 0) return;
+      const snap = buildSnapshot({ mode, questionIds: ids, results, index, elapsed, startedAt: startedAtRef.current });
+      safeStorage.set(KEYS.activeTest(profileId), snap, false);
+    } catch (e) { /* best-effort */ }
+  };
+  const clearSnapshot = () => {
+    if (!profileId) return;
+    try { safeStorage.delete(KEYS.activeTest(profileId), false); } catch (e) {}
+  };
+  // Autosave whenever the answered set / position / play order changes, so an
+  // accidental hard-close (not just the Back button) is recoverable. An untouched
+  // run (nothing answered, still on the first question) is not worth saving.
+  useEffect(() => {
+    if (!canResume) return;
+    if (results.length === 0 && index === 0) return;
+    persistSnapshot();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [results, index, schedule]);
+  // ---------------------------------------------------------------------------
   // Confirm-before-exit. The user can lose meaningful progress if they tap
   // back accidentally — and they will, on phones. Any tap on Back during an
   // active test routes through this dialog instead of immediately exiting.
@@ -442,6 +513,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
       setSubmitted(false);
       setRevealed(false);
     } else {
+      clearSnapshot();   // finished — there is nothing left to resume
       onComplete(results, bookmarkedLocal, elapsed, skipCounts);
     }
   };
@@ -864,11 +936,29 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
         so its `position: fixed` is relative to the viewport rather than to a
         transformed ancestor. Tapping the dim overlay defaults to "Stay" — safer
         when an accidental tap is what triggered the prompt in the first place. */}
-    {confirmExit && (
-      <ConfirmExitDialog mode={mode} answered={results.length} total={schedule.length}
-                         onStay={() => setConfirmExit(false)}
-                         onLeave={() => { setConfirmExit(false); onBack(); }} />
-    )}
+    {confirmExit && (() => {
+      const exitC = (caution && caution.exit) || buildCaution({ kind: 'exit', cursor: 0 });
+      return (
+        <ConfirmExitDialog mode={mode} answered={results.length} total={schedule.length}
+                           timed={timed} resumable={canResume}
+                           exitTip={exitC.tip} integrity={exitC.integrity} breakNote={exitC.breakNote}
+                           onStay={() => setConfirmExit(false)}
+                           onSaveExit={() => { setConfirmExit(false); persistSnapshot(); bumpCursor(); onBack(); }}
+                           onLeave={() => { setConfirmExit(false); onBack(); }} />
+      );
+    })()}
+
+    {/* RESUME — the warm "welcome back" note shown once when a saved run is
+        reopened, before the first question. Sibling of the anim-fadeup wrapper
+        so its position:fixed anchors to the viewport. */}
+    {showResumeWelcome && (() => {
+      const resumeC = (caution && caution.resume) || buildCaution({ kind: 'resume', cursor: 0 });
+      return (
+        <ResumeWelcomeDialog resumeTip={resumeC.tip} integrity={resumeC.integrity}
+                             answered={results.length} total={schedule.length}
+                             onContinue={() => { setShowResumeWelcome(false); bumpCursor(); }} />
+      );
+    })()}
 
     {/* Reference lookup overlay — sibling of the anim-fadeup wrapper so its
         position:fixed anchors to the viewport. Toggling it preserves all quiz

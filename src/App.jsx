@@ -73,6 +73,7 @@ import { normalizeEconomy, claimWhyBonus as claimWhyBonusPure, restoreHearts as 
 import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCrate as openCratePure, equipFrame as equipFramePure, normalizeLevelup as normalizeLevelupPure } from './lib/levelup.js';
 import { framePrice } from './lib/cosmetics.js';
 import { loadGameConfig, getConfig } from './lib/game-config.js';
+import { isValidSnapshot, nextUnansweredIndex } from './lib/test-session.js';
 import { isInternalAccount, setInternalSessionProfile } from './lib/internal-accounts.js';
 // Command-palette shortcut decision (pure; wired to a keydown listener below).
 import { paletteAction, isTypingTarget } from './lib/hotkeys.js';
@@ -1753,6 +1754,24 @@ export default function App() {
     window.addEventListener(NOTEFAB_PREF_EVENT, onPref);
     return () => { alive = false; window.removeEventListener(NOTEFAB_PREF_EVENT, onPref); };
   }, [profile]);
+  // RESUME AN IN-PROGRESS TEST — a fresh, non-stale snapshot of an untimed
+  // practice run the user stepped away from, surfaced as the Home "Resume" card.
+  // Re-checked every time Home is shown so it always reflects the latest run.
+  const [resumeSnap, setResumeSnap] = useState(null);
+  useEffect(() => {
+    if (nav.screen !== 'home') return undefined;
+    const pid = profile && profile.id;
+    if (!pid || !(getConfig() && getConfig().resumeTests)) { setResumeSnap(null); return undefined; }
+    let on = true;
+    safeStorage.get(KEYS.activeTest(pid), false)
+      .then((r) => {
+        if (!on) return;
+        const snap = r && r.value;
+        setResumeSnap(isValidSnapshot(snap, Date.now()) ? snap : null);
+      })
+      .catch(() => { if (on) setResumeSnap(null); });
+    return () => { on = false; };
+  }, [nav.screen, profile && profile.id]);
   // Phase 3 — a pending batch invite (?batch=) captured at boot; the join
   // confirmation modal shows once the user is logged in (guests sign up first).
   const [pendingBatchId, setPendingBatchId] = useState(null);
@@ -2710,8 +2729,60 @@ export default function App() {
     });
   }, [allQuestions, data]);
 
+  // RESUME — relaunch a saved untimed practice run. Rebuild the question objects
+  // from the snapshot ids against the live pool (dropping any pruned ids), then
+  // hand the run back to the Quiz with `resumeState` so it lands where it left
+  // off. If nothing survives (content changed), drop the snapshot quietly.
+  const resumeTest = useCallback((snap) => {
+    if (!snap || !Array.isArray(snap.questionIds)) return;
+    const pid = profile && profile.id;
+    const byId = new Map(allQuestions.map(q => [q.id, q]));
+    const qs = snap.questionIds.map(id => byId.get(id)).filter(Boolean);
+    if (qs.length === 0) {
+      if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} }
+      setResumeSnap(null);
+      return;
+    }
+    // Push the current screen onto the nav stack (as startQuiz does) so exiting
+    // the resumed run returns to where it was launched from.
+    {
+      const cur = navRef.current;
+      if (cur && cur.screen !== 'quiz' && !NAV_NO_STACK.includes(cur.screen)) {
+        const st = navStackRef.current;
+        st.push({ ...cur });
+        if (st.length > 12) st.shift();
+      }
+    }
+    const paceEligible = (m) => m === 'quick' || m === 'topic' || m === 'weak-topic' || m === 'mock';
+    const pace = paceEligible(snap.mode)
+      ? paceFlags(normalizePace(data && data.preferences))
+      : { pulse: false, flashpoint: false };
+    const survivingIds = qs.map(q => q.id);
+    // Land on the first UNanswered question in the play order (not the raw saved
+    // index), so a user who closed while viewing an answered question's
+    // explanation never re-answers a question they already attempted.
+    const idx = nextUnansweredIndex(survivingIds, snap.results);
+    setResumeSnap(null);
+    setNav({
+      screen: 'quiz', questions: qs, mode: snap.mode, timed: false,
+      resumeState: { ...snap, questionIds: survivingIds, index: idx },
+      ...pace,
+    });
+  }, [allQuestions, data, profile]);
+
+  // RESUME — discard the saved run from the Home card (its dismiss control).
+  const discardResume = useCallback(() => {
+    const pid = profile && profile.id;
+    if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} }
+    setResumeSnap(null);
+  }, [profile]);
+
   const completeQuiz = useCallback((results, bookmarkedLocal, elapsed, skipCounts) => {
     if (!data) return;
+    // RESUME — the run is finished; drop any in-progress snapshot + Home card
+    // (belt and braces alongside the Quiz's own clear on completion).
+    { const pid = profile && profile.id; if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} } }
+    setResumeSnap(null);
     setData(prev => {
       const newHistory = { ...prev.history };
       const today = todayStr();
@@ -4501,6 +4572,7 @@ export default function App() {
               onNotifRead={() => setUnreadNotifCount(0)}
               onEnableNotifications={() => setDailyReminder({ enabled: true })}
               onAckLegalUpdate={ackLegalUpdate}
+              resumeSnap={resumeSnap} onResumeTest={resumeTest} onDiscardResume={discardResume}
               onNavigate={handleHomeNavigate} />
       )}
 
@@ -4617,6 +4689,7 @@ export default function App() {
               coins={normalizeEconomy(data && data.economy).coins}
               onWhyBonus={claimWhyBonus}
               onCodeBlueResolved={onCodeBlueResolved}
+              resumeState={nav.resumeState || null}
               onComplete={completeQuiz} onBack={goHome} profileId={profile && profile.id} />
       )}
 

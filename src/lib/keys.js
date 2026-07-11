@@ -139,6 +139,16 @@ export const KEYS = {
   // per profile (shared:false). Powers the "Last backed up: X ago" line in
   // Settings → Sync & Backup; stamped whenever the pending-sync queue is empty.
   lastBackup:    (profileId) => `lastbackup:v1:${profileId}`,
+  // RESUME AN IN-PROGRESS TEST — local-only (shared:false), per profile. A slim
+  // snapshot of an UNTIMED practice run in progress (question ids in play order,
+  // answers so far, current index) so a user who steps away can pick it up. See
+  // lib/test-session.js. Health-adjacent nothing here; never synced. Cleared on
+  // completion, on discard, and when stale (>~24h). Gated by game_config.resumeTests.
+  activeTest:    (profileId) => `activetest:v1:${profileId}`,
+  // Rotating-caution cursor for the resume mentor prompts — a single integer that
+  // advances each time a caution is shown, so the "gentle reminder" differs every
+  // session (the fixed integrity line stays constant). Local, per profile.
+  resumeCursor:  (profileId) => `resumecursor:v1:${profileId}`,
 
   // -- Pipeline step 4 / P1 — Offline write queue (personal storage). --
   //    Tracks which profileIds have been written locally but not yet

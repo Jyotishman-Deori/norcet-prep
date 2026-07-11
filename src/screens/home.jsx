@@ -41,6 +41,7 @@ import { haptic, HAPTIC } from '../lib/juice.js';
 import { playTapSound } from '../lib/sound.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
+import { summarize as summarizeResume } from '../lib/test-session.js';
 
 // Nursing Calculator Suite card hue. Fixed (not theme-derived) and a clinical
 // blue on purpose: Drill and Learn are tonal shades of the theme primary, so the
@@ -122,7 +123,7 @@ function BrandMark() {
   );
 }
 
-function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead, onEnableNotifications, onAckLegalUpdate }) {
+function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead, onEnableNotifications, onAckLegalUpdate, resumeSnap, onResumeTest, onDiscardResume }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const { profile } = useProfile();
@@ -603,6 +604,44 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           on desktop.) Premium gradient cards + a pointer hover lift keep them
           from feeling like full-bleed OS bars. */}
       <div>
+
+      {/* RESUME AN IN-PROGRESS TEST — the top-most banner (a time-sensitive
+          "pick up where you left off" CTA). Full-width so its edges line up with
+          every card below on mobile, tablet and desktop. Only shown when a
+          fresh, non-stale untimed-practice snapshot exists (App re-checks it on
+          each Home visit). Resume relaunches the run; the X discards it. */}
+      {resumeSnap && onResumeTest && (() => {
+        const sum = summarizeResume(resumeSnap);
+        if (!sum || sum.total === 0) return null;
+        return (
+          <Card className="home-notice p-4 mb-4 anim-fadeup"
+                style={{ background: `linear-gradient(135deg, ${T.primary}1C, ${T.primary}0A)`, border: `1px solid ${T.primary}45` }}>
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                   style={{ background: T.primary + '20' }}>
+                <RotateCcw size={19} style={{ color: T.primary }} />
+              </div>
+              {/* English-only, matching the hardcoded-English exit/resume dialog
+                  copy this feature ships with (no 16-locale prose burden). */}
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold" style={{ color: T.ink }}>Pick up where you left off</div>
+                <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
+                  {sum.label}, {sum.answered} of {sum.total} answered. Your run is saved on this device.
+                </div>
+              </div>
+              <button onClick={onDiscardResume} aria-label="Discard saved test"
+                      className="no-tap-highlight p-1.5 -m-1 rounded-lg active:bg-black/5 flex-shrink-0">
+                <X size={16} style={{ color: T.muted }} />
+              </button>
+            </div>
+            <button onClick={() => onResumeTest(resumeSnap)}
+                    className="no-tap-highlight mt-3 w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold rounded-xl active:scale-[0.98] transition min-h-[44px]"
+                    style={{ background: T.primary, color: '#FFF' }}>
+              <Play size={14} fill="#FFF" strokeWidth={0} /> Resume test
+            </button>
+          </Card>
+        );
+      })()}
 
       {/* GUEST MODE (Phase A): subtle, dismissible sign-in nudge — shown only
           to guests who haven't dismissed it this session. Benefit-framed, never

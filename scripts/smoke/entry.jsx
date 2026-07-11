@@ -85,6 +85,47 @@ const SCREENS = {
       onComplete: noop, onBack: noop, profileId: 'smoke-test',
     });
   },
+  // RESUME — a Quiz relaunched from a saved snapshot: exercises the seeded
+  // index/results/elapsed useState initializers, the resume machinery effects
+  // and buildCaution, so a first-render crash on the resume path fails here.
+  'quiz-resume': async () => {
+    const m = await import('../../src/screens/quiz.jsx');
+    const qs = SEED_QUESTIONS.slice(0, 5);
+    return React.createElement(m.default, {
+      questions: qs, mode: 'topic',
+      timed: false, timeLimitMin: undefined, pulse: false, flashpoint: false,
+      coins: 0, onWhyBonus: noop, onCodeBlueResolved: noop,
+      onComplete: noop, onBack: noop, profileId: 'smoke-test',
+      resumeState: {
+        v: 1, kind: 'quiz', mode: 'topic',
+        questionIds: qs.map(q => q.id),
+        results: [{ qId: qs[0].id, correct: true }, { qId: qs[1].id, correct: false }],
+        index: 2, elapsed: 42, startedAt: Date.now(), ts: Date.now(),
+      },
+    });
+  },
+  // RESUME — the Home "Pick up where you left off" card (in-body, not portaled).
+  'home-resume': async () => {
+    const m = await import('../../src/screens/home.jsx');
+    return React.createElement(m.default, {
+      onNavigate: noop, whatsNew: null, onDismissWhatsNew: noop,
+      announcement: null, onDismissAnnouncement: noop,
+      userName: 'Smoke', isGuest: false,
+      guestBannerDismissed: true, onGuestSignIn: noop, onDismissGuestBanner: noop,
+      unseenReplies: [], onOpenMyReports: noop, onDismissReplies: noop,
+      onDismissGrace: noop, onDismissReviewToday: noop, onShowReviewInfo: noop,
+      onOpenMenu: noop, weeklySummaryDismissed: true, dismissWeeklySummary: noop,
+      onOpenNotifications: noop, unreadNotifCount: 0, onNotifRead: noop,
+      onEnableNotifications: noop,
+      resumeSnap: {
+        v: 1, kind: 'quiz', mode: 'topic',
+        questionIds: ['a', 'b', 'c', 'd', 'e'],
+        results: [{ qId: 'a' }, { qId: 'b' }],
+        index: 2, elapsed: 0, startedAt: Date.now(), ts: Date.now(),
+      },
+      onResumeTest: noop, onDiscardResume: noop,
+    });
+  },
   // isGuest: true renders the inline data zone, exercising the new
   // Recently-deleted row + the restore-erased-progress row (trash build).
   'settings': async () => {
@@ -432,6 +473,11 @@ const MARKERS = {
   // escapes ' as &#x27;).
   'nursing-calc-detail': ['93.3', 'Rounded to 1 decimal place.', 'Copy value', '70 to 100 mmHg', 'Verify against your institution'],
   'quiz': ['Educational use only. Not for clinical decisions.'],
+  // RESUME — the relaunched quiz still renders its question card + EduTag (the
+  // return caution is portaled, so it is nulled in smoke like other dialogs).
+  'quiz-resume': ['Educational use only. Not for clinical decisions.'],
+  // RESUME — the in-body Home card title (single string literal).
+  'home-resume': ['Pick up where you left off'],
 };
 
 let failed = 0;

@@ -21,7 +21,7 @@ import {
 } from '../lib/game-config-edit.js';
 import { logAdminAction } from '../lib/admin-audit.js';
 
-const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket, FlaskConical, Wrench, Image };
+const ICONS = { Gauge, Crown, Sparkles, Gift, Target, Shield, Ticket, FlaskConical, Wrench, Image, RotateCcw };
 const clone = (o) => JSON.parse(JSON.stringify(o));
 
 export default function AdminConfigEditor({ onBack, actorName }) {

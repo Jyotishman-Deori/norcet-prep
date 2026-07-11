@@ -107,6 +107,14 @@ export const DEFAULTS = {
   // title/message are optional overrides; blank falls back to friendly copy.
   maintenance: { on: false, title: '', message: '' },
 
+  // Resume an in-progress test. ON = an UNTIMED practice run the user steps away
+  // from is snapshotted locally and offered back on the Home screen ("Pick up
+  // where you left off"), wrapped in a friendly-mentor caution. The timed Mock
+  // and the Advanced Test exam simulation are NEVER resumable, by design (pausing
+  // a clock is the "unfair means" the caution warns against). Killable from the
+  // admin Live-config editor with no redeploy if it ever misbehaves in prod.
+  resumeTests: true,
+
   // Media hosting (Cloudflare R2). Question images/clips live in the owner's
   // R2 bucket (zero egress); the ADMIN app uploads via the media-sign Edge
   // Function (presigned PUT; credentials are Supabase secrets, never here).

@@ -106,6 +106,15 @@ assert.deepEqual(validateConfig(DEFAULTS), []);
   assert.deepEqual(validateConfig(setAtPath(clone(DEFAULTS), 'maintenance.on', true)), [], 'toggles never error');
 }
 
+// ---- resume-tests flag: default ON, toggle coerces, clean single-field diff ----
+{
+  assert.equal(getAtPath(DEFAULTS, 'resumeTests'), true, 'ships ON (owner wants it live)');
+  const s = sanitizeConfig(setAtPath(clone(DEFAULTS), 'resumeTests', 0)); // falsey coercion
+  assert.equal(getAtPath(s, 'resumeTests'), false);
+  assert.deepEqual(changedFields(clone(DEFAULTS), setAtPath(clone(DEFAULTS), 'resumeTests', false)), ['resumeTests']);
+  assert.deepEqual(validateConfig(setAtPath(clone(DEFAULTS), 'resumeTests', false)), [], 'toggles never error');
+}
+
 // every schema field resolves to a real path in DEFAULTS (no typos)
 for (const f of ALL_FIELDS) {
   assert.notEqual(getAtPath(DEFAULTS, f.path), undefined, `schema path exists: ${f.path}`);
