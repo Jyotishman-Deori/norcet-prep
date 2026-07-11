@@ -11,6 +11,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { useContent } from '../lib/content.js';
 import { registerHelpOpener, Card } from '../ui/primitives.jsx';
+import { getConfig } from '../lib/game-config.js';
 
 function HelpHost() {
   const [ctx, setCtx] = useState(null); // null = closed
@@ -97,12 +98,17 @@ function HelpModal({ screen, onClose }) {
           </button>
 
           {/* Ask-companion hand-off. The host has no router access, so this
-              rides the same window-event pattern as norcet:reset-screen. */}
-          <button onClick={() => { onClose(); try { window.dispatchEvent(new CustomEvent('norcet:open-assistant')); } catch (e) {} }}
-                  className="no-tap-highlight w-full mt-2 py-2.5 rounded-xl text-[12.5px] font-medium active:scale-[0.99] transition inline-flex items-center justify-center gap-1.5"
-                  style={{ background: 'transparent', color: T.primary }}>
-            <Sparkles size={13} /> Still stuck? Chat with your companion
-          </button>
+              rides the same window-event pattern as norcet:reset-screen.
+              Hidden while the chat is parked (game_config.assistantChat, default
+              OFF): a user who is "still stuck" needs an answer, and a Coming soon
+              page is a worse dead end than no button at all. */}
+          {getConfig().assistantChat === true && (
+            <button onClick={() => { onClose(); try { window.dispatchEvent(new CustomEvent('norcet:open-assistant')); } catch (e) {} }}
+                    className="no-tap-highlight w-full mt-2 py-2.5 rounded-xl text-[12.5px] font-medium active:scale-[0.99] transition inline-flex items-center justify-center gap-1.5"
+                    style={{ background: 'transparent', color: T.primary }}>
+              <Sparkles size={13} /> Still stuck? Chat with your companion
+            </button>
+          )}
         </div>
       </Card>
     </div>

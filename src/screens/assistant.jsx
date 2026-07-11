@@ -14,7 +14,7 @@
 // the bundled base at load, offline-mirrored like every other pack.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, RotateCcw, Send, Sparkles, MessageCircleQuestion, Flag, LayoutGrid, ChevronLeft, X } from 'lucide-react';
+import { ArrowRight, RotateCcw, Send, Sparkles, MessageCircleQuestion, Flag, LayoutGrid, ChevronLeft, X, LifeBuoy } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { TopBar, requestFeedback } from '../ui/primitives.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
@@ -28,6 +28,7 @@ import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
 import { prefersReducedMotion } from '../lib/juice.js';
 import { GUEST_ID, isGuestProfile } from '../lib/profiles.js';
+import { getConfig, loadGameConfig } from '../lib/game-config.js';
 
 const MAX_TURNS = 40;      // persisted transcript cap
 const INPUT_MAX = 200;
@@ -159,6 +160,24 @@ function AssistantScreen({ onBack, onNavigate }) {
     votedRef.current = new Set();
   };
 
+  // ── PARKED (owner, 2026-07-12) ────────────────────────────────────────────
+  // The chat is gated behind game_config.assistantChat, default OFF. The owner
+  // tested the rule-based companion and it did not feel smart enough to put in
+  // front of students, and a half-clever chatbot costs more trust than an honest
+  // wait. So students get a straight "not ready yet" plus the help paths that DO
+  // work, and nothing to type at. Fail-closed: if the remote config has not
+  // landed we show Coming soon rather than a chat we may not want live.
+  // Nothing here is deleted. Flip the toggle in admin Live config and the whole
+  // feature (84 answers, engine, topic browser) is back with no redeploy.
+  const [chatOn, setChatOn] = useState(() => getConfig().assistantChat === true);
+  useEffect(() => {
+    let alive = true;
+    loadGameConfig()
+      .then(() => { if (alive) setChatOn(getConfig().assistantChat === true); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, []);
+
   const escalateRow = (
     <div className="flex flex-wrap gap-2 mt-2">
       <button onClick={() => requestFeedback({ screen: 'Assistant' })}
@@ -173,6 +192,66 @@ function AssistantScreen({ onBack, onNavigate }) {
       </button>
     </div>
   );
+
+  // Parked. Declared AFTER every hook above, so hook order stays constant.
+  if (!chatOn) {
+    const path = (Icon, label, sub, onClick) => (
+      <button onClick={onClick}
+              className="no-tap-highlight pressable w-full flex items-center gap-3 p-3.5 rounded-2xl text-left"
+              style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+             style={{ background: T.primary + '14' }}>
+          <Icon size={17} style={{ color: T.primary }} aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[13.5px] font-semibold" style={{ color: T.ink }}>{label}</div>
+          <div className="text-[11.5px] mt-0.5 leading-relaxed" style={{ color: T.muted }}>{sub}</div>
+        </div>
+        <ArrowRight size={15} style={{ color: T.muted }} className="flex-shrink-0" aria-hidden="true" />
+      </button>
+    );
+    return (
+      <div className="anim-fadeup">
+        <TopBar title={`Ask ${name}`} onBack={onBack} feedback={{ screen: 'Assistant' }} solid />
+        <div className="max-w-md md:max-w-2xl mx-auto px-4 md:px-6 pt-6 pb-24">
+          <div className="text-center mb-7">
+            <div className="asst-pop w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center"
+                 style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primary}B3)`,
+                          boxShadow: `0 10px 26px ${T.primary}45` }}>
+              <Sparkles size={28} color="#FFF" aria-hidden="true" />
+            </div>
+            <div className="inline-block text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full mb-3"
+                 style={{ background: T.accent + '18', color: T.accent, border: `1px solid ${T.accent}45` }}>
+              Coming soon
+            </div>
+            <h2 className="font-display text-2xl font-semibold mb-2" style={{ color: T.ink }}>
+              {name} is still learning
+            </h2>
+            <p className="text-sm leading-relaxed mx-auto max-w-sm" style={{ color: T.inkSoft }}>
+              We are building a companion that can genuinely answer you in your own words. It is not
+              there yet, and we would rather tell you that than hand you a chatbot that guesses.
+              You will find it here the day it is ready.
+            </p>
+          </div>
+
+          <div className="text-[10px] uppercase tracking-widest font-semibold mb-2 px-1" style={{ color: T.muted }}>
+            In the meantime
+          </div>
+          <div className="space-y-2">
+            {path(LifeBuoy, 'Browse help articles',
+                  'Every answer the companion would have given, written out and searchable.',
+                  () => onNavigate && onNavigate({ screen: 'support' }))}
+            {path(MessageCircleQuestion, 'Ask the community',
+                  'Post your question and a real person answers it.',
+                  () => onNavigate && onNavigate({ screen: 'faq' }))}
+            {path(Flag, 'Report a problem',
+                  'Something broken or a wrong answer? This reaches the team directly.',
+                  () => requestFeedback({ screen: 'Assistant' }))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="anim-fadeup">

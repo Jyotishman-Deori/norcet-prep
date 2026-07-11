@@ -4949,8 +4949,13 @@ export default function App() {
       {/* F-F — FAQ. Admin reply/delete + helpful counts show only when isAdmin. */}
       {nav.screen === 'faq' && (
         <Suspense fallback={<LazyScreenFallback />}>
+        {/* The companion chat is parked (game_config.assistantChat, default OFF).
+            Withholding the prop drops FAQ's "ask your companion" CTA: someone
+            already on the community page needs a human, not a Coming soon page. */}
         <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} focusId={nav.focusId || null}
-                   onOpenAssistant={() => navigate({ screen: 'assistant' })} />
+                   onOpenAssistant={getConfig().assistantChat === true
+                     ? () => navigate({ screen: 'assistant' })
+                     : null} />
         </Suspense>
       )}
 

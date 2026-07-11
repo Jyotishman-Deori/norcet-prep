@@ -29,6 +29,7 @@ import { playTapSound } from '../lib/sound.js';
 import FavHeart from './fav-heart.jsx';
 // TIP #13 — hold/hover info on every drawer row.
 import { Tip } from './tooltip.jsx';
+import { getConfig } from '../lib/game-config.js';
 
 // Remembered across open/close (module-level): the row the user last
 // navigated to, so the NEXT open can welcome them back with a brief glow.
@@ -278,7 +279,14 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     // FAQ / companion / report.
     { key: 'support', icon: LifeBuoy, color: T.primary, label: t('nav.drawer.support.label'), badge: t('nav.drawer.badgeNew'), tip: t('nav.drawer.support.tip'), sub: t('nav.drawer.support.sub'), action: () => go('support', null, 'support') },
     { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: t('nav.drawer.faq.label'), badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: t('nav.drawer.faq.tip'), sub: t('nav.drawer.faq.sub'), action: () => go('faq', null, 'faq') },
-    { key: 'assistant', icon: Sparkles, color: T.primary, label: t('nav.drawer.assistant.label'), tip: t('nav.drawer.assistant.tip'), sub: t('nav.drawer.assistant.sub'), action: () => go('assistant', null, 'assistant') },
+    // Companion chat is parked (game_config.assistantChat, default OFF). Hidden
+    // here rather than badged: its label/tip/sub are TRANSLATED copy promising a
+    // working chat, and a lone English "Soon" badge under Hindi copy reads worse
+    // than not offering it. Students still learn it is coming from the Support
+    // Center card, which is the designed front door for help.
+    ...(getConfig().assistantChat === true
+      ? [{ key: 'assistant', icon: Sparkles, color: T.primary, label: t('nav.drawer.assistant.label'), tip: t('nav.drawer.assistant.tip'), sub: t('nav.drawer.assistant.sub'), action: () => go('assistant', null, 'assistant') }]
+      : []),
     { key: 'about', icon: Info, color: T.accent, label: t('nav.drawer.about.label'), tip: t('nav.drawer.about.tip'), sub: t('nav.drawer.about.sub'), action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly

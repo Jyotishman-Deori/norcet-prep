@@ -117,6 +117,15 @@ export const DEFAULTS = {
   // admin Live-config editor with no redeploy if it ever misbehaves in prod.
   resumeTests: true,
 
+  // Ask-your-companion chat. OFF = students see a "Coming soon" card instead of
+  // the chat: no composer, no topic browser, nothing to type into. Owner's call
+  // 2026-07-12 after testing it, the rule-based companion simply did not feel
+  // smart enough to put in front of students, and a half-clever chatbot is worse
+  // for trust than an honest "not ready yet". The screen, the 84-entry KB and the
+  // engine are all PARKED, not deleted, so this is one toggle away from coming
+  // back (admin Live config -> no redeploy) whenever a real assistant lands.
+  assistantChat: false,
+
   // Media hosting (Cloudflare R2). Question images/clips live in the owner's
   // R2 bucket (zero egress); the ADMIN app uploads via the media-sign Edge
   // Function (presigned PUT; credentials are Supabase secrets, never here).

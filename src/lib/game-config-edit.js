@@ -107,6 +107,14 @@ export const SECTIONS = [
     ],
   },
   {
+    id: 'assistant', title: 'Ask your companion (chat)', icon: 'Sparkles',
+    blurb: 'The in-app FAQ chat. Currently OFF: students see a "Coming soon" card instead.',
+    fields: [
+      { path: 'assistantChat', label: 'Companion chat', type: 'toggle',
+        help: 'OFF = students get an honest "Coming soon" card wherever the companion appears, and cannot type at it. The chat, its 84 answers and the engine are all still in the app, so turning this ON brings the whole feature straight back with no redeploy. It was switched off because the rule-based companion did not feel smart enough to ship, and a half-clever chatbot costs more trust than an honest wait.' },
+    ],
+  },
+  {
     id: 'media', title: 'Media hosting', icon: 'Image',
     blurb: 'Cloudflare R2 bucket that stores question images (uploads go through the media-sign broker).',
     fields: [

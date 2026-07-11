@@ -27,6 +27,7 @@ import { Card, TopBar, requestFeedback, requestSupport } from '../ui/primitives.
 import PageContainer from '../ui/page-container.jsx';
 import { prefersReducedMotion } from '../lib/juice.js';
 import { KB_CATEGORIES, QUICK_STARTS, ASSISTANT_KB } from '../data/assistant-kb.js';
+import { getConfig } from '../lib/game-config.js';
 
 // Local, rule-based match over the bundled KB. Scores title hits above keyword
 // hits above body hits, so "streak" surfaces the streak article first.
@@ -103,6 +104,10 @@ function SectionTitle({ T, children, icon: Icon }) {
 export default function SupportScreen({ onBack, onNavigate }) {
   const { theme: T } = useTheme();
   const reduced = prefersReducedMotion();
+  // The companion chat is parked (game_config.assistantChat, default OFF). The
+  // card stays visible on purpose, wearing a Coming soon badge, so students know
+  // it is planned rather than quietly missing. It opens the Coming soon screen.
+  const companionOn = getConfig().assistantChat === true;
 
   const [query, setQuery] = useState('');
   const [openCat, setOpenCat] = useState(null);      // expanded category id
@@ -213,14 +218,17 @@ export default function SupportScreen({ onBack, onNavigate }) {
             ) : (
               <Card className="p-5 text-center">
                 <div className="text-sm leading-relaxed mb-4" style={{ color: T.inkSoft }}>
-                  Nothing matched that. Try a different word, ask your companion, or report it
-                  and a human will read it.
+                  {companionOn
+                    ? 'Nothing matched that. Try a different word, ask your companion, or report it and a human will read it.'
+                    : 'Nothing matched that. Try a different word, ask the community, or report it and a human will read it.'}
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center">
-                  <button onClick={() => onNavigate && onNavigate({ screen: 'assistant' })}
+                  {/* Parked companion: send them to humans, not to a Coming soon page.
+                      Someone whose search just failed needs an answer now. */}
+                  <button onClick={() => onNavigate && onNavigate({ screen: companionOn ? 'assistant' : 'faq' })}
                           className="no-tap-highlight pressable inline-flex items-center justify-center gap-1.5 px-4 rounded-xl text-[13px] font-semibold"
                           style={{ background: T.primary, color: '#FFF', minHeight: 44 }}>
-                    <MessageCircle size={15} aria-hidden="true" /> Ask your companion
+                    <MessageCircle size={15} aria-hidden="true" /> {companionOn ? 'Ask your companion' : 'Ask the community'}
                   </button>
                   <button onClick={() => requestFeedback({ screen: 'Support Center' })}
                           className="no-tap-highlight pressable inline-flex items-center justify-center gap-1.5 px-4 rounded-xl text-[13px] font-semibold"
@@ -245,9 +253,19 @@ export default function SupportScreen({ onBack, onNavigate }) {
                     <Sparkles size={19} style={{ color: T.primary }} aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="text-sm font-semibold" style={{ color: T.ink }}>Ask your companion</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-semibold" style={{ color: T.ink }}>Ask your companion</span>
+                      {!companionOn && (
+                        <span className="text-[9.5px] uppercase tracking-widest font-bold px-1.5 py-0.5 rounded-full"
+                              style={{ background: T.accent + '18', color: T.accent, border: `1px solid ${T.accent}45` }}>
+                          Coming soon
+                        </span>
+                      )}
+                    </div>
                     <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-                      Chat your question in your own words. Instant, offline answers.
+                      {companionOn
+                        ? 'Chat your question in your own words. Instant, offline answers.'
+                        : 'A companion you can ask in your own words. We are still building it.'}
                     </div>
                   </div>
                   <ChevronRight size={18} className="flex-shrink-0" style={{ color: T.muted }} aria-hidden="true" />

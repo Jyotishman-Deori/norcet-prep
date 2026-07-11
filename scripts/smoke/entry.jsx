@@ -513,7 +513,12 @@ const MARKERS = {
   'auth-create': ['educational study tool for exam preparation', 'Content Disclaimer'],
   'welcome': ['By continuing you agree to our'],
   'app-footer': ['Educational use only. Not for clinical decisions.'],
-  'assistant': ['your guide to everything NurseHolic', 'Popular questions', 'How do streaks work?'],
+  // The chat is PARKED (game_config.assistantChat, default OFF), so the screen
+  // renders the Coming soon card. These markers assert the parked state: no
+  // composer, no topic browser, and the real help paths offered instead. If the
+  // flag is ever flipped back ON by default, swap these for the chat markers
+  // ('your guide to everything NurseHolic', 'Popular questions').
+  'assistant': ['Coming soon', 'is still learning', 'Ask the community'],
   'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
   'home-guest': ['exploring as a guest', 'Sign in / Create account'],
