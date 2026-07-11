@@ -212,6 +212,22 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
     </div>
   );
 
+  // Leave-tour confirmation. Every "Skip tour" button and the device back button
+  // at the tour root set `leaveConfirm`, and this is what turns that into a real
+  // choice. It MUST be rendered by every branch below: this screen returns from
+  // six different places (pitch / library / questions / ikigai / tips / the demo
+  // fallback), and while it was declared inside only the last of them, Skip did
+  // nothing at all on any of the others, i.e. on the whole tour a new user
+  // actually sees. Declared once here so it cannot fall out of a branch again.
+  const leaveDialog = (
+    <ConfirmDialog open={leaveConfirm}
+                   title={t('welcome.leave.title')}
+                   body={t('welcome.leave.body')}
+                   confirmLabel={t('welcome.leave.leave')} cancelLabel={t('welcome.leave.stay')} tone="primary"
+                   onConfirm={() => { setLeaveConfirm(false); onDismiss(); }}
+                   onCancel={() => setLeaveConfirm(false)} />
+  );
+
   // ---- NEW-01 page 1: App pitch ----
   if (step === 'pitch') {
     const points = [
@@ -261,6 +277,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
           </button>.
           {' '}{t('welcome.consentEdu')}
         </div>
+        {leaveDialog}
       </div>
     );
   }
@@ -302,6 +319,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <div className="welcome-row" style={{ animationDelay: `${rows.length * 70 + 60}ms` }}>
           <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>{t('common.next')}</Button>
         </div>
+        {leaveDialog}
       </div>
     );
   }
@@ -397,6 +415,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <div className="text-[10.5px] text-center mt-1" style={{ color: T.muted }}>
           {t('welcome.demo.contentNote')}
         </div>
+        {leaveDialog}
       </div>
     );
   }
@@ -462,6 +481,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             {t('welcome.skipThisOne')} <ArrowRight size={14} />
           </button>
         )}
+        {leaveDialog}
       </div>
     );
   }
@@ -523,6 +543,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             {t('welcome.startStudying')}
           </Button>
         </div>
+        {leaveDialog}
       </div>
     );
   }
@@ -663,12 +684,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
 
       {/* Leave-tour confirmation (issues round) — the device back button (or
           Skip) never exits abruptly; only an explicit choice ends the tour. */}
-      <ConfirmDialog open={leaveConfirm}
-                     title={t('welcome.leave.title')}
-                     body={t('welcome.leave.body')}
-                     confirmLabel={t('welcome.leave.leave')} cancelLabel={t('welcome.leave.stay')} tone="primary"
-                     onConfirm={() => { setLeaveConfirm(false); onDismiss(); }}
-                     onCancel={() => setLeaveConfirm(false)} />
+      {leaveDialog}
     </div>
   );
 }

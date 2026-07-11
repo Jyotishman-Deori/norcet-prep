@@ -198,7 +198,20 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   // (same pattern as Themes). Opening tags <html> with .nav-fwd for ~420ms
   // so the sub-page's anim-fadeup becomes the shared-axis forward slide
   // (sharedAxisIn 0.28s ease-in-out — see font-styles), matching the drawer.
+  //
+  // ⚠ Scroll does NOT live in React state, so it survived the swap: a sub-page
+  // (and the Legal doc) REPLACES the list in place, and the window stayed exactly
+  // where it was. Opening a row from the bottom half of a scrolled list therefore
+  // dropped you into the new page already scrolled past its top, usually onto the
+  // blank space under a short page, which reads as "the section opened at the
+  // bottom of the screen". So: pin the new view to its top on the way in, and put
+  // the list back exactly where the user left it on the way out.
+  const listScrollRef = useRef(0);
+  const rememberListScroll = () => {
+    try { listScrollRef.current = window.scrollY || window.pageYOffset || 0; } catch (e) {}
+  };
   const openSub = (name) => {
+    rememberListScroll();
     try {
       document.documentElement.classList.add('nav-fwd');
       setTimeout(() => { try { document.documentElement.classList.remove('nav-fwd'); } catch (e) {} }, 420);
@@ -206,6 +219,28 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
     setSubPage(name);
   };
   const closeSub = () => setSubPage(null);
+
+  // One key for "which view is on screen". Any sub-view -> top. Back to the main
+  // list -> restore. Instant, never smooth: this is a page change, not a scroll.
+  const subViewKey = legalView ? `legal:${legalView}` : (subPage || '');
+  useEffect(() => {
+    const to = (y) => { try { window.scrollTo(0, y); } catch (e) { /* no window */ } };
+    if (subViewKey) { to(0); return undefined; }
+    // Restoring the list is NOT a single call. On the frame we return to it the
+    // long list has not been laid out yet, so the document is still only as tall as
+    // the sub-page we just left and the browser CLAMPS our restore to that smaller
+    // max scroll. Re-apply each frame until the scroll actually LANDS on the target
+    // (i.e. the full height exists), then stop. Bounded so it can never spin.
+    const target = listScrollRef.current || 0;
+    if (!target) return undefined;
+    // The list is only ~a third of its height on the frame we come back to it (the
+    // sub-page we left was shorter, and parts of this list resolve from async
+    // storage), so a single scrollTo gets CLAMPED to that smaller max and lands the
+    // user in the middle of the list. Re-apply a few times over ~400ms, by which
+    // point the full height exists and the position sticks.
+    const ts = [0, 60, 160, 300, 450].map(ms => setTimeout(() => to(target), ms));
+    return () => ts.forEach(clearTimeout);
+  }, [subViewKey]);
 
   const SubPageCard = ({ icon: Icon, iconBg, title, sub, onClick, tip }) => {
     const card = (

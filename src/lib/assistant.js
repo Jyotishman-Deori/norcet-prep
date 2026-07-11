@@ -54,6 +54,58 @@ export function detectIntent(text) {
   return null;
 }
 
+// ---- scope -----------------------------------------------------------
+// This KB answers questions about the APP. Students, reasonably, also type
+// clinical questions ("normal potassium level") and calculations ("gtt per
+// minute formula") into any box that looks like a chat. The keyword matcher
+// used to find *some* app entry for those and answer it with medium confidence,
+// which is exactly what makes a rule-based guide feel stupid: a confident,
+// irrelevant answer. So we detect them and say so, honestly, with a route to
+// the thing that ACTUALLY answers them. Saying "not my job, here is the right
+// tool" is a smart answer; guessing is not.
+//
+// Signals are matched against norm(), which strips punctuation, so 'mg/dL'
+// arrives as 'mg dl' and 'mcg/kg/min' as 'mcg kg min'.
+const CALC_SIGNALS = [
+  'gtt', 'drip rate', 'drops per minute', 'drops per min', 'ml hr', 'mcg kg', 'mg kg',
+  'bmi', 'bsa', 'crcl', 'creatinine clearance', 'body surface area', 'ideal body weight',
+  'maintenance fluid', 'infusion rate', 'apgar', 'glasgow', 'braden', 'morse', 'naegele',
+];
+const CALC_VERBS = ['calculate', 'calculation', 'formula', 'convert', 'how much', 'how many'];
+const CLINICAL_SIGNALS = [
+  'normal range', 'normal value', 'normal level', 'reference range',
+  'serum', 'plasma', 'mmol', 'meq', 'mg dl', 'mmhg',
+  'side effect', 'adverse effect', 'contraindicat', 'antidote', 'mechanism of action',
+  'symptom', 'signs of', 'treatment of', 'management of', 'pathophysiolog', 'nursing care plan',
+  'potassium', 'sodium', 'haemoglobin', 'hemoglobin', 'creatinine', 'platelet', 'bilirubin',
+];
+
+// 'calc' -> the Calculator Suite genuinely answers it.
+// 'clinical' -> nothing in this app "answers" it in a chat; be honest and point
+// at concept cards / explanations / a human.
+export function detectScope(text) {
+  const n = ' ' + norm(text) + ' ';
+  if (CALC_SIGNALS.some((s) => n.includes(s))) return 'calc';
+  if (CALC_VERBS.some((s) => n.includes(s)) && /\d/.test(n)) return 'calc';
+  if (CLINICAL_SIGNALS.some((s) => n.includes(s))) return 'clinical';
+  return null;
+}
+
+const SCOPE_REPLIES = {
+  calc: () => ({
+    kind: 'outOfScope', scope: 'calc', mood: 'warm',
+    text: 'That is a calculation, and you deserve the exact number rather than my best guess. The Nursing Calculator Suite does drips, doses by weight, BMI, BSA, creatinine clearance, fluids and the scoring tools, and it shows you the working line by line.',
+    route: { screen: 'nursing-calc' }, routeLabel: 'Open the Calculator Suite',
+    followups: [], escalate: false,
+  }),
+  clinical: () => ({
+    kind: 'outOfScope', scope: 'clinical', mood: 'concerned',
+    text: 'I am your guide to the app, not a clinical reference, so I am not going to invent a value for you. For the actual medicine: Concept cards explain topics properly, every practice question carries a full explanation, and the community is there when you want a human answer.',
+    route: { screen: 'learn-topics' }, routeLabel: 'Open Concept cards',
+    followups: [], escalate: true,
+  }),
+};
+
 // ---- knowledge-base matching ----------------------------------------
 // Returns { best, score, confidence: 'high'|'medium'|'low', alternates }.
 export function matchKb(kb, query, ctx) {
@@ -130,8 +182,8 @@ const pools = {
     () => 'See you! May your streak stay unbroken.',
   ],
   noMatch: [
-    () => 'Hmm, I do not have a solid answer for that one yet. Here is what I think comes closest, or ask the community and a human will jump in:',
-    () => 'That one stumped me, sorry! Maybe one of these is what you meant, or take it to the FAQ community:',
+    () => 'I do not have a solid answer for that one, and I would rather tell you that than guess. Browse the topics I do cover, or take it to the community where a real person will pick it up.',
+    () => 'That one stumped me, sorry. Have a look through my topics below, or ask the community and a human will jump in.',
   ],
   notHelpful: [
     () => 'Ah, sorry that missed the mark. Want to tell the team directly, or ask the community? Both really help me get smarter.',
@@ -165,6 +217,12 @@ export function replyFor(kb, query, ctx, { companionName = 'Nana', userName = ''
     };
   }
 
+  // Off-topic (clinical / a calculation) beats a MEDIUM app match. A high-
+  // confidence app entry still wins: "how do I use the calculator" is a genuine
+  // app question and must keep its real answer.
+  const scope = detectScope(query);
+  if (scope && match.confidence !== 'high') return SCOPE_REPLIES[scope]();
+
   if (match.best && match.confidence !== 'low') {
     const e = match.best;
     return {
@@ -176,10 +234,15 @@ export function replyFor(kb, query, ctx, { companionName = 'Nana', userName = ''
     };
   }
 
+  // Stumped. Offer the CLOSEST entries only. It used to fall back to three
+  // RANDOM entries, which is worse than saying nothing: unrelated suggestions
+  // are what made the companion look like it was not listening. If we have
+  // nothing close, we say so and hand over to the topic browser and to humans.
   return {
     kind: 'noMatch', mood: 'concerned',
     text: pickFrom(pools.noMatch, pick, companionName, userName),
-    followups: (match.alternates.length ? match.alternates : sample(kb, 3, pick)).slice(0, 3).map((e) => ({ id: e.id, q: e.q })),
+    followups: match.alternates.slice(0, 3).map((e) => ({ id: e.id, q: e.q })),
+    browse: true,
     escalate: true,
   };
 }
@@ -214,11 +277,16 @@ function quickFollowups(kb, ctx) {
   return [];
 }
 
-function sample(kb, n, pick) {
-  const copy = kb.slice();
-  const out = [];
-  while (copy.length && out.length < n) out.push(copy.splice(pick(copy.length), 1)[0]);
-  return out;
+// Every KB entry grouped by category, for the guided topic browser. This is how
+// a user discovers the 80+ things the companion CAN answer, instead of guessing
+// at the text box and bouncing off it.
+export function browseTopics(kb, categories) {
+  const groups = [];
+  for (const cat of Object.keys(categories || {})) {
+    const items = kb.filter((e) => e.cat === cat).map((e) => ({ id: e.id, q: e.q }));
+    if (items.length) groups.push({ cat, label: categories[cat], items });
+  }
+  return groups;
 }
 
 export function kbById(kb, id) {

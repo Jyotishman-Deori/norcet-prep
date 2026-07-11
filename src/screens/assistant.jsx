@@ -14,12 +14,12 @@
 // the bundled base at load, offline-mirrored like every other pack.
 // =====================================================================
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { ArrowRight, RotateCcw, Send, Sparkles, MessageCircleQuestion, Flag } from 'lucide-react';
+import { ArrowRight, RotateCcw, Send, Sparkles, MessageCircleQuestion, Flag, LayoutGrid, ChevronLeft, X } from 'lucide-react';
 import { useTheme, useProfile } from '../lib/app-context.jsx';
 import { TopBar, requestFeedback } from '../ui/primitives.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
-import { ASSISTANT_KB, QUICK_STARTS } from '../data/assistant-kb.js';
-import { replyFor, notHelpfulReply, kbById } from '../lib/assistant.js';
+import { ASSISTANT_KB, QUICK_STARTS, KB_CATEGORIES } from '../data/assistant-kb.js';
+import { replyFor, notHelpfulReply, kbById, browseTopics } from '../lib/assistant.js';
 import { mergeAssistant, normalizePack } from '../lib/content-packs.js';
 import { readPack } from '../lib/content.js';
 import { loadCompanionName } from '../lib/notes-store.js';
@@ -117,6 +117,18 @@ function AssistantScreen({ onBack, onNavigate }) {
     [kb]
   );
 
+  // Guided topic browser. The companion is rule-based, not a model, so its one
+  // real weakness is a user typing something it was never taught and bouncing
+  // off it. The cure is not a better guess, it is DISCOVERY: show every question
+  // it can actually answer, grouped, and let people pick. A picked question is
+  // always a perfect answer.
+  const groups = useMemo(() => browseTopics(kb, KB_CATEGORIES), [kb]);
+  const totalQs = useMemo(() => groups.reduce((n, g) => n + g.items.length, 0), [groups]);
+  const [browseOpen, setBrowseOpen] = useState(false);
+  const [browseCat, setBrowseCat] = useState(null);
+  const openBrowser = () => { setBrowseCat(null); setBrowseOpen(true); };
+  const askFromBrowser = (q) => { setBrowseOpen(false); setBrowseCat(null); send(q); };
+
   const send = (raw) => {
     const text = String(raw || '').trim().slice(0, INPUT_MAX);
     if (!text || typing) return;
@@ -190,7 +202,7 @@ function AssistantScreen({ onBack, onNavigate }) {
         </div>
 
         {/* Quick starts on a fresh chat */}
-        {messages.length === 0 && (
+        {messages.length === 0 && !browseOpen && (
           <div className="mb-4">
             <div className="text-[10px] uppercase tracking-widest font-semibold mb-2 px-1" style={{ color: T.muted }}>
               Popular questions
@@ -204,6 +216,59 @@ function AssistantScreen({ onBack, onNavigate }) {
                 </button>
               ))}
             </div>
+            <button onClick={openBrowser}
+                    className="asst-pop no-tap-highlight w-full mt-2.5 flex items-center justify-center gap-2 px-3 py-2.5 rounded-2xl text-[12.5px] font-semibold active:scale-95 transition"
+                    style={{ background: T.primary + '0E', border: `1px dashed ${T.primary}55`, color: T.primary, animationDelay: `${quickChips.length * 55}ms` }}>
+              <LayoutGrid size={14} /> Browse all {totalQs} questions I can answer
+            </button>
+          </div>
+        )}
+
+        {/* Guided topic browser: category list -> that category's questions.
+            Every path here ends on a curated answer, so it can never miss. */}
+        {browseOpen && (
+          <div className="asst-pop mb-4 rounded-2xl overflow-hidden"
+               style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+            <div className="flex items-center gap-2 px-3 py-2.5" style={{ borderBottom: `1px solid ${T.borderSoft}` }}>
+              {browseCat && (
+                <button onClick={() => setBrowseCat(null)} aria-label="Back to topics"
+                        className="no-tap-highlight p-1 rounded-lg active:scale-90 transition" style={{ color: T.muted }}>
+                  <ChevronLeft size={16} />
+                </button>
+              )}
+              <div className="flex-1 min-w-0 text-[12.5px] font-semibold" style={{ color: T.ink }}>
+                {browseCat ? (KB_CATEGORIES[browseCat] || 'Topics') : `What ${name} can help with`}
+              </div>
+              <button onClick={() => { setBrowseOpen(false); setBrowseCat(null); }} aria-label="Close topics"
+                      className="no-tap-highlight p-1 rounded-lg active:scale-90 transition" style={{ color: T.muted }}>
+                <X size={15} />
+              </button>
+            </div>
+
+            {!browseCat ? (
+              <div className="p-2">
+                {groups.map((g, i) => (
+                  <button key={g.cat} onClick={() => setBrowseCat(g.cat)}
+                          className="asst-pop no-tap-highlight w-full flex items-center gap-2 px-2.5 py-2.5 rounded-xl text-left active:scale-[0.98] transition"
+                          style={{ animationDelay: `${i * 35}ms` }}>
+                    <span className="flex-1 min-w-0 text-[13px] font-medium" style={{ color: T.ink }}>{g.label}</span>
+                    <span className="text-[10.5px] font-bold px-1.5 py-0.5 rounded-full flex-shrink-0"
+                          style={{ background: T.primary + '14', color: T.primary }}>{g.items.length}</span>
+                    <ArrowRight size={13} style={{ color: T.muted }} className="flex-shrink-0" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div className="p-2">
+                {(groups.find(g => g.cat === browseCat) || { items: [] }).items.map((it, i) => (
+                  <button key={it.id} onClick={() => askFromBrowser(it.q)}
+                          className="asst-pop no-tap-highlight w-full px-2.5 py-2.5 rounded-xl text-left text-[12.5px] leading-snug active:scale-[0.98] transition"
+                          style={{ color: T.inkSoft, animationDelay: `${i * 30}ms` }}>
+                    {it.q}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -231,6 +296,15 @@ function AssistantScreen({ onBack, onNavigate }) {
                           className="no-tap-highlight mt-2 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold active:scale-95 transition"
                           style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}40` }}>
                     {m.routeLabel || 'Take me there'} <ArrowRight size={13} />
+                  </button>
+                )}
+
+                {/* Stumped -> send them to the curated topics, not to a guess */}
+                {m.browse && (
+                  <button onClick={openBrowser}
+                          className="no-tap-highlight mt-2 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-semibold active:scale-95 transition"
+                          style={{ background: T.primary, color: '#FFF', boxShadow: `0 3px 10px ${T.primary}40` }}>
+                    <LayoutGrid size={13} /> Browse what I can answer
                   </button>
                 )}
 
@@ -287,6 +361,13 @@ function AssistantScreen({ onBack, onNavigate }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8 flex items-center gap-2">
+          {/* Always-available guided path, so the text box is never the only way in */}
+          <button onClick={() => (browseOpen ? setBrowseOpen(false) : openBrowser())}
+                  aria-label="Browse topics" title="Browse topics"
+                  className="no-tap-highlight w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 active:scale-90 transition"
+                  style={{ background: browseOpen ? T.primary + '1A' : T.surface, border: `1px solid ${browseOpen ? T.primary + '55' : T.border}`, color: browseOpen ? T.primary : T.inkSoft }}>
+            <LayoutGrid size={17} />
+          </button>
           <input value={input} onChange={e => setInput(e.target.value.slice(0, INPUT_MAX))}
                  onKeyDown={e => { if (e.key === 'Enter') send(input); }}
                  placeholder={`Ask ${name} about the app...`}

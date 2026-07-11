@@ -1,7 +1,7 @@
 // Contract test for src/lib/assistant.js — runnable under Node:
 //   node src/lib/assistant.test.js
 import assert from 'node:assert/strict';
-import { tokenize, detectIntent, matchKb, replyFor, notHelpfulReply, followupsFor, kbById } from './assistant.js';
+import { tokenize, detectIntent, matchKb, replyFor, notHelpfulReply, followupsFor, kbById, detectScope, browseTopics } from './assistant.js';
 import { ASSISTANT_KB, QUICK_STARTS, KB_CATEGORIES } from '../data/assistant-kb.js';
 
 const pick0 = () => 0; // deterministic pool picks
@@ -108,10 +108,55 @@ const pick0 = () => 0; // deterministic pool picks
   assert.equal(r.escalate, true);
 }
 {
+  // Stumped: it must NEVER pad the answer with random unrelated entries (that is
+  // what made it look like it was not listening). Only genuinely close matches,
+  // and always a route into the guided topic browser.
   const r = replyFor(ASSISTANT_KB, 'flibber jabber wocky', null, { pick: pick0 });
   assert.equal(r.kind, 'noMatch');
   assert.equal(r.escalate, true);
-  assert.equal(r.followups.length, 3);
+  assert.equal(r.browse, true);
+  assert.ok(r.followups.length <= 3);
+  const ids = new Set(ASSISTANT_KB.map((e) => e.id));
+  assert.ok(r.followups.every((f) => ids.has(f.id)));
+}
+{
+  // Scope guard: a CLINICAL question must not be answered with an app FAQ entry.
+  // It used to match one at medium confidence and reply confidently, which is
+  // precisely how a rule-based guide feels stupid.
+  for (const q of ['what is normal potassium level', 'normal range of serum sodium']) {
+    const r = replyFor(ASSISTANT_KB, q, null, { pick: pick0 });
+    assert.equal(r.kind, 'outOfScope');
+    assert.equal(r.scope, 'clinical');
+    assert.ok(r.route && r.route.screen);
+  }
+  // A calculation routes to the tool that actually computes it.
+  for (const q of ['gtt per minute formula', 'what is BMI']) {
+    const r = replyFor(ASSISTANT_KB, q, null, { pick: pick0 });
+    assert.equal(r.kind, 'outOfScope');
+    assert.equal(r.scope, 'calc');
+    assert.equal(r.route.screen, 'nursing-calc');
+  }
+  // ...but a genuine APP question about the same area keeps its real answer.
+  const app = replyFor(ASSISTANT_KB, 'how do i report a wrong question', null, { pick: pick0 });
+  assert.equal(app.kind, 'answer');
+}
+{
+  // Scope detection is pure and does not fire on ordinary app questions.
+  assert.equal(detectScope('how do i change my theme'), null);
+  assert.equal(detectScope('what is normal potassium level'), 'clinical');
+  assert.equal(detectScope('drip rate'), 'calc');
+}
+{
+  // The guided browser must expose EVERY KB entry, grouped, with no orphans.
+  const groups = browseTopics(ASSISTANT_KB, KB_CATEGORIES);
+  const total = groups.reduce((n, g) => n + g.items.length, 0);
+  assert.equal(total, ASSISTANT_KB.length);
+  assert.ok(groups.every((g) => g.label && g.items.length > 0));
+}
+{
+  // Keyword gaps the owner would actually hit.
+  assert.equal(replyFor(ASSISTANT_KB, 'why is my streak gone', null, { pick: pick0 }).kind, 'answer');
+  assert.equal(replyFor(ASSISTANT_KB, 'how much does premium cost', null, { pick: pick0 }).kind, 'answer');
 }
 {
   const r = notHelpfulReply({ pick: pick0 });

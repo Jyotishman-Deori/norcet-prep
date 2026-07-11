@@ -251,7 +251,7 @@ export const ASSISTANT_KB = [
   {
     id: 'streak-rules', cat: 'progress',
     q: 'How do streaks work?',
-    keywords: ['streak', 'fire', 'daily', 'lose', 'break', 'flame', 'days in a row', 'grace'],
+    keywords: ['streak', 'fire', 'daily', 'lose', 'lost', 'gone', 'reset', 'disappeared', 'broke', 'broken', 'zero', 'break', 'flame', 'days in a row', 'grace'],
     a: 'Answer practice questions on a day and the day counts; keep showing up and the flame grows. Miss a day and the streak resets, though a rare grace save can rescue you once in a while, you will see a banner when it happens.\nHeads up: previous year paper attempts and PYQ reading deliberately do NOT move the streak, it tracks fresh practice.',
     related: ['leaderboard-basics', 'daily-reminder'],
     route: { screen: 'stats' }, routeLabel: 'See your streak',
@@ -596,7 +596,7 @@ export const ASSISTANT_KB = [
   {
     id: 'payments-when', cat: 'premium',
     q: 'When do payments start? How do I subscribe?',
-    keywords: ['pay', 'subscribe', 'buy', 'purchase', 'when', 'launch', 'upi'],
+    keywords: ['pay', 'payment', 'subscribe', 'buy', 'purchase', 'cost', 'costs', 'price', 'pricing', 'charge', 'fee', 'rupees', 'when', 'launch', 'upi'],
     a: 'Payments open at full launch; right now there is nothing to buy because everything is unlocked for testing. When it goes live you will subscribe right on the Premium screen, and refunds follow the Cancellation and Refunds policy.',
     related: ['premium-tiers', 'legal-docs'],
     route: { screen: 'premium' }, routeLabel: 'See Premium',
