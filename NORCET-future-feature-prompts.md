@@ -11904,3 +11904,91 @@ are in the live CSS, dosage.json?v=17 serves 60 questions, and the live bundle c
 NOT verified headlessly (no browser automation): the dark-mode reload flash and the iOS
 back-gesture flash still need a real device drive by the owner.
 Shipped straight to production at owner's request (51ffd9c on main).
+
+---
+
+## 2026-07-12 - The reload flash, round 2 (from the owner's screen recording), plus three bugs found while verifying (75306a9 + 33e1ca1, LIVE)
+
+The owner filmed the reload glitch and asked how to send a video. Answer: he drops it in the repo
+root (kept out of git locally via .git/info/exclude), I extract frames with ffmpeg
+(pip install imageio-ffmpeg) and read them as images. That worked, and it changed the diagnosis.
+
+WHAT THE FRAMES SHOWED. The 51ffd9c fix WAS holding: the background correctly stays dark through a
+reload now. What still flashed was the SPLASH ITSELF, and the page assembling under it. Two more
+causes, both timing, neither colour.
+
+1. THE SPLASH WAS A FLASH, NOT A LOADING SCREEN. Boot is local-first (IndexedDB session + cached
+profile, no blocking network), so it resolves in ~100ms. Rendering the branded loading screen the
+instant React mounted painted it for ONE OR TWO FRAMES and tore it down. A Playwright probe against
+LIVE production measured it: SPLASH VISIBLE 122-137ms on EVERY warm reload. Holding the reload key
+turned it into a strobe over the previous screen, which is exactly what the owner described.
+FIX: withhold the splash for SPLASH_DELAY_MS (450ms) and hold a bare themed frame instead (html is
+already that colour from the pre-paint script, so the frame is invisible). Reveal it only if the
+boot is genuinely slow, and then hold it for at least SPLASH_MIN_MS (650ms) so it cannot flicker at
+the far end either. On the normal path the splash now NEVER RENDERS AT ALL.
+RULE: never render a loading state you might remove within ~300ms.
+
+2. ENTRANCE ANIMATIONS ARE MOUNT ANIMATIONS, AND A RELOAD IS A MOUNT. dnavIn (desktop bar) and
+bnavIn (mobile tab bar) both start at opacity 0, so on EVERY load the bars sat invisible for ~400ms
+while the content under them was already fully painted. That is the "loading screen overlaying the
+current screen" the owner reported. On iOS the back-gesture re-boots from the service worker, which
+is why his tester saw it too.
+FIX: App owns shellSettled and passes animateIn={shellSettled}; each bar captures it AT MOUNT with
+useState(() => animateIn). The boot mount never animates; a genuine mid-session remount (coming
+back from a test or a game) still gets its flourish. Capturing at mount matters, or flipping the
+prop later would re-trigger the animation on an already-visible bar.
+
+VERIFIED AT RUNTIME, NOT COMPILED. I stopped saying "no browser automation available" and built
+one: Playwright in the scratchpad, with EVERY Supabase request intercepted and served from an
+in-memory map (this repo has no .env.development, so npm run dev talks to PRODUCTION, which is what
+the red LIVE DATA chip means). Per-frame requestAnimationFrame sampling across 6 reloads on a
+returning user:
+  before (live prod): SPLASH VISIBLE 122-137ms every reload
+  after  (fixed)    : splash never rendered; header and tabbar both mount at opacity=1, 0 faded
+                      frames, no entrance class; mid-session remount still carries dnav-in.
+Re-probed LIVE after the deploy: splash never rendered, 6 of 6.
+
+THREE BUGS FOUND WHILE DRIVING THE APP (the reason runtime verification pays for itself):
+
+A. SKIP TOUR WAS DEAD, LIVE IN PRODUCTION. welcome.jsx returns from SIX places (pitch / library /
+questions / ikigai / tips / demo fallback) but the ConfirmDialog bound to leaveConfirm was declared
+inside only the LAST one. Every Skip button set leaveConfirm and nothing rendered it on the five
+branches a new user actually walks through. A brand-new visitor was TRAPPED in the 9-step tour with
+no way out: a first-impression conversion blocker, and nobody had reported it. Fixed by declaring
+the dialog once and rendering it from every branch. Confirmed dead on prod before the fix, and
+confirmed fixed on prod after.
+
+B. SETTINGS SUB-PAGES OPENED MID-SCROLL (owner: "the bottom half sections open the bottom of the
+screen"). Scroll is not React state, so it survived the view swap: a sub-page REPLACES the list in
+place and the window stayed where it was, so opening a row from the bottom of a scrolled list
+dropped you into the new page already past its top, usually onto the blank space under a short
+page. Fixed: pin any sub-view (and the Legal doc) to its top on the way in, and restore the list to
+exactly where the user left it on the way out. The restore has to be re-applied over ~400ms: on the
+frame we return, the list is not laid out yet, so a single scrollTo gets CLAMPED to the much
+shorter sub-page's max scroll.
+Verified: list at y=2513, sub-page opens at y=0, back restores y=2513.
+
+C. THE COMPANION FELT DUMB BECAUSE IT WAS CONFIDENTLY WRONG, not because it is rule-based. The
+owner offered to gate it as "coming soon"; I kept it and made it GUIDED instead. Measured over 18
+realistic questions: "what is normal potassium level" was answered with an APP FAQ entry at medium
+confidence; a miss padded the reply with THREE RANDOM KB entries; and 84 answers existed while only
+6 (QUICK_STARTS) were ever surfaced, so people free-typed into a box with no idea of its scope.
+Fixes, all still ZERO AI:
+  - detectScope(): clinical questions get an honest "I am your guide to the app, not a clinical
+    reference" plus a route to Concept cards and a human; calculations route to the Nursing
+    Calculator Suite, which actually answers them. A HIGH-confidence app match still wins, so
+    "how do I use the calculator" keeps its real answer.
+  - a miss now shows only genuinely close matches, never random ones.
+  - NEW guided topic browser: all 84 questions in their 9 categories, reachable on a fresh chat,
+    from a button in the composer at any time, and from any miss. A picked question is always a
+    perfect answer.
+  - filled two keyword holes ("why is my streak gone" and "how much does premium cost" both MISSED
+    despite the KB covering them).
+LESSON: for a rule-based surface the cure for a miss is DISCOVERY (show what it can answer) and
+HONESTY (say what it cannot), never a better guess.
+
+OPEN / FOR THE OWNER:
+- .env.development is MISSING, so every npm run dev here touches PRODUCTION Supabase (the red LIVE
+  DATA chip). Create the nurseholic-dev project, or keep intercepting in the harness.
+- The reload feel is fixed on desktop and verified on live; a real iPhone pass on the back-gesture
+  is still worth doing.
