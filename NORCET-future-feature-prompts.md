@@ -11303,3 +11303,53 @@ already documented (ConfirmDialog/KmapDialog/TopBar): portal to <body>.
 
 Full gate green (44 suites + smoke + compile + bundle guard). Shipped dev ->
 main (fix commit + this journal commit).
+
+## 2026-07-12 - "Ask your companion": rule-based FAQ chat assistant (d933bc8)
+
+Owner pasted an external conversation designing an LLM support chatbot and
+asked for a Fable-5-quality FAQ chat with follow-ups, HelpfulBulb feedback and
+emotional closers. CRITICAL reframe applied: the app's NO-runtime-AI rule
+forbids an LLM bot, so the quality went into (a) a comprehensively researched,
+PRE-AUTHORED knowledge base and (b) a pure rule-based conversation engine.
+Instant, free, offline-capable, deterministic. The assistant reuses the study
+companion identity (note-companion.js name, default Nova), so the notes buddy
+and the chat guide are ONE character.
+
+- src/data/assistant-kb.js: 67 entries x 9 categories (basics, tests,
+  progress, levelup, learn, community, account, premium, fixes) written from
+  help.json, CLAUDE.md, journal facts and code research; casual senior-student
+  voice; every entry has keywords, related follow-ups, many have deep-link
+  routes (validated against the nav-registry screen allowlist); a KB entry
+  explicitly refuses medical/clinical questions and routes to the disclaimer.
+- src/lib/assistant.js (+ test): tokenize (no fuzzy, per search.js stance),
+  detectIntent (greeting/thanks/praise/frustration/bye incl. hinglish),
+  matchKb (phrase > keyword > body scoring, AND-leaning coverage multiplier,
+  context boost from the last answer's related/category for follow-ups),
+  replyFor (variated pools, moods happy/warm/concerned/neutral, noMatch ->
+  3 closest + escalation), notHelpfulReply. Test also sweeps the entire KB
+  for em dashes, broken related ids, dup ids, bad cats.
+- src/screens/assistant.jsx (lazy 'assistant'): typing dots, staggered bubble
+  pops, avatar mood micro-reactions (asst-heart/tilt/glow + asst-pop/dot in
+  font-styles, ALL added to the reduced-motion catch-all), quick-start chips,
+  "People also ask" chips, deep-link buttons via handleHomeNavigate,
+  HelpfulBulb per answer (voteId assistant:{entryId}; helpful-bulb.jsx gained
+  optional onVote), thumbs-down -> concerned follow-up with Report + FAQ
+  community buttons, transcript persisted locally (KEYS.assistantChat, 40
+  turns), Start-over button, guest-safe.
+- Entry points: nav drawer row (3 new i18n keys x 16 locales + font
+  re-subset), FAQ hero CTA card, help-modal "Still stuck?" hand-off via the
+  norcet:open-assistant window event, Search registry entry. 'assistant'
+  joined BTT_EXCLUDED_SCREENS and STUDENT_ROUTE_SCREENS.
+- Evergrowing: 5th cpack type 'assistant' (vAssistant validator: cat enum +
+  safe route allowlist + no dashes; mergeAssistant dedupe by id BASE WINS,
+  admins add new entries; corrections to bundled ones ship via deploy) +
+  Content Studio "Assistant KB" tab + formats.md section. help.json gained
+  an "Assistant" entry -> CONTENT_VERSION 15.
+- Gate: 45 test files + assistant smoke entry w/ markers; admin build green;
+  shipped dev -> main + deploy:admin; prod verified (drawer label + hi locale
+  key in served bundle).
+
+Rules for future rounds: never propose an LLM call for this (admin-side
+content-staging remains the only sanctioned generative path); new KB entries
+join cpack:assistant via Content Studio; the companion is now a chat surface,
+so keep its name/persona consistent across notes + assistant.
