@@ -166,6 +166,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
           <div className="flex items-center gap-1.5 flex-shrink-0">
             <button onClick={() => { playTapSound(); onTab('search'); }} aria-label={t('nav.tabs.search')}
                     aria-current={screen === 'search' ? 'page' : undefined}
+                    title={t('nav.tabs.search') + ' (Ctrl K)'}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(screen === 'search')}>
               <Search size={19} strokeWidth={2.2} />

@@ -74,6 +74,8 @@ import { completeGame as completeGamePure, claimQuest as claimQuestPure, openCra
 import { framePrice } from './lib/cosmetics.js';
 import { loadGameConfig, getConfig } from './lib/game-config.js';
 import { isInternalAccount, setInternalSessionProfile } from './lib/internal-accounts.js';
+// Command-palette shortcut decision (pure; wired to a keydown listener below).
+import { paletteAction, isTypingTarget } from './lib/hotkeys.js';
 import { purgeTrash, takeFromTrash, TRASH_RETENTION_MS } from './lib/trash.js';
 // LAUNCH WAITLIST — ?claim=<uuid> invite links (parsed once at mount, like
 // the family ?join= tokens above).
@@ -318,6 +320,9 @@ function LazyScreenFallback() {
 }
 // [A1 slice 46] UpdateToast (PWA update prompt) extracted — the last inline component.
 import UpdateToast from './screens/update-toast.jsx';
+// Maintenance / kill switch overlay — reads the live game_config maintenance
+// block; toggled from the admin Live config editor with no redeploy.
+import { MaintenanceHost } from './screens/maintenance.jsx';
 // [A1 slice 34] kmap.js is no longer imported by App — its only consumers are now
 // the extracted knowledge-map.jsx + mindmap-node-popup.jsx screens.
 // [A1 slice 16] leaderboard storage cluster + Leaderboard screen extracted.
@@ -2451,6 +2456,24 @@ export default function App() {
     setNav({ screen });
   }, []);
 
+  // Command-palette shortcut (desktop power users): Cmd/Ctrl+K, or a bare '/'
+  // when not typing, jumps to Search (the app's shortcut router). Suppressed
+  // when Search is already open and on the immersive/test surfaces where the
+  // desktop nav itself hides (DNAV_EXCLUDED_SCREENS), so it can never yank a
+  // user out of a live quiz or game. Harmless on mobile (no physical keyboard).
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if (nav.screen === 'search' || DNAV_EXCLUDED_SCREENS.has(nav.screen)) return;
+      const action = paletteAction({
+        key: e.key, ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey, shift: e.shiftKey,
+        typing: isTypingTarget(e.target),
+      });
+      if (action === 'open') { e.preventDefault(); goTabDirect('search'); }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [nav.screen, goTabDirect]);
+
   // P-NAV (Bug 2) — make the phone's hardware/gesture back button navigate
   // in-app instead of minimizing the PWA. The app navigates via React state
   // (setNav), which pushes no browser history, so the OS back has nothing to
@@ -4392,6 +4415,11 @@ export default function App() {
       {/* #7 — app-root confirmation dialog. Opened via requestConfirm() — used
           by the un-bookmark caution and reusable for any future confirm. */}
       <ConfirmHost />
+
+      {/* Maintenance / kill switch — a full-screen overlay shown when the live
+          game_config maintenance block is on (owner + testers bypass). Mounted
+          last so it sits above every other host. */}
+      <MaintenanceHost />
 
       {/* Connectivity pill — subtle "you're offline" caution + "back online"
           affirmation. Pointer-events none: informs, never blocks. */}

@@ -84,6 +84,22 @@ function AdminFeedbackCard({ item, onSaveReply, onDelete, onPeek }) {
       )}
       <div className="text-[10px] mt-2 mb-3" style={{ color: T.muted }}>{date}</div>
 
+      {/* Device snapshot (attached at report time) so a bug can be reproduced
+          without a back and forth. Only shown when present (older reports have none). */}
+      {item.meta && (item.meta.appVersion || item.meta.ua) && (
+        <div className="text-[10px] leading-relaxed mb-3 px-2 py-1.5 rounded-lg" style={{ background: T.surfaceWarm, color: T.muted }}>
+          <span className="font-semibold">Device: </span>
+          {[
+            item.meta.appVersion && `build ${item.meta.appVersion}`,
+            item.meta.standalone === true ? 'PWA' : (item.meta.standalone === false ? 'browser tab' : null),
+            item.meta.viewport,
+            item.meta.online === false ? 'was offline' : null,
+            item.meta.lang,
+          ].filter(Boolean).join(' · ')}
+          {item.meta.ua && <div className="mt-0.5 break-all" style={{ opacity: 0.75 }}>{item.meta.ua}</div>}
+        </div>
+      )}
+
       {/* Status chips */}
       <div className="text-[10px] uppercase tracking-wider font-semibold mb-1.5" style={{ color: T.muted }}>Status</div>
       <div className="flex flex-wrap gap-1.5 mb-3">

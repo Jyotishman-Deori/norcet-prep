@@ -98,6 +98,15 @@ export const DEFAULTS = {
     singleSession: false,
   },
 
+  // Maintenance / kill switch (CLIENT-side boot gate). ON = every client shows a
+  // clean "under maintenance" screen over the app the moment they next pick up
+  // this row (~60s cache), no redeploy. Fail-OPEN: if the row is missing or
+  // unreachable, DEFAULTS keep it OFF, so a config outage never bricks the app.
+  // Escape hatches so the owner is never locked out: internalIds accounts and a
+  // ?maintbypass=1 URL (persisted in localStorage) both bypass the gate.
+  // title/message are optional overrides; blank falls back to friendly copy.
+  maintenance: { on: false, title: '', message: '' },
+
   // Media hosting (Cloudflare R2). Question images/clips live in the owner's
   // R2 bucket (zero egress); the ADMIN app uploads via the media-sign Edge
   // Function (presigned PUT; credentials are Supabase secrets, never here).
@@ -143,6 +152,13 @@ export function getConfig() { return CONFIG; }
 // Merge partial overrides over DEFAULTS (always from DEFAULTS so it's idempotent).
 export function applyRemoteConfig(remote) {
   CONFIG = isPlainObject(remote) ? deepMerge(DEFAULTS, remote) : DEFAULTS;
+  // Notify live UI that config changed (the maintenance host re-evaluates on
+  // this). Guarded so the pure Node consumers of this module stay window-free.
+  try {
+    if (typeof window !== 'undefined' && window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('norcet:config-applied'));
+    }
+  } catch (e) { /* non-fatal */ }
   return CONFIG;
 }
 

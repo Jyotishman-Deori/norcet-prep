@@ -11,7 +11,7 @@ import { useTheme } from '../lib/app-context.jsx';
 import { useProfile } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { registerFeedbackOpener, Button } from '../ui/primitives.jsx';
-import { newFeedbackId, saveFeedback, addToMyFeedbackIndex } from '../lib/feedback.js';
+import { newFeedbackId, collectClientMeta, saveFeedback, addToMyFeedbackIndex } from '../lib/feedback.js';
 
 function FeedbackHost() {
   const [ctx, setCtx] = useState(null); // null = closed
@@ -61,7 +61,10 @@ function FeedbackModal({ screen, questionId, profileId, profileName, source, onC
         report: report.trim(),
         fix: fix.trim() || null,
         profileId: authorId,
-        profileName: authorName
+        profileName: authorName,
+        // Device snapshot so the admin can reproduce a bug without a back and
+        // forth (browser, PWA-or-tab, viewport, build, online state).
+        meta: collectClientMeta(),
       });
       // Point the author's own index at this report so their device can find it
       // without ever fetching anyone else's feedback.

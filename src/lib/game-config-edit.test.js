@@ -92,6 +92,20 @@ assert.deepEqual(validateConfig(DEFAULTS), []);
   assert.deepEqual(changedFields(base, edited), ['internalIds']);
 }
 
+// ---- maintenance kill switch: default off, toggle coerces, text trims ----
+{
+  assert.equal(getAtPath(DEFAULTS, 'maintenance.on'), false, 'ships OFF (fail-open)');
+  assert.equal(getAtPath(DEFAULTS, 'maintenance.title'), '');
+  let cfg = setAtPath(clone(DEFAULTS), 'maintenance.on', 'yes');       // toggle coercion
+  cfg = setAtPath(cfg, 'maintenance.title', '  Back soon  ');          // text trim
+  const s = sanitizeConfig(cfg);
+  assert.equal(getAtPath(s, 'maintenance.on'), true);
+  assert.equal(getAtPath(s, 'maintenance.title'), 'Back soon');
+  // toggling maintenance is a clean single-field diff (no phantom dirty)
+  assert.deepEqual(changedFields(clone(DEFAULTS), setAtPath(clone(DEFAULTS), 'maintenance.on', true)), ['maintenance.on']);
+  assert.deepEqual(validateConfig(setAtPath(clone(DEFAULTS), 'maintenance.on', true)), [], 'toggles never error');
+}
+
 // every schema field resolves to a real path in DEFAULTS (no typos)
 for (const f of ALL_FIELDS) {
   assert.notEqual(getAtPath(DEFAULTS, f.path), undefined, `schema path exists: ${f.path}`);

@@ -34,6 +34,8 @@ import { saveProfile, flushPendingSync, getPendingSync } from '../lib/profiles.j
 import { describeSyncState, relTimeShort } from '../lib/backup-status.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
+// Export my data — assemble this device's own data into a downloadable JSON.
+import { EXPORT_MANIFEST, buildExport, exportFilename } from '../lib/data-export.js';
 // Push reach fix — support-aware notifications master switch (iOS Safari tabs
 // get an install walkthrough instead of a dead toggle).
 import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
@@ -229,6 +231,47 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   // for logged-in users (so it's reachable from one place either way).
   // The undo shelf + the erase lifeline live right next to the destructive
   // action they protect. English-first copy (locale pass pending).
+  // Export my data (doc 5.2) — gather this device's own data slices and hand the
+  // user a JSON download. Fully local: nothing is uploaded. Robust to the two id
+  // shapes different subsystems key by (durable uid vs display slug): each slice
+  // is read under every candidate id, first hit wins.
+  const [exporting, setExporting] = useState(false);
+  const doExportData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    try {
+      const ids = profile
+        ? [...new Set([profile.uid, profile.id].filter(Boolean))]
+        : ['guest'];
+      if (ids.length === 0) ids.push('guest');
+      const entries = {};
+      for (const m of EXPORT_MANIFEST) {
+        let val = null;
+        for (const id of ids) {
+          try {
+            const r = await safeStorage.get(m.key(id), false);
+            if (r && r.value != null) {
+              try { val = JSON.parse(r.value); } catch (e) { val = r.value; }
+              break;
+            }
+          } catch (e) { /* try the next id */ }
+        }
+        entries[m.label] = val;
+      }
+      const obj = buildExport({ profile, entries });
+      const blob = new Blob([JSON.stringify(obj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportFilename();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => { try { URL.revokeObjectURL(url); } catch (e) {} }, 1500);
+    } catch (e) { /* best-effort; a failure simply does not download */ }
+    finally { setExporting(false); }
+  };
+
   const renderReset = () => (
     <>
       {onOpenTrash && (
@@ -248,6 +291,21 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           </button>
         </Card>
       )}
+      <Card className="mb-3 p-0 overflow-hidden">
+        <button onClick={doExportData} disabled={exporting}
+                className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors disabled:opacity-60">
+          <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+            <Download size={16} style={{ color: T.inkSoft }} />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-medium text-sm" style={{ color: T.ink }}>{exporting ? 'Preparing your file...' : 'Export my data'}</div>
+            <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
+              Download a JSON copy of your data from this device. Stays on your device, nothing is uploaded.
+            </div>
+          </div>
+          <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+        </button>
+      </Card>
       {progressSnapshotAt != null && onRestoreProgress && (
         <Card className="mb-3 p-0 overflow-hidden" style={{ borderColor: T.success + '55' }}>
           <button onClick={() => requestConfirm({

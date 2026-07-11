@@ -87,6 +87,18 @@ export const SECTIONS = [
     ],
   },
   {
+    id: 'maintenance', title: 'Maintenance mode', icon: 'Wrench',
+    blurb: 'A full-screen "we are down for a bit" overlay. You and testers bypass.',
+    fields: [
+      { path: 'maintenance.on', label: 'Maintenance mode', type: 'toggle',
+        help: '⚠ ON = every user sees a maintenance screen over the app within about a minute, no redeploy. You and test accounts bypass it automatically; if you ever get locked out, add ?maintbypass=1 to the URL.' },
+      { path: 'maintenance.title', label: 'Headline (optional)', type: 'text',
+        help: 'Leave blank for the default "Down for a quick tune-up".' },
+      { path: 'maintenance.message', label: 'Message (optional)', type: 'text',
+        help: 'Leave blank for the default reassurance copy. No dashes.' },
+    ],
+  },
+  {
     id: 'media', title: 'Media hosting', icon: 'Image',
     blurb: 'Cloudflare R2 bucket that stores question images (uploads go through the media-sign broker).',
     fields: [

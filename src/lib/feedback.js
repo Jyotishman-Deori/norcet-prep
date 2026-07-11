@@ -11,6 +11,38 @@ import { KEYS, KEY_PREFIXES } from './keys.js';
 
 const newFeedbackId = () => `fb-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 
+// collectClientMeta() — a small, non-identifying device snapshot attached to a
+// NEW bug/feedback report so triage is not guesswork (doc 7.2). Mirrors the ua
+// capture in errorlog.js. Pure read of navigator/window, fully guarded, so it
+// never throws and returns {} in a non-browser (Node test / SSR smoke) context.
+// It is the user's OWN device info on their OWN report, so no new consent
+// surface; it carries no new personal data beyond what the browser already
+// sends with every request.
+function collectClientMeta() {
+  const meta = {};
+  try {
+    if (typeof __APP_VERSION__ !== 'undefined') meta.appVersion = String(__APP_VERSION__);
+  } catch (e) { /* not injected in this context */ }
+  try {
+    const nav = typeof navigator !== 'undefined' ? navigator : null;
+    if (nav) {
+      if (nav.userAgent) meta.ua = String(nav.userAgent).slice(0, 300);
+      if (nav.platform) meta.platform = String(nav.platform).slice(0, 40);
+      if (nav.language) meta.lang = String(nav.language).slice(0, 20);
+      if (typeof nav.onLine === 'boolean') meta.online = nav.onLine;
+    }
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth && window.innerHeight) meta.viewport = `${window.innerWidth}x${window.innerHeight}`;
+      try {
+        const standalone = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
+          || (typeof navigator !== 'undefined' && navigator.standalone === true);
+        meta.standalone = !!standalone; // installed PWA vs browser tab
+      } catch (e) { /* matchMedia unsupported */ }
+    }
+  } catch (e) { /* never blocks a report */ }
+  return meta;
+}
+
 async function saveFeedback(entry) {
   await safeStorage.set(KEYS.feedback(entry.id), JSON.stringify(entry), true);
 }
@@ -82,7 +114,7 @@ async function addToMyFeedbackIndex(profileId, id) {
 }
 
 export {
-  newFeedbackId, saveFeedback, listFeedback, deleteFeedback,
+  newFeedbackId, collectClientMeta, saveFeedback, listFeedback, deleteFeedback,
   FEEDBACK_STATUSES, updateFeedback,
   loadMyFeedbackIndex, saveMyFeedbackIndex, addToMyFeedbackIndex,
 };

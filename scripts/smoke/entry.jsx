@@ -301,6 +301,16 @@ const SCREENS = {
       initialValues: { systolic: '120', diastolic: '80' },
     });
   },
+  // Maintenance / kill switch overlay: force the config on, then render the
+  // host. It reads config synchronously, so the server render shows the screen.
+  // (Only this entry mounts MaintenanceHost, so the forced config is harmless
+  // to the other entries.)
+  'maintenance': async () => {
+    const cfg = await import('../../src/lib/game-config.js');
+    cfg.applyRemoteConfig({ maintenance: { on: true } });
+    const m = await import('../../src/screens/maintenance.jsx');
+    return React.createElement(m.MaintenanceHost, {});
+  },
   // Home's quiet "terms updated" card: only visible when the stamped
   // acceptance predates LEGAL_VERSION — install exactly that state. (The
   // fixture persists into the stats entries below, which install their own.)
@@ -408,6 +418,8 @@ const MARKERS = {
   'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
   'home-guest': ['exploring as a guest', 'Sign in / Create account'],
+  'maintenance': ['Down for a quick tune-up', 'Try again'],
+  'settings': ['Export my data'],
   // the hero card that replaced the Favourites strip
   'home': ['Nursing Calculator Suite'],
   // hub: a category label + calculator rows + the offline promise strip.

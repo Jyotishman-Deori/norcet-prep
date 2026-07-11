@@ -11476,3 +11476,58 @@ approved plan: Clark's variant (lb/150 shipped), Cockcroft-Gault weight choice
 variant disclosed), BMI Asian labels, GCS/APGAR/Braden bands, oliguria +
 MAP thresholds, trimester boundaries, Devine sub-152cm handling. Every one is
 a BAND/LABEL, not core math; rejected bands can simply be removed.
+
+## 2026-07-12 - PWA upgrade doc: operational + UX upgrades (audit + build)
+
+Owner pasted a large generic "PWA Upgrade Plan" (17 sections) and said "work on
+this next and ignore the copy ones. upgrade it." Audited the whole doc against
+the app first: most of it is already built (quick quiz, confetti/juice, SRS +
+mistake engine, streaks + grace, i18n, dark mode, web-push, guest onboarding,
+leaderboard, soft-delete, weekly summary, next-best-action, app-version string)
+or is out of scope under the house rules (Redis ZSET leagues, Upstash QStash,
+AI-generated insight, payment webhooks, session replay, Framer/GSAP/i18next/Inter
+swaps, dynamic OG SSR). Built only the genuinely-missing, free, no-AI, low-risk
+upgrades:
+
+- C1 Maintenance mode / kill switch: `maintenance:{on,title,message}` added to
+  game-config DEFAULTS; a self-contained root overlay host (src/screens/
+  maintenance.jsx, mounted next to the other App hosts) shows a calm screen when
+  the live config flips on, no redeploy. Reactive via a new guarded
+  'norcet:config-applied' event fired from applyRemoteConfig. Fail-OPEN;
+  escape hatches so the owner is never locked out: internalIds accounts +
+  ?maintbypass=1 (sticks in localStorage). Admin Live-config editor gains the
+  three maintenance fields (Wrench icon added to its map). Test extended.
+- C2 Command palette shortcut: src/lib/hotkeys.js (pure + test) decides the
+  action; App.jsx global keydown opens Search on Cmd/Ctrl+K, or bare '/' when
+  not typing. Suppressed on DNAV_EXCLUDED_SCREENS (never yanks a user out of a
+  live quiz/game) and when Search is open. Desktop search button gains a
+  "(Ctrl K)" tooltip. Harmless on mobile.
+- C3 Bug-report diagnostics: feedback.js collectClientMeta() (appVersion, ua,
+  platform, lang, online, viewport, PWA-standalone) attached at the single
+  feedback-modal submit point; rendered as a "Device" line in the admin feedback
+  card. Only on new reports, never on admin replies. No new consent surface (own
+  device info on own report).
+- C4 Export my data: src/lib/data-export.js (pure + test) with a strict ALLOWLIST
+  manifest (never a wildcard, so no token can leak; test cross-checks against the
+  session/auth keys) + buildExport + sanitizeProfile (strips credential-shaped
+  keys). Settings "Export my data" row gathers each slice via safeStorage (reads
+  under both id shapes, uid and slug, first hit wins) and downloads
+  nurseholic-data-YYYY-MM-DD.json. Fully local, guest-safe, English-only to match
+  the neighbouring data rows.
+
+DEFERRED: C5 Resume-an-in-progress-test. It is the highest-value retention gap
+but touches the live quiz/advanced-test/paper-test state machines and needs a
+real browser runtime drive to ship safely (the pre-push gate is explicit that a
+prod crash there is the owner's reputation). It ships dark behind a resumeTests
+flag anyway, so deferring it to a dedicated, unrushed pass costs nothing live.
+The plan (test-session.js snapshot store + Home resume card + App relaunch) is
+ready to execute next.
+
+Also flagged NOT to build (house rules): Redis/Upstash anything, any runtime-AI
+insight, payment webhooks, self-hosted session replay, dep swaps (Framer/GSAP/
+i18next/Inter). Optional future adds noted: true-black OLED theme, GitHub Actions
+CI (duplicates the local gate).
+
+Verification: 54 test files + render smoke (new maintenance overlay entry +
+settings Export-row marker) + compile gate + bundle guard all green; admin build
+green. Ship dev -> main.
