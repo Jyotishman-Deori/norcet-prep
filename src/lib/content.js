@@ -24,7 +24,9 @@ import { cpackKey, normalizePack, mergeDosage, mergeReference, mergeConceptCards
 // v13: rebrand — "NORCET Prep" → "NurseHolic" in help.json Share-app copy.
 // v14: removed all em dashes from content JSON (reference/dosage/concept-cards/
 //      help) — user-facing copy must not read as AI-generated.
-const CONTENT_VERSION = 15;
+// v15: added the "Assistant" help section (Ask-your-companion chat).
+// v16: added the "Nursing Calculator Suite" help section.
+const CONTENT_VERSION = 16;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',

@@ -40,6 +40,9 @@ function HelpModal({ screen, onClose }) {
     const noEmpty = screen.replace(/\s*\(empty\)\s*$/, '');
     if (noEmpty !== screen) c = lookup(noEmpty);
     if (!c && noEmpty.startsWith('Quiz · ')) c = lookup('Quiz');
+    // Individual calculators ("Calc: Mean Arterial Pressure") share the
+    // suite's help entry rather than documenting all 23 tools separately.
+    if (!c && noEmpty.startsWith('Calc: ')) c = lookup('Nursing Calculator Suite');
   }
   if (!c) c = {
     title: 'Help',

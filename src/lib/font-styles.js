@@ -918,6 +918,37 @@ export const fontStyles = `
 @keyframes asstGlow { 0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); } 50% { box-shadow: 0 0 16px 3px rgba(245, 166, 35, 0.5); } }
 .asst-glow { animation: asstGlow 1.1s ease-in-out 1; }
 
+/* ── Nursing Calculator Suite — result micro-interactions. ──────────────────
+   calc-result-in: the result card springs up once a computation lands.
+   calc-value-pop: the big number re-pops whenever the value CHANGES (keyed on
+   the display string), a subtle scale settle rather than a bounce.
+   calc-band-sweep: a one-shot soft glow across the matched reference band so
+   the eye lands on the interpretation without reading the whole list.
+   calc-chip-in: staggered entrance for recently-used chips and hub rows
+   (delay set inline per index).
+   All four are in the reduced-motion catch-all below. */
+@keyframes calcResultIn {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.98); }
+  100% { opacity: 1; transform: none; }
+}
+.calc-result-in { animation: calcResultIn 0.34s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes calcValuePop {
+  0%   { transform: scale(0.96); opacity: 0.6; }
+  55%  { transform: scale(1.03); opacity: 1; }
+  100% { transform: scale(1); }
+}
+.calc-value-pop { display: inline-block; animation: calcValuePop 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }
+@keyframes calcBandSweep {
+  0%   { box-shadow: inset 0 0 0 100px var(--band-glow, rgba(0,0,0,0.06)); }
+  100% { box-shadow: inset 0 0 0 100px rgba(0,0,0,0); }
+}
+.calc-band-sweep { animation: calcBandSweep 0.9s ease-out both; }
+@keyframes calcChipIn {
+  0%   { opacity: 0; transform: translateY(6px); }
+  100% { opacity: 1; transform: none; }
+}
+.calc-chip-in { animation: calcChipIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -946,7 +977,8 @@ export const fontStyles = `
   .nnudge-in, .nnudge-bell, .nnudge-done,
   .about-in, .dnav-in, .brand-pop, .dnav-bell-ring, .btt-launch,
   .wl-in, .wl-bloom, .wl-ring, .wl-tick,
-  .asst-pop, .asst-dot, .asst-heart, .asst-tilt, .asst-glow { animation: none !important; }
+  .asst-pop, .asst-dot, .asst-heart, .asst-tilt, .asst-glow,
+  .calc-result-in, .calc-value-pop, .calc-band-sweep, .calc-chip-in { animation: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
   .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after, .tbar-btn { transition: none !important; }
   .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child,

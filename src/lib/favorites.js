@@ -1,14 +1,16 @@
 // =====================================================================
 // src/lib/favorites.js  (FAV — Favourites system)
-// Users heart the sections they use most; an opt-in premium strip on Home
-// gives one-tap access in THEIR priority order. The same signal doubles as
-// product telemetry for the admin: which sections are loved, which are
+// Users heart the sections they use most and reach them from the Favourites
+// screen (top-bar / tab heart) in THEIR priority order. The same signal doubles
+// as product telemetry for the admin: which sections are loved, which are
 // ignored, and how users actually rank them.
+//
+// ALWAYS ON: there is no on/off flag any more. The old opt-in Home strip and its
+// Settings toggle were removed, so hearts always show and always save.
 //
 // THREE STORES:
 //   1. LOCAL, per profile (KEY_PREFIXES.FAVORITES + profileId):
-//        { enabled: false, order: ['stats', 'quick-setup', …] }
-//      `enabled` gates the Home strip (OFF by default — hearts still save).
+//        { order: ['stats', 'quick-setup', …] }
 //      `order` IS the favourite set — membership and priority in one array.
 //   2. SHARED `favsec:{sectionId}` → JSON array of profileIds currently
 //      hearting that section (helpful-votes pattern; guests never write).
@@ -64,6 +66,7 @@ export const FAV_SECTIONS = [
   { id: 'faq',             label: 'FAQ & Help',          blurb: 'Answers + community Q&A',           icon: 'help',     hue: '#3B5BDB' },
   { id: 'weightage',       label: 'Exam Weightage',      blurb: 'Marks per subject, at a glance',    icon: 'sigma',    hue: '#9C36B5' },
   { id: 'reference',       label: 'Reference',           blurb: 'Normal values + quick tables',      icon: 'book',     hue: '#862E9C' },
+  { id: 'nursing-calc',    label: 'Nursing Calc',        blurb: 'Clinical calculators, fully offline', icon: 'calculator', hue: '#1D4ED8' },
 ];
 
 const byId = {};
@@ -74,10 +77,13 @@ export const isFavoritable = (id) => !!byId[id];
 const isGuest = (pid) => !pid || pid === GUEST_ID || pid === '__guest__';
 
 // ---- local per-profile record -----------------------------------------
+// Favourites is ALWAYS ON. The old `enabled` flag (and its Settings toggle, and
+// the Home strip it gated) were removed: hearts now always show and the section
+// is reached from the top-bar / tab heart. Old records may still carry a stray
+// `enabled` key on disk; it is simply ignored here, so no migration is needed.
 const clean = (v) => {
-  const out = { enabled: false, order: [] };
+  const out = { order: [] };
   if (v && typeof v === 'object') {
-    out.enabled = v.enabled === true;
     if (Array.isArray(v.order)) out.order = v.order.filter(id => byId[id]);
   }
   return out;
@@ -120,13 +126,6 @@ export async function removeFav(profileId, sectionId) {
   const favs = await loadFavs(profileId);
   if (!favs.order.includes(sectionId)) return favs;
   favs.order = favs.order.filter(id => id !== sectionId);
-  await persist(profileId, favs);
-  return favs;
-}
-
-export async function setFavEnabled(profileId, on) {
-  const favs = await loadFavs(profileId);
-  favs.enabled = !!on;
   await persist(profileId, favs);
   return favs;
 }

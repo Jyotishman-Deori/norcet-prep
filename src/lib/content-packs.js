@@ -78,6 +78,7 @@ const ASSISTANT_ROUTE_SCREENS = [
   'knowledge-map', 'learn-topics', 'revision-sheet', 'bookmarks-view',
   'favorites', 'library', 'doubts', 'study-plan', 'reference', 'dosage',
   'faq', 'study-methods', 'my-reports', 'mistake-vault', 'about', 'legal',
+  'nursing-calc',
 ];
 function vAssistant(it) {
   const e = [];

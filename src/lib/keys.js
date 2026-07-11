@@ -122,6 +122,12 @@ export const KEYS = {
   // Ask-companion chat transcript — local-only, per profile, capped at the
   // last ~40 turns so reopening the assistant resumes the conversation.
   assistantChat: (profileId) => `asstchat:v1:${profileId}`,
+  // NURSING CALCULATOR SUITE — local-only (shared:false), per profile:
+  // { recent: [calcId], history: [{ calcId, name, summary, display, unit, ts }] }.
+  // Recently-used chips (cap 6) + the session calculation log (cap 12). Kept
+  // ON DEVICE ONLY on purpose: calculated values are health-adjacent, so they
+  // are never synced; the screen says so next to its Clear control.
+  nursingCalc:   (profileId) => `nursecalc:v1:${profileId}`,
   // Notification opt-in nudge (Home card) — local, per profile:
   // { dismissedAt, dismissCount }. Show/snooze rules live in lib/push-opt-in.js.
   notifNudge:    (profileId) => `notifnudge:v1:${profileId}`,

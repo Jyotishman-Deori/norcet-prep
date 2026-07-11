@@ -284,6 +284,23 @@ const SCREENS = {
     const m = await import('../../src/screens/assistant.jsx');
     return React.createElement(m.default, { onBack: noop, onNavigate: noop });
   },
+  // Nursing Calculator Suite: the hub (search + six category groups) renders,
+  // which also executes the whole registry + every calc-*.js module scope.
+  'nursing-calc': async () => {
+    const m = await import('../../src/screens/nursing-calc.jsx');
+    return React.createElement(m.default, { onBack: noop });
+  },
+  // ...and the DETAIL view with a live computed result card (MAP 120/80),
+  // via the deep-link props, so the form, envelope meta lines, working,
+  // bands and the flagged "verify" tag all render at build time.
+  'nursing-calc-detail': async () => {
+    const m = await import('../../src/screens/nursing-calc.jsx');
+    return React.createElement(m.default, {
+      onBack: noop,
+      initialCalcId: 'map',
+      initialValues: { systolic: '120', diastolic: '80' },
+    });
+  },
   // Home's quiet "terms updated" card: only visible when the stamped
   // acceptance predates LEGAL_VERSION — install exactly that state. (The
   // fixture persists into the stats entries below, which install their own.)
@@ -391,6 +408,17 @@ const MARKERS = {
   'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
   'home-guest': ['exploring as a guest', 'Sign in / Create account'],
+  // the hero card that replaced the Favourites strip
+  'home': ['Nursing Calculator Suite'],
+  // hub: a category label + calculator rows + the offline promise strip.
+  // (No TopBar-title marker: TopBar portals to body and the smoke nulls portals.
+  //  No 'Recently used' either: the store starts empty on a fresh render.)
+  'nursing-calc': ['Scoring Tools', 'Mean Arterial Pressure', 'Glasgow Coma Scale', 'Works fully offline'],
+  // detail: the computed MAP 120/80 result card end-to-end. 93.3 is the value,
+  // the meta lines state the rounding + formula, the matched band renders, and
+  // the flagged-band tag appears (no apostrophe in the marker: renderToString
+  // escapes ' as &#x27;).
+  'nursing-calc-detail': ['93.3', 'Rounded to 1 decimal place.', 'Copy value', '70 to 100 mmHg', 'Verify against your institution'],
   'quiz': ['Educational use only. Not for clinical decisions.'],
 };
 

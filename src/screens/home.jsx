@@ -9,12 +9,11 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Crown, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, ScrollText, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Crown, Droplet, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Ruler, ScrollText, Settings as SettingsIcon, Shuffle, Sparkles, Syringe, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
 // Layer 1 — the quiet "terms updated" card compares the stamped acceptance
 // against the current LEGAL_VERSION (App seeds/records the stamp).
 import { LEGAL_VERSION } from '../lib/legal.js';
 import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
-import { loadFavs } from '../lib/favorites.js';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import { topicName, getWeakTopics } from '../lib/topics.js';
 import { getDueQuestions } from '../lib/selectors.js';
@@ -26,7 +25,6 @@ import RichText from '../ui/rich-text.jsx';
 import { toPlainText } from '../lib/rich-text.js';
 import { Card, Button, requestConfirm, NoteButton } from '../ui/primitives.jsx';
 // FAV — opt-in premium Favourites strip (renders null unless enabled + non-empty).
-import FavStrip from '../ui/fav-strip.jsx';
 // Push-reach fix — one-tap notification opt-in card (renders null unless the
 // tested rules in lib/push-opt-in.js say this is the right moment).
 import NotificationNudge from '../ui/notification-nudge.jsx';
@@ -43,6 +41,11 @@ import { haptic, HAPTIC } from '../lib/juice.js';
 import { playTapSound } from '../lib/sound.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import { KEYS } from '../lib/keys.js';
+
+// Nursing Calculator Suite card hue. Fixed (not theme-derived) and a clinical
+// blue on purpose: Drill and Learn are tonal shades of the theme primary, so the
+// calculator needs its own colour or it reads as a third practice card.
+const CALC_HUE = '#1D4ED8';
 
 // Lighten a 6-digit hex colour toward white by fraction t (0..1). Used to
 // build the Learn card's gradient from its single accent (T.sec.learn) so the
@@ -125,19 +128,6 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
   const { profile } = useProfile();
   const { t } = useI18n();
   const profileId = (profile && profile.id) || 'guest';
-
-  // Is the Favourites section turned on? When it is, the desktop dashboard
-  // rebalances (weak-area/syllabus drops into the left column so Favourites can
-  // lead the right column, aligned with the stats row). Mirrors FavStrip's own
-  // source (loadFavs + the 'norcet:favs' event) so the two never disagree.
-  const [favEnabled, setFavEnabled] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    loadFavs(profileId).then(f => { if (alive) setFavEnabled(!!(f && f.enabled)); }).catch(() => {});
-    const onFavs = (e) => { if (e && e.detail) setFavEnabled(!!e.detail.enabled); };
-    window.addEventListener('norcet:favs', onFavs);
-    return () => { alive = false; window.removeEventListener('norcet:favs', onFavs); };
-  }, [profileId]);
 
   // LAUNCH WAITLIST nudge — guests only, while signups are open
   // (waitlist.collect) and this device hasn't already joined.
@@ -1074,15 +1064,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* Focus row (weak area / syllabus). On MOBILE it always sits here (between
-          Review and the exam countdown). On DESKTOP its column depends on whether
-          Favourites is on:
-            • Favourites ON  → it stays in THIS (left) column, so Favourites can
-              lead the right column, aligned with the stats row.
-            • Favourites OFF → it leads the right actions column instead (below).
-          Same computed `focusRow`; exactly one copy is ever visible. */}
-      {focusRow && <div className="md:hidden">{focusRow}</div>}
-      {focusRow && favEnabled && <div className="hidden md:block">{focusRow}</div>}
+      {/* Focus row (weak area / syllabus). It sits in THIS (left) status column on
+          every breakpoint, so the Nursing Calc card can lead the right actions
+          column, aligned with the stats row. (It used to hop columns depending on
+          whether the Favourites strip was on; that strip is gone.) */}
+      {focusRow && <div>{focusRow}</div>}
 
       {/* Exam countdown — the "set a date" entry point now lives in the
           slide-in menu (Tools). The dashboard only shows the countdown once a
@@ -1173,24 +1159,34 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         );
       })()}
 
-      {/* FAV — Favourites. On MOBILE it sits here (its original position, after
-          the exam countdown). On desktop it's hidden here and instead sits in
-          the right actions column, below the weak-area/syllabus row and above
-          Drill Tests (see below). */}
-      <div className="md:hidden"><FavStrip onNavigate={onNavigate} /></div>
-
       </div>{/* /status column */}
       <div className="contents md:block md:col-span-6 lg:col-span-7">
 
-      {/* Focus row leads the right actions column on DESKTOP **only when
-          Favourites is OFF**. When Favourites is on it moves to the left column
-          (above) so Favourites can lead here instead — keeping the two columns
-          balanced and aligning Favourites with the stats row. */}
-      {focusRow && !favEnabled && <div className="hidden md:block">{focusRow}</div>}
-
-      {/* FAV on DESKTOP leads the right actions column (top), aligned with the
-          stats row on the left. Renders nothing unless Favourites is on. */}
-      <div className="hidden md:block"><FavStrip onNavigate={onNavigate} /></div>
+      {/* Nursing Calculator Suite — leads the right actions column (it took the
+          slot the old Favourites strip used to hold), aligned with the stats row
+          on the left. A clinical blue keeps it clearly distinct from the
+          primary-toned practice cards below. */}
+      <Tip title={t('home.calc.title')} text={t('home.calc.tip')}>
+      <Card className="p-4 mb-4 break-inside-avoid cursor-pointer no-tap-highlight pressable press-safe" onClick={() => onNavigate({ screen: 'nursing-calc' })}
+            onContextMenu={(e) => e.preventDefault()}
+            style={{ background: `linear-gradient(140deg, ${lightenHex(CALC_HUE, 0.14)} 0%, ${CALC_HUE} 58%, ${darkenHex(CALC_HUE, 0.26)} 100%)`, border: 'none', boxShadow: `0 8px 22px ${darkenHex(CALC_HUE, 0.45)}45` }}>
+        <div className="flex items-center gap-3">
+          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(255,255,255,0.16)' }}>
+            <Calculator size={20} color="#FFF" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-display text-base font-semibold mb-0.5" style={{ color: '#FFF' }}>{t('home.calc.title')}</div>
+            <div className="text-xs leading-snug" style={{ color: 'rgba(255,255,255,0.85)' }}>{t('home.calc.sub')}</div>
+          </div>
+          <ChevronRight size={20} style={{ color: 'rgba(255,255,255,0.85)' }} className="flex-shrink-0" />
+        </div>
+        <div className="flex items-center gap-3 mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.18)' }}>
+          {[Syringe, Ruler, Droplet, RotateCcw, ClipboardList, CalendarDays].map((Ic, i) => (
+            <Ic key={i} size={15} color="rgba(255,255,255,0.8)" />
+          ))}
+        </div>
+      </Card>
+      </Tip>
 
       {/* #11 — Drill Tests hub entry. Replaces the old inline practice
           section; all six test modes now live on the dedicated Drill Tests

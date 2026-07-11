@@ -46,11 +46,12 @@ export const DNAV_EXCLUDED_SCREENS = new Set([
 // (the drawer's dispatcher), so quiz-spec style entries would work too.
 // Labels are i18n keys resolved at render (module scope must stay key-only).
 const LINKS = [
-  { labelKey: 'nav.links.learn',    screen: 'learn-topics' },
-  { labelKey: 'nav.links.levelUp',  screen: 'level-up' },
-  { labelKey: 'nav.links.revision', screen: 'revision-sheet' },
-  { labelKey: 'nav.links.library',  screen: 'library' },
-  { labelKey: 'nav.links.stats',    screen: 'stats' },
+  { labelKey: 'nav.links.learn',       screen: 'learn-topics' },
+  { labelKey: 'nav.links.levelUp',     screen: 'level-up' },
+  { labelKey: 'nav.links.nursingCalc', screen: 'nursing-calc' },
+  { labelKey: 'nav.links.revision',    screen: 'revision-sheet' },
+  { labelKey: 'nav.links.library',     screen: 'library' },
+  { labelKey: 'nav.links.stats',       screen: 'stats' },
 ];
 
 // Child screens that light up a section link while open, so the bar shows

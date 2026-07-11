@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Sparkles, Target, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, Calculator, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Sparkles, Target, Trophy, X } from 'lucide-react';
 import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
@@ -261,6 +261,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     // Global search also lives on the bottom nav bar (mobile/tablet); this row
     // keeps it reachable on desktop, where the bar is hidden.
     { key: 'search',    icon: Search, color: T.primary, label: t('nav.drawer.search.label'), tip: t('nav.drawer.search.tip'), sub: t('nav.drawer.search.sub'), action: () => go('search', null, 'search') },
+    { key: 'nursing-calc', fav: 'nursing-calc', icon: Calculator, color: '#1D4ED8', label: t('nav.drawer.nursingCalc.label'), badge: t('nav.drawer.badgeNew'), tip: t('nav.drawer.nursingCalc.tip'), sub: t('nav.drawer.nursingCalc.sub'), action: () => go('nursing-calc', null, 'nursing-calc') },
     { key: 'examdate',  icon: CalendarDays, color: T.primary, label: t('nav.drawer.studyPlan.label'), tip: t('nav.drawer.studyPlan.tip'), sub: t('nav.drawer.studyPlan.sub'), action: () => go('study-plan', null, 'examdate') },
     { key: 'reference', fav: 'reference', icon: FlaskConical, color: T.accent,  label: t('nav.drawer.reference.label'), tip: t('nav.drawer.reference.tip'), sub: t('nav.drawer.reference.sub'),    action: () => go('reference', null, 'reference') },
     // Premium — a preview of upcoming plans/perks. Gated on the contract flag

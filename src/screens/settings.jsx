@@ -24,7 +24,6 @@ import { loadSoundEnabled, setSoundEnabled } from '../lib/sound.js';
 import { getSidebarGestures, setSidebarGesture, isCribSheetEnabled, setCribSheetEnabled, loadUiPrefs } from '../lib/ui-prefs.js';
 import { ComparisonToggle } from '../ui/comparison-cards.jsx';
 // FAV — Favourites strip toggle (per profile, OFF by default).
-import { loadFavs, setFavEnabled } from '../lib/favorites.js';
 import AccountSecurityCard from './account-security-card.jsx';
 import StudyProfileCard from './study-profile-card.jsx';
 import { CompanionRenameCard } from './companion-rename-modal.jsx';
@@ -55,22 +54,17 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   const [cribOn, setCribOn] = useState(() => isCribSheetEnabled());
   // #8 — which Settings sub-page is open (null = main list).
   const [subPage, setSubPage] = useState(null);
-  // FAV — Favourites strip (per profile; hydrated below with the ui prefs).
-  const [favs, setFavs] = useState(null);
+  // FAV — Favourites is ALWAYS ON: the on/off toggle (and the Home strip it
+  // gated) are gone, so Settings no longer reads the favourites record at all.
+  // Only the Manage / Priority rows remain, and they just navigate.
   useEffect(() => {
     let alive = true;
     loadUiPrefs().then(({ gestures: g, cribEnabled }) => {
       if (!alive) return;
       setGestures(g); setCribOn(cribEnabled);
     }).catch(() => {});
-    loadFavs((profile && profile.id) || 'guest').then(f => { if (alive) setFavs(f); }).catch(() => {});
     return () => { alive = false; };
   }, [profile && profile.id]);
-  const flipFavs = async () => {
-    if (!favs) return;
-    const f = await setFavEnabled((profile && profile.id) || 'guest', !favs.enabled);
-    setFavs(f);
-  };
   const flipGesture = (which) => {
     const next = !gestures[which];
     setGestures(g => ({ ...g, [which]: next }));
@@ -971,37 +965,14 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
             Open Admin Panel) was removed. Admin now lives in the standalone
             admin app (admin.html) — the student app has no admin entry. */}
 
-        {/* FAV — Favourites: opt-in home-screen strip of hearted sections.
-            OFF by default; hearts always save regardless, so flipping this on
-            instantly reveals everything collected so far. */}
+        {/* FAV — Favourites is ALWAYS ON. The old on/off toggle (and the Home
+            strip it gated) were removed: hearts always save and hearted sections
+            are reached from the Favourites heart in the top bar / tab bar. Only
+            the two management rows remain.
+            These two do DIFFERENT things: Manage favourites opens the Add picker
+            (add sections); Priority order opens reorder/remove. */}
         <div className="mt-8 mb-3 text-xs uppercase tracking-wider font-semibold" style={{ color: T.muted }}>{t('settings.fav.title')}</div>
-        <Card className="p-4 mb-2 cursor-pointer no-tap-highlight pressable" onClick={flipFavs}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: '#E0245E18' }}>
-                <Heart size={18} fill={favs && favs.enabled ? '#E0245E' : 'none'} style={{ color: '#E0245E' }} />
-              </div>
-              <div className="min-w-0">
-                <div className="font-medium" style={{ color: T.ink }}>{t('settings.fav.title')}</div>
-                <div className="text-xs mt-0.5" style={{ color: T.muted }}>
-                  {favs && favs.enabled
-                    ? `${t('settings.fav.onLead')} ${favs.order.length === 0 ? t('settings.fav.onEmpty') : (favs.order.length === 1 ? t('settings.fav.onCountOne') : t('settings.fav.onCountMany', { n: favs.order.length }))}`
-                    : t('settings.fav.off')}
-                </div>
-              </div>
-            </div>
-            <div className="w-11 h-6 rounded-full p-0.5 transition-colors flex-shrink-0"
-                 style={{ background: favs && favs.enabled ? T.success : T.border }}>
-              <div className="w-5 h-5 rounded-full bg-white shadow transition-transform"
-                   style={{ transform: favs && favs.enabled ? 'translateX(20px)' : 'translateX(0)' }} />
-            </div>
-          </div>
-        </Card>
-        {/* Fix 3 — Manage favourites + Priority order only appear when the
-            Favourites toggle is ON; when it's OFF they're hidden entirely.
-            Issue 11 — these two now do DIFFERENT things: Manage favourites opens
-            the Add picker (add sections); Priority order opens reorder/remove. */}
-        {onOpenFavorites && favs && favs.enabled && (() => {
+        {onOpenFavorites && (() => {
           const FavRow = ({ icon: Icon, label, sub, onClick }) => (
             <Card className="p-3.5 mb-2 cursor-pointer no-tap-highlight pressable"
                   onClick={onClick}>

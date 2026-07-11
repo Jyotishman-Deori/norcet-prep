@@ -16,7 +16,7 @@
 // are re-prompted to accept.
 // =====================================================================
 
-export const LEGAL_VERSION = 5;       // v5 (July 2026): new Content Disclaimer doc (accuracy, fictional names, dosage practice-only, no exam-body affiliation); v4 named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
+export const LEGAL_VERSION = 6;       // v6 (July 2026): Content Disclaimer covers the Nursing Calculator Suite (formula tool, reference ranges need local verification, results stay on device); v5 added the Content Disclaimer doc; v4 named Supabase/Umami/Turnstile, added notifications + payments wording, new Community Guidelines + Cancellation & Refunds docs
 export const LEGAL_UPDATED = 'July 2026';   // last reviewed
 
 // Support contact — the public-facing address (About "Email us", Privacy +
@@ -225,7 +225,11 @@ export const LEGAL = {
       },
       {
         h: 'Dosage and reference values are for practice only',
-        body: 'Drug doses, drip rates, lab ranges and other numbers in drills are exam-practice values. Never use them to make a real clinical decision. In practice, always follow your institution’s protocols, the prescriber’s orders and current official references.',
+        body: 'Drug doses, drip rates, lab ranges and other numbers in drills and calculators are exam-practice and reference values. Never use them alone to make a real clinical decision. In practice, always follow your institution’s protocols, the prescriber’s orders and current official references.',
+      },
+      {
+        h: 'The Nursing Calculator Suite',
+        body: 'The calculators run fixed, published formulas (for example Cockcroft-Gault, Mosteller, Holliday-Segar, Naegele) entirely on your device, and every result names the formula, the standard and the rounding rule it used. No artificial intelligence is involved in any calculation.\n\nA calculator result is a reference number, not a prescription and not an order. Interpretation ranges shown alongside results (such as BMI classes or risk bands) are labelled with their source, and cutoffs can differ between institutions, so always verify them against your institution’s protocol before acting on them. A calculation is only as good as the values you type in, so double-check your inputs. Your recent calculations are stored on your device only and are never uploaded.',
       },
       {
         h: 'No affiliation with exam bodies',

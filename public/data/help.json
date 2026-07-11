@@ -317,5 +317,12 @@
     "what": "A friendly chat guide who knows the whole app. Ask anything about how NurseHolic works (tests, streaks, syncing, games, account) in your own words and it answers instantly, even offline.",
     "how": "Type a question or tap a suggested chip. Answers come with follow-up questions, a button that jumps you straight to the right screen, and a bulb to say whether it helped. Not satisfied? It hands you off to Report or the FAQ community in one tap.",
     "why": "Nobody should have to hunt through menus to understand a feature. A quick chat keeps you studying instead of searching."
+  },
+  "Nursing Calculator Suite": {
+    "title": "Nursing Calculator Suite",
+    "what": "A set of clinical calculators: drug doses, IV drip rates, BMI, BSA, GCS, APGAR, Braden, Morse, maintenance fluids, MAP, unit conversions, due dates and gestational age. Every result comes from a fixed published formula computed on your device, never from AI, and works fully offline.",
+    "how": "Search by name or browse the six groups, then fill in the values. The result appears the moment every field is valid, with the formula, the standard, the rounding rule and the step by step working. Tap Copy value to take a number elsewhere. Your recent calculators and calculations sit at the top, stored on this device only.",
+    "why": "Exam prep and real shifts both need quick, trustworthy numbers. Showing the formula and the working keeps every result checkable, and the reference ranges are labelled with their source so you know exactly what standard you are reading.",
+    "example": "Open IV flow and drip rate, enter 1000 mL over 8 hours with a 15 gtt/mL set, and read off 125 mL/hr and 31 drops per minute, with the exact 31.25 shown in the working."
   }
 }

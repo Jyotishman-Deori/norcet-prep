@@ -227,6 +227,9 @@ import DoubtsScreen from './screens/doubts.jsx';
 const FAQScreen = lazy(() => import('./screens/faq.jsx'));
 // Ask-companion FAQ chat (rule-based guide; lazy: carries the whole KB).
 const AssistantScreen = lazy(() => import('./screens/assistant.jsx'));
+// NURSING CALCULATOR SUITE — hardcoded clinical calculators (zero AI), fully
+// offline; lazy so the math modules stay out of first paint.
+const NursingCalcScreen = lazy(() => import('./screens/nursing-calc.jsx'));
 // GLOBAL SEARCH — the bottom-nav Search tab (lazy: not part of first paint).
 const SearchScreen = lazy(() => import('./screens/search.jsx'));
 // MISTAKE VAULT + ACTIVITY HISTORY — retention surfaces (blueprint M3/M5).
@@ -4715,6 +4718,14 @@ export default function App() {
       {nav.screen === 'assistant' && (
         <Suspense fallback={<LazyScreenFallback />}>
         <AssistantScreen onBack={goHome} onNavigate={handleHomeNavigate} />
+        </Suspense>
+      )}
+
+      {/* Nursing Calculator Suite — offline hardcoded clinical math (zero AI).
+          Its hub <-> calculator sub-view handles its own back-pop internally. */}
+      {nav.screen === 'nursing-calc' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <NursingCalcScreen onBack={goHome} />
         </Suspense>
       )}
 

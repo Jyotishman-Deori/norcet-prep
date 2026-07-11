@@ -11393,3 +11393,86 @@ render smoke, which now server-renders the guest Home + guest Settings paths):
   the guest + what's-new branches.
 
 No admin/Edge-Function changes this round (no deploy:admin needed).
+
+## 2026-07-12 - Nursing Calculator Suite + Favourites always-on
+
+Owner request: keep Favourites only as the top-bar/tab heart (remove the Home
+hero strip + the Settings on/off toggle, always-on now) and build a "Nursing
+Calculator Suite" ("Nursing Calc" in nav) in the freed slot: 21 hardcoded
+calculators, zero AI, offline, premium UI. Formula sheet + flagged reference
+ranges were listed in the plan and approved before any code was written; the
+flagged bands still need nurse confirmation before launch (see below).
+
+Favourites always-on:
+- src/ui/fav-strip.jsx DELETED; home.jsx lost favEnabled + both FavStrip mounts
+  (focusRow now always sits in the left column); fav-heart.jsx lost the enabled
+  gate + the "turn it on in Settings" toast; favorites.js retired the `enabled`
+  field + setFavEnabled (old records with a stray enabled key are ignored);
+  settings.jsx dropped the toggle card + flipFavs (Manage/Priority rows stay,
+  ungated); 5 dead settings.fav.* keys removed from en + 15 packs.
+
+The suite (all NEW files):
+- Pure math, flat in src/lib (run-tests discovery is non-recursive), one per
+  domain: calc-units.js (envelope + exact conversions + validation helpers),
+  calc-dosage.js (dose by weight, D/H x Q, mcg/kg/min infusion, drip gtt/min,
+  Clark/Young/BSA pediatric, Devine IBW, Cockcroft-Gault), calc-body.js
+  (Mosteller + DuBois BSA, BMI vs BOTH WHO band sets, exactAge with UTC-only
+  date math), calc-fluids.js (Holliday-Segar daily + 4-2-1, urine output, MAP),
+  calc-scores.js (GCS, APGAR, Braden, Morse with exported option lists),
+  calc-obstetric.js (Naegele calendar rule + the LMP+280 comparison, cycle
+  adjustment; gestational age). ONE result envelope for all: raw full-precision
+  value + display + a STATED rounding sentence + formula + standard + steps +
+  bands (each with source + flagged) + warnings; failures are {ok:false,error}
+  sentences, never a number. 7 test files (units/dosage/body/fluids/scores/
+  obstetric/registry) with textbook anchors (Mosteller 3600 identity, Devine at
+  60 in, C-G x0.85 + umol/88.4 identity, H-S 25 kg = 1600/day vs 65/hr, MAP
+  120/80 = 93.3, 1000mL/8h/15gtt = 31.25 -> 31 whole drops, BMI 23.0 Asian
+  boundary, scale min/max + band edges, Naegele leap-window divergence, age
+  borrow cases) + validation edges (zero drop factor, SCr 0, DBP > SBP,
+  impossible dates, out-of-range Young ages...).
+- src/data/calculators.js: the registry the screen renders from (23 tools
+  covering the 21 spec items; drug dosage is split into three fast tools).
+  Input schema types: number/segment/select/date/time (+ showIf on segments).
+  calc-registry.test.js sweeps ids/cats/keywords/inputs, em-dash hygiene over
+  ALL copy INCLUDING each envelope's output, and smoke-calls every compute
+  (empty form must error; happy path must fill the envelope).
+- src/screens/nursing-calc.jsx (lazy route 'nursing-calc'): hub (search,
+  recently-used chips, collapsible history log, six category groups) <->
+  calculator detail (generic form, live compute once every visible required
+  field is filled, result card with formula/standard/rounding meta lines,
+  worked steps, grouped bands with source + "Verify against your institution's
+  protocol" tag on flagged ones, Copy value, engine warnings, per-calculator
+  verbatim disclaimer). useBackHandler pops detail -> hub -> leaves. One-time
+  ClinicalNote (preferences.clinicalNoteCalcSeen). Recents+history persist in
+  KEYS.nursingCalc (local only, never synced, Clear control). initialCalcId/
+  initialValues deep-link props (used by the smoke; ready for future links).
+- Micro-interactions: calc-result-in / calc-value-pop / calc-band-sweep /
+  calc-chip-in keyframes, all in the reduced-motion catch-all; home-notice
+  hover lift + note-select-pop reused; haptics feature-detected.
+
+Wiring: App.jsx lazy route; Home hero card in the old FavStrip slot (fixed
+clinical blue CALC_HUE #1D4ED8, Drill-card template); desktop-nav LINKS;
+nav-drawer tools row (fav: 'nursing-calc', NEW badge); nav-registry
+STUDENT_ROUTE_SCREENS + STATIC_REGISTRY; FAV_SECTIONS entry (+ calculator icon
+in fav-icons); 7 new chrome keys x16 locales (home.calc.*, nav.links.
+nursingCalc, nav.drawer.nursingCalc.*) + font re-subset.
+Assistant KB: 6 new entries (calc-suite, calc-do-math redirect, calc-how-math,
+calc-bands, calc-offline, calc-vs-drills) all routing to the suite;
+ask-medical + dosage-drills updated to hand arithmetic to the calculator
+(refusal stance unchanged); 'nursing-calc' added to the cpack
+ASSISTANT_ROUTE_SCREENS allowlist. Legal: disclaimer section broadened +
+a new "The Nursing Calculator Suite" section; LEGAL_VERSION 5 -> 6 (quiet Home
+card will show for returning users). help.json entry + "Calc: " prefix
+fallback in help-modal; CONTENT_VERSION 15 -> 16.
+
+Verification: 52 test files + render smoke (new 'nursing-calc' hub entry AND
+'nursing-calc-detail' with a live computed MAP card: 93.3 + rounding line +
+matched band + verify tag; 'home' marker proves the new hero card) + compile
+gate + bundle guard all green; admin build green.
+
+LAUNCH REGISTER (owner + nurse review): confirm the flagged items in the
+approved plan: Clark's variant (lb/150 shipped), Cockcroft-Gault weight choice
+(actual shipped, disclosed on card), Morse band variant (25-44/45+ shipped,
+variant disclosed), BMI Asian labels, GCS/APGAR/Braden bands, oliguria +
+MAP thresholds, trimester boundaries, Devine sub-152cm handling. Every one is
+a BAND/LABEL, not core math; rejected bands can simply be removed.

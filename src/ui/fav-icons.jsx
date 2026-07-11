@@ -7,7 +7,7 @@
 // =====================================================================
 import React from 'react';
 import {
-  Activity, BarChart3, Bookmark, BookOpen, Compass, Crosshair, FileText, FlaskConical,
+  Activity, BarChart3, Bookmark, BookOpen, Calculator, Compass, Crosshair, FileText, FlaskConical,
   Flag, GraduationCap, HeartPulse, HelpCircle, Layers, ListOrdered, MapPin, Moon, Recycle, Scale,
   ScanSearch, ScrollText, Sigma, Syringe, Target, Timer, Trophy, Zap,
 } from 'lucide-react';
@@ -17,7 +17,7 @@ const ICONS = {
   syringe: Syringe, scroll: ScrollText, grad: GraduationCap,
   chart: BarChart3, trophy: Trophy, bookmark: Bookmark, flag: Flag,
   layers: Layers, help: HelpCircle, sigma: Sigma, mappin: MapPin,
-  book: BookOpen, file: FileText, compass: Compass,
+  book: BookOpen, file: FileText, compass: Compass, calculator: Calculator,
   // new interactive drill modes
   listordered: ListOrdered, activity: Activity, recycle: Recycle,
   scan: ScanSearch, crosshair: Crosshair, scale: Scale, moon: Moon, heartpulse: HeartPulse,
