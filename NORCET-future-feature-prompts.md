@@ -11796,3 +11796,29 @@ headlessly (no browser automation): the actual PNG pixels, the print preview vis
 (chrome hidden, dark-theme ink-on-white, page-break header repeat), iOS-standalone
 button swap. Those are the owner's interactive drive before promoting dev to main.
 Committed to dev.
+
+### Addendum, same day: renamed to "Progress Card" and shipped to production
+
+Owner flagged that "report" collides with the app's "report a problem" / "My reports"
+feedback surfaces, and floated "Progress Transcript". Declined "transcript": it reads as an
+official academic record (the exact over-claim removed from the original brief) and would
+contradict the new legal clause, which says "not a transcript". Settled on "Progress Card"
+(owner's suggestion), which drops "report" entirely and stays consistent with the disclaimer.
+
+Rename is display-strings-only (TopBar, StatsScreen/Settings entries, nav-registry title,
+the PNG/PDF title, the download filename, the premium-gate copy, the legal clause heading and
+body). Internal ids kept: file report-card.js, screen progress-report.jsx, route
+progress-report, PNG nurseholic-progress-card.png. nav-registry keeps report / transcript /
+certificate as SEARCH keywords so users typing those still find it.
+
+Extra pre-prod de-risking (the painter runs only on button click, so the render smoke never
+executes it): ran paintProgressReportCard through a stubbed Node 2D canvas across a
+populated, an empty, and a fully-null report. All three resolve a blob without throwing, draw
+the "Progress Card" title + "NurseHolic" brand, bake the disclaimer, and encode the QR (1004
+modules). Pixels/layout still need a human eye.
+
+Commits a8d5e39 (feature) + e776189 (rename) promoted to main TOGETHER at owner's request,
+skipping the dev-preview step. Single-surface deploy: no Edge Function, no public/data change
+(no CONTENT_VERSION bump), no admin redeploy (the gate ships free with no admin UI). Owner to
+eyeball the PNG + print preview + iOS-standalone in production and check the admin Crash
+reports log after the Vercel build.
