@@ -11992,3 +11992,82 @@ OPEN / FOR THE OWNER:
   DATA chip). Create the nurseholic-dev project, or keep intercepting in the harness.
 - The reload feel is fixed on desktop and verified on live; a real iPhone pass on the back-gesture
   is still worth doing.
+
+---
+
+## 2026-07-12 - Drill Tests: full dry run of all six modes, 13 fixes (1ca3dec, LIVE)
+
+Owner: "give a dry run test in all of the test sections in the drill test section. fix any UI/UX
+issue that you feel along the way. i want you to test all the worst case scenarios. even after the
+test is done check all the add to crib or redo and all the things. i want the best version only."
+
+Traced all six flows end to end, then DROVE them in a real browser (Playwright, every Supabase
+request intercepted in-page, because this repo has no .env.development and a dev serve otherwise
+talks to PRODUCTION).
+
+THE HEADLINE: the happy paths were all fine. EVERY bug was at an edge, and they clustered around
+three users the code never really pictured: the one who RUNS OUT OF TIME, the one who LEAVES
+EARLY, and the one who ANSWERS NOTHING.
+
+The Nursing Calc Test was the worst hit, because its post-test surface was never adapted to
+numeric questions:
+- Crib "Share" THREW a TypeError. share() called `it.q.correct.map(...)` unconditionally, but a
+  calc question has no `correct` and no `options` (it has `answer`/`unit`). QuestionCard already
+  branched on isNumeric; share() never did. Every calc crib crashed on Share.
+- Crib "Add to Revision" CORRUPTED the sheet. `cribs.js slimItem` dropped `answer`/`unit` and
+  coerced `selected` (a SCALAR the user typed) to `[]`. Re-opening it read "Correct: undefined"
+  with the user's own answer gone.
+- The calc crib showed NO WORKING AT ALL. The sheet renders `q.exp`; a calc question keeps its
+  teaching in `steps[]` + `intuition`. So the worked steps, the entire point of a calculation
+  drill, never appeared. Now folded into `exp` when the crib is built, so they survive share AND
+  save for free.
+⚠ RULE: the NUMERIC vs MCQ question split is the #1 bug source in any shared surface. Branch on
+`isNumeric` (`!Array.isArray(q.options) || !q.options.length`).
+
+DATA LOSS: bookmarks made during a quiz were silently discarded unless the run was COMPLETED.
+They lived in a mount-time snapshot and were written only by completeQuiz, as a wholesale replace.
+Leave via back, "Save and exit", or a mock timeout, and every bookmark from that run vanished. The
+Advanced Test always persisted immediately; the quiz now matches, and completeQuiz no longer
+writes a stale snapshot back over live data.
+
+THE TRAP: an EMPTY quiz permanently swallowed the device back button. The popstate guard is
+installed on mount, but ConfirmExitDialog renders AFTER the `if (!q)` early return, so back set a
+flag that nothing could ever show. Reachable via bookmarks-review with no bookmarks, review-due
+with nothing due, or a redo whose ids the question gate has hidden. On iOS that is the back
+GESTURE, so the user would have been stuck with no way out at all.
+
+DISHONEST COPY (the one that would embarrass us with a real student): a mock whose clock ran out
+untouched produced a crib that CONGRATULATED them. With 0 wrong answers it hit the Wrong section's
+empty copy: "Nothing here: you got everything right. Seriously impressive." Now three separate
+honest states (empty / nothing-attempted / normal). The same sheet also omitted every question the
+user never reached (it was built from `results`, not `questions`), while promising in its own copy
+to list them all.
+
+Also fixed: NaN verdict on a 0-question Advanced Test (0/0 made every comparison false, so the
+user silently fell through to the harshest verdict); a double-tap on "Check answer" skipping the
+explanation (Next renders at the exact pixel just tapped); completeQuiz mutating prev state inside
+its setData updater (a double onComplete double-counted the whole run); the calc player having NO
+exit guard at all (back wired straight to goHome and binned the run); two dead-end "No questions"
+screens with no back button; a zero-question PYQ paper whose Attempt button did nothing at all;
+both custom timer inputs unclamped (a typed 9999 bought a 9999-minute test: min/max on
+<input type=number> are ADVISORY and a typed value sails past them); Mock's Start unguarded and
+its default count matching none of its own preset chips.
+
+ADDED: Nursing Calc results had no Redo, the only mode without one, even though `toRevise` was
+already computed right there. Previous Year Papers still has none, DELIBERATELY (paper question
+ids do not exist in allQuestions) and that is correct.
+
+VERIFIED BY DRIVING, NOT COMPILING. All six modes setup -> player -> results. Calc crib Share no
+longer throws and the saved sheet keeps {answer:300, unit:"mg", selected:99999}. A mock left to
+time out now yields a crib with ALL TEN questions under "Not attempted" plus the honest line
+"Nothing wrong here, because nothing was attempted yet." Bookmark survives leaving a run.
+Double-tap keeps the explanation. Typed 9999 clamps to 300 in both Mock and Advanced. Every player
+now asks before discarding a run.
+
+HARNESS LESSON (cost me several false results): the NAV DRAWER is always mounted, just translated
+off-screen, so `document.body.innerText` and any naive text-click silently match drawer items and
+drive the wrong screen. Any UI probe here must filter to elements actually on-screen.
+
+NOT DRIVEN (defensive fixes, not reachable from the UI in a healthy bank): the empty-quiz back
+trap (A4), the 0-question Advanced NaN verdict, and the zero-question PYQ paper. Correct by
+construction and covered by the gate, but nobody clicked them.
