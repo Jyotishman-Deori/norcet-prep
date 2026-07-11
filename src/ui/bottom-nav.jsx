@@ -40,9 +40,18 @@ const TABS = [
 
 const BAR_H = 64; // content height (px) — spacer + --bnav-h must agree
 
-export default function BottomNav({ screen, onNavigate, onOpenNote }) {
+export default function BottomNav({ screen, onNavigate, onOpenNote, animateIn = true }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { t } = useI18n();
+
+  // Same story as the desktop bar: the rise-in is a MOUNT animation and a reload
+  // is a mount, so on every load (and every iOS back-gesture, which re-boots the
+  // app from the service worker) the tab bar slid up from nothing while the page
+  // behind it was already painted. App passes animateIn=false for the boot mount,
+  // so the rise now plays only when the bar genuinely remounts mid-session, i.e.
+  // returning to a tab root from a screen outside BOTTOM_NAV_SCREENS. Captured at
+  // mount so a later prop flip cannot retrigger it on an already-visible bar.
+  const [entrance] = useState(() => animateIn);
   // Icon pop runs only on the tab that just BECAME active (not on mount and
   // not on the passive re-render when another tab was tapped).
   const prevScreenRef = useRef(screen);
@@ -78,7 +87,7 @@ export default function BottomNav({ screen, onNavigate, onOpenNote }) {
   };
 
   const bar = (
-    <nav className="bnav-in fixed bottom-0 left-0 right-0 z-40"
+    <nav className={(entrance ? 'bnav-in ' : '') + 'fixed bottom-0 left-0 right-0 z-40'}
          aria-label={t('nav.mainNavigation')}
          style={{
            background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2',

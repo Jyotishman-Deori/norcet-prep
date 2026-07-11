@@ -74,10 +74,20 @@ const GOLD = '#D97706';
 const GOLD_BRIGHT = '#FCD34D';
 const GOLD_DEEP = '#B45309';
 
-export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOpenNote, unreadNotifCount = 0, onOpenNotifications }) {
+export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOpenNote, unreadNotifCount = 0, onOpenNotifications, animateIn = true }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { profile } = useProfile();
   const { t } = useI18n();
+
+  // The settle-in is a MOUNT animation, and a page reload is a mount, so it used
+  // to replay on every load: the bar sat at opacity 0 for 400ms while the page
+  // content underneath was already fully painted, which reads as a broken frame,
+  // not a flourish. App passes animateIn=false for the boot mount and true once
+  // the shell has settled, so the slide-in now plays ONLY where it was designed
+  // to: when the bar remounts mid-session, i.e. on the way back from a test or a
+  // game (DNAV_EXCLUDED_SCREENS). Captured at mount so a later prop flip cannot
+  // retrigger the animation on an already-visible bar.
+  const [entrance] = useState(() => animateIn);
 
   // Publish the bar height so portaled TopBars (Settings sub-views etc.)
   // can sit BELOW the bar instead of colliding with it at top:0.
@@ -135,7 +145,7 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
 
   return (
     <>
-      <header className="dnav-in fixed top-0 left-0 right-0 z-40"
+      <header className={(entrance ? 'dnav-in ' : '') + 'fixed top-0 left-0 right-0 z-40'}
               style={{
                 height: BAR_H,
                 background: IS_DARK ? 'rgba(21,19,15,0.92)' : T.bg + 'F2',

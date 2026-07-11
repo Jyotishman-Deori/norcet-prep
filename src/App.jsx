@@ -1726,6 +1726,18 @@ function decideBackAction({ screen, overlayOpen, selfGuarded }) {
   return 'go-home';
 }
 
+// Splash timing. Boot is LOCAL-FIRST (IndexedDB session + cached profile, no
+// blocking network), so it normally finishes in ~100ms. Rendering the branded
+// loading screen the instant React mounted therefore painted it for one or two
+// frames and tore it straight back down: that is a flash, not a loading screen,
+// and holding the reload key turned it into a strobe over the previous screen.
+// We now stay on a bare themed background for SPLASH_DELAY_MS and reveal the
+// splash only if the boot is genuinely slow (wedged storage, cold session
+// check). If it does appear it stays for at least SPLASH_MIN_MS, so the splash
+// can never flicker at the far end either.
+const SPLASH_DELAY_MS = 450;
+const SPLASH_MIN_MS = 650;
+
 export default function App() {
   const [data, setData] = useState(null);
   // Content quality gate (UPGRADE 2 / Layer 3): ids the admin has pulled from
@@ -1836,6 +1848,41 @@ export default function App() {
   // resolving. Distinct from `loading` (kept for the existing watchdog/finally
   // semantics) so the two concerns don't fight.
   const [sessionResolving, setSessionResolving] = useState(true);
+
+  // ── Boot presentation ────────────────────────────────────────────────────
+  // `booting` is the single source of truth for "we cannot show the app yet".
+  // See SPLASH_DELAY_MS / SPLASH_MIN_MS above for why the splash is withheld.
+  const booting = loading || sessionResolving;
+  const [splashShown, setSplashShown] = useState(false);
+  const [splashHeld, setSplashHeld] = useState(false);
+  // Reveal the splash only if the boot is still running after the delay. On the
+  // normal fast path this timer is cleared before it fires, so the splash never
+  // renders at all and the reload is a straight cut from background to app.
+  useEffect(() => {
+    if (!booting || splashShown) return;
+    const id = setTimeout(() => setSplashShown(true), SPLASH_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [booting, splashShown]);
+  // Once it IS shown, hold it a beat past the end of boot so a boot that lands
+  // just past the delay cannot reintroduce the very flash we are removing.
+  useEffect(() => {
+    if (!splashShown) return;
+    setSplashHeld(true);
+    const id = setTimeout(() => setSplashHeld(false), SPLASH_MIN_MS);
+    return () => clearTimeout(id);
+  }, [splashShown]);
+  // The persistent nav bars play a slide/rise entrance when they MOUNT, and the
+  // boot mount is the one place that reads as a glitch rather than a flourish
+  // (chrome missing while the page under it is already painted). They capture
+  // this at mount, so it is false for the boot mount and true for every later
+  // remount: coming back from a test or a game still gets the animation.
+  const [shellSettled, setShellSettled] = useState(false);
+  useEffect(() => {
+    if (booting || shellSettled) return;
+    const id = setTimeout(() => setShellSettled(true), 0);
+    return () => clearTimeout(id);
+  }, [booting, shellSettled]);
+
   const [authInitialMode, setAuthInitialMode] = useState('create');
   const [isAdmin, setIsAdmin] = useState(false);
   // Feature 4 — weekly summary dismissal (per ISO week, stored locally).
@@ -4407,7 +4454,19 @@ export default function App() {
     </AppProviders>
   );
 
-  if (loading || sessionResolving) {
+  if (booting || splashHeld) {
+    // Fast path (the overwhelming majority of loads): boot resolves before the
+    // splash is due, so we hold a bare themed frame. <html> is ALREADY painted
+    // this exact colour by the pre-paint script in index.html and the sync theme
+    // block above, so this frame is invisible: the user sees their background,
+    // then the app. Nothing flashes because nothing is drawn and torn down.
+    if (!splashShown) {
+      return provide(
+        <div className="font-body min-h-screen" style={{ background: T.bg }}>
+          <style>{fontStyles}</style>
+        </div>
+      );
+    }
     return provide(
       <div className="font-body min-h-screen flex items-center justify-center" style={{ background: T.bg }}>
         <style>{fontStyles}</style>
@@ -4662,6 +4721,7 @@ export default function App() {
                     onNavigate={handleHomeNavigate}
                     onOpenMenu={() => setDrawerOpen(true)}
                     onOpenNote={() => requestNote()}
+                    animateIn={shellSettled}
                     unreadNotifCount={unreadNotifCount}
                     onOpenNotifications={() => { setUnreadNotifCount(0); navigate({ screen: 'notifications' }); }} />
       )}
@@ -5389,6 +5449,7 @@ export default function App() {
           ancestor), so position:fixed stays viewport-relative. */}
       {bottomNavVisible && (
         <BottomNav screen={nav.screen} onNavigate={goTabDirect}
+                   animateIn={shellSettled}
                    onOpenNote={() => requestNote()} />
       )}
     </div>
