@@ -831,7 +831,7 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                 {dailyQuote.text}
               </p>
               <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
-, {dailyQuote.source}
+                {dailyQuote.source}
               </p>
             </div>
           </div>
