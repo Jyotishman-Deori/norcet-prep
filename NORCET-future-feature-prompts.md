@@ -11584,3 +11584,62 @@ are not server-rendered); they were reviewed by hand instead. The interactive
 click-through (exit, save, reload, resume, finish) was not driven, there is no
 browser automation on this machine. Pushed to dev only, for the dev-preview
 drive before promoting to main.
+
+## 2026-07-12 - Abandoned tests feed the B2 repeat pool
+
+Owner's call: if a student starts a test and leaves without finishing it, those
+questions should be able to come back later. They could not.
+
+The app already HAD the right algorithm. The B2 repeat-unattempted pool
+(lib/repeat-unattempted.js) folds a run's questions into a per-profile pool
+(answered/revealed -> drop, skipped -> drop, seen-but-untouched -> add) and
+serves them first in future Quick/Topic tests. But nextPool was only ever called
+from completeQuiz, so an abandoned run folded nothing. So this adds the missing
+TRIGGER to the existing algorithm rather than inventing a second one.
+
+Two decisions carry the whole design:
+
+1. An abandoned run folds only what the user actually REACHED (their position in
+   the play order, plus anything answered/revealed or skipped). A FINISHED run
+   really did present every question, so completeQuiz still folds the whole set.
+   An abandoned one did not. Without this split, bailing a 50-question Mock at Q9
+   would dump the 42 questions the user never even saw into a pool whose meaning
+   is "you saw it and did not engage", flooding it and crowding out the real ones.
+   Now it contributes exactly the one question they left behind.
+
+2. The resume snapshot doubles as the universal "unfinished run" receipt. It is
+   now written for EVERY mode (Mock included) and regardless of the resumeTests
+   flag, and Home applies a retire-or-offer rule on each visit:
+     untimed practice + fresh + flag on -> OFFER the Resume card (unchanged)
+     Mock / stale / flag off / discarded / replaced by a new run -> RETIRE (fold)
+     completed -> cleared, and completeQuiz's existing fold runs unchanged
+   That is what catches the case that actually matters on a phone: the app gets
+   swiped away mid-test. No exit handler can possibly fire, but the record is
+   already on disk, so the next launch retires it and the questions come back.
+   Resume is still only OFFERED for untimed practice (isValidSnapshot refuses a
+   Mock), so snapshotting a Mock can never make it resumable.
+   We deliberately do NOT fold on "Save and exit": that run is still alive as a
+   snapshot, and folding would double-serve its questions into a new test. If the
+   user resumes and finishes, completeQuiz's fold drops them anyway. Self-healing.
+
+Also fixed a long-standing gap: repeat-unattempted.js shipped with NO test,
+because its top-level safe-storage import pulls in the Vite-only extensionless
+'../storage' specifier, which plain Node cannot resolve, making the module
+un-importable in a test. Made that import LAZY inside the two async IO functions
+(the same trick game-config.js already uses) and wrote the test. The pure B2
+algorithm is finally covered, including the bailed-Mock regression.
+
+Exit dialogs (both paths) now tell the student the truth, which doubles as
+integrity reinforcement: a question you saw but did not attempt will come back in
+a later practice set, so nothing slips through the cracks.
+
+Out of scope, flagged not silently changed: the Advanced Test and previous-year
+papers do not feed the repeat pool even on COMPLETION today, so wiring only their
+abandonment would be inconsistent. Extending B2 to them is a separate stats-model
+decision (CLAUDE.md is explicit that paper tests deliberately do not touch
+streak / totalAttempted).
+
+Verification: 57 test files + render smoke + compile gate + bundle guard green;
+dev boots clean and every changed module transforms. App.jsx is not smoke-rendered,
+so the deps-array declaration order was hand-checked for TDZ. Pushed to dev,
+alongside the resume commit, for the preview drive before promoting to main.
