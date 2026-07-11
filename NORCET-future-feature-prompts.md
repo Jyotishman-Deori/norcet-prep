@@ -11531,3 +11531,56 @@ CI (duplicates the local gate).
 Verification: 54 test files + render smoke (new maintenance overlay entry +
 settings Export-row marker) + compile gate + bundle guard all green; admin build
 green. Ship dev -> main.
+
+## 2026-07-12 - Resume an in-progress test + friendly-mentor cautions (C5)
+
+The deferred C5 from the PWA-upgrade round, now built with the owner's added
+requirement: caution the student when they leave a test part-way AND when they
+come back, in the voice of a friendly mentor, with a rotating list of reminders
+plus one FIXED reminder never to use unfair means.
+
+Scope (deliberate): resume covers UNTIMED PRACTICE ONLY (quick, topic,
+weak-topic, bookmarks, review-due, wrong). The timed Mock and the Advanced Test
+exam simulation stay NON-resumable on purpose. Pausing a clock is exactly the
+"unfair means" the caution warns against, and a run you cannot pause is what
+makes the simulation feel like the real exam. This also keeps the change out of
+the two most complex state machines, which is the low-risk path.
+
+- lib/test-session.js (pure + test): snapshot store. Snapshots by question ID
+  (not the objects), so a content update between sessions is survivable: the run
+  is re-resolved against the live pool at resume and pruned ids are dropped.
+  buildSnapshot / summarize / isStale (24h) / isValidSnapshot, plus
+  nextUnansweredIndex. THE correctness point: a resumed run lands on the first
+  UNANSWERED question, not the raw saved index. Without that, a user who closed
+  while reading an answered question's explanation would be served it again and
+  double-count the attempt.
+- lib/resume-cautions.js (pure + test): the mentor copy. EXIT_TIPS and
+  RESUME_TIPS rotate (a per-profile cursor advances each time a caution is
+  shown, so the nudge differs every session), while INTEGRITY_REMINDER (answer
+  from what you know, a borrowed mark is a mark missed on exam day) and
+  BREAK_NOTE (water or a bathroom break is completely okay) show EVERY time. The
+  test enforces no em dash / no double hyphen and no duplicate tips.
+- ui/confirm-exit-dialog.jsx: a resumable "Save and step away?" path (calm ghost
+  exit button, because progress is genuinely saved) alongside the original
+  leave-and-lose guard, which now adds a line about timed tests mirroring the
+  real exam. New ResumeWelcomeDialog for the return. Both responsive: centred,
+  max-w-md, scroll-capped for short landscape screens, 48px touch targets.
+- quiz.jsx: seeds index/results/elapsed from resumeState; autosaves on each
+  answer / next / skip (so an accidental hard-close, not just Back, is
+  recoverable); clears the snapshot on completion.
+- App.jsx: re-checks the snapshot on every Home visit (so the card is never
+  stale), resumeTest rebuilds the run, discardResume drops it, completeQuiz
+  clears it.
+- home.jsx: full-width "Pick up where you left off" card leading the banner
+  region, so its edges line up on mobile, tablet and desktop.
+- game_config.resumeTests: default ON, and killable from the admin Live config
+  with no redeploy if it ever misbehaves.
+
+Verification: full gate green (56 test files + render smoke + compile gate +
+bundle guard), new smoke entries quiz-resume + home-resume, dev server boots
+clean and every changed module transforms without error. NOTE the honest gap:
+the exit/return dialogs are portaled, so the render smoke skips them (portals
+are not server-rendered); they were reviewed by hand instead. The interactive
+click-through (exit, save, reload, resume, finish) was not driven, there is no
+browser automation on this machine. Pushed to dev only, for the dev-preview
+drive before promoting to main.
