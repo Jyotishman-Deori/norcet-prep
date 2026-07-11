@@ -100,6 +100,13 @@ function ConfirmExitDialog({
           You can pick this set back up from your Home screen.
         </div>
 
+        {/* B2 — the honest promise: nothing you saw goes missing. Reinforces the
+            integrity theme (no point dodging a hard question, it will find you). */}
+        <div className="text-[13px] leading-relaxed mb-2.5" style={{ color: T.inkSoft }}>
+          Any question you saw but did not attempt will come back in a later practice set,
+          so nothing slips through the cracks.
+        </div>
+
         {exitTip && (
           <div className="text-[13px] leading-relaxed mb-3" style={{ color: T.inkSoft }}>{exitTip}</div>
         )}
@@ -131,7 +138,7 @@ function ConfirmExitDialog({
           Leave this {mode === 'mock' ? 'mock test' : 'session'}?
         </div>
       </div>
-      <div className="text-sm leading-relaxed mb-4 text-ink-soft">
+      <div className="text-sm leading-relaxed mb-3 text-ink-soft">
         {timed && (
           <>This one is timed like the real exam, so leaving ends it. </>
         )}
@@ -139,6 +146,11 @@ function ConfirmExitDialog({
         {answered > 0 && (
           <> You've answered <span style={{ color: T.ink, fontWeight: 600 }}>{answered} of {total}</span> so far. Those answers will be lost.</>
         )}
+      </div>
+      {/* B2 — even here, the questions they saw and left are not lost: they are
+          folded into the repeat pool and served again in a later practice test. */}
+      <div className="text-[13px] leading-relaxed mb-4" style={{ color: T.muted }}>
+        Any question you saw but did not attempt will come back in a later practice set.
       </div>
       <div className="flex gap-2.5">
         <Button onClick={onStay} className="flex-1 min-h-[48px]">

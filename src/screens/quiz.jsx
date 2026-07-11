@@ -180,12 +180,21 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   // Persist / clear the snapshot. Persist is fire-and-forget (local IndexedDB);
   // a storage failure must never block the quiz.
+  //
+  // NOTE: written for EVERY mode, including the timed Mock, and regardless of the
+  // resumeTests flag. The record is the "unfinished run" receipt, not just a
+  // resume point: if the run is abandoned (or the app is swiped away) rather than
+  // resumed, App retires it by folding the questions the user actually reached but
+  // never attempted into the B2 repeat pool, so they come back in a later test.
+  // Resume itself is still only OFFERED for untimed practice (isValidSnapshot
+  // refuses a Mock), so snapshotting a Mock can never make it resumable.
   const persistSnapshot = () => {
-    if (!canResume || !profileId) return;
+    if (!profileId) return;
     try {
       const ids = schedule.map((i) => questions[i] && questions[i].id).filter(Boolean);
       if (ids.length === 0) return;
-      const snap = buildSnapshot({ mode, questionIds: ids, results, index, elapsed, startedAt: startedAtRef.current });
+      const skipped = Object.keys(skipCounts).filter((qid) => (skipCounts[qid] || 0) > 0);
+      const snap = buildSnapshot({ mode, questionIds: ids, results, index, elapsed, skipped, startedAt: startedAtRef.current });
       safeStorage.set(KEYS.activeTest(profileId), snap, false);
     } catch (e) { /* best-effort */ }
   };
@@ -193,15 +202,16 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (!profileId) return;
     try { safeStorage.delete(KEYS.activeTest(profileId), false); } catch (e) {}
   };
-  // Autosave whenever the answered set / position / play order changes, so an
-  // accidental hard-close (not just the Back button) is recoverable. An untouched
-  // run (nothing answered, still on the first question) is not worth saving.
+  // Autosave whenever the answered set / position / play order / skips change, so
+  // an accidental hard-close (not just the Back button) is recoverable. An
+  // untouched run (nothing answered, still on the first question) is not worth
+  // saving: there is nothing to resume and nothing to repeat.
   useEffect(() => {
-    if (!canResume) return;
+    if (!profileId) return;
     if (results.length === 0 && index === 0) return;
     persistSnapshot();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [results, index, schedule]);
+  }, [results, index, schedule, skipCounts]);
   // ---------------------------------------------------------------------------
   // Confirm-before-exit. The user can lose meaningful progress if they tap
   // back accidentally — and they will, on phones. Any tap on Back during an
@@ -286,7 +296,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     if (!isCountdown) return;
     if (secondsRemaining > 0) return;
     // Avoid double-fire by checking against a ref-less guard: just run once.
-    const id = setTimeout(() => onComplete(results, bookmarkedLocal, elapsed, skipCounts), 0);
+    const id = setTimeout(() => {
+      clearSnapshot();  // the run FINISHED (time ran out): it is not an abandoned run
+      onComplete(results, bookmarkedLocal, elapsed, skipCounts);
+    }, 0);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isCountdown, secondsRemaining]);

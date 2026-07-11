@@ -51,9 +51,17 @@ assert.deepEqual([...RESUMABLE_MODES].sort(),
   // defensive defaults
   const s3 = buildSnapshot({});
   assert.deepEqual(s3.questionIds, []);
+  assert.deepEqual(s3.skipped, [], 'skipped defaults to an empty list');
   assert.equal(s3.index, 0);
   assert.equal(s3.mode, 'quick');
   assert.equal(typeof s3.ts, 'number');
+
+  // `skipped` is carried so an ABANDONED run can be folded into the repeat pool
+  // faithfully (a skipped question must not be forced back). Copied, not aliased.
+  const skips = ['q7'];
+  const s4 = buildSnapshot({ mode: 'quick', questionIds: ['q7', 'q8'], results: [], index: 0, skipped: skips });
+  skips.push('q9');
+  assert.deepEqual(s4.skipped, ['q7'], 'skipped snapshot is a copy');
 }
 
 // ---- isStale / isValidSnapshot: age + shape gating ----

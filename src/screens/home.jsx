@@ -629,7 +629,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   {sum.label}, {sum.answered} of {sum.total} answered. Your run is saved on this device.
                 </div>
               </div>
-              <button onClick={onDiscardResume} aria-label="Discard saved test"
+              {/* Discarding does not throw the questions away: the run is retired,
+                  so the ones seen but never attempted come back in a later test. */}
+              <button onClick={() => onDiscardResume(resumeSnap)} aria-label="Discard saved test"
                       className="no-tap-highlight p-1.5 -m-1 rounded-lg active:bg-black/5 flex-shrink-0">
                 <X size={16} style={{ color: T.muted }} />
               </button>

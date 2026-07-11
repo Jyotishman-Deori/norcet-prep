@@ -37,8 +37,15 @@ export function isResumable(mode, timed) {
 
 // buildSnapshot — shape the record that gets persisted. `results` is the Quiz's
 // per-question result array (each already carries its qId), `questionIds` is the
-// play order, `index` is the current position in that order.
-export function buildSnapshot({ mode, questionIds, results, index, elapsed, startedAt, now } = {}) {
+// play order, `index` is the current position in that order, `skipped` is the ids
+// the user actively skipped.
+//
+// The record doubles as the "unfinished run" receipt: if the run is abandoned
+// rather than resumed, lib/repeat-unattempted.js folds it into the repeat pool
+// (abandonedRunInputs), which is why `skipped` is carried here. It is written for
+// EVERY mode, including the timed Mock; resume is only ever OFFERED for untimed
+// practice (isValidSnapshot refuses the rest).
+export function buildSnapshot({ mode, questionIds, results, index, elapsed, startedAt, skipped, now } = {}) {
   const ts = typeof now === 'number' ? now : Date.now();
   return {
     v: SNAPSHOT_VERSION,
@@ -46,6 +53,7 @@ export function buildSnapshot({ mode, questionIds, results, index, elapsed, star
     mode: mode || 'quick',
     questionIds: Array.isArray(questionIds) ? questionIds.slice() : [],
     results: Array.isArray(results) ? results : [],
+    skipped: Array.isArray(skipped) ? skipped.slice() : [],
     index: Math.max(0, index | 0),
     elapsed: Math.max(0, elapsed | 0),
     startedAt: typeof startedAt === 'number' ? startedAt : ts,

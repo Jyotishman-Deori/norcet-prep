@@ -15,7 +15,7 @@ import {
 // lives only inside the lazily-loaded chart screens (StatsScreen, weightage),
 // so the recharts-vendor chunk is fetched on demand, not in the initial load.
 import { KEYS, KEY_PREFIXES } from './lib/keys.js';
-import { loadRepeatPool, saveRepeatPool, nextPool, partitionByRepeat } from './lib/repeat-unattempted.js';
+import { loadRepeatPool, saveRepeatPool, nextPool, partitionByRepeat, abandonedRunInputs } from './lib/repeat-unattempted.js';
 import { CURRENT_SCHEMA_VERSION, runMigrations } from './lib/migrations.js';
 // P7 — 501 pre-extracted official AIIMS NORCET PYQs across 6 papers, in the
 // real SEED_QUESTIONS schema. Imported (never inlined) to keep App.jsx lean.
@@ -1756,22 +1756,13 @@ export default function App() {
   }, [profile]);
   // RESUME AN IN-PROGRESS TEST — a fresh, non-stale snapshot of an untimed
   // practice run the user stepped away from, surfaced as the Home "Resume" card.
-  // Re-checked every time Home is shown so it always reflects the latest run.
+  // `resumeSnapRef` mirrors it so startQuiz can retire a pending run synchronously.
+  // The retire-or-offer effect itself lives further down, next to the repeat-pool
+  // helpers it depends on (a deps array runs at RENDER time, so every name in it
+  // must already be declared).
   const [resumeSnap, setResumeSnap] = useState(null);
-  useEffect(() => {
-    if (nav.screen !== 'home') return undefined;
-    const pid = profile && profile.id;
-    if (!pid || !(getConfig() && getConfig().resumeTests)) { setResumeSnap(null); return undefined; }
-    let on = true;
-    safeStorage.get(KEYS.activeTest(pid), false)
-      .then((r) => {
-        if (!on) return;
-        const snap = r && r.value;
-        setResumeSnap(isValidSnapshot(snap, Date.now()) ? snap : null);
-      })
-      .catch(() => { if (on) setResumeSnap(null); });
-    return () => { on = false; };
-  }, [nav.screen, profile && profile.id]);
+  const resumeSnapRef = useRef(null);
+  useEffect(() => { resumeSnapRef.current = resumeSnap; }, [resumeSnap]);
   // Phase 3 — a pending batch invite (?batch=) captured at boot; the join
   // confirmation modal shows once the user is logged in (guests sign up first).
   const [pendingBatchId, setPendingBatchId] = useState(null);
@@ -2298,6 +2289,55 @@ export default function App() {
       .catch(() => {});
     return () => { on = false; };
   }, [profile && profile.id]);
+
+  // B2 — fold ONE run into the repeat-unattempted pool. Single place, used by
+  // completeQuiz (a finished run: every question was presented) and by
+  // retireSnapshot (an abandoned run: only what the user actually reached).
+  const foldIntoRepeatPool = useCallback((inputs) => {
+    try {
+      if (!inputs || !Array.isArray(inputs.presentedIds) || inputs.presentedIds.length === 0) return;
+      const updated = nextPool(repeatPoolRef.current, inputs);
+      repeatPoolRef.current = updated;
+      saveRepeatPool(profile && profile.id, updated);
+    } catch (e) { /* pool is best-effort; never block a screen */ }
+  }, [profile]);
+
+  // RETIRE an unfinished run: the user started a test and walked away from it (or
+  // the app was swiped shut). Fold the questions they reached but never attempted
+  // into the repeat pool so those come back in a future Quick/Topic test, then
+  // drop the record. Called when a run can never be resumed: a timed Mock, a
+  // stale snapshot, the resumeTests flag being off, an explicit discard, or a new
+  // run replacing it.
+  const retireSnapshot = useCallback((snap) => {
+    if (snap) foldIntoRepeatPool(abandonedRunInputs(snap));
+    const pid = profile && profile.id;
+    if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} }
+    resumeSnapRef.current = null;
+    setResumeSnap(null);
+  }, [foldIntoRepeatPool, profile]);
+
+  // RESUME — retire-or-offer. Runs whenever Home is shown, so the card always
+  // reflects the latest run and a dead run never lingers.
+  //   offerable (untimed practice, fresh, flag on) -> show the Resume card
+  //   otherwise (Mock / stale / flag off)          -> retire it into the pool
+  useEffect(() => {
+    if (nav.screen !== 'home') return undefined;
+    const pid = profile && profile.id;
+    if (!pid) { setResumeSnap(null); return undefined; }
+    let on = true;
+    safeStorage.get(KEYS.activeTest(pid), false)
+      .then((r) => {
+        if (!on) return;
+        const snap = r && r.value;
+        if (!snap) { setResumeSnap(null); return; }
+        const offerable = !!(getConfig() && getConfig().resumeTests) && isValidSnapshot(snap, Date.now());
+        if (offerable) setResumeSnap(snap);
+        else retireSnapshot(snap);
+      })
+      .catch(() => { if (on) setResumeSnap(null); });
+    return () => { on = false; };
+  }, [nav.screen, profile && profile.id, retireSnapshot]);
+
   const navigate = useCallback((n) => {
     const cur = navRef.current;
     if (cur && n && n.screen !== cur.screen && !NAV_NO_STACK.includes(cur.screen)) {
@@ -2617,6 +2657,11 @@ export default function App() {
   }, []);
 
   const startQuiz = useCallback((spec) => {
+    // B2 — starting a NEW run replaces any run still pending (there is one active
+    // -test slot per profile, and the new run's autosave would overwrite it).
+    // Retire the old one first so the questions the user saw but never attempted
+    // are folded into the repeat pool instead of being silently lost.
+    if (resumeSnapRef.current) retireSnapshot(resumeSnapRef.current);
     // Record where the quiz was launched from so exiting it returns to that
     // screen (e.g. Weak Areas / Syllabus-coverage), not Home. startQuiz uses
     // setNav below, which bypasses the nav stack, so we push here exactly the
@@ -2727,7 +2772,7 @@ export default function App() {
       timeLimitMin: spec.mode === 'mock' ? (spec.durationMin || spec.count || 50) : null,
       ...navPace(spec.mode)
     });
-  }, [allQuestions, data]);
+  }, [allQuestions, data, retireSnapshot]);
 
   // RESUME — relaunch a saved untimed practice run. Rebuild the question objects
   // from the snapshot ids against the live pool (dropping any pruned ids), then
@@ -2762,6 +2807,10 @@ export default function App() {
     // index), so a user who closed while viewing an answered question's
     // explanation never re-answers a question they already attempted.
     const idx = nextUnansweredIndex(survivingIds, snap.results);
+    // Clear the pending-run ref WITHOUT retiring: this run is being resumed, not
+    // abandoned, so its questions must not be folded into the repeat pool (and the
+    // startQuiz retire guard must not fire for it).
+    resumeSnapRef.current = null;
     setResumeSnap(null);
     setNav({
       screen: 'quiz', questions: qs, mode: snap.mode, timed: false,
@@ -2771,17 +2820,23 @@ export default function App() {
   }, [allQuestions, data, profile]);
 
   // RESUME — discard the saved run from the Home card (its dismiss control).
-  const discardResume = useCallback(() => {
-    const pid = profile && profile.id;
-    if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} }
-    setResumeSnap(null);
-  }, [profile]);
+  // Discarding does NOT throw the questions away: the run is retired, so the ones
+  // the user saw but never attempted are folded into the repeat pool and will come
+  // back in a future practice test.
+  const discardResume = useCallback((snap) => {
+    // Guard the arg: the Home dismiss button is an onClick, so a MouseEvent can
+    // arrive here. Only accept a real snapshot record, else use the pending one.
+    const rec = (snap && Array.isArray(snap.questionIds)) ? snap : resumeSnapRef.current;
+    retireSnapshot(rec);
+  }, [retireSnapshot]);
 
   const completeQuiz = useCallback((results, bookmarkedLocal, elapsed, skipCounts) => {
     if (!data) return;
-    // RESUME — the run is finished; drop any in-progress snapshot + Home card
-    // (belt and braces alongside the Quiz's own clear on completion).
+    // RESUME — the run is FINISHED, so it is not an abandoned run: drop the
+    // snapshot + Home card WITHOUT retiring it (the fold below handles it, with
+    // the full presented set). Belt and braces alongside the Quiz's own clear.
     { const pid = profile && profile.id; if (pid) { try { safeStorage.delete(KEYS.activeTest(pid), false); } catch (e) {} } }
+    resumeSnapRef.current = null;
     setResumeSnap(null);
     setData(prev => {
       const newHistory = { ...prev.history };
@@ -2916,21 +2971,19 @@ export default function App() {
       };
     });
     setNav({ screen: 'results', results, questions: nav.questions, elapsed, mode: nav.mode });
-    // B2 — fold this run into the repeat-unattempted pool: presented questions
-    // with no result (not answered, not revealed) and not skipped get queued to
-    // come back first next time; anything now resolved or skipped is dropped.
-    try {
-      const presentedIds = Array.isArray(nav.questions) ? nav.questions.map(q => q.id) : [];
-      if (presentedIds.length) {
-        const resultIds = (results || []).map(r => r.qId);
-        const skippedIds = skipCounts
-          ? Object.keys(skipCounts).filter(qid => (skipCounts[qid] || 0) > 0)
-          : [];
-        const updated = nextPool(repeatPoolRef.current, { presentedIds, resultIds, skippedIds });
-        repeatPoolRef.current = updated;
-        saveRepeatPool(profile && profile.id, updated);
-      }
-    } catch (e) { /* pool is best-effort; never block results */ }
+    // B2 — fold this FINISHED run into the repeat-unattempted pool: presented
+    // questions with no result (not answered, not revealed) and not skipped get
+    // queued to come back first next time; anything now resolved or skipped is
+    // dropped. A finished run really did present every question, so the whole set
+    // is `presentedIds` here. (An ABANDONED run folds only what the user reached;
+    // see retireSnapshot.)
+    foldIntoRepeatPool({
+      presentedIds: Array.isArray(nav.questions) ? nav.questions.map(q => q.id) : [],
+      resultIds: (results || []).map(r => r.qId),
+      skippedIds: skipCounts
+        ? Object.keys(skipCounts).filter(qid => (skipCounts[qid] || 0) > 0)
+        : [],
+    });
     // #18 — auto-resolve question solution flags: any still-open flag whose
     // question was just answered CORRECTLY clears itself, with a small
     // Achievements notification ("you got it right"). Fire-and-forget; a
@@ -2968,7 +3021,7 @@ export default function App() {
         return next;
       });
     }
-  }, [data, nav.questions, profile]);
+  }, [data, nav.questions, profile, foldIntoRepeatPool]);
 
   const saveCustomQuestion = useCallback((q) => {
     setData(prev => ({ ...prev, customQuestions: [...prev.customQuestions, q] }));
