@@ -38,6 +38,7 @@ import { normalizePace, paceFlags } from '../lib/pace.js';
 import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
 import { isSoundEnabled, playClearChime } from '../lib/sound.js';
 import { TITRATION_DRUGS } from '../data/titration-drugs.js';
+import BodyPortal from '../ui/body-portal.jsx';
 import {
   pumpRate, zoneFor, trackTargets, stepVitals, tickHold, crisisState, roundScore,
 } from '../lib/titration-engine.js';
@@ -630,6 +631,7 @@ function OutcomeSheet({ T, drug, outcome, reduced, roundNo, total, onNext }) {
   const last = roundNo >= total;
   const tint = won ? M.green : M.red;
   return (
+    <BodyPortal>
     <div className="fixed inset-0 z-40 flex flex-col justify-end"
          style={{ background: 'rgba(4,10,9,0.55)', backdropFilter: 'blur(2px)' }}>
       <div className={`${reduced ? '' : 'sheet-up'} max-w-md mx-auto w-full px-4 pb-4`}>
@@ -674,6 +676,7 @@ function OutcomeSheet({ T, drug, outcome, reduced, roundNo, total, onNext }) {
         </Card>
       </div>
     </div>
+    </BodyPortal>
   );
 }
 

@@ -34,6 +34,7 @@ const CBT_CSS = `
 `;
 import { useTheme } from '../lib/app-context.jsx';
 import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar, EduTag } from '../ui/primitives.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
@@ -694,8 +695,10 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
         </div>
       )}
 
-      {/* keyboard shortcut popover */}
+      {/* keyboard shortcut popover — portaled to <body> so it anchors to the
+          visible viewport (screens' entrance transforms trap position:fixed). */}
       {showKeys && (
+        <BodyPortal>
         <div className="fixed inset-0 z-50" onClick={() => setShowKeys(false)}>
           <div className="absolute right-3 top-16 w-60 rounded-2xl p-3.5 anim-scalein" onClick={e => e.stopPropagation()}
                style={{ background: T.bg, border: `1px solid ${T.borderSoft}`, boxShadow: '0 18px 50px rgba(0,0,0,0.35)' }}>
@@ -711,6 +714,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             ))}
           </div>
         </div>
+        </BodyPortal>
       )}
 
       <div className="max-w-md mx-auto px-4 pt-4 pb-40">
@@ -842,6 +846,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
       </div>
 
       {paletteOpen && (
+        <BodyPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }} onClick={() => setPaletteOpen(false)}>
           <div className="w-full max-w-sm rounded-3xl anim-scalein flex flex-col overflow-hidden"
                style={{ background: T.bg, maxHeight: '86vh', boxShadow: '0 24px 70px rgba(0,0,0,0.45)', border: `1px solid ${T.borderSoft}` }}
@@ -908,6 +913,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {confirm && (() => {
@@ -916,6 +922,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
           ? questions.slice(secLo, secHi + 1).filter(qq => !(answers[qq.id] && answers[qq.id].length > 0)).length
           : 0;
         return (
+        <BodyPortal>
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.4)' }} onClick={() => setConfirm(null)}>
           <Card className="p-5 max-w-sm w-full anim-scalein" onClick={e => e.stopPropagation()}>
             <div className="font-display text-xl font-semibold mb-2" style={{ color: T.ink }}>
@@ -944,6 +951,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             </div>
           </Card>
         </div>
+        </BodyPortal>
         );
       })()}
     </div>

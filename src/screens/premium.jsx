@@ -29,6 +29,7 @@ import {
 } from '../lib/premium.js';
 import { TIERS, TIER_ORDER } from '../lib/subscription.js';
 import FamilyPlanCard from '../ui/family-plan.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 
 // Gold accent for the Premium surface — matches the drawer row's '#D97706'.
 // A deliberate, distinct "premium" tone, warmer than T.primary.
@@ -331,8 +332,10 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
         </p>
       </div>
 
-      {/* ── Coming-soon placeholder sheet (NO payment logic) ────────────── */}
+      {/* ── Coming-soon placeholder sheet (NO payment logic). Portaled to
+          <body> so it centres on the visible viewport. ────────────────── */}
       {showSheet && (
+        <BodyPortal>
         <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
              style={{ background: 'rgba(0,0,0,0.45)' }}
              onClick={() => setShowSheet(false)}>
@@ -361,6 +364,7 @@ function PremiumScreen({ onBack, onEntitlementChanged }) {
             </button>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   );

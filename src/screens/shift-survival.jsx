@@ -23,6 +23,7 @@ import {
 } from '../lib/survival-engine.js';
 import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
 import { playPlaceTick, playClearChime } from '../lib/sound.js';
+import BodyPortal from '../ui/body-portal.jsx';
 
 const COINS_PER_LINE = 10;          // spec: harder → double Game A's 5
 const MATH_BONUS = 50;
@@ -501,6 +502,7 @@ function ShiftSurvival({ onBack, onComplete }) {
 
       {/* combo crisis — hard math, 10s */}
       {math && (
+        <BodyPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)' }}>
           <Card className="w-full max-w-md anim-scalein p-4" style={{ background: D.panel, border: `1px solid ${D.red}55` }}>
             <div className="flex items-center gap-2 mb-2">
@@ -521,6 +523,7 @@ function ShiftSurvival({ onBack, onComplete }) {
             <div className="text-[11px] mt-2.5 text-center" style={{ color: D.muted }}>Wrong or too slow → a complication spawns.</div>
           </Card>
         </div>
+        </BodyPortal>
       )}
     </div>
   );

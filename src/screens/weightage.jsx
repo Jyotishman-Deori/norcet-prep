@@ -12,6 +12,7 @@ import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
 import { isNonExamTopic } from '../data/seed.js';
 import { Card, Button, TopBar, Pill } from '../ui/primitives.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 
 function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   const { theme: T } = useTheme();
@@ -339,8 +340,11 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
       </div>
 
       {/* Start-practice confirmation (issues round) — context first, quiz
-          only after an explicit choice. */}
+          only after an explicit choice. Portaled to <body> so it centres on
+          the VISIBLE viewport regardless of scroll or the screen's entrance
+          transform (PC/tablet/mobile alike). */}
       {confirmRow && (
+        <BodyPortal>
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4"
              style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setConfirmRow(null)}>
           <div className="anim-scalein w-full max-w-sm rounded-3xl p-5 max-h-[88vh] overflow-y-auto"
@@ -394,6 +398,7 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
             </button>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   );

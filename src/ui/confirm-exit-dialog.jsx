@@ -10,11 +10,13 @@ import { AlertCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { Button, Card } from './primitives.jsx';
+import BodyPortal from './body-portal.jsx';
 
 function ConfirmExitDialog({ mode, answered, total, onStay, onLeave }) {
   const { theme: T } = useTheme();
   const dialogRef = useFocusTrap(onStay);
   return (
+    <BodyPortal>
     <div className="fixed inset-0 z-[80] flex items-center justify-center p-4"
          style={{ background: 'rgba(0,0,0,0.5)' }}
          onClick={onStay}>
@@ -45,6 +47,7 @@ function ConfirmExitDialog({ mode, answered, total, onStay, onLeave }) {
         </div>
       </Card>
     </div>
+    </BodyPortal>
   );
 }
 

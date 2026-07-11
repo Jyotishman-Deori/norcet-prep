@@ -9,6 +9,7 @@
 import React, { useEffect } from 'react';
 import { X, BookOpen, Lightbulb, ListChecks } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
+import BodyPortal from './body-portal.jsx';
 
 export default function UnitGuidebook({ open, topic, guidebook, onClose, onRead }) {
   const { theme: T } = useTheme();
@@ -25,6 +26,7 @@ export default function UnitGuidebook({ open, topic, guidebook, onClose, onRead 
   if (!open || !topic) return null;
 
   return (
+    <BodyPortal>
     <div className="fixed inset-0 z-[95] flex items-end md:items-center justify-center"
          role="dialog" aria-modal="true" aria-label={`${topic.name} guidebook`}
          style={{ background: 'rgba(15,20,17,0.55)', backdropFilter: 'blur(3px)' }}
@@ -99,5 +101,6 @@ export default function UnitGuidebook({ open, topic, guidebook, onClose, onRead 
         </div>
       </div>
     </div>
+    </BodyPortal>
   );
 }

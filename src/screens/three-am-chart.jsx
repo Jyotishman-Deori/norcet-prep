@@ -29,6 +29,7 @@ import {
 } from '../lib/chart-engine.js';
 import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
 import { playPlaceTick, playClearChime } from '../lib/sound.js';
+import BodyPortal from '../ui/body-portal.jsx';
 
 const COINS_PER_LINE = 5;                         // spec: 1 row = 5
 const COMBO_TONE = '#E8A23D';                      // warm amber — fits the night-shift palette
@@ -409,6 +410,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
 
       {/* Brain-Rot Lifeline */}
       {lifeline && (
+        <BodyPortal>
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.55)' }}>
           <Card className="w-full max-w-md anim-scalein p-4" style={{ border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-1">
@@ -432,6 +434,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
             </div>
           </Card>
         </div>
+        </BodyPortal>
       )}
     </div>
   );

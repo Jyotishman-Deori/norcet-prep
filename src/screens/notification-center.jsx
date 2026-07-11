@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { useTheme, useData, useProfile } from '../lib/app-context.jsx';
 import { Card, TopBar, requestConfirm } from '../ui/primitives.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 import {
   loadNotifications, saveNotifications, categoryOf,
   CATEGORY_ORDER, CATEGORY_LABELS, unreadByCategory,
@@ -470,6 +471,7 @@ function NotificationCenter({ onBack, onNavigate }) {
 
       {/* #7 — clear-all caution sheet (the wipe is irreversible). */}
       {confirmClear && (
+        <BodyPortal>
         <div className="fixed inset-0 z-[70] flex items-end justify-center"
              style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setConfirmClear(false)}>
           <div className="sheet-up w-full max-w-md rounded-t-3xl p-5 pb-8"
@@ -495,6 +497,7 @@ function NotificationCenter({ onBack, onNavigate }) {
             </div>
           </div>
         </div>
+        </BodyPortal>
       )}
     </div>
   );

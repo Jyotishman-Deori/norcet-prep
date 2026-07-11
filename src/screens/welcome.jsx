@@ -27,6 +27,7 @@ import { LIGHT_THEME, DARK_THEME } from '../lib/themes.js';
 import { useContent } from '../lib/content.js';
 import { safeStorage } from '../lib/safe-storage.js';
 import ConfirmDialog from '../ui/confirm-dialog.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 import { KEYS } from '../lib/keys.js';
 import {
   GENDER_OPTIONS, QUALIFICATION_OPTIONS, EMPLOYMENT_OPTIONS,
@@ -614,8 +615,10 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
       </div>
 
       {/* F-C — per-row help popup. Got it → launch the section; back → tour.
-          Springs up from the bottom (kmap-sheet-up) over a fading scrim. */}
+          Springs up from the bottom (kmap-sheet-up) over a fading scrim.
+          Portaled to <body> so it anchors to the visible viewport. */}
       {selected && (
+        <BodyPortal>
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center kmap-scrim-in"
              style={{ background: 'rgba(0,0,0,0.45)' }} onClick={() => setSelected(null)}>
           <div className="kmap-sheet-up w-full sm:max-w-md sm:mx-4 rounded-t-3xl sm:rounded-3xl p-5 pb-7"
@@ -655,6 +658,7 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
             </Button>
           </div>
         </div>
+        </BodyPortal>
       )}
 
       {/* Leave-tour confirmation (issues round) — the device back button (or

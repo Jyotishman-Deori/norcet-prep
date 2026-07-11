@@ -15,6 +15,7 @@ import { useContent } from '../lib/content.js';
 import { useFocusTrap } from '../lib/use-focus-trap.js';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
+import BodyPortal from '../ui/body-portal.jsx';
 
 // =====================================================================
 // QUICK REFERENCE — lab values, vitals, drug doses, abbreviations, conversions
@@ -251,7 +252,11 @@ function ReferenceLookupModal({ open, onClose }) {
 
   if (!open) return null;
 
+  // Portaled to <body> so it anchors to the visible viewport even when the
+  // host screen's entrance transform is live (quiz mounts it as a sibling,
+  // dosage-practice mounts it inline; the portal makes both unconditional).
   return (
+    <BodyPortal>
     <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
          style={{ background: 'rgba(0,0,0,0.5)' }}
          onClick={onClose}>
@@ -375,6 +380,7 @@ function ReferenceLookupModal({ open, onClose }) {
         </div>
       </div>
     </div>
+    </BodyPortal>
   );
 }
 

@@ -15,6 +15,7 @@ import React, { useEffect } from 'react';
 import { Crown, Lock, X, CheckCircle2 } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { haptic } from '../lib/juice.js';
+import BodyPortal from './body-portal.jsx';
 
 const PERKS = [
   'Every mistake saved forever, nothing slips away after a session',
@@ -38,6 +39,7 @@ export default function PremiumCribSheetModal({ open, count = 0, onClose, onUpgr
   if (!open) return null;
 
   return (
+    <BodyPortal>
     <div className="fixed inset-0 z-[95] flex items-center justify-center p-5"
          role="dialog" aria-modal="true" aria-label="Premium mistake vault"
          style={{ background: 'rgba(15,20,17,0.55)', backdropFilter: 'blur(4px)' }}
@@ -102,5 +104,6 @@ export default function PremiumCribSheetModal({ open, count = 0, onClose, onUpgr
         </div>
       </div>
     </div>
+    </BodyPortal>
   );
 }
