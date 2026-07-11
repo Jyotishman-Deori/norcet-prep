@@ -448,6 +448,13 @@ function CalculatorView({ T, calc, reduced, onResult, initialValues }) {
     return [...groups.entries()];
   }, [result]);
 
+  // How many of the REQUIRED visible fields still need a value. Drives the "1 of 3"
+  // counter and the empty-state copy, so the screen always tells the user exactly
+  // what it is waiting for instead of just sitting there.
+  const required = visible.filter((inp) => !inp.optional);
+  const filledCount = required.filter((inp) => String(values[inp.key] || '').trim() !== '').length;
+  const remaining = Math.max(0, required.length - filledCount);
+
   return (
     <>
       {/* header strip: what this is + the formula chip */}
@@ -459,14 +466,68 @@ function CalculatorView({ T, calc, reduced, onResult, initialValues }) {
         </div>
       </div>
 
+      {/* HOW IT WORKS — the screen used to open as a subtitle and blank rows, with
+          no hint that anything would ever happen. Three steps set the expectation
+          before the user touches a single field. */}
+      <div className="flex items-stretch gap-1.5 mb-4">
+        {[
+          { n: 1, label: 'Enter the details' },
+          { n: 2, label: 'Answer appears instantly' },
+          { n: 3, label: 'Check it against your protocol' },
+        ].map((s, i) => (
+          <div key={s.n}
+               className={'flex-1 rounded-xl px-2.5 py-2' + (reduced ? '' : ' calc-chip-in')}
+               style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}`,
+                        animationDelay: reduced ? undefined : `${i * 70}ms` }}>
+            <div className="flex items-center gap-1.5">
+              <span className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold flex-shrink-0"
+                    style={{ background: hue + '20', color: hue }}>{s.n}</span>
+              <span className="text-[10.5px] font-semibold leading-tight" style={{ color: T.inkSoft }}>{s.label}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+
       {/* the form */}
       <Card className="p-4 mb-4">
+        {/* Form header + a live counter, so progress toward an answer is visible. */}
+        <div className="flex items-center justify-between gap-3 mb-3.5 pb-3"
+             style={{ borderBottom: `1px solid ${T.borderSoft}` }}>
+          <div className="text-[13px] font-semibold" style={{ color: T.ink }}>Enter the details</div>
+          {required.length > 0 && (
+            <div className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full"
+                 style={{ background: filled ? T.success + '18' : T.surfaceWarm,
+                          color: filled ? T.success : T.muted }}>
+              {filledCount} of {required.length} filled
+            </div>
+          )}
+        </div>
         <div className="space-y-4">
           {visible.map((inp) => (
             <FormInput key={inp.key} T={T} hue={hue} inp={inp} value={values[inp.key]} onChange={set} reduced={reduced} />
           ))}
         </div>
       </Card>
+
+      {/* RESULT PLACEHOLDER — shown until every required field has a value. Without
+          this the screen was simply blank below the form and read as broken. */}
+      {!filled && (
+        <Card className={'p-6 mb-4 text-center' + (reduced ? '' : ' calc-empty-in')}
+              style={{ background: 'transparent', border: `1.5px dashed ${T.border}` }}>
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center mx-auto mb-3"
+               style={{ background: hue + '12' }}>
+            <Calculator size={20} style={{ color: hue }} aria-hidden="true" />
+          </div>
+          <div className="text-[13.5px] font-semibold mb-1.5" style={{ color: T.ink }}>
+            Your answer will appear here
+          </div>
+          <div className="text-[12.5px] leading-relaxed mx-auto" style={{ color: T.muted, maxWidth: 320 }}>
+            {remaining > 0
+              ? `Fill in ${remaining === required.length ? 'the' : 'the last'} ${remaining} ${remaining === 1 ? 'detail' : 'details'} above. The result updates as you type, and always shows the formula it used.`
+              : 'The result updates as you type, and always shows the formula it used.'}
+          </div>
+        </Card>
+      )}
 
       {/* the result card / validation message */}
       {result && !result.ok && (

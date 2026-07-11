@@ -21,7 +21,8 @@ import { Card, TopBar, requestFeedback, requestSupport } from '../ui/primitives.
 import PageContainer from '../ui/page-container.jsx';
 import { prefersReducedMotion } from '../lib/juice.js';
 import { SUPPORT_EMAIL } from '../lib/legal.js';
-import { TOPICS } from '../data/seed.js';
+import { TOPICS, SEED_QUESTIONS } from '../data/seed.js';
+import { filterHidden } from '../lib/question-gate.js';
 import { PREVIOUS_YEAR_PAPERS } from '../norcet-pyq-data.js';
 
 // Count-up that starts when the element scrolls into view. Reduced motion
@@ -60,7 +61,14 @@ function AboutScreen({ onBack, onNavigate }) {
   const reduced = prefersReducedMotion();
   const stag = (i) => (!reduced ? { className: 'about-in', style: { animationDelay: `${Math.min(i, 6) * 90}ms` } } : {});
 
-  const questionCount = (allQuestions && allQuestions.length) || 0;
+  // "By the numbers" is a claim about what the APP ships, so it must count the
+  // app's own bank only. It used to read allQuestions.length, which also includes
+  // every question the user imported from the Library, so the headline silently
+  // inflated per user (two people saw two different "practice questions" totals
+  // for the same product). Imported questions are the USER's content, not ours,
+  // so they get their own honest line and never touch the app's number.
+  const appQuestionCount = filterHidden(SEED_QUESTIONS).length;
+  const importedCount = Math.max(0, ((allQuestions && allQuestions.length) || 0) - appQuestionCount);
   const topicCount = (TOPICS && TOPICS.length) || 0;
   const paperCount = (PREVIOUS_YEAR_PAPERS && PREVIOUS_YEAR_PAPERS.length) || 0;
 
@@ -140,7 +148,7 @@ function AboutScreen({ onBack, onNavigate }) {
           <Card className="p-5 mb-6">
             <div className="grid grid-cols-3 text-center divide-x" style={{ borderColor: T.borderSoft }}>
               {[
-                { n: questionCount, label: 'practice questions' },
+                { n: appQuestionCount, label: 'questions in the app' },
                 { n: topicCount, label: 'syllabus units' },
                 { n: paperCount, label: 'real NORCET papers' },
               ].map((s) => (
@@ -152,6 +160,15 @@ function AboutScreen({ onBack, onNavigate }) {
                 </div>
               ))}
             </div>
+            {/* Imported questions are the user's own content, counted separately so
+                the app's number above stays an honest, identical claim for everyone. */}
+            {importedCount > 0 && (
+              <div className="mt-4 pt-3.5 text-[12px] leading-relaxed text-center"
+                   style={{ borderTop: `1px solid ${T.borderSoft}`, color: T.muted }}>
+                Plus <span className="font-semibold tabular-nums" style={{ color: T.inkSoft }}>{importedCount.toLocaleString()}</span>{' '}
+                {importedCount === 1 ? 'question' : 'questions'} you added from the Library, which are in your practice pool too.
+              </div>
+            )}
           </Card>
         </div>
 

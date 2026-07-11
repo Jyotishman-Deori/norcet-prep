@@ -38,7 +38,7 @@ export const STUDENT_ROUTE_SCREENS = new Set([
   'weightage', 'knowledge-map', 'learn-topics', 'learn-cards', 'revision-sheet',
   'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
   'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
-  'about', 'legal', 'waitlist', 'assistant', 'nursing-calc',
+  'about', 'legal', 'waitlist', 'assistant', 'nursing-calc', 'support',
 ]);
 const NAV_ACTIONS = new Set(['note', 'feedback']);
 
@@ -203,6 +203,10 @@ const STATIC_REGISTRY = [
     keywords: ['calculator', 'calc', 'drip rate', 'dose', 'bmi', 'gcs', 'apgar', 'map', 'due date', 'conversion', 'braden', 'morse', 'bsa', 'fluids'],
     route: { screen: 'nursing-calc' },
     description: 'Drip rates, doses, BMI, GCS, due dates and more. Offline.' },
+  { id: 'support', title: 'Support Center', category: 'Features',
+    keywords: ['support', 'help', 'helpdesk', 'help center', 'faq', 'question', 'problem', 'issue', 'contact', 'stuck', 'guide'],
+    route: { screen: 'support' },
+    description: 'Help articles, quick answers, and how to reach a human.' },
   { id: 'dosage', title: 'Dosage practice', category: 'Features',
     keywords: ['dosage', 'dose', 'calculation', 'drip', 'math', 'formula'],
     route: { screen: 'dosage' },

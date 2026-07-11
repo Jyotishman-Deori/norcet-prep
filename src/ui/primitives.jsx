@@ -230,8 +230,12 @@ function TopBar({ title, onBack, right, feedback, favId, solid = false, desktopH
         <div className="flex items-center gap-2">
           {/* AI Learning Notes — FIRST (leftmost) action so it holds the same
               slot on every screen regardless of which other actions are present.
-              Home has a custom header that renders <NoteButton/> too. */}
-          <NoteButton />
+              Home has a custom header that renders <NoteButton/> too.
+              DESKTOP: hidden. The persistent DesktopNav carries the one note
+              button at lg+, so this second in-screen bar no longer duplicates it
+              (owner request). It STAYS on mobile/tablet, where there is no
+              DesktopNav and this is the only note entry outside Home. */}
+          <span className="lg:hidden contents"><NoteButton /></span>
           {/* FAV — heart on favoritable sections (registry-gated; renders
               nothing for ids outside lib/favorites.js). */}
           {favId && <FavHeart favId={favId} />}

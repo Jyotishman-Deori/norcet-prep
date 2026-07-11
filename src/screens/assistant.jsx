@@ -54,7 +54,9 @@ function AssistantScreen({ onBack, onNavigate }) {
   const isGuest = !profile || isGuestProfile(profile);
   const userFirst = ((profile && profile.displayName) || '').trim().split(/\s+/)[0] || '';
 
-  const [name, setName] = useState('Nova');
+  // Fallback until the stored companion name loads. Kept in step with the
+  // note-companion SUGGESTIONS list, so the retired 'Nova' can never flash.
+  const [name, setName] = useState('Nana');
   const [kb, setKb] = useState(ASSISTANT_KB);
   const [messages, setMessages] = useState([]);
   const [typing, setTyping] = useState(false);

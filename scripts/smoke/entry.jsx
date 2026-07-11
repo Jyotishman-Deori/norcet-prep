@@ -104,6 +104,12 @@ const SCREENS = {
       },
     });
   },
+  // Support Center — the help hub rendered from the assistant KB. Exercises the
+  // category accordion + quick-help list + contact cards on first paint.
+  'support': async () => {
+    const m = await import('../../src/screens/support.jsx');
+    return React.createElement(m.default, { onBack: noop, onNavigate: noop });
+  },
   // RESUME — the Home "Pick up where you left off" card (in-body, not portaled).
   'home-resume': async () => {
     const m = await import('../../src/screens/home.jsx');
@@ -342,6 +348,17 @@ const SCREENS = {
       initialValues: { systolic: '120', diastolic: '80' },
     });
   },
+  // A calculator opened with NOTHING filled in. This is what the user actually
+  // sees first, and it used to be a subtitle over blank rows with no hint that
+  // anything would ever happen. Locks in the guidance strip + the result
+  // placeholder + the live "0 of 2 filled" counter.
+  'nursing-calc-empty': async () => {
+    const m = await import('../../src/screens/nursing-calc.jsx');
+    return React.createElement(m.default, {
+      onBack: noop,
+      initialCalcId: 'map',
+    });
+  },
   // Maintenance / kill switch overlay: force the config on, then render the
   // host. It reads config synchronously, so the server render shows the screen.
   // (Only this entry mounts MaintenanceHost, so the forced config is harmless
@@ -472,12 +489,17 @@ const MARKERS = {
   // the flagged-band tag appears (no apostrophe in the marker: renderToString
   // escapes ' as &#x27;).
   'nursing-calc-detail': ['93.3', 'Rounded to 1 decimal place.', 'Copy value', '70 to 100 mmHg', 'Verify against your institution'],
+  // The empty state: guidance steps + the "answer appears here" placeholder.
+  'nursing-calc-empty': ['Enter the details', 'Your answer will appear here', 'Check it against your protocol'],
   'quiz': ['Educational use only. Not for clinical decisions.'],
   // RESUME — the relaunched quiz still renders its question card + EduTag (the
   // return caution is portaled, so it is nulled in smoke like other dialogs).
   'quiz-resume': ['Educational use only. Not for clinical decisions.'],
   // RESUME — the in-body Home card title (single string literal).
   'home-resume': ['Pick up where you left off'],
+  // Support Center — hero, the KB-driven sections, and a category label proving
+  // the accordion rendered from assistant-kb (not hardcoded copy).
+  'support': ['How can we help?', 'Quick help', 'Browse help articles', 'Getting started', 'Still need help?'],
 };
 
 let failed = 0;

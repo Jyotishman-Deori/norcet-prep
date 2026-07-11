@@ -146,7 +146,7 @@ function pickFrom(pool, pick, companionName, userName) {
 
 // The main turn function. `ctx` = the previously matched KB entry (or null).
 // `pick(n)` -> integer in [0, n) — injected randomness.
-export function replyFor(kb, query, ctx, { companionName = 'Nova', userName = '', pick = (n) => Math.floor(Math.random() * n) } = {}) {
+export function replyFor(kb, query, ctx, { companionName = 'Nana', userName = '', pick = (n) => Math.floor(Math.random() * n) } = {}) {
   const intent = detectIntent(query);
   const match = matchKb(kb, query, ctx);
   const frustrated = intent === 'frustration';
@@ -185,7 +185,7 @@ export function replyFor(kb, query, ctx, { companionName = 'Nova', userName = ''
 }
 
 // The concerned follow-up after a "not helpful" bulb vote.
-export function notHelpfulReply({ companionName = 'Nova', pick = (n) => Math.floor(Math.random() * n) } = {}) {
+export function notHelpfulReply({ companionName = 'Nana', pick = (n) => Math.floor(Math.random() * n) } = {}) {
   return {
     kind: 'chitchat', intent: 'notHelpful', mood: 'concerned',
     text: pickFrom(pools.notHelpful, pick, companionName, ''),

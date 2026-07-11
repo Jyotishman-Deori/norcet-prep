@@ -949,6 +949,41 @@ export const fontStyles = `
 }
 .calc-chip-in { animation: calcChipIn 0.3s cubic-bezier(0.22,1,0.36,1) both; }
 
+/* Calculator EMPTY state — the "your answer appears here" placeholder breathes
+   gently so the screen never looks inert while the form is still blank. */
+@keyframes calcEmptyIn {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: none; }
+}
+.calc-empty-in { animation: calcEmptyIn 0.34s cubic-bezier(0.22,1,0.36,1) both; }
+
+/* ── Support Center (screens/support.jsx) ───────────────────────────────────
+   Staggered section reveal, accordion row hover, chevron rotation and the
+   expanded-panel slide. .sup-chev-open is a STATE (kept under reduced motion);
+   only its transition is dropped.
+   NOTE: this whole file is one JS template literal, so NEVER use a backtick in
+   these comments. One did, it closed the string early, and the smoke caught it. */
+@keyframes supIn {
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: none; }
+}
+.sup-in { animation: supIn 0.42s cubic-bezier(0.22,1,0.36,1) both; }
+@keyframes supPanel {
+  0%   { opacity: 0; transform: translateY(-4px); }
+  100% { opacity: 1; transform: none; }
+}
+.sup-panel { animation: supPanel 0.26s cubic-bezier(0.22,1,0.36,1) both; }
+.sup-row { transition: background-color 160ms ease, transform 180ms cubic-bezier(0.22,1,0.36,1); }
+@media (hover: hover) {
+  .sup-row:hover { transform: translateX(3px); }
+}
+.sup-chev { transition: transform 220ms cubic-bezier(0.22,1,0.36,1); }
+.sup-chev-open { transform: rotate(180deg); }
+.sup-card { transition: transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms ease; will-change: transform; }
+@media (hover: hover) {
+  .sup-card:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.10); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -978,7 +1013,12 @@ export const fontStyles = `
   .about-in, .dnav-in, .brand-pop, .dnav-bell-ring, .btt-launch,
   .wl-in, .wl-bloom, .wl-ring, .wl-tick,
   .asst-pop, .asst-dot, .asst-heart, .asst-tilt, .asst-glow,
-  .calc-result-in, .calc-value-pop, .calc-band-sweep, .calc-chip-in { animation: none !important; }
+  .calc-result-in, .calc-value-pop, .calc-band-sweep, .calc-chip-in,
+  .sup-in, .sup-panel, .calc-empty-in { animation: none !important; }
+  /* Support Center: kill the motion but KEEP .sup-chev-open's rotation, which is
+     an open/closed STATE indicator, not decoration. */
+  .sup-row, .sup-chev, .sup-card { transition: none !important; }
+  .sup-row:hover, .sup-card:hover { transform: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
   .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after, .tbar-btn { transition: none !important; }
   .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child,

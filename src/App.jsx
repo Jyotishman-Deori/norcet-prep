@@ -233,6 +233,8 @@ const AssistantScreen = lazy(() => import('./screens/assistant.jsx'));
 // NURSING CALCULATOR SUITE — hardcoded clinical calculators (zero AI), fully
 // offline; lazy so the math modules stay out of first paint.
 const NursingCalcScreen = lazy(() => import('./screens/nursing-calc.jsx'));
+// Support Center — the help hub (KB articles + quick help + contact + donate).
+const SupportScreen = lazy(() => import('./screens/support.jsx'));
 // GLOBAL SEARCH — the bottom-nav Search tab (lazy: not part of first paint).
 const SearchScreen = lazy(() => import('./screens/search.jsx'));
 // MISTAKE VAULT + ACTIVITY HISTORY — retention surfaces (blueprint M3/M5).
@@ -3049,8 +3051,40 @@ export default function App() {
     });
   }, [allQuestions]);
 
-  const submitAdvancedTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes, everCorrectIds }) => {
+  // B2 — the Advanced Test and the previous-year paper player feed the SAME
+  // repeat-unattempted pool as the Quiz, so a question you left blank comes back
+  // in a later Quick/Topic test.
+  //   finished (submitted) -> the exam presented EVERY question, so anything still
+  //     blank is folded in. Identical semantics to completeQuiz.
+  //   abandoned (quit)     -> fold only the questions actually VISITED, so quitting
+  //     a 100-question paper at Q3 cannot dump 97 unseen questions into the pool.
+  // NOTE: this touches the repeat pool ONLY. Streak / totalAttempted are untouched,
+  // so the deliberate previous-year-paper stats model is preserved.
+  const foldExamRun = useCallback(({ questions, answers, visitedIds, finished }) => {
+    const allIds = Array.isArray(questions) ? questions.map(q => q && q.id).filter(Boolean) : [];
+    const ans = answers || {};
+    const resultIds = Object.keys(ans).filter(id => Array.isArray(ans[id]) && ans[id].length > 0);
+    const presentedIds = finished ? allIds : (Array.isArray(visitedIds) ? visitedIds.filter(Boolean) : []);
+    // marked-for-review is NOT a skip: a marked-but-blank question SHOULD come back.
+    foldIntoRepeatPool({ presentedIds, resultIds, skippedIds: [] });
+  }, [foldIntoRepeatPool]);
+
+  // B2 — quitting an exam player. Fold what was reached, then leave.
+  const abortExamRun = useCallback((payload, leave) => {
+    try {
+      foldExamRun({
+        questions: navRef.current && navRef.current.questions,
+        answers: payload && payload.answers,
+        visitedIds: payload && payload.visitedIds,
+        finished: false,
+      });
+    } catch (e) { /* pool is best-effort; never block the exit */ }
+    if (leave) leave();
+  }, [foldExamRun]);
+
+  const submitAdvancedTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes, everCorrectIds, visitedIds }) => {
     const qs = nav.questions || [];
+    foldExamRun({ questions: qs, answers, visitedIds, finished: true });
     let correct = 0, wrong = 0, blank = 0;
     qs.forEach(q => {
       const ans = answers[q.id] || [];
@@ -3089,7 +3123,7 @@ export default function App() {
       auto,
       everCorrectIds: everCorrectIds || []
     });
-  }, [nav.questions, nav.filters]);
+  }, [nav.questions, nav.filters, foldExamRun]);
 
   // ===== P7 — Previous Year Papers =====
   // Admin-uploaded banks tagged type:'previous_paper' show up here as papers
@@ -3165,8 +3199,12 @@ export default function App() {
   // Score a finished paper and append the attempt to data.previousPapers[id].
   // Mirrors submitAdvancedTest's scoring (negative marking), but writes to the
   // separate previousPapers section instead of advancedTestHistory.
-  const submitPaperTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes }) => {
+  const submitPaperTest = useCallback(({ answers, timePerQ, elapsedSec, auto, timeMinutes, visitedIds }) => {
     const qs = nav.questions || [];
+    // B2 — a submitted paper presented every question, so anything left blank is
+    // queued to come back in a later practice test (repeat pool only; the paper's
+    // deliberate no-streak / no-totalAttempted stats model is untouched).
+    foldExamRun({ questions: qs, answers, visitedIds, finished: true });
     const paperId = nav.paperId;
     let correct = 0, wrong = 0, blank = 0;
     qs.forEach(q => {
@@ -3217,7 +3255,7 @@ export default function App() {
       auto,
       paperName: nav.paperName
     });
-  }, [nav.questions, nav.paperId, nav.paperName]);
+  }, [nav.questions, nav.paperId, nav.paperName, foldExamRun]);
 
   const setExamDate = useCallback((dateStr) => {
     setData(prev => ({ ...prev, stats: { ...prev.stats, examDate: dateStr } }));
@@ -4883,6 +4921,15 @@ export default function App() {
         </Suspense>
       )}
 
+      {/* Support Center — the help hub. Renders the SAME knowledge base the
+          Ask-companion chat uses (src/data/assistant-kb.js), so the two can never
+          drift. Rule-based search only, never an AI call. */}
+      {nav.screen === 'support' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <SupportScreen onBack={goHome} onNavigate={handleHomeNavigate} />
+        </Suspense>
+      )}
+
       {/* F-A — Study Methods. Reads progress only; "Go to feature" routes
           through handleHomeNavigate so quiz specs actually start a quiz. */}
       {nav.screen === 'study-methods' && (
@@ -4991,7 +5038,7 @@ export default function App() {
                       onSubmit={submitAdvancedTest}
                       strict={nav.strict}
                       sections={nav.sections || null}
-                      onAbort={goHome} />
+                      onAbort={(p) => abortExamRun(p, goHome)} />
       )}
 
       {nav.screen === 'advanced-results' && (
@@ -5031,7 +5078,7 @@ export default function App() {
                       label={nav.paperName}
                       bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById}
                       onSubmit={submitPaperTest}
-                      onAbort={() => setNav({ screen: 'previous-papers' })} />
+                      onAbort={(p) => abortExamRun(p, () => setNav({ screen: 'previous-papers' }))} />
       )}
 
       {nav.screen === 'paper-results' && (

@@ -13,6 +13,7 @@ import { Globe, Check, RefreshCw, ChevronUp } from 'lucide-react';
 import { useTheme, useI18n } from '../lib/app-context.jsx';
 import { LOCALES } from '../lib/i18n.js';
 import { requestFeedback, requestSupport } from './primitives.jsx';
+import LanguageDisclaimer from './language-disclaimer.jsx';
 
 // Desktop footer language switcher — same data + pick contract as the
 // Settings → Language page (settings-language.jsx), condensed into an
@@ -82,6 +83,11 @@ function FooterLanguage() {
               );
             })}
           </div>
+          {/* The translations are drafts and some languages are incomplete. Say so
+              right where the choice is made, not only in Settings. */}
+          <div className="mt-2 px-0.5">
+            <LanguageDisclaimer compact />
+          </div>
         </div>
       )}
       <button onClick={() => setOpen(o => !o)}
@@ -116,6 +122,9 @@ export default function AppFooter({ onNavigate }) {
         { label: 'Library', go: () => onNavigate({ screen: 'library' }) },
         { label: 'Learn', go: () => onNavigate({ screen: 'learn-topics' }) },
         { label: 'Level Up', go: () => onNavigate({ screen: 'level-up' }) },
+        // Learn / Level Up / Nursing Calc left the desktop top bar (owner request),
+        // so the footer carries them here alongside the drawer and their Home cards.
+        { label: 'Nursing Calc', go: () => onNavigate({ screen: 'nursing-calc' }) },
         { label: 'Revision', go: () => onNavigate({ screen: 'revision-sheet' }) },
         { label: 'Exam weightage', go: () => onNavigate({ screen: 'weightage' }) },
       ],
@@ -123,6 +132,7 @@ export default function AppFooter({ onNavigate }) {
     {
       h: 'Help and support',
       links: [
+        { label: 'Support Center', go: () => onNavigate({ screen: 'support' }) },
         { label: 'FAQ', go: () => onNavigate({ screen: 'faq' }) },
         { label: 'Study Methods', go: () => onNavigate({ screen: 'study-methods' }) },
         { label: 'Send feedback', go: () => requestFeedback({ screen: 'Footer' }) },

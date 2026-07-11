@@ -362,6 +362,13 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
   // have submitted an empty sheet.
   const answersRef = useRef(answers);
   useEffect(() => { answersRef.current = answers; }, [answers]);
+  // B2 — the ids the user actually REACHED, mirrored into a ref for the same
+  // reason as answersRef (the auto-submit fires from the timer's closure). App
+  // folds these into the repeat-unattempted pool: a submitted exam presented
+  // every question, but a QUIT one only presented what was visited, so quitting a
+  // 100-question paper at Q3 must not dump 97 unseen questions into the pool.
+  const visitedRef = useRef(visited);
+  useEffect(() => { visitedRef.current = visited; }, [visited]);
   const activeSecRef = useRef(0);
   const elapsedBeforeRef = useRef(0); // seconds consumed by already-locked sections
 
@@ -413,6 +420,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               elapsedSec: sectioned ? totalSeconds(sections) : timeMinutes * 60,
               timeMinutes,
               everCorrectIds: [...everCorrectRef.current],
+              visitedIds: Object.keys(visitedRef.current || {}),
               sectioned,
               auto: true
             });
@@ -556,6 +564,7 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
         : timeMinutes * 60 - timeRemaining,
       timeMinutes,
       everCorrectIds: [...everCorrectRef.current],
+      visitedIds: Object.keys(visited || {}),
       sectioned,
       auto: false
     });
@@ -941,7 +950,10 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
               <Button variant="ghost" onClick={() => setConfirm(null)} className="flex-1">Cancel</Button>
               <Button variant={confirm === 'submit' ? 'primary' : 'accent'}
                       onClick={() => {
-                        if (confirm === 'abort') onAbort();
+                        // B2 — hand the abandoned run's state up so the questions
+                        // the user actually visited but left blank are folded into
+                        // the repeat pool instead of being lost.
+                        if (confirm === 'abort') onAbort({ answers, visitedIds: Object.keys(visited || {}) });
                         else if (confirm === 'lockSection') { setConfirm(null); lockSectionNow(); }
                         else doManualSubmit();
                       }}

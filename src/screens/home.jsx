@@ -861,7 +861,11 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
               <p className="text-sm leading-relaxed italic mt-0" style={{ color: T.inkSoft }}>
                 {dailyQuote.text}
               </p>
+              {/* The attribution used to read as part of the quote. A leading
+                  separator sets it apart. NOT an em dash or "--" (house rule);
+                  a tilde is the allowed mark. */}
               <p className="text-[10px] mt-2 font-medium uppercase tracking-wider" style={{ color: T.muted }}>
+                <span aria-hidden="true" style={{ marginRight: 5, opacity: 0.75 }}>~</span>
                 {dailyQuote.source}
               </p>
             </div>

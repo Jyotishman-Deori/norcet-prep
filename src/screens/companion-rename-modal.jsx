@@ -140,7 +140,7 @@ function CompanionRenameModal({ profile, currentName, onRenamed, onClose }) {
                    data-autofocus
                    autoCapitalize="words" autoComplete="off"
                    maxLength={NAME_MAX}
-                   placeholder="e.g. Nova"
+                   placeholder="e.g. Nana"
                    className="w-full rounded-xl px-3.5 py-3 mb-4 text-sm font-medium"
                    style={{
                      background: T.bg,

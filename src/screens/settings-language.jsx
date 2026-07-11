@@ -19,6 +19,7 @@ import React, { useState, useEffect } from 'react';
 import { Check, Search, RefreshCw, AlertTriangle, WifiOff } from 'lucide-react';
 import { useTheme, useI18n } from '../lib/app-context.jsx';
 import { LOCALES, checkStorageHeadroom } from '../lib/i18n.js';
+import LanguageDisclaimer from '../ui/language-disclaimer.jsx';
 
 export default function SettingsLanguage() {
   const { theme: T } = useTheme();
@@ -118,9 +119,12 @@ export default function SettingsLanguage() {
         })}
       </div>
 
-      {/* Draft-quality footnote. */}
-      <div className="text-[11px] leading-relaxed mt-4 px-1" style={{ color: T.muted }}>
-        {t('settings.language.draftNotice')}
+      {/* Draft-quality notice. Supersedes the older one-line t('...draftNotice')
+          footnote: it also says that some languages are only PARTLY translated and
+          that the drafts should not be relied on completely. English on purpose
+          (see ui/language-disclaimer.jsx for why). */}
+      <div className="mt-5">
+        <LanguageDisclaimer />
       </div>
     </>
   );

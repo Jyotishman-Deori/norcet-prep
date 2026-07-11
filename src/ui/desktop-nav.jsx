@@ -20,7 +20,7 @@
 // =====================================================================
 import React, { useEffect, useState } from 'react';
 import {
-  Search, Heart, Settings, Menu, Bell, Plus, Crown,
+  Search, Heart, Settings, Menu, Bell, NotebookPen, Crown,
 } from 'lucide-react';
 import { useTheme, useProfile, useI18n } from '../lib/app-context.jsx';
 import { playTapSound } from '../lib/sound.js';
@@ -45,13 +45,17 @@ export const DNAV_EXCLUDED_SCREENS = new Set([
 // Section links (center cluster). Routes are nav objects via onNavigate
 // (the drawer's dispatcher), so quiz-spec style entries would work too.
 // Labels are i18n keys resolved at render (module scope must stay key-only).
+// Learn, Level Up and Nursing Calc were REMOVED from this bar by owner request
+// (it was crowded). They are all still one tap away in the slide-in Menu, the
+// desktop footer, and their Home cards, so nothing became unreachable.
+// Support reuses the existing 'settings.sections.support' string ("Support"),
+// which already ships in every locale pack, so the bar gains a section without
+// forcing a new key into all 15 packs.
 const LINKS = [
-  { labelKey: 'nav.links.learn',       screen: 'learn-topics' },
-  { labelKey: 'nav.links.levelUp',     screen: 'level-up' },
-  { labelKey: 'nav.links.nursingCalc', screen: 'nursing-calc' },
-  { labelKey: 'nav.links.revision',    screen: 'revision-sheet' },
-  { labelKey: 'nav.links.library',     screen: 'library' },
-  { labelKey: 'nav.links.stats',       screen: 'stats' },
+  { labelKey: 'nav.links.revision', screen: 'revision-sheet' },
+  { labelKey: 'nav.links.library',  screen: 'library' },
+  { labelKey: 'nav.links.stats',    screen: 'stats' },
+  { labelKey: 'settings.sections.support', screen: 'support' },
 ];
 
 // Child screens that light up a section link while open, so the bar shows
@@ -87,11 +91,21 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
 
   // Brand spring pop: re-keying the tile restarts the animation each click.
   const [brandPop, setBrandPop] = useState(0);
+  // Owner request: the logo behaves like a browser home button, i.e. it RELOADS
+  // the app (even when already on Home), rather than just switching tab or
+  // scrolling to top. Safe to do unconditionally: this bar is never rendered on
+  // the test/game players (DNAV_EXCLUDED_SCREENS), so a reload can't interrupt a
+  // run, and any run that was in progress is resumable or retired anyway.
+  // Falls back to the old in-app behaviour if reload is unavailable.
   const onBrand = () => {
     playTapSound();
     setBrandPop((c) => c + 1);
+    try {
+      window.location.reload();
+      return;
+    } catch (e) { /* fall through */ }
     if (screen === 'home') {
-      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e2) {}
     } else {
       onTab('home');
     }
@@ -128,10 +142,10 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
                 backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
                 borderBottom: `1px solid ${T.borderSoft}`,
               }}>
-        <div className="max-w-6xl mx-auto h-full px-8 flex items-center gap-6">
+        <div className="max-w-6xl mx-auto h-full px-8 flex items-center gap-4">
 
-          {/* Brand → Home (tab-root switch, clears the back stack); on Home
-              a re-click scrolls to top. Each click springs the tile. */}
+          {/* Brand → RELOADS the app (owner request: it should behave like a
+              browser home button, refreshing even when already on Home). */}
           <button onClick={onBrand}
                   className="no-tap-highlight flex items-center gap-2.5 flex-shrink-0 dnav-brand"
                   aria-label={t('nav.tabs.home')} aria-current={screen === 'home' ? 'page' : undefined}>
@@ -143,6 +157,26 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               Nurse<span style={{ color: T.primary }}>Holic</span>
             </span>
           </button>
+
+          {/* Golden Premium pill — the FIRST app section after the brand (owner
+              request). For members it turns into a solid gold tier badge
+              (SUPER/MAX) that opens the same manage screen. */}
+          {premiumOn && (
+            <button onClick={() => { playTapSound(); onNavigate({ screen: 'premium' }); }}
+                    aria-label={t('nav.drawer.premium.label')}
+                    aria-current={screen === 'premium' ? 'page' : undefined}
+                    className="dnav-gold no-tap-highlight flex items-center gap-1.5 flex-shrink-0 px-3 py-1.5 rounded-full text-[12.5px] font-bold transition-all"
+                    style={isMember
+                      ? { background: `linear-gradient(135deg, ${GOLD_BRIGHT}, ${GOLD})`,
+                          border: `1px solid ${GOLD}`, color: '#FFFFFF',
+                          textShadow: '0 1px 2px rgba(0,0,0,0.18)' }
+                      : { background: `linear-gradient(135deg, ${GOLD_BRIGHT}${IS_DARK ? '1F' : '26'}, ${GOLD}14)`,
+                          border: `1px solid ${GOLD}${IS_DARK ? '66' : '55'}`,
+                          color: IS_DARK ? GOLD_BRIGHT : GOLD_DEEP }}>
+              <Crown size={14} strokeWidth={2.4} fill={isMember ? 'currentColor' : 'none'} />
+              {isMember ? tier : t('nav.drawer.premium.label')}
+            </button>
+          )}
 
           {/* Section links — hover underline slides in; the CURRENT section
               keeps its underline lit even on child screens (SECTION_OF).
@@ -171,10 +205,14 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
                     style={iconBtn(screen === 'search')}>
               <Search size={19} strokeWidth={2.2} />
             </button>
+            {/* Note taking — was a "+", which read as "add something". It is the
+                note button, so it now looks like one. This is also the ONLY note
+                entry on desktop: the in-screen TopBar hides its copy at lg+. */}
             <button onClick={() => { playTapSound(); onOpenNote(); }} aria-label={t('nav.quickNote')}
+                    title={t('nav.quickNote')}
                     className="dnav-icon no-tap-highlight p-2.5 rounded-xl transition-colors"
                     style={iconBtn(false)}>
-              <Plus size={19} strokeWidth={2.2} />
+              <NotebookPen size={19} strokeWidth={2.2} />
             </button>
             <button onClick={() => { playTapSound(); onOpenNotifications(); }} aria-label={t('nav.notifications')}
                     className="dnav-icon no-tap-highlight relative p-2.5 rounded-xl transition-colors"
@@ -197,41 +235,34 @@ export default function DesktopNav({ screen, onTab, onNavigate, onOpenMenu, onOp
               <Heart size={19} strokeWidth={2.2} />
             </button>
 
-            {/* Golden Premium pill — for members it turns into a solid gold
-                tier badge (SUPER/MAX) that opens the same manage screen. */}
-            {premiumOn && (
-              <button onClick={() => { playTapSound(); onNavigate({ screen: 'premium' }); }}
-                      aria-label={t('nav.drawer.premium.label')}
-                      aria-current={screen === 'premium' ? 'page' : undefined}
-                      className="dnav-gold no-tap-highlight flex items-center gap-1.5 ml-1 px-3 py-1.5 rounded-full text-[12.5px] font-bold transition-all"
-                      style={isMember
-                        ? { background: `linear-gradient(135deg, ${GOLD_BRIGHT}, ${GOLD})`,
-                            border: `1px solid ${GOLD}`, color: '#FFFFFF',
-                            textShadow: '0 1px 2px rgba(0,0,0,0.18)' }
-                        : { background: `linear-gradient(135deg, ${GOLD_BRIGHT}${IS_DARK ? '1F' : '26'}, ${GOLD}14)`,
-                            border: `1px solid ${GOLD}${IS_DARK ? '66' : '55'}`,
-                            color: IS_DARK ? GOLD_BRIGHT : GOLD_DEEP }}>
-                <Crown size={14} strokeWidth={2.4} fill={isMember ? 'currentColor' : 'none'} />
-                {isMember ? tier : t('nav.drawer.premium.label')}
-              </button>
-            )}
-
-            {/* Profile chip → Settings */}
+            {/* SETTINGS — its own first-class control. It used to be a 14px gear
+                buried inside the profile chip, which the avatar completely
+                upstaged; users could not find it. Now it is a proper bordered
+                icon button (owner request: "let the settings icon be more
+                prolific"), and the profile chip below is deliberately quieter. */}
             <button onClick={() => { playTapSound(); onTab('settings'); }}
-                    aria-label={t('nav.tabs.settings')} aria-current={screen === 'settings' ? 'page' : undefined}
-                    className="dnav-chip no-tap-highlight flex items-center gap-2 ml-1 pl-1.5 pr-3 py-1.5 rounded-full transition-all"
-                    style={{
-                      background: screen === 'settings' ? T.primary + '14' : T.surface,
-                      border: `1px solid ${screen === 'settings' ? T.primary + '55' : T.border}`,
-                    }}>
+                    aria-label={t('nav.tabs.settings')} title={t('nav.tabs.settings')}
+                    aria-current={screen === 'settings' ? 'page' : undefined}
+                    className="dnav-icon no-tap-highlight ml-1 p-2.5 rounded-xl transition-all"
+                    style={screen === 'settings'
+                      ? { background: T.primary + '1A', border: `1px solid ${T.primary}55`, color: T.primary }
+                      : { background: T.surface, border: `1px solid ${T.border}`, color: T.ink }}>
+              <Settings size={19} strokeWidth={2.2} />
+            </button>
+
+            {/* Profile chip → Settings. Now an identity indicator, not the hero:
+                no border, no fill, no competing gear. */}
+            <button onClick={() => { playTapSound(); onTab('settings'); }}
+                    aria-label={String(name)}
+                    className="dnav-chip no-tap-highlight flex items-center gap-2 pl-0.5 pr-1.5 py-1 rounded-full transition-all"
+                    style={{ background: 'transparent', border: '1px solid transparent' }}>
               <span className="w-7 h-7 rounded-full flex items-center justify-center text-[12px] font-bold"
                     style={{ background: T.primary, color: '#FFF' }}>
                 {initial}
               </span>
-              <span className="text-[12.5px] font-semibold max-w-[110px] truncate" style={{ color: T.ink }}>
+              <span className="text-[12.5px] font-medium max-w-[96px] truncate" style={{ color: T.muted }}>
                 {String(name).split(' ')[0]}
               </span>
-              <Settings size={14} style={{ color: T.muted }} />
             </button>
 
             <button onClick={() => { playTapSound(); onOpenMenu(); }} aria-label={t('nav.openMenu')}
