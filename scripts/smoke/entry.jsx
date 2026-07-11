@@ -59,6 +59,23 @@ const SCREENS = {
       onEnableNotifications: noop,
     });
   },
+  // isGuest + an undismissed guest banner + a what's-new notice: exercises the
+  // redesigned full-width notification banners (guest sign-in card with the
+  // right-aligned actions, plus the what's-new hover card).
+  'home-guest': async () => {
+    const m = await import('../../src/screens/home.jsx');
+    return React.createElement(m.default, {
+      onNavigate: noop, whatsNew: [{ name: 'Pharmacology', version: 2 }], onDismissWhatsNew: noop,
+      announcement: null, onDismissAnnouncement: noop,
+      userName: 'Guest', isGuest: true,
+      guestBannerDismissed: false, onGuestSignIn: noop, onDismissGuestBanner: noop,
+      unseenReplies: [], onOpenMyReports: noop, onDismissReplies: noop,
+      onDismissGrace: noop, onDismissReviewToday: noop, onShowReviewInfo: noop,
+      onOpenMenu: noop, weeklySummaryDismissed: true, dismissWeeklySummary: noop,
+      onOpenNotifications: noop, unreadNotifCount: 0, onNotifRead: noop,
+      onEnableNotifications: noop,
+    });
+  },
   'quiz': async () => {
     const m = await import('../../src/screens/quiz.jsx');
     return React.createElement(m.default, {
@@ -373,6 +390,7 @@ const MARKERS = {
   'assistant': ['your guide to everything NurseHolic', 'Popular questions', 'How do streaks work?'],
   'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
+  'home-guest': ['exploring as a guest', 'Sign in / Create account'],
   'quiz': ['Educational use only. Not for clinical decisions.'],
 };
 

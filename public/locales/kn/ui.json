@@ -579,5 +579,8 @@
   "common.eduTag": "ಶೈಕ್ಷಣಿಕ ಬಳಕೆಗೆ ಮಾತ್ರ. ಕ್ಲಿನಿಕಲ್ ನಿರ್ಧಾರಗಳಿಗೆ ಅಲ್ಲ.",
   "nav.drawer.assistant.label": "ನಿಮ್ಮ ಸಂಗಾತಿಯನ್ನು ಕೇಳಿ",
   "nav.drawer.assistant.sub": "ಆ್ಯಪ್ ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ, ಚಾಟ್‌ನಲ್ಲಿ ಕೇಳಿ",
-  "nav.drawer.assistant.tip": "ಟೆಸ್ಟ್, ಸ್ಟ್ರೀಕ್, ಸಿಂಕ್ ಮತ್ತು ಪ್ರತಿ ಫೀಚರ್‌ಗೆ ತಕ್ಷಣ ಚಾಟ್ ಉತ್ತರಗಳು."
+  "nav.drawer.assistant.tip": "ಟೆಸ್ಟ್, ಸ್ಟ್ರೀಕ್, ಸಿಂಕ್ ಮತ್ತು ಪ್ರತಿ ಫೀಚರ್‌ಗೆ ತಕ್ಷಣ ಚಾಟ್ ಉತ್ತರಗಳು.",
+  "settings.install.iosHow": "ಬ್ರೌಸರ್ ಬಾರ್‌ನಲ್ಲಿ Share ಒತ್ತಿ, ನಂತರ Add to Home Screen ಆಯ್ಕೆಮಾಡಿ.",
+  "settings.install.andHow": "ಬ್ರೌಸರ್ ಮೆನು ತೆರೆಯಿರಿ, ನಂತರ Install app (ಅಥವಾ Add to Home screen) ಒತ್ತಿ.",
+  "settings.install.deskHow": "Chrome ಅಥವಾ Edge ನಲ್ಲಿ, ವಿಳಾಸ ಪಟ್ಟಿಯ ಇನ್‌ಸ್ಟಾಲ್ ಐಕಾನ್ ಅಥವಾ ಬ್ರೌಸರ್ ಮೆನು ಬಳಸಿ. ಇತರ ಡೆಸ್ಕ್‌ಟಾಪ್ ಬ್ರೌಸರ್‌ಗಳಲ್ಲಿ ಇನ್‌ಸ್ಟಾಲ್ ಮಾಡಲು, nurseholic.in ಅನ್ನು ನಿಮ್ಮ ಫೋನ್‌ನಲ್ಲಿ ತೆರೆಯಿರಿ."
 }

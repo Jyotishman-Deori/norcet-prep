@@ -579,5 +579,8 @@
   "common.eduTag": "তম্বগীদমক্তনি। ক্লিনিকেল ৱারেপশিংগীদমক নত্তে।",
   "nav.drawer.assistant.label": "নহাক্কী মরুপতা হংবিয়ু",
   "nav.drawer.assistant.sub": "এপ অসি করম্না চলি, চেটতা হংবিয়ু",
-  "nav.drawer.assistant.tip": "টেস্ত, স্ত্রীক, সিংক অমসুং ফিচর খুদিংগী পাউখুম খুদক্তা চেটতা।"
+  "nav.drawer.assistant.tip": "টেস্ত, স্ত্রীক, সিংক অমসুং ফিচর খুদিংগী পাউখুম খুদক্তা চেটতা।",
+  "settings.install.iosHow": "ব্রাউজর বার-দা Share নমবিয়ু, অদুগা Add to Home Screen খল্লু।",
+  "settings.install.andHow": "ব্রাউজর মেনু হাংদোক্কো, অদুগা Install app (নত্রগা Add to Home screen) নমবিয়ু।",
+  "settings.install.deskHow": "Chrome নত্রগা Edge-দা, address bar-গী install icon নত্রগা browser menu শীজিন্নবিয়ু। অতোপ্পা desktop browser-দা install তৌনবা, nurseholic.in নঙগী phone-দা হাংদোক্কো।"
 }

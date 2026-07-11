@@ -579,5 +579,8 @@
   "common.eduTag": "విద్యా ఉపయోగం కోసం మాత్రమే. క్లినికల్ నిర్ణయాలకు కాదు.",
   "nav.drawer.assistant.label": "మీ తోడును అడగండి",
   "nav.drawer.assistant.sub": "యాప్ ఎలా పనిచేస్తుంది, చాట్‌లో అడగండి",
-  "nav.drawer.assistant.tip": "టెస్ట్, స్ట్రీక్, సింక్ మరియు ప్రతి ఫీచర్‌కు వెంటనే చాట్ సమాధానాలు."
+  "nav.drawer.assistant.tip": "టెస్ట్, స్ట్రీక్, సింక్ మరియు ప్రతి ఫీచర్‌కు వెంటనే చాట్ సమాధానాలు.",
+  "settings.install.iosHow": "బ్రౌజర్ బార్‌లో Share నొక్కి, ఆపై Add to Home Screen ఎంచుకోండి.",
+  "settings.install.andHow": "బ్రౌజర్ మెనూ తెరిచి, ఆపై Install app (లేదా Add to Home screen) నొక్కండి.",
+  "settings.install.deskHow": "Chrome లేదా Edge లో, అడ్రస్ బార్‌లోని ఇన్‌స్టాల్ ఐకాన్ లేదా బ్రౌజర్ మెనూను వాడండి. ఇతర డెస్క్‌టాప్ బ్రౌజర్‌లలో ఇన్‌స్టాల్ చేయడానికి, nurseholic.in మీ ఫోన్‌లో తెరవండి."
 }

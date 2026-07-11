@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 
 const {
-  installDecision, isInstalledDevice, captureInstallPrompt, hasDeferredPrompt,
+  installDecision, installGuide, isInstalledDevice, captureInstallPrompt, hasDeferredPrompt,
   promptInstall, INSTALL_MIN_ATTEMPTS,
 } = await import('./install-prompt.js');
 const { recordNudgeDismiss, NUDGE_SNOOZE_DAYS, NUDGE_MAX_DISMISSALS } = await import('./push-opt-in.js');
@@ -44,6 +44,18 @@ const { recordNudgeDismiss, NUDGE_SNOOZE_DAYS, NUDGE_MAX_DISMISSALS } = await im
   assert.equal(installDecision({ ...base, install: twoStrikes }).show, false, 'two dismissals → never again');
 
   assert.equal(installDecision(null).show, false, 'nullish-safe');
+}
+
+// ---- installGuide (Settings card: always offers an honest path) ----
+{
+  assert.equal(installGuide({ installed: true }).kind, 'installed', 'installed → nothing');
+  assert.equal(installGuide({ installed: true, hasPrompt: true, isIOS: true }).kind, 'installed', 'installed wins over everything');
+  assert.equal(installGuide({ hasPrompt: true }).kind, 'native', 'captured prompt → one-tap');
+  assert.equal(installGuide({ hasPrompt: true, isIOS: true }).kind, 'native', 'native wins over platform');
+  assert.equal(installGuide({ isIOS: true }).kind, 'ios', 'iPhone/iPad → Share walkthrough');
+  assert.equal(installGuide({ isAndroid: true }).kind, 'android', 'Android → menu steps');
+  assert.equal(installGuide({}).kind, 'desktop', 'desktop / no prompt → honest steps (never blank)');
+  assert.equal(installGuide(null).kind, 'desktop', 'nullish-safe');
 }
 
 console.log('install-prompt.test.js: all passed');

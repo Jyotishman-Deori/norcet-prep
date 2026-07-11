@@ -83,6 +83,25 @@ export function isInstalledDevice(standalone) {
   try { return localStorage.getItem(INSTALLED_FLAG) === '1'; } catch (e) { return false; }
 }
 
+// installGuide(input) → { kind } — which install affordance the SETTINGS card
+// should render. Unlike installDecision (the conservative Home nudge, which
+// stays silent when there is no reliable native path), Settings is a deliberate
+// destination, so it always offers an honest way to install:
+//   'installed' — already installed → render nothing
+//   'native'    — captured beforeinstallprompt → one-tap Install button
+//   'ios'       — iPhone/iPad Safari → Share then Add to Home Screen steps
+//   'android'   — Android browser → menu then Install app / Add to Home screen
+//   'desktop'   — everything else (desktop, no captured prompt) → honest steps
+// input: { installed, hasPrompt, isIOS, isAndroid }
+export function installGuide(input) {
+  const i = input || {};
+  if (i.installed) return { kind: 'installed' };
+  if (i.hasPrompt) return { kind: 'native' };
+  if (i.isIOS) return { kind: 'ios' };
+  if (i.isAndroid) return { kind: 'android' };
+  return { kind: 'desktop' };
+}
+
 // ---- pure decision half ----------------------------------------------------
 // installDecision(input) → { show:false } | { show:true, variant }
 //   variant: 'native' (replay beforeinstallprompt) | 'ios' (walkthrough)

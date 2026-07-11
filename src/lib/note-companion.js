@@ -16,7 +16,7 @@
 export const NAME_MAX = 10;
 
 // Friendly, short first-run suggestions — a mix of buddy-ish and study vibes.
-export const SUGGESTIONS = ['Nova', 'Sage', 'Buddy', 'Echo', 'Pixel', 'Riz', 'Juno', 'Ace'];
+export const SUGGESTIONS = ['Nana', 'Jyo', 'Sage', 'Buddy', 'Echo', 'Pixel', 'Riz', 'Ace'];
 
 // Trim, drop control characters, collapse inner whitespace, and cap at
 // NAME_MAX. Returns '' for anything unusable (empty / non-string / all-blank),

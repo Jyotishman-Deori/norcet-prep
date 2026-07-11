@@ -579,5 +579,8 @@
   "common.eduTag": "Khali educational use nimite. Clinical decision nimite nohoi.",
   "nav.drawer.assistant.label": "Apuni laga sathi ke hudibi",
   "nav.drawer.assistant.sub": "App kineka chole, chat te hudibi",
-  "nav.drawer.assistant.tip": "Test, streak, sync aru sob feature laga jawab joldi chat te."
+  "nav.drawer.assistant.tip": "Test, streak, sync aru sob feature laga jawab joldi chat te.",
+  "settings.install.iosHow": "Browser bar te Share te tap koribi, tarpiche Add to Home Screen basi lobi.",
+  "settings.install.andHow": "Browser menu khulibi, tarpiche Install app (nohoile Add to Home screen) te tap koribi.",
+  "settings.install.deskHow": "Chrome nohoile Edge te, address bar laga install icon nohoile browser menu chalabi. Dusra desktop browser te install koribole nimite, nurseholic.in apuni laga phone te khulibi."
 }

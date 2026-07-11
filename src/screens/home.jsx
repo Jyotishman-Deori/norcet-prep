@@ -607,37 +607,44 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           device; the masthead adds extra top air on desktop below. */}
       <div aria-hidden="true" className="lg:hidden" style={{ height: 'calc(60px + env(safe-area-inset-top, 0px))' }} />
 
-      {/* Notification banners — width-capped on desktop so they read as
-          intentional cards instead of full-bleed strips. */}
-      <div className="lg:max-w-3xl">
+      {/* Notification banners — span the full content width so their left AND
+          right edges line up with the greeting and dashboard below. (They used
+          to be capped narrower and left-stuck, which read as off-centre strips
+          on desktop.) Premium gradient cards + a pointer hover lift keep them
+          from feeling like full-bleed OS bars. */}
+      <div>
 
       {/* GUEST MODE (Phase A): subtle, dismissible sign-in nudge — shown only
           to guests who haven't dismissed it this session. Benefit-framed, never
           blocking. Dismiss is session-only (reappears next launch). */}
       {isGuest && !guestBannerDismissed && (
-        <Card className="p-3 mb-4 anim-fadeup" style={{ background: T.primary + '0E', border: `1px solid ${T.primary}33` }}>
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '1A' }}>
-              <UserPlus size={18} style={{ color: T.primary }} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold" style={{ color: T.ink }}>{t('home.guestTitle')}</div>
-              <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
-                {t('home.guestBody')}
+        <Card className="relative p-4 mb-4 anim-fadeup"
+              style={{ background: `linear-gradient(135deg, ${T.primary}16, ${T.primary}08)`, border: `1px solid ${T.primary}33` }}>
+          {/* dismiss pinned to the top-right so the actions row can own the width */}
+          <button onClick={onDismissGuestBanner} aria-label="Dismiss"
+                  className="no-tap-highlight absolute top-2.5 right-2.5 p-1 rounded-lg active:bg-black/5">
+            <X size={16} style={{ color: T.muted }} />
+          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+            <div className="flex items-start gap-3 min-w-0 flex-1 pr-6 sm:pr-0">
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '1A' }}>
+                <UserPlus size={19} style={{ color: T.primary }} />
               </div>
-              <div className="flex items-center gap-2 mt-2.5">
-                <Button size="sm" onClick={onGuestSignIn}>{t('home.guestCta')}</Button>
-                <button onClick={onDismissGuestBanner}
-                        className="no-tap-highlight text-xs font-medium px-2 py-1.5 rounded-lg active:bg-black/5"
-                        style={{ color: T.muted }}>
-                  {t('common.notNow')}
-                </button>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold" style={{ color: T.ink }}>{t('home.guestTitle')}</div>
+                <div className="text-xs mt-0.5 leading-relaxed" style={{ color: T.inkSoft }}>
+                  {t('home.guestBody')}
+                </div>
               </div>
             </div>
-            <button onClick={onDismissGuestBanner} aria-label="Dismiss"
-                    className="no-tap-highlight p-1 -m-1 rounded-lg active:bg-black/5 flex-shrink-0">
-              <X size={16} style={{ color: T.muted }} />
-            </button>
+            <div className="flex items-center gap-2 flex-shrink-0 pl-[52px] sm:pl-0">
+              <Button size="sm" onClick={onGuestSignIn}>{t('home.guestCta')}</Button>
+              <button onClick={onDismissGuestBanner}
+                      className="no-tap-highlight text-xs font-medium px-2.5 py-2 rounded-lg active:bg-black/5"
+                      style={{ color: T.muted }}>
+                {t('common.notNow')}
+              </button>
+            </div>
           </div>
         </Card>
       )}
@@ -645,9 +652,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* LAUNCH WAITLIST — guest-only reserve-your-seat card while signups
           are open (waitlist.collect) and this device hasn't joined yet. */}
       {isGuest && waitlistNudge && (
-        <Card className="p-3 mb-4 anim-fadeup"
+        <Card className="home-notice p-3.5 mb-4 anim-fadeup"
               onClick={() => onNavigate({ screen: 'waitlist' })}
-              style={{ background: T.accent + '10', border: `1px solid ${T.accent}40` }}>
+              style={{ background: `linear-gradient(135deg, ${T.accent}16, ${T.accent}0A)`, border: `1px solid ${T.accent}40` }}>
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.accent + '1A' }}>
               <Ticket size={18} style={{ color: T.accent }} />
@@ -669,8 +676,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
         const annAccent = important ? T.accent : T.primary;
         const AnnIcon = important ? AlertTriangle : Flag;
         return (
-          <Card className="p-3 mb-4 anim-fadeup"
-                style={{ background: annAccent + '12', border: `1px solid ${annAccent}40` }}>
+          <Card className="p-3.5 mb-4 anim-fadeup"
+                style={{ background: `linear-gradient(135deg, ${annAccent}18, ${annAccent}0A)`, border: `1px solid ${annAccent}40` }}>
             <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                    style={{ background: annAccent }}>
@@ -725,8 +732,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       {/* Feedback reply — your report got a response */}
       {replies.length > 0 && (
-        <Card className="p-3 mb-4 anim-fadeup" onClick={onOpenMyReports}
-              style={{ background: T.success + '12', border: `1px solid ${T.success}40`, cursor: 'pointer' }}>
+        <Card className="home-notice p-3.5 mb-4 anim-fadeup" onClick={onOpenMyReports}
+              style={{ background: `linear-gradient(135deg, ${T.success}18, ${T.success}0A)`, border: `1px solid ${T.success}40`, cursor: 'pointer' }}>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{ background: T.success }}>
@@ -749,8 +756,8 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
       {/* Streak saved — one-time banner the day after grace fires, so the user
           actually learns the forgiveness rule instead of silently benefiting. */}
       {data.stats.graceJustUsed && (
-        <Card className="p-3 mb-4 anim-fadeup"
-              style={{ background: T.accent + '15', border: `1px solid ${T.accent}40` }}>
+        <Card className="p-3.5 mb-4 anim-fadeup"
+              style={{ background: `linear-gradient(135deg, ${T.accent}1C, ${T.accent}0C)`, border: `1px solid ${T.accent}40` }}>
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{ background: T.accent }}>
@@ -772,12 +779,12 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
 
       {/* What's new */}
       {whatsNew && whatsNew.length > 0 && (
-        <Card className="p-3 mb-4 anim-fadeup" onClick={() => onNavigate({ screen: 'library' })}
-              style={{ background: T.accent + '15', border: `1px solid ${T.accent}40`, cursor: 'pointer' }}>
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+        <Card className="home-notice p-3.5 mb-4 anim-fadeup" onClick={() => onNavigate({ screen: 'library' })}
+              style={{ background: `linear-gradient(135deg, ${T.accent}1C, ${T.accent}0C)`, border: `1px solid ${T.accent}40`, cursor: 'pointer' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
                  style={{ background: T.accent }}>
-              <Sparkles size={14} color="#FFF" />
+              <Sparkles size={15} color="#FFF" />
             </div>
             <div className="min-w-0 flex-1">
               <div className="text-xs font-semibold mb-0.5" style={{ color: T.accent }}>{t('home.whatsNew')}</div>
@@ -787,8 +794,9 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
                   : t('home.whatsNewMany', { n: whatsNew.length })}
               </div>
             </div>
+            <ChevronRight size={16} className="flex-shrink-0" style={{ color: T.accent }} aria-hidden="true" />
             <button onClick={(e) => { e.stopPropagation(); onDismissWhatsNew(); }}
-                    className="no-tap-highlight p-1 -m-1 flex-shrink-0">
+                    className="no-tap-highlight p-1 -m-1 flex-shrink-0" aria-label="Dismiss">
               <X size={14} style={{ color: T.muted }} />
             </button>
           </div>

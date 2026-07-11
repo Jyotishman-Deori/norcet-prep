@@ -38,8 +38,11 @@ import { KEYS } from '../lib/keys.js';
 // Push reach fix — support-aware notifications master switch (iOS Safari tabs
 // get an install walkthrough instead of a dead toggle).
 import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
-// PWA install row — replays the captured native install sheet on tap.
-import { hasDeferredPrompt, promptInstall, isInstalledDevice } from '../lib/install-prompt.js';
+// PWA install row — replays the captured native install sheet on tap; the pure
+// installGuide picks an honest fallback (iOS/Android/desktop steps) when the
+// browser never offered a native prompt, so Settings always has a way to install.
+import { hasDeferredPrompt, promptInstall, isInstalledDevice, installGuide } from '../lib/install-prompt.js';
+import { isIOS, isAndroid } from '../lib/platform.js';
 
 function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onOpenTrash, progressSnapshotAt = null, onRestoreProgress, onBack }) {
   const { theme: T } = useTheme();
@@ -102,11 +105,15 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
   // for the Add-to-Home-Screen walkthrough (a toggle that can't work is worse
   // than honest steps); 'unsupported' shows a quiet hint. Computed once.
   const [pushSupport] = useState(() => detectPushSupport(getPushEnv()));
-  // Install row — only when the native install sheet is genuinely available
-  // on this device right now (hidden once installed / after accepting).
-  const [canInstall, setCanInstall] = useState(
-    () => hasDeferredPrompt() && !isInstalledDevice(getPushEnv().standalone)
-  );
+  // Install card — Settings always offers an honest way to install (unlike the
+  // conservative Home nudge). `canInstall` is the one-tap native path (captured
+  // beforeinstallprompt); when it isn't available the card falls back to
+  // platform-appropriate steps. `installedDevice` hides the card once installed.
+  const [installedDevice, setInstalledDevice] = useState(() => isInstalledDevice(getPushEnv().standalone));
+  const [canInstall, setCanInstall] = useState(() => hasDeferredPrompt() && !installedDevice);
+  const installKind = installGuide({
+    installed: installedDevice, hasPrompt: canInstall, isIOS: isIOS(), isAndroid: isAndroid(),
+  }).kind;
   // #16 — Legal pages render as a self-contained sub-view of Settings (no app
   // routing needed). Set to 'privacy' | 'terms' to open; back returns here.
   const [legalView, setLegalView] = useState(null);
@@ -235,7 +242,7 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
           <button onClick={onOpenTrash}
                   className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
             <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
-              <Trash2 size={16} style={{ color: T.inkSoft }} />
+              <Undo2 size={16} style={{ color: T.inkSoft }} />
             </div>
             <div className="min-w-0 flex-1">
               <div className="font-medium text-sm" style={{ color: T.ink }}>Recently deleted</div>
@@ -795,10 +802,11 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               </Card>
             )}
 
-            {/* Install the app — shown only when the REAL native install sheet
-                is available (captured beforeinstallprompt) and this device
-                isn't installed yet. iOS install steps live in the card above. */}
-            {canInstall && (
+            {/* Install the app — Settings always offers an honest path (unlike
+                the conservative Home nudge). 'native' replays the captured
+                browser prompt in one tap; otherwise we show platform-appropriate
+                steps so no browser is left at a dead end. Hidden once installed. */}
+            {installKind !== 'installed' && (
               <Card className="p-4 mb-3">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
@@ -810,13 +818,23 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
                       <div className="text-xs mt-0.5" style={{ color: T.muted }}>{t('settings.install.sub')}</div>
                     </div>
                   </div>
-                  <Button size="sm" onClick={async () => {
-                    const outcome = await promptInstall();
-                    if (outcome === 'accepted') setCanInstall(false);
-                  }}>
-                    {t('settings.install.cta')}
-                  </Button>
+                  {installKind === 'native' && (
+                    <Button size="sm" onClick={async () => {
+                      const outcome = await promptInstall();
+                      if (outcome === 'accepted') { setCanInstall(false); setInstalledDevice(true); }
+                    }}>
+                      {t('settings.install.cta')}
+                    </Button>
+                  )}
                 </div>
+                {installKind !== 'native' && (
+                  <div className="mt-3 text-xs leading-relaxed px-3 py-2.5 rounded-lg"
+                       style={{ background: T.surfaceWarm, color: T.inkSoft }}>
+                    {t(installKind === 'ios' ? 'settings.install.iosHow'
+                      : installKind === 'android' ? 'settings.install.andHow'
+                      : 'settings.install.deskHow')}
+                  </div>
+                )}
               </Card>
             )}
           </>

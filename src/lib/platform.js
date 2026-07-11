@@ -18,3 +18,11 @@ export function isIOS() {
   if (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1) return true;
   return false;
 }
+
+// True on Android phones/tablets. Used by the Settings install card to pick the
+// right "add to home screen" wording when the native install prompt isn't
+// available on this browser.
+export function isAndroid() {
+  if (typeof navigator === 'undefined') return false;
+  return /Android/i.test(navigator.userAgent || '');
+}

@@ -345,6 +345,14 @@ export const fontStyles = `
 @keyframes sheetUp { 0% { transform: translateY(100%); } 100% { transform: translateY(0); } }
 .sheet-up { animation: sheetUp 0.32s cubic-bezier(0.34,1.56,0.64,1) both; }
 
+/* ── Home notification banners — a gentle desktop hover lift so the clickable
+   notices (what's new, waitlist, feedback reply) feel tactile and premium
+   without moving on touch devices. Pointer-only; disabled under reduced-motion. */
+.home-notice { transition: transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms ease; will-change: transform; }
+@media (hover: hover) and (pointer: fine) {
+  .home-notice:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.10); }
+}
+
 /* ── AI Learning Notes — NamingView entrance: staggered warm fade-up for the
    icon, headline, and body copy so the first-run moment feels considered and
    personal, not instant. Each element settles from a small Y offset with a
@@ -357,6 +365,26 @@ export const fontStyles = `
 .naming-icon-enter     { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.04s both; }
 .naming-headline-enter { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.10s both; }
 .naming-body-enter     { animation: namingEnter 0.36s cubic-bezier(0.22,1,0.36,1) 0.17s both; }
+
+/* NamingView premium hero — idle ambient life that plays AFTER the entrance:
+   the aura gently breathes, the medallion floats, and a small accent spark
+   twinkles at its corner. Purely decorative; all three switch off under
+   reduced-motion (registered in the catch-all block below). */
+@keyframes namingAura {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50%      { opacity: 0.9; transform: translateX(-50%) scale(1.07); }
+}
+.naming-aura { animation: namingAura 6.5s ease-in-out infinite; }
+@keyframes namingFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-4px); }
+}
+.naming-medallion-float { animation: namingFloat 4.5s ease-in-out infinite; }
+@keyframes namingSpark {
+  0%, 100% { opacity: 0.45; transform: scale(0.8) rotate(-8deg); }
+  50%      { opacity: 1;    transform: scale(1.12) rotate(10deg); }
+}
+.naming-spark { animation: namingSpark 2.8s ease-in-out infinite; }
 
 /* ── AI Learning Notes — Store/Copy "morph to checkmark" confirmation. ─────
    note-pop: a two-phase spring — compress then overshoot — so the morph feels
@@ -900,6 +928,7 @@ export const fontStyles = `
   .qbtn-label, .qbtn-ready,
   .drill-card-in, .test-enter, .note-pop, .note-fab-pulse,
   .naming-icon-enter, .naming-headline-enter, .naming-body-enter,
+  .naming-aura, .naming-medallion-float, .naming-spark,
   .note-menu-in, .note-reply-in, .note-select-pop, .note-reco-pulse,
   .note-count-tick, .note-bullet-in,
   .premium-card-in, .premium-select-pop,
@@ -926,6 +955,8 @@ export const fontStyles = `
   .bnav-indicator { transition: none !important; }
   .note-press { transition: none !important; }
   .note-press:active { transform: none !important; }
+  .home-notice { transition: none !important; }
+  .home-notice:hover { transform: none !important; }
   .nav-fwd .anim-fadeup { animation: none !important; }
 }
 

@@ -579,5 +579,8 @@
   "common.eduTag": "কেৱল শিক্ষামূলক ব্যৱহাৰৰ বাবে। ক্লিনিকেল সিদ্ধান্তৰ বাবে নহয়।",
   "nav.drawer.assistant.label": "আপোনাৰ সংগীক সোধক",
   "nav.drawer.assistant.sub": "এপটো কেনেকৈ চলে, চেটত সোধক",
-  "nav.drawer.assistant.tip": "টেষ্ট, ষ্ট্ৰীক, ছিংক আৰু প্ৰতিটো ফিচাৰৰ উত্তৰ লগে লগে চেটত।"
+  "nav.drawer.assistant.tip": "টেষ্ট, ষ্ট্ৰীক, ছিংক আৰু প্ৰতিটো ফিচাৰৰ উত্তৰ লগে লগে চেটত।",
+  "settings.install.iosHow": "ব্ৰাউজাৰ বাৰত Share-ত টিপক, তাৰ পিছত Add to Home Screen বাছনি কৰক।",
+  "settings.install.andHow": "ব্ৰাউজাৰ মেনু খোলক, তাৰ পিছত Install app (বা Add to Home screen) টিপক।",
+  "settings.install.deskHow": "Chrome বা Edge-ত, ঠিকনা বাৰৰ ইনষ্টল আইকন বা ব্ৰাউজাৰ মেনু ব্যৱহাৰ কৰক। অন্য ডেস্কটপ ব্ৰাউজাৰত ইনষ্টল কৰিবলৈ, nurseholic.in আপোনাৰ ফোনত খোলক।"
 }

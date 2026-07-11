@@ -11353,3 +11353,43 @@ Rules for future rounds: never propose an LLM call for this (admin-side
 content-staging remains the only sanctioned generative path); new KB entries
 join cpack:assistant via Content Studio; the companion is now a chat surface,
 so keep its name/persona consistent across notes + assistant.
+
+## 2026-07-12 - UI polish round: note-taking hero, settings icons, always-on install, Home banners
+
+Four owner-flagged UI fixes in one round (all verified via the 45-file gate +
+render smoke, which now server-renders the guest Home + guest Settings paths):
+
+- Study-companion naming popup (note-taking-modal NamingView): premium redesign
+  of the first-run screen. Ambient primary/accent aura blooming from the top
+  edge (z-0, behind content), a gradient hero medallion that idly floats with a
+  twinkling accent spark at the corner, an eyebrow chip ("Your study
+  companion"), and a gradient "Let's go" CTA with a Sparkles icon. New idle
+  keyframes namingAura/namingFloat/namingSpark, all registered in the
+  reduced-motion catch-all. Easter egg (owner request): suggestion names now
+  lead with "Nana, Jyo" side by side (was Nova, Juno) and the input placeholder
+  is "e.g. Nana". note-companion.test.js still green (asserts valid names +
+  length, not specific values).
+- Settings ACCOUNT icons: "Recently deleted" and "Reset this profile's data"
+  both used Trash2 (confusing). Recently deleted now uses Undo2 (restore/undo,
+  matches the 7-day trash feature); the destructive reset keeps the red Trash2.
+- Install the app is now ALWAYS reachable from Settings, not just when the
+  browser fired beforeinstallprompt. New pure installGuide() (install-prompt.js,
+  tested) returns installed | native | ios | android | desktop; the card shows
+  the one-tap native button when available, otherwise honest per-platform steps
+  (iOS Share -> Add to Home Screen / Android menu / desktop Chrome-Edge address
+  bar, with a "open on your phone" fallback). isAndroid() added to platform.js.
+  3 new settings.install.*How keys x 16 locales + font re-subset. The Home
+  install NUDGE (installDecision) stays conservative and unchanged - Settings is
+  the deliberate destination that always has a path.
+- Home notification banners: they were capped at lg:max-w-3xl with no centering,
+  so on desktop they sat as a narrow left-stuck column while the greeting and
+  dashboard spanned the full max-w-6xl (the "not centrally aligned" complaint).
+  Removed the cap so their edges line up with the rest of the page, upgraded all
+  banners to subtle gradient fills, added a pointer-only hover lift (.home-notice,
+  reduced-motion-off) to the clickable ones (what's new, waitlist, feedback
+  reply), a "view" chevron on what's new, and reflowed the guest banner to a
+  responsive layout (icon+text left, Sign in / Not now actions right on desktop,
+  stacked on mobile, dismiss pinned top-right). New home-guest smoke entry drives
+  the guest + what's-new branches.
+
+No admin/Edge-Function changes this round (no deploy:admin needed).

@@ -579,5 +579,8 @@
   "common.eduTag": "केवल शैक्षिक उपयोग के लिए। क्लिनिकल निर्णयों के लिए नहीं।",
   "nav.drawer.assistant.label": "अपने साथी से पूछें",
   "nav.drawer.assistant.sub": "ऐप कैसे काम करता है, चैट में पूछें",
-  "nav.drawer.assistant.tip": "टेस्ट, स्ट्रीक, सिंक और हर फीचर के जवाब तुरंत चैट में।"
+  "nav.drawer.assistant.tip": "टेस्ट, स्ट्रीक, सिंक और हर फीचर के जवाब तुरंत चैट में।",
+  "settings.install.iosHow": "ब्राउज़र बार में Share पर टैप करें, फिर Add to Home Screen चुनें।",
+  "settings.install.andHow": "ब्राउज़र मेन्यू खोलें, फिर Install app (या Add to Home screen) पर टैप करें।",
+  "settings.install.deskHow": "Chrome या Edge में, एड्रेस बार का इंस्टॉल आइकन या ब्राउज़र मेन्यू इस्तेमाल करें। दूसरे डेस्कटॉप ब्राउज़र में इंस्टॉल करने के लिए, nurseholic.in अपने फोन पर खोलें।"
 }

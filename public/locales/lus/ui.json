@@ -579,5 +579,8 @@
   "common.eduTag": "Zirna atan chauh. Clinical thutlukna atan a ni lo.",
   "nav.drawer.assistant.label": "I thianpa hnenah zawt rawh",
   "nav.drawer.assistant.sub": "App engtin nge a kal tih chat ah zawt rawh",
-  "nav.drawer.assistant.tip": "Test, streak, sync leh feature tinreng chhanna chat ah nghal."
+  "nav.drawer.assistant.tip": "Test, streak, sync leh feature tinreng chhanna chat ah nghal.",
+  "settings.install.iosHow": "Browser bar ah Share chu tap la, tichuan Add to Home Screen thlang rawh.",
+  "settings.install.andHow": "Browser menu chu hawng la, tichuan Install app (a nih loh leh Add to Home screen) tap rawh.",
+  "settings.install.deskHow": "Chrome emaw Edge ah, address bar-a install icon emaw browser menu hmang rawh. Desktop browser dang ah install nan, nurseholic.in chu i phone ah hawng rawh."
 }

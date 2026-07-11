@@ -522,8 +522,18 @@ function NamingView({ T, onName, onClose }) {
   const reduced = prefersReduced();
   return (
     <>
+      {/* ambient premium aura — a soft primary glow blooming from the top edge,
+          painted behind all content (z-0) so the first-run moment has depth. */}
+      <div aria-hidden="true"
+           className={"absolute pointer-events-none" + (reduced ? '' : ' naming-aura')}
+           style={{
+             top: -70, left: '50%', width: 360, height: 360,
+             transform: 'translateX(-50%)', zIndex: 0,
+             background: `radial-gradient(circle at 50% 42%, ${T.primary}2E, ${T.accent}12 42%, transparent 70%)`,
+           }} />
+
       {/* top bar — just the close button, right-aligned */}
-      <div className="flex items-center justify-end px-4 pt-4 pb-1 flex-shrink-0">
+      <div className="relative z-10 flex items-center justify-end px-4 pt-4 pb-1 flex-shrink-0">
         <button onClick={onClose} aria-label="Close"
                 className="no-tap-highlight rounded-xl active:bg-black/8 transition-colors"
                 style={{ minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -531,15 +541,27 @@ function NamingView({ T, onName, onClose }) {
         </button>
       </div>
 
-      <div className="px-6 pb-4 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
-        {/* hero icon with a soft layered glow ring */}
-        <div className={"w-16 h-16 rounded-2xl flex items-center justify-center mb-5 flex-shrink-0" + (reduced ? '' : ' naming-icon-enter')}
-             style={{
-               background: `linear-gradient(135deg, ${T.primary}22, ${T.primary}0A)`,
-               border: `1.5px solid ${T.primary}28`,
-               boxShadow: `0 0 0 6px ${T.primary}0A, 0 4px 18px ${T.primary}18`,
-             }}>
-          <Sparkles size={28} style={{ color: T.primary }} aria-hidden="true" />
+      <div className="relative z-10 px-6 pb-4 overflow-y-auto overscroll-contain flex-1 min-h-0" style={{ WebkitOverflowScrolling: 'touch' }}>
+        {/* hero medallion — gradient tile that idly floats, wrapped in a soft
+            halo ring, with a small accent spark twinkling at the corner. */}
+        <div className={"relative w-16 h-16 mb-5 flex-shrink-0" + (reduced ? '' : ' naming-icon-enter')}>
+          <div className={"w-16 h-16 rounded-2xl flex items-center justify-center relative" + (reduced ? '' : ' naming-medallion-float')}
+               style={{
+                 background: `linear-gradient(140deg, ${T.primary}30, ${T.primary}0C)`,
+                 border: `1.5px solid ${T.primary}30`,
+                 boxShadow: `0 0 0 6px ${T.primary}0A, 0 10px 26px ${T.primary}24, inset 0 1px 0 rgba(255,255,255,0.35)`,
+               }}>
+            <Sparkles size={28} style={{ color: T.primary }} aria-hidden="true" />
+            <span className={"absolute -top-1.5 -right-1.5" + (reduced ? '' : ' naming-spark')} aria-hidden="true">
+              <Sparkle size={15} style={{ color: T.accent }} />
+            </span>
+          </div>
+        </div>
+
+        {/* eyebrow */}
+        <div className={"inline-flex items-center gap-1.5 mb-2.5 px-2.5 py-1 rounded-full text-[10px] uppercase tracking-wider font-bold" + (reduced ? '' : ' naming-headline-enter')}
+             style={{ background: T.primary + '12', color: T.primary }}>
+          <Sparkle size={10} aria-hidden="true" /> Your study companion
         </div>
 
         {/* headline */}
@@ -569,7 +591,7 @@ function NamingView({ T, onName, onClose }) {
                data-autofocus
                autoCapitalize="words" autoComplete="off"
                maxLength={NAME_MAX}
-               placeholder="e.g. Nova"
+               placeholder="e.g. Nana"
                className="w-full rounded-xl px-3.5 py-3 mb-4 text-base font-medium"
                style={{
                  background: T.bg,
@@ -615,15 +637,16 @@ function NamingView({ T, onName, onClose }) {
         </div>
       </div>
 
-      <div className="px-5 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
+      <div className="relative z-10 px-5 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${T.borderSoft}` }}>
         <button onClick={() => valid && onName(clean)} disabled={!valid}
                 className="no-tap-highlight w-full inline-flex items-center justify-center gap-2 rounded-xl text-sm font-semibold active:scale-95 transition-transform disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{
-                  background: T.primary,
+                  background: valid ? `linear-gradient(135deg, ${T.primary}, ${T.primary}DE)` : T.primary,
                   color: '#FFF',
-                  boxShadow: valid ? `0 4px 20px ${T.primary}50` : 'none',
+                  boxShadow: valid ? `0 6px 22px ${T.primary}55` : 'none',
                   minHeight: 50,
                 }}>
+          {valid && <Sparkles size={16} aria-hidden="true" />}
           {valid ? `Let's go, ${clean}` : "Let's go"}
         </button>
       </div>
