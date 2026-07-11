@@ -92,6 +92,14 @@ function HelpModal({ screen, onClose }) {
                   style={{ background: T.primary, color: '#FFF' }}>
             Got it
           </button>
+
+          {/* Ask-companion hand-off. The host has no router access, so this
+              rides the same window-event pattern as norcet:reset-screen. */}
+          <button onClick={() => { onClose(); try { window.dispatchEvent(new CustomEvent('norcet:open-assistant')); } catch (e) {} }}
+                  className="no-tap-highlight w-full mt-2 py-2.5 rounded-xl text-[12.5px] font-medium active:scale-[0.99] transition inline-flex items-center justify-center gap-1.5"
+                  style={{ background: 'transparent', color: T.primary }}>
+            <Sparkles size={13} /> Still stuck? Chat with your companion
+          </button>
         </div>
       </Card>
     </div>

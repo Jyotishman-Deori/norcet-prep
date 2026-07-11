@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "Kan thuthlung te update a ni",
   "home.legalUpdated.body": "Kan legal page te kan siamthat a. En ve rawh.",
   "home.legalUpdated.review": "Thlakthleng te en rawh",
-  "common.eduTag": "Zirna atan chauh. Clinical thutlukna atan a ni lo."
+  "common.eduTag": "Zirna atan chauh. Clinical thutlukna atan a ni lo.",
+  "nav.drawer.assistant.label": "I thianpa hnenah zawt rawh",
+  "nav.drawer.assistant.sub": "App engtin nge a kal tih chat ah zawt rawh",
+  "nav.drawer.assistant.tip": "Test, streak, sync leh feature tinreng chhanna chat ah nghal."
 }

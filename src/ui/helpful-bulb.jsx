@@ -33,7 +33,9 @@ const TEASES = [
   "You're really keeping me on my toes!",
 ];
 
-export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compact = false }) {
+// `onVote(next)` — optional observer ('helpful' | 'notHelpful') fired after an
+// optimistic toggle; the Ask-companion chat uses it to react to a thumbs-down.
+export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compact = false, onVote = null }) {
   const { theme: T } = useTheme();
   const [state, setState] = useState('silent'); // 'silent' | 'helpful' | 'notHelpful'
   // 'none' | 'unhelped' | 'tease' — drives the secondary copy under the title
@@ -69,6 +71,7 @@ export default function HelpfulBulb({ voteId, profileId, isAdmin = false, compac
     } else {
       setMoment('none');
     }
+    try { if (onVote) onVote(next); } catch (e) {}
 
     try { await toggleHelpful(voteId, profileId, prev); }
     catch (e) { setState(prev); return; } // revert on write failure

@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "Amikhan laga terms update hoise",
   "home.legalUpdated.body": "Amikhan laga legal page khan notun kori dise. Ekbar sai lobi.",
   "home.legalUpdated.review": "Ki bodli se sabi",
-  "common.eduTag": "Khali educational use nimite. Clinical decision nimite nohoi."
+  "common.eduTag": "Khali educational use nimite. Clinical decision nimite nohoi.",
+  "nav.drawer.assistant.label": "Apuni laga sathi ke hudibi",
+  "nav.drawer.assistant.sub": "App kineka chole, chat te hudibi",
+  "nav.drawer.assistant.tip": "Test, streak, sync aru sob feature laga jawab joldi chat te."
 }

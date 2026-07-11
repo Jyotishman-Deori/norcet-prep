@@ -261,6 +261,12 @@ const SCREENS = {
     const m = await import('../../src/screens/DosageSetup.jsx');
     return React.createElement(m.default, { onStart: noop, onBack: noop, onSetPace: noop });
   },
+  // Ask-companion chat (2026-07-12): fresh chat renders the intro bubble +
+  // quick-start chips; the engine + KB module scope executes fully.
+  'assistant': async () => {
+    const m = await import('../../src/screens/assistant.jsx');
+    return React.createElement(m.default, { onBack: noop, onNavigate: noop });
+  },
   // Home's quiet "terms updated" card: only visible when the stamped
   // acceptance predates LEGAL_VERSION — install exactly that state. (The
   // fixture persists into the stats entries below, which install their own.)
@@ -364,6 +370,7 @@ const MARKERS = {
   'auth-create': ['educational study tool for exam preparation', 'Content Disclaimer'],
   'welcome': ['By continuing you agree to our'],
   'app-footer': ['Educational use only. Not for clinical decisions.'],
+  'assistant': ['your guide to everything NurseHolic', 'Popular questions', 'How do streaks work?'],
   'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
   'home-legal-update': ['Our terms were updated', 'Review the changes'],
   'quiz': ['Educational use only. Not for clinical decisions.'],

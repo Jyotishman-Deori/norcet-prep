@@ -31,6 +31,9 @@ export const BTT_EXCLUDED_SCREENS = new Set([
   'distractor-assassin', 'three-am-chart', 'shift-survival', 'tie-breaker',
   'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
   'knowledge-map',
+  // Ask-companion chat pins itself to the newest message; a back-to-top FAB
+  // there fights the conversation flow.
+  'assistant',
 ]);
 
 // Per-screen tweaks for the global mount (screens with extra fixed chrome

@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "हमारी शर्तें अपडेट हुई हैं",
   "home.legalUpdated.body": "हमने अपने कानूनी पेज ताज़ा किए हैं। एक नज़र डाल लें।",
   "home.legalUpdated.review": "बदलाव देखें",
-  "common.eduTag": "केवल शैक्षिक उपयोग के लिए। क्लिनिकल निर्णयों के लिए नहीं।"
+  "common.eduTag": "केवल शैक्षिक उपयोग के लिए। क्लिनिकल निर्णयों के लिए नहीं।",
+  "nav.drawer.assistant.label": "अपने साथी से पूछें",
+  "nav.drawer.assistant.sub": "ऐप कैसे काम करता है, चैट में पूछें",
+  "nav.drawer.assistant.tip": "टेस्ट, स्ट्रीक, सिंक और हर फीचर के जवाब तुरंत चैट में।"
 }

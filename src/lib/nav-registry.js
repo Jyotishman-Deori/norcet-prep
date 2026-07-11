@@ -38,7 +38,7 @@ export const STUDENT_ROUTE_SCREENS = new Set([
   'weightage', 'knowledge-map', 'learn-topics', 'learn-cards', 'revision-sheet',
   'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
   'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
-  'about', 'legal', 'waitlist',
+  'about', 'legal', 'waitlist', 'assistant',
 ]);
 const NAV_ACTIONS = new Set(['note', 'feedback']);
 
@@ -103,6 +103,10 @@ const STATIC_REGISTRY = [
     description: 'How paid plans will work. Everything is free today.' },
 
   // — Features —
+  { id: 'assistant', title: 'Ask the companion (chat help)', category: 'Features',
+    keywords: ['ask', 'chat', 'assistant', 'bot', 'help', 'guide', 'question', 'how to', 'companion', 'nova'],
+    route: { screen: 'assistant' },
+    description: 'Chat with your study companion about how the app works.' },
   { id: 'quick-test', title: 'Quick Test', category: 'Features',
     keywords: ['quick', 'practice', 'test', 'mcq', 'random', 'start'],
     route: { screen: 'quick-setup' },

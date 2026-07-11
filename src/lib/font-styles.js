@@ -876,6 +876,20 @@ export const fontStyles = `
 }
 .foot-link:hover::after { transform: scaleX(1); }
 
+/* ── Ask-companion chat (assistant.jsx) ─────────────────────────────
+   Bubble pop, typing dots and the avatar's mood reactions. All join the
+   reduced-motion catch-all below. */
+@keyframes asstPop { from { opacity: 0; transform: translateY(8px) scale(0.97); } to { opacity: 1; transform: none; } }
+.asst-pop { animation: asstPop 0.26s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes asstDot { 0%, 60%, 100% { transform: none; opacity: 0.45; } 30% { transform: translateY(-3px); opacity: 1; } }
+.asst-dot { display: inline-block; animation: asstDot 1.1s ease-in-out infinite; }
+@keyframes asstHeart { 0% { transform: scale(1); } 30% { transform: scale(1.22) rotate(-6deg); } 60% { transform: scale(0.95); } 100% { transform: none; } }
+.asst-heart { animation: asstHeart 0.55s ease-out both; }
+@keyframes asstTilt { 0% { transform: none; } 30% { transform: rotate(-8deg); } 70% { transform: rotate(5deg); } 100% { transform: none; } }
+.asst-tilt { animation: asstTilt 0.6s ease-in-out both; }
+@keyframes asstGlow { 0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18); } 50% { box-shadow: 0 0 16px 3px rgba(245, 166, 35, 0.5); } }
+.asst-glow { animation: asstGlow 1.1s ease-in-out 1; }
+
 @media (prefers-reduced-motion: reduce) {
   .eng-bar, .eng-seg, .eng-kpi { animation: none !important; }
   .seq-item, .q-shake, .q-pulse, .bm-pop, .bm-deflate, .row-fade-out,
@@ -902,7 +916,8 @@ export const fontStyles = `
   .pgate-in, .pgate-cta, .vault-tick-in, .path-node-in, .path-reco-pulse,
   .nnudge-in, .nnudge-bell, .nnudge-done,
   .about-in, .dnav-in, .brand-pop, .dnav-bell-ring, .btt-launch,
-  .wl-in, .wl-bloom, .wl-ring, .wl-tick { animation: none !important; }
+  .wl-in, .wl-bloom, .wl-ring, .wl-tick,
+  .asst-pop, .asst-dot, .asst-heart, .asst-tilt, .asst-glow { animation: none !important; }
   .dnav-link::after, .foot-link::after, .dnav-brand > div:first-child,
   .dnav-icon, .dnav-chip, .dnav-gold, .dnav-gold::after, .tbar-btn { transition: none !important; }
   .dnav-icon:hover, .dnav-chip:hover, .dnav-brand:hover > div:first-child,

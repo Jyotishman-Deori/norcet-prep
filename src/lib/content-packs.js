@@ -13,7 +13,7 @@
 // the content bank stays clean at the source.
 // =====================================================================
 
-export const CPACK_TYPES = ['dosage', 'conceptCards', 'reference', 'quotes'];
+export const CPACK_TYPES = ['dosage', 'conceptCards', 'reference', 'quotes', 'assistant'];
 export const cpackKey = (type) => `cpack:${type}`;
 
 function isStr(x) { return typeof x === 'string' && x.trim().length > 0; }
@@ -68,7 +68,33 @@ function vConceptGroup(it) {
   return e;
 }
 
-const VALIDATORS = { dosage: vDosage, reference: vReference, quotes: vQuote, conceptCards: vConceptGroup };
+// Ask-companion KB entries. `route.screen` is checked against the same safe
+// screen list the search router enforces (deep links must stay in-bounds).
+const ASSISTANT_CATS = ['basics', 'tests', 'progress', 'levelup', 'learn', 'community', 'account', 'premium', 'fixes'];
+const ASSISTANT_ROUTE_SCREENS = [
+  'home', 'settings', 'themes', 'notifications', 'share-app', 'premium',
+  'quick-setup', 'topic-select', 'mock-setup', 'previous-papers', 'drill-tests',
+  'level-up', 'weak-areas', 'stats', 'leaderboard', 'coverage', 'weightage',
+  'knowledge-map', 'learn-topics', 'revision-sheet', 'bookmarks-view',
+  'favorites', 'library', 'doubts', 'study-plan', 'reference', 'dosage',
+  'faq', 'study-methods', 'my-reports', 'mistake-vault', 'about', 'legal',
+];
+function vAssistant(it) {
+  const e = [];
+  if (!isStr(it.id)) e.push('id required');
+  if (!isStr(it.q)) e.push('q (the question) required');
+  if (!isStr(it.a)) e.push('a (the answer) required');
+  if (!ASSISTANT_CATS.includes(it.cat)) e.push(`cat must be one of ${ASSISTANT_CATS.join('/')}`);
+  if (!(Array.isArray(it.keywords) && it.keywords.length >= 2 && it.keywords.every(isStr))) e.push('keywords: at least 2 strings');
+  if (it.related != null && !(Array.isArray(it.related) && it.related.every(isStr))) e.push('related must be an array of ids');
+  if (it.route != null) {
+    if (!it.route || typeof it.route !== 'object' || !ASSISTANT_ROUTE_SCREENS.includes(it.route.screen)) e.push('route.screen is not an allowed screen');
+    if (!isStr(it.routeLabel)) e.push('routeLabel required when route is set');
+  }
+  return e;
+}
+
+const VALIDATORS = { dosage: vDosage, reference: vReference, quotes: vQuote, conceptCards: vConceptGroup, assistant: vAssistant };
 
 // validatePackItems(type, items) -> { valid: [...], invalid: [{index, errors, preview}] }
 // Rejects forbidden dashes across all string fields (house rule).
@@ -90,7 +116,7 @@ function previewOf(type, it) {
   if (type === 'quotes') return String(it.text || '').slice(0, 60);
   if (type === 'reference') return `${it.label || ''} = ${it.value || ''}`.slice(0, 60);
   if (type === 'conceptCards') return `${it.topicId || '?'} / ${it.sub || ''}`.slice(0, 60);
-  return String(it.q || it.id || '').slice(0, 60);
+  return String(it.q || it.id || '').slice(0, 60);  // dosage + assistant
 }
 
 // ---- pack shape + normalization ----
@@ -124,6 +150,18 @@ export function mergeQuotes(base, packItems) {
   for (const it of (packItems || [])) {
     if (it && it.text && seen.has(it.text)) continue;
     if (it && it.text) seen.add(it.text);
+    out.push(it);
+  }
+  return out;
+}
+// assistant KB: append, dedupe by id (base wins; admins add NEW entries,
+// corrections to bundled ones ship with the app).
+export function mergeAssistant(base, packItems) {
+  const out = Array.isArray(base) ? [...base] : [];
+  const seen = new Set(out.map(x => x && x.id).filter(Boolean));
+  for (const it of (packItems || [])) {
+    if (!it || !it.id || seen.has(it.id)) continue;
+    seen.add(it.id);
     out.push(it);
   }
   return out;

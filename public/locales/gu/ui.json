@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "અમારી શરતો અપડેટ થઈ છે",
   "home.legalUpdated.body": "અમે અમારાં કાનૂની પાનાં તાજાં કર્યાં છે. એક નજર નાખી લો.",
   "home.legalUpdated.review": "ફેરફારો જુઓ",
-  "common.eduTag": "માત્ર શૈક્ષણિક ઉપયોગ માટે. ક્લિનિકલ નિર્ણયો માટે નહીં."
+  "common.eduTag": "માત્ર શૈક્ષણિક ઉપયોગ માટે. ક્લિનિકલ નિર્ણયો માટે નહીં.",
+  "nav.drawer.assistant.label": "તમારા સાથીને પૂછો",
+  "nav.drawer.assistant.sub": "એપ કેવી રીતે ચાલે છે, ચેટમાં પૂછો",
+  "nav.drawer.assistant.tip": "ટેસ્ટ, સ્ટ્રીક, સિંક અને દરેક ફીચરના જવાબ તરત ચેટમાં."
 }

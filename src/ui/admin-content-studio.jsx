@@ -11,7 +11,7 @@
 // authored copy (the validator rejects them).
 // =====================================================================
 import React, { useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Loader2, FileText, BookOpen, Beaker, Quote, Plus, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Check, Loader2, FileText, BookOpen, Beaker, Quote, Plus, AlertTriangle, Sparkles } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from './primitives.jsx';
 import { safeStorage } from '../lib/safe-storage.js';
@@ -25,6 +25,7 @@ const SECTIONS = [
   { type: 'conceptCards', title: 'Concept cards',  icon: BookOpen, noun: 'group',   plural: 'card groups' },
   { type: 'reference',    title: 'Reference values', icon: FileText, noun: 'value',  plural: 'values' },
   { type: 'quotes',       title: 'Quotes',         icon: Quote,    noun: 'quote',   plural: 'quotes' },
+  { type: 'assistant',    title: 'Assistant KB',   icon: Sparkles, noun: 'entry',   plural: 'chat answers' },
 ];
 
 const GUIDE = {
@@ -47,6 +48,14 @@ const GUIDE = {
 ]`,
   quotes: `[
   { "text": "Discipline is choosing what you want most over what you want now.", "source": "Anonymous" }
+]`,
+  assistant: `[
+  { "id": "my-new-topic", "cat": "basics",
+    "q": "How do I do X?",
+    "keywords": ["x", "how", "do"],
+    "a": "Friendly plain-text answer. No long dashes.",
+    "related": ["what-is-nurseholic"],
+    "route": { "screen": "settings" }, "routeLabel": "Open Settings" }
 ]`,
 };
 

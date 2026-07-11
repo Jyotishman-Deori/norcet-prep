@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 
 const {
   CPACK_TYPES, cpackKey, validatePackItems, makePack, normalizePack,
-  mergeDosage, mergeReference, mergeQuotes, mergeConceptCards,
+  mergeDosage, mergeReference, mergeQuotes, mergeConceptCards, mergeAssistant,
 } = await import('./content-packs.js');
 
-assert.deepEqual(CPACK_TYPES, ['dosage', 'conceptCards', 'reference', 'quotes']);
+assert.deepEqual(CPACK_TYPES, ['dosage', 'conceptCards', 'reference', 'quotes', 'assistant']);
 assert.equal(cpackKey('quotes'), 'cpack:quotes');
 
 // ---- dosage validation ----
@@ -81,6 +81,22 @@ assert.ok(validatePackItems('nope', []).parseError);
   assert.equal(cm.obg[0].sub, 'Labor', 'new topic added');
   // base object not mutated
   assert.equal(cbase.fund[0].cards.length, 1, 'base untouched');
+}
+
+// ---- assistant KB pack (5th type) ----
+{
+  const good = { id: 'x1', cat: 'basics', q: 'How does X work?', keywords: ['x', 'work'], a: 'Like this.' };
+  assert.equal(validatePackItems('assistant', [good]).valid.length, 1);
+  const bad = validatePackItems('assistant', [
+    { id: 'x2', cat: 'nope', q: 'q?', keywords: ['a'], a: '' },                     // bad cat, 1 keyword, no answer
+    { id: 'x3', cat: 'tests', q: 'q?', keywords: ['a', 'b'], a: 'ok', route: { screen: 'admin-panel' } }, // route not allowed
+    { id: 'x4', cat: 'tests', q: 'q — dash', keywords: ['a', 'b'], a: 'ok' },       // em dash rejected
+  ]);
+  assert.equal(bad.valid.length, 0);
+  assert.equal(bad.invalid.length, 3);
+  const merged = mergeAssistant([{ id: 'a1', q: 'base' }], [{ id: 'a1', q: 'pack' }, { id: 'a2', q: 'new' }]);
+  assert.equal(merged.length, 2);
+  assert.equal(merged.find(x => x.id === 'a1').q, 'base', 'base wins on id clash');
 }
 
 console.log('content-packs.test.js: all assertions passed');

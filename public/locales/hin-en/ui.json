@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "Hamari terms update hui hain",
   "home.legalUpdated.body": "Humne apne legal pages refresh kiye hain. Ek nazar daal lein.",
   "home.legalUpdated.review": "Changes dekhein",
-  "common.eduTag": "Sirf educational use ke liye. Clinical decisions ke liye nahi."
+  "common.eduTag": "Sirf educational use ke liye. Clinical decisions ke liye nahi.",
+  "nav.drawer.assistant.label": "Apne saathi se pucho",
+  "nav.drawer.assistant.sub": "App kaise chalta hai, chat mein pucho",
+  "nav.drawer.assistant.tip": "Test, streak, sync aur har feature ke jawab turant chat mein."
 }

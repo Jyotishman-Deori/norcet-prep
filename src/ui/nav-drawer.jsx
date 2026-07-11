@@ -18,7 +18,7 @@
 // open/onClose/onNavigate stay props.
 // =====================================================================
 import React, { useEffect, useRef, useState } from 'react';
-import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Target, Trophy, X } from 'lucide-react';
+import { Activity, BarChart3, Bookmark, CalendarDays, ChevronRight, Compass, Crown, FileText, Flag, FlaskConical, GraduationCap, History, Info, Layers, Megaphone, MessagesSquare, Plus, Search, Send, Inbox, Settings as SettingsIcon, Sparkles, Target, Trophy, X } from 'lucide-react';
 import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { isPremiumEnabled } from '../lib/premium.js';
 import { requestFeedback } from './primitives.jsx';
@@ -273,6 +273,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const learn = [
     { key: 'study-methods', fav: 'study-methods', icon: GraduationCap, color: T.primary, label: t('nav.drawer.studyMethods.label'), badge: t('nav.drawer.badgeGuide'), tip: t('nav.drawer.studyMethods.tip'), sub: t('nav.drawer.studyMethods.sub'), action: () => go('study-methods', null, 'methods') },
     { key: 'faq', fav: 'faq', icon: MessagesSquare, color: T.sec.revision, label: t('nav.drawer.faq.label'), badge: faqUnread > 0 ? String(faqUnread) : null, badgeUrgent: true, tip: t('nav.drawer.faq.tip'), sub: t('nav.drawer.faq.sub'), action: () => go('faq', null, 'faq') },
+    { key: 'assistant', icon: Sparkles, color: T.primary, label: t('nav.drawer.assistant.label'), tip: t('nav.drawer.assistant.tip'), sub: t('nav.drawer.assistant.sub'), action: () => go('assistant', null, 'assistant') },
     { key: 'about', icon: Info, color: T.accent, label: t('nav.drawer.about.label'), tip: t('nav.drawer.about.tip'), sub: t('nav.drawer.about.sub'), action: () => go('about', null, 'about') },
   ];
   // ---- Category 5 — Feedback ---- (same Item card; two separate, evenly

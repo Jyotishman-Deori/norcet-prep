@@ -7,7 +7,7 @@
 // delete, helpful counts) appear only when isAdmin is true.
 // =====================================================================
 import React, { useState, useEffect, useRef } from 'react';
-import { ChevronDown, MessageCircle, Send, Shield, Sparkles, Trash2, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, MessageCircle, Send, Shield, Sparkles, Trash2, HelpCircle } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, TopBar } from '../ui/primitives.jsx';
 import EmptyState from '../ui/empty-state.jsx';
@@ -40,7 +40,7 @@ const isNewFaq = (f) => !!(f && f.createdAt) && (Date.now() - f.createdAt) < NEW
 
 // `focusId` — optional deep-link from the global Search router: once the list
 // loads, that FAQ opens and scrolls into view (one-shot; browsing is normal after).
-function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
+function FAQScreen({ onBack, isAdmin = false, profile, focusId = null, onOpenAssistant = null }) {
   const { theme: T } = useTheme();
   const profileId = (profile && profile.id) || GUEST_ID;
   const profileName = (profile && profile.displayName) || 'Student';
@@ -144,6 +144,23 @@ function FAQScreen({ onBack, isAdmin = false, profile, focusId = null }) {
             Hi! Tap any question to see the answer. Still stuck? Ask under any answer and an admin will reply.
           </div>
         </div>
+
+        {/* Ask-companion chat — instant answers about how the app works. */}
+        {onOpenAssistant && (
+          <button onClick={onOpenAssistant}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-3 mb-4 rounded-2xl pressable text-left active:scale-[0.99] transition"
+                  style={{ background: T.primary + '0E', border: `1px solid ${T.primary}30` }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                 style={{ background: `linear-gradient(135deg, ${T.primary}, ${T.primary}B3)`, boxShadow: `0 3px 10px ${T.primary}40` }}>
+              <Sparkles size={16} color="#FFF" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>Chat with your companion</div>
+              <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Instant answers about tests, streaks, syncing and more</div>
+            </div>
+            <ChevronRight size={16} className="flex-shrink-0" style={{ color: T.muted }} />
+          </button>
+        )}
 
         {faqs === null ? (
           <Card className="p-6 text-center"><div className="text-sm" style={{ color: T.muted }}>Loading…</div></Card>

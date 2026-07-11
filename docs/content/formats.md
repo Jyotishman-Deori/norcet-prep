@@ -14,6 +14,7 @@ Where each type is authored:
 | Concept cards (Learn) | Admin -> Content Studio -> Concept cards | No |
 | Reference values | Admin -> Content Studio -> Reference | No |
 | Quotes (Home) | Admin -> Content Studio -> Quotes | No |
+| Assistant chat answers | Admin -> Content Studio -> Assistant KB | No |
 | Clinical games (Ward Boss, Drip Zone, etc.) | Repo `src/data/*.js` edit | Yes (code) |
 
 ---
@@ -96,6 +97,27 @@ built-in cards, your cards are appended to it.
 { "cat": "labs", "section": "Electrolytes", "label": "Potassium", "value": "3.5 to 5.0 mmol/L", "note": "Watch the heart at the extremes" }
 ```
 `cat` groups the list (labs, dosages, ...); `section` sub-groups; `note` optional.
+
+## Assistant chat entry (Ask your companion)
+
+New Q&A the in-app chat guide can answer. `id` must be unique (new ids only,
+bundled entries cannot be overridden), `cat` is one of: basics, tests,
+progress, levelup, learn, community, account, premium, fixes. `route` is
+optional and must use an allowed screen; give `routeLabel` with it.
+
+```json
+{
+  "id": "my-new-topic",
+  "cat": "basics",
+  "q": "How do I do X?",
+  "keywords": ["x", "how", "feature"],
+  "a": "Friendly plain-text answer in the app's casual voice.
+Second line if needed.",
+  "related": ["what-is-nurseholic"],
+  "route": { "screen": "settings" },
+  "routeLabel": "Open Settings"
+}
+```
 
 ## Quote (Home)
 

@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "Our terms were updated",
   "home.legalUpdated.body": "We refreshed our legal pages. A quick look keeps you informed.",
   "home.legalUpdated.review": "Review the changes",
-  "common.eduTag": "Educational use only. Not for clinical decisions."
+  "common.eduTag": "Educational use only. Not for clinical decisions.",
+  "nav.drawer.assistant.label": "Ask your companion",
+  "nav.drawer.assistant.sub": "Chat about how the app works",
+  "nav.drawer.assistant.tip": "Instant chat answers about tests, streaks, syncing and every feature."
 }

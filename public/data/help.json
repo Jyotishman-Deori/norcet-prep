@@ -311,5 +311,11 @@
     "how": "Scroll through the paper top to bottom, reading each question and its explanation at your own pace. Switch to Attempt mode instead if you want to sit the paper under exam conditions and have it scored.",
     "why": "Sometimes you want to learn from a paper, not be tested by it. Read mode lets you absorb how questions are framed and why each answer is right, ideal for a first pass or a relaxed revision session.",
     "example": "The night before your exam you don’t want the stress of a timed test, so you open last year’s paper in Read mode and read through all the questions and explanations to refresh the key facts."
+  },
+  "Assistant": {
+    "title": "Ask your companion",
+    "what": "A friendly chat guide who knows the whole app. Ask anything about how NurseHolic works (tests, streaks, syncing, games, account) in your own words and it answers instantly, even offline.",
+    "how": "Type a question or tap a suggested chip. Answers come with follow-up questions, a button that jumps you straight to the right screen, and a bulb to say whether it helped. Not satisfied? It hands you off to Report or the FAQ community in one tap.",
+    "why": "Nobody should have to hunt through menus to understand a feature. A quick chat keeps you studying instead of searching."
   }
 }

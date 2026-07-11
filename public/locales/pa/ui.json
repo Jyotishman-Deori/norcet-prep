@@ -576,5 +576,8 @@
   "home.legalUpdated.title": "ਸਾਡੀਆਂ ਸ਼ਰਤਾਂ ਅੱਪਡੇਟ ਹੋਈਆਂ ਹਨ",
   "home.legalUpdated.body": "ਅਸੀਂ ਆਪਣੇ ਕਾਨੂੰਨੀ ਪੰਨੇ ਤਾਜ਼ਾ ਕੀਤੇ ਹਨ। ਇੱਕ ਨਜ਼ਰ ਮਾਰ ਲਵੋ।",
   "home.legalUpdated.review": "ਬਦਲਾਅ ਵੇਖੋ",
-  "common.eduTag": "ਸਿਰਫ਼ ਵਿਦਿਅਕ ਵਰਤੋਂ ਲਈ। ਕਲੀਨਿਕਲ ਫ਼ੈਸਲਿਆਂ ਲਈ ਨਹੀਂ।"
+  "common.eduTag": "ਸਿਰਫ਼ ਵਿਦਿਅਕ ਵਰਤੋਂ ਲਈ। ਕਲੀਨਿਕਲ ਫ਼ੈਸਲਿਆਂ ਲਈ ਨਹੀਂ।",
+  "nav.drawer.assistant.label": "ਆਪਣੇ ਸਾਥੀ ਨੂੰ ਪੁੱਛੋ",
+  "nav.drawer.assistant.sub": "ਐਪ ਕਿਵੇਂ ਚੱਲਦੀ ਹੈ, ਚੈਟ ਵਿੱਚ ਪੁੱਛੋ",
+  "nav.drawer.assistant.tip": "ਟੈਸਟ, ਸਟ੍ਰੀਕ, ਸਿੰਕ ਅਤੇ ਹਰ ਫੀਚਰ ਦੇ ਜਵਾਬ ਤੁਰੰਤ ਚੈਟ ਵਿੱਚ।"
 }

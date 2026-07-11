@@ -119,6 +119,9 @@ export const KEYS = {
   // GLOBAL SEARCH — recent queries (JSON array, newest first, capped at 8).
   // Local-only (shared:false), per profile; powers the Search tab idle state.
   searchRecent:  (profileId) => `searchrecent:v1:${profileId}`,
+  // Ask-companion chat transcript — local-only, per profile, capped at the
+  // last ~40 turns so reopening the assistant resumes the conversation.
+  assistantChat: (profileId) => `asstchat:v1:${profileId}`,
   // Notification opt-in nudge (Home card) — local, per profile:
   // { dismissedAt, dismissCount }. Show/snooze rules live in lib/push-opt-in.js.
   notifNudge:    (profileId) => `notifnudge:v1:${profileId}`,

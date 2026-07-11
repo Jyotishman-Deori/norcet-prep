@@ -225,6 +225,8 @@ import { TipHost } from './ui/tooltip.jsx';
 import DoubtsScreen from './screens/doubts.jsx';
 // [F-F] FAQ section (user side).
 const FAQScreen = lazy(() => import('./screens/faq.jsx'));
+// Ask-companion FAQ chat (rule-based guide; lazy: carries the whole KB).
+const AssistantScreen = lazy(() => import('./screens/assistant.jsx'));
 // GLOBAL SEARCH — the bottom-nav Search tab (lazy: not part of first paint).
 const SearchScreen = lazy(() => import('./screens/search.jsx'));
 // MISTAKE VAULT + ACTIVITY HISTORY — retention surfaces (blueprint M3/M5).
@@ -1764,6 +1766,13 @@ export default function App() {
     const handler = () => setNav({ screen: 'home' });
     window.addEventListener('norcet:reset-screen', handler);
     return () => window.removeEventListener('norcet:reset-screen', handler);
+  }, []);
+  // Help modal's "Still stuck?" hand-off into the Ask-companion chat (the
+  // help host has no router access; same window-event pattern as above).
+  useEffect(() => {
+    const handler = () => setNav({ screen: 'assistant' });
+    window.addEventListener('norcet:open-assistant', handler);
+    return () => window.removeEventListener('norcet:open-assistant', handler);
   }, []);
   // A2 — warm the lazy content cache (Reference / Dosage / Help / Learn) in the
   // background after first paint, so those screens are instant and available
@@ -4660,7 +4669,8 @@ export default function App() {
       {/* F-F — FAQ. Admin reply/delete + helpful counts show only when isAdmin. */}
       {nav.screen === 'faq' && (
         <Suspense fallback={<LazyScreenFallback />}>
-        <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} focusId={nav.focusId || null} />
+        <FAQScreen onBack={goHome} isAdmin={isAdmin} profile={profile} focusId={nav.focusId || null}
+                   onOpenAssistant={() => navigate({ screen: 'assistant' })} />
         </Suspense>
       )}
 
@@ -4697,6 +4707,14 @@ export default function App() {
         <KnowledgeMap onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })}
                       onPracticeSub={(topicId, sub) => startQuiz({ mode: 'topic', topic: topicId, sub, count: 10 })}
                       onBack={goHome} />
+        </Suspense>
+      )}
+
+      {/* Ask-companion — the rule-based FAQ chat. Deep-link buttons route
+          through handleHomeNavigate (same contract as Search). */}
+      {nav.screen === 'assistant' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <AssistantScreen onBack={goHome} onNavigate={handleHomeNavigate} />
         </Suspense>
       )}
 

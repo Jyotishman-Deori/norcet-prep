@@ -24,7 +24,7 @@ import { cpackKey, normalizePack, mergeDosage, mergeReference, mergeConceptCards
 // v13: rebrand — "NORCET Prep" → "NurseHolic" in help.json Share-app copy.
 // v14: removed all em dashes from content JSON (reference/dosage/concept-cards/
 //      help) — user-facing copy must not read as AI-generated.
-const CONTENT_VERSION = 14;
+const CONTENT_VERSION = 15;
 const CONTENT_SOURCES = {
   reference:    'reference.json',
   dosage:       'dosage.json',
@@ -77,7 +77,7 @@ const packMirrorKey = (type) => `cpackcache:${type}`;
 
 // Read a pack: shared kv_shared read (fresh when online), falling back to the
 // local mirror when offline; refresh the mirror on a successful read.
-async function readPack(type) {
+export async function readPack(type) {
   try {
     const r = await safeStorage.get(cpackKey(type), true);   // shared table
     if (r && r.value) {
