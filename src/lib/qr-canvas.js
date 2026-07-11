@@ -38,6 +38,26 @@ function ellipsize(ctx, text, maxW) {
   return s + '\u2026';
 }
 
+// Greedy word-wrap into at most `maxLines` lines; the last line is ellipsized
+// if the text still overflows. Caller has already set ctx.font.
+function wrapLines(ctx, text, maxW, maxLines = 2) {
+  const words = String(text == null ? '' : text).split(/\s+/).filter(Boolean);
+  const lines = [];
+  let cur = '';
+  for (const w of words) {
+    const t = cur ? cur + ' ' + w : w;
+    if (!cur || ctx.measureText(t).width <= maxW) cur = t;
+    else { lines.push(cur); cur = w; }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines) {
+    const kept = lines.slice(0, maxLines);
+    kept[maxLines - 1] = ellipsize(ctx, kept[maxLines - 1] + ' ' + lines.slice(maxLines).join(' '), maxW);
+    return kept;
+  }
+  return lines;
+}
+
 // Draw an encodeQR matrix at `modulePx` per module. If opts.centerX is given,
 // the panel is centred on that x (x is then ignored). Returns the drawn panel
 // rect { x, y, w, h, qrPx } so callers can place captions relative to it, or
@@ -258,6 +278,141 @@ export function paintMilestoneCard({ kind = 'questions', value = 0, url, display
       ctx.font = `600 28px ${SERIF}`;
       ctx.fillStyle = 'rgba(255,255,255,0.78)';
       ctx.fillText(displayUrl || 'www.nurseholic.in', 84, S - margin - 6);
+
+      canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
+    } catch (e) { reject(e); }
+  });
+}
+
+// ---- Progress Report share card -------------------------------------
+// A portrait 4:5 card (1080x1350) built from the buildReportCard() model. It
+// does ZERO math: it renders `report.headline`, `report.subjects` and the
+// baked-in disclaimer. Width stays 1080 so every centred helper carries over.
+function drawStatTile(ctx, s, x, y, w, h) {
+  roundRect(ctx, x, y, w, h, 22);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)'; ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.22)'; ctx.lineWidth = 2; ctx.stroke();
+  const cx = x + w / 2;
+  ctx.textAlign = 'center';
+  if (!s || s.value === null || s.value === undefined) {
+    // A thin metric shows its honest "Not enough data yet", NEVER a 0.
+    ctx.fillStyle = 'rgba(255,255,255,0.72)';
+    ctx.font = `500 27px ${SANS}`;
+    ctx.fillText(ellipsize(ctx, (s && s.display) || 'Not enough data yet', w - 40), cx, y + 82);
+  } else {
+    ctx.fillStyle = '#FFFFFF';
+    let fs = 66;
+    ctx.font = `700 ${fs}px ${SERIF}`;
+    while (fs > 32 && ctx.measureText(s.display).width > w - 44) { fs -= 4; ctx.font = `700 ${fs}px ${SERIF}`; }
+    ctx.fillText(s.display, cx, y + 86);
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.82)';
+  ctx.font = `600 20px ${SANS}`;
+  ctx.fillText(ellipsize(ctx, ((s && s.label) || '').toUpperCase(), w - 26), cx, y + h - 26);
+}
+
+export function paintProgressReportCard({ report, url, displayUrl, theme = {} } = {}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const W = 1080, H = 1350;
+      const canvas = document.createElement('canvas');
+      canvas.width = W; canvas.height = H;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('no-2d-context')); return; }
+      const R = report || {};
+      const cx = W / 2;
+
+      paintPosterBackground(ctx, W, H, theme);
+      brandHeader(ctx, cx, theme);   // brand 138, tagline 184, hairline 210
+
+      // name + title + generated date
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = `600 40px ${SANS}`;
+      ctx.fillText(ellipsize(ctx, (R.meta && R.meta.name) || 'NORCET Aspirant', W - 260), cx, 272);
+      ctx.font = `700 50px ${SERIF}`;
+      ctx.fillText('Progress Report', cx, 328);
+      ctx.font = `500 25px ${SANS}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.74)';
+      const genLine = (R.meta && R.meta.generatedOnDisplay) ? `Generated ${R.meta.generatedOnDisplay}` : 'Your practice so far';
+      ctx.fillText(genLine, cx, 366);
+
+      // 2x2 headline grid
+      const headline = Array.isArray(R.headline) ? R.headline : [];
+      const gx = 90, gw = W - 180, gap = 28;
+      const tileW = (gw - gap) / 2, tileH = 150;
+      const rowY = [400, 400 + tileH + gap];
+      for (let i = 0; i < 4; i++) {
+        const col = i % 2, row = i < 2 ? 0 : 1;
+        drawStatTile(ctx, headline[i], gx + col * (tileW + gap), rowY[row], tileW, tileH);
+      }
+
+      // strongest subjects strip (up to 4)
+      const rows = (R.subjects && Array.isArray(R.subjects.rows)) ? R.subjects.rows.slice(0, 4) : [];
+      let afterSubjects = 760;
+      if (rows.length > 0) {
+        ctx.textAlign = 'left';
+        ctx.fillStyle = 'rgba(255,255,255,0.70)';
+        ctx.font = `600 23px ${SANS}`;
+        ctx.fillText('STRONGEST SUBJECTS', gx, 792);
+        const y0 = 838, step = 48;
+        for (let i = 0; i < rows.length; i++) {
+          const r = rows[i];
+          const ry = y0 + i * step;
+          ctx.textAlign = 'left';
+          ctx.fillStyle = 'rgba(255,255,255,0.94)';
+          ctx.font = `500 26px ${SANS}`;
+          ctx.fillText(ellipsize(ctx, r.name, 300), gx + 10, ry);
+          // track + fill
+          const barX = 440, barW = 340, barY = ry - 16, barH = 13;
+          roundRect(ctx, barX, barY, barW, barH, barH / 2);
+          ctx.fillStyle = 'rgba(255,255,255,0.16)'; ctx.fill();
+          const pct = Math.max(0, Math.min(100, r.accuracy || 0));
+          if (pct > 0) {
+            roundRect(ctx, barX, barY, Math.max(barH, barW * pct / 100), barH, barH / 2);
+            ctx.fillStyle = r.color || '#FFFFFF'; ctx.fill();
+          }
+          ctx.textAlign = 'right';
+          ctx.fillStyle = '#FFFFFF';
+          ctx.font = `600 25px ${SANS}`;
+          ctx.fillText(`${pct}%`, W - gx, ry);
+        }
+        afterSubjects = y0 + rows.length * step;
+      }
+
+      // baked-in disclaimer (the gap the plain share card leaves open), left
+      // column so it never collides with the corner QR.
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255,255,255,0.66)';
+      ctx.font = `500 21px ${SANS}`;
+      const discY = Math.max(afterSubjects + 60, 1090);
+      const discLines = wrapLines(ctx, R.disclaimerShort || '', 690, 2);
+      discLines.forEach((ln, i) => ctx.fillText(ln, gx, discY + i * 30));
+
+      // QR bottom-right (referral, VIA.POSTER); a bonus, never a blocker.
+      const qrModule = 5, margin = 64, panelPad = 18, quiet = 4;
+      let qrDrawn = false;
+      if (url) {
+        try {
+          const meas = measureQrPanel(url, qrModule, { quiet, panelPad });
+          if (meas) {
+            const pw = meas.panelW;
+            drawQrMatrix(ctx, url, W - margin - pw, H - margin - pw, qrModule, {
+              panel: true, panelShadow: true, panelPad, panelRadius: 16, dark: '#0B1220',
+            });
+            qrDrawn = true;
+          }
+        } catch (e) { /* QR is optional */ }
+      }
+
+      // bottom-left scan label balances the QR
+      ctx.textAlign = 'left';
+      ctx.fillStyle = 'rgba(255,255,255,0.92)';
+      ctx.font = `600 29px ${SANS}`;
+      ctx.fillText(qrDrawn ? 'Scan to try it free' : 'Practise free, no ads', gx, H - margin - 44);
+      ctx.font = `600 27px ${SERIF}`;
+      ctx.fillStyle = 'rgba(255,255,255,0.78)';
+      ctx.fillText(displayUrl || 'www.nurseholic.in', gx, H - margin - 6);
 
       canvas.toBlob(b => { b ? resolve(b) : reject(new Error('toBlob-null')); }, 'image/png', 0.95);
     } catch (e) { reject(e); }

@@ -6,7 +6,7 @@
 // onBack/onQuick/onPracticeTopic stay props.
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
-import { BarChart3, ChevronDown, ChevronRight, ChevronUp, Flame, Layers, RotateCcw, Shuffle, Target, Trash2 } from 'lucide-react';
+import { BarChart3, ChevronDown, ChevronRight, ChevronUp, FileText, Flame, Layers, RotateCcw, Shuffle, Target, Trash2 } from 'lucide-react';
 import { Bar, BarChart, CartesianGrid, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats, hasBeenSeen } from '../lib/compact.js';
@@ -75,7 +75,7 @@ function buildTrendBuckets(range, nowMs) {
   return { buckets, windowStart: buckets.length ? buckets[0].start : nowMs };
 }
 
-function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced, onReviewQuestions }) {
+function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdvanced, onReviewQuestions, onOpenReport }) {
   const { theme: T } = useTheme();
   const { data, allQuestions } = useData();
   // NEW-07 — Overview keeps today's dashboard byte-for-byte; Advanced holds
@@ -314,6 +314,23 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
             );
           })}
         </div>
+
+        {/* Progress Report entry: a shareable card + a printable PDF from your
+            own practice. Shown on both tabs since it summarises everything. */}
+        {onOpenReport && (
+          <button onClick={onOpenReport}
+                  className="no-tap-highlight w-full flex items-center gap-3 mb-4 px-4 py-3 rounded-2xl transition-all active:scale-[0.98]"
+                  style={{ background: T.surface, border: `1px solid ${T.border}` }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: T.primary + '18' }}>
+              <FileText size={17} style={{ color: T.primary }} />
+            </div>
+            <div className="min-w-0 flex-1 text-left">
+              <div className="text-sm font-semibold" style={{ color: T.ink }}>Progress report</div>
+              <div className="text-xs" style={{ color: T.muted }}>Share it, or save a PDF</div>
+            </div>
+            <ChevronRight size={18} style={{ color: T.muted }} className="flex-shrink-0" />
+          </button>
+        )}
 
         {statsTab === 'advanced' && (
           <AdvancedStatsPanel onReviewQuestions={onReviewQuestions} onStartAdvanced={onStartAdvanced} />

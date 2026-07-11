@@ -61,7 +61,9 @@ export const DEFAULTS = {
     // the test phase (everything stays free); flip live from the admin Live
     // config tool at launch, no redeploy. cribVault = saved crib sheets +
     // the Mistake Vault history (the post-quiz session crib stays free).
-    gates: { cribVault: false },
+    // progressReport = the Progress Report PDF/share card (ships free; if ever
+    // gated, gate the PDF and keep the share PNG free, it carries the referral QR).
+    gates: { cribVault: false, progressReport: false },
     plans: [
       { id: 'monthly', label: 'Monthly', priceInr: 149, per: 'month' },
       { id: 'yearly',  label: 'Yearly',  priceInr: 999, per: 'year', save: 'Save 44%' },

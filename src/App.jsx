@@ -249,6 +249,7 @@ const LegalScreenLazy = lazy(() => import('./screens/legal.jsx'));
 const WeightageScreen = lazy(() => import('./screens/weightage.jsx'));
 // Premium — pricing/plans PREVIEW screen (freemium preview; nothing is gated).
 const PremiumScreen = lazy(() => import('./screens/premium.jsx'));
+const ProgressReport = lazy(() => import('./screens/progress-report.jsx'));
 // LAUNCH WAITLIST — join/status/claim screen. Rendered two ways: a normal
 // route ('waitlist'), and the pre-auth launch wall for brand-new visitors
 // while game_config waitlist.gate is ON (early return before the app tree).
@@ -4889,8 +4890,20 @@ export default function App() {
                      onQuick={() => navigate({ screen: 'quick-setup' })}
                      onResetData={clearAll}
                      onStartAdvanced={() => navigate({ screen: 'advanced-setup' })}
+                     onOpenReport={() => navigate({ screen: 'progress-report', from: 'stats' })}
                      onPracticeTopic={(topicId) => startQuiz({ mode: 'topic', topic: topicId, count: 10 })}
                      onReviewQuestions={(qIds) => startQuiz({ mode: 'wrong', qIds })} />
+        </Suspense>
+      )}
+
+      {/* Progress Report — a shareable PNG card + a printable PDF, both from
+          one honest model (report-card.js). No rank, no percentile, no study
+          hours; every artifact carries the baked-in disclaimer. */}
+      {nav.screen === 'progress-report' && (
+        <Suspense fallback={<LazyScreenFallback />}>
+        <ProgressReport onBack={() => navigate({ screen: nav.from || 'stats' })}
+                        onQuick={() => navigate({ screen: 'quick-setup' })}
+                        onOpenPremium={() => navigate({ screen: 'premium' })} />
         </Suspense>
       )}
 
@@ -5300,6 +5313,7 @@ export default function App() {
                   onSetDemographics={setDemographics}
                   unseenReplyCount={unseenFeedbackReplies(myReports, data.feedbackRepliesSeen).length}
                   onOpenTrash={() => setNav({ screen: 'recently-deleted' })}
+                  onOpenReport={() => navigate({ screen: 'progress-report', from: 'settings' })}
                   progressSnapshotAt={progressSnapshotAt}
                   onRestoreProgress={restoreProgress}
                   onBack={goHome} />

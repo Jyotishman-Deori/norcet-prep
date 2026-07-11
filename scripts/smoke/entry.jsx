@@ -441,6 +441,46 @@ const SCREENS = {
     const m = await import('../../src/screens/recently-deleted.jsx');
     return React.createElement(m.default, { onBack: noop });
   },
+  // Progress Report — a populated fixture so the WYSIWYG preview renders (an
+  // empty profile would early-return the EmptyState and skip every stat body).
+  // The print doc is portaled, so it is nulled here; 'report-print' covers it.
+  'progress-report': async () => {
+    const stub = await import('./stub-app-context.jsx');
+    const { DEFAULT_DATA } = await import('../../src/data/seed.js');
+    const history = {};
+    SEED_QUESTIONS.slice(0, 14).forEach((q, i) => {
+      history[q.id] = { attempts: [
+        { ts: 1000 + i, correct: i % 3 !== 0, timeMs: 40000, pick: [0] },
+        { ts: 2000 + i, correct: i % 2 === 0, timeMs: 30000, pick: [1] },
+      ] };
+    });
+    stub.__setSmokeData({
+      ...DEFAULT_DATA,
+      stats: { ...DEFAULT_DATA.stats, totalAttempted: 28, totalCorrect: 18, streakCurrent: 4, streakBest: 12 },
+      history,
+      levelup: { ...(DEFAULT_DATA.levelup || {}), xp: 5200 },
+      advancedTestHistory: [{ ts: Date.now(), count: 100, correct: 60, netScore: 50, accuracy: 60, elapsedSec: 3600 }],
+    });
+    const m = await import('../../src/screens/progress-report.jsx');
+    return React.createElement(m.default, { onBack: noop, onQuick: noop, onOpenPremium: noop });
+  },
+  // The print body renders directly (NO portal), the only way its markup gets
+  // smoke coverage. Proves the disclaimer + subject table lay out without a throw.
+  'report-print': async () => {
+    const { buildReportCard } = await import('../../src/lib/report-card.js');
+    const { ReportPrintBody } = await import('../../src/ui/report-print.jsx');
+    const history = {};
+    SEED_QUESTIONS.slice(0, 14).forEach((q, i) => {
+      history[q.id] = { attempts: [{ ts: 1000 + i, correct: i % 3 !== 0, timeMs: 40000, pick: [0] }] };
+    });
+    const report = buildReportCard({
+      profile: { displayName: 'Asha' },
+      data: { history, stats: { streakCurrent: 4, streakBest: 12 }, levelup: { xp: 5200 }, advancedTestHistory: [{ netScore: 50, elapsedSec: 3600 }] },
+      allQuestions: SEED_QUESTIONS.slice(0, 14),
+      now: Date.now(),
+    });
+    return React.createElement(ReportPrintBody, { report });
+  },
   // NEW-07.4 High-Stress Drill: the AdvancedTest engine in SECTIONED mode
   // (per-section clock, locked palette, section strip). First render must
   // not throw with a sections array installed.
@@ -500,6 +540,11 @@ const MARKERS = {
   // Support Center — hero, the KB-driven sections, and a category label proving
   // the accordion rendered from assistant-kb (not hardcoded copy).
   'support': ['How can we help?', 'Quick help', 'Browse help articles', 'Getting started', 'Still need help?'],
+  // Progress Report — the honesty-first scope box + the stat-list header. The
+  // print doc is portaled (nulled here); its markup is covered by 'report-print'.
+  'progress-report': ['What this counts', 'Your practice'],
+  // Print body renders inline: the baked disclaimer + the subject table header.
+  'report-print': ['not a certificate', 'Subject'],
 };
 
 let failed = 0;

@@ -19,7 +19,7 @@ const FALLBACK = {
   enabled: true,
   testPhase: true,
   adSlot: false,
-  gates: { cribVault: false },
+  gates: { cribVault: false, progressReport: false },
   plans: [
     { id: 'monthly', label: 'Monthly', priceInr: 149, per: 'month' },
     { id: 'yearly',  label: 'Yearly',  priceInr: 999, per: 'year', save: 'Save 44%' },
@@ -123,6 +123,12 @@ export function isMaxUser(profile) { return getPremiumState(profile).tier === 'M
 // NEVER gated — that immediate review is the free tier's marketing hook.
 export function cribVaultLocked(profile) {
   return getPremiumConfig().gates.cribVault === true && !isPremiumUser(profile);
+}
+
+// progressReportLocked(profile) — is the Progress Report wall UP? Ships OFF
+// (free for everyone during the test phase), same shape as cribVaultLocked.
+export function progressReportLocked(profile) {
+  return getPremiumConfig().gates.progressReport === true && !isPremiumUser(profile);
 }
 
 // formatInr(n) → '₹' + n with Indian-style digit grouping (lakh system):

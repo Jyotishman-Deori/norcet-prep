@@ -31,7 +31,7 @@ register('data:text/javascript,' + encodeURIComponent(loaderCode), pathToFileURL
 const {
   getPremiumConfig, getPremiumPlans, getPremiumFeatures,
   isPremiumEnabled, isTestPhase, isAdSlotEnabled,
-  getPremiumState, formatInr, isPremiumUser, cribVaultLocked,
+  getPremiumState, formatInr, isPremiumUser, cribVaultLocked, progressReportLocked,
 } = await import('./premium.js');
 const { applyRemoteConfig, DEFAULTS } = await import('./game-config.js');
 
@@ -222,6 +222,19 @@ resetConfig();
   applyRemoteConfig({ premium: { gates: 'oops' } });
   assert.equal(getPremiumConfig().gates.cribVault, false);
   assert.equal(cribVaultLocked(null), false);
+  resetConfig();
+}
+
+// ---- feature gates: progressReport (ships free; same shape as cribVault) ----
+resetConfig();
+{
+  assert.equal(getPremiumConfig().gates.progressReport, false, 'progress report ships free');
+  assert.equal(progressReportLocked(null), false, 'free for everyone by default');
+  assert.equal(progressReportLocked({ premium: { active: false } }), false);
+
+  applyRemoteConfig({ premium: { gates: { progressReport: true } } });
+  assert.equal(progressReportLocked(null), true, 'free user locked when the gate is up');
+  assert.equal(progressReportLocked({ premium: { active: true, plan: 'yearly' } }), false, 'premium passes');
   resetConfig();
 }
 

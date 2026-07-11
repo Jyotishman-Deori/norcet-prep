@@ -11717,3 +11717,82 @@ Verification: 57 test files + render smoke (2 new entries: support, calc empty
 state) + compile gate + bundle guard + check-locales all green; dev boots clean and
 every changed module transforms. Pushed to dev alongside the resume + B2 commits,
 for the preview drive before promoting to main.
+
+---
+
+## 2026-07-12 - Progress Report: shareable PNG card + printable PDF (zero new deps, honest by construction)
+
+Owner brought a Gemini "Clinical Report Card" brief: a client-side, shareable
+achievement doc for the Indian certificate-sharing culture (WhatsApp virality,
+brand lock-in). Discussed BEFORE building, because the brief could not ship as
+written and its framing broke this app's own integrity posture.
+
+WHY THE BRIEF WAS REJECTED AS-IS (three headline metrics do not exist honestly):
+- "Total Simulation Hours": no wall-clock/session tracking exists anywhere. Would
+  be invented. (Real time DOES exist: elapsedSec on mock/PYQ attempts, timeMs per
+  question. Used those, under honest labels.)
+- "National Percentile": impossible. ~10-50 users, no national data. The repo
+  already refuses this in writing (whatif.js:19 "anything precise would be fake";
+  where-you-stand-card.jsx says "not a predicted rank" three times).
+- "Critical Decision Accuracy": no per-game accuracy is stored (handleGameComplete
+  receives coins only).
+- "Official Clinical Simulation Transcript": Terms say the app is "not affiliated
+  with, endorsed by or connected to AIIMS, any examination authority or any
+  government body"; level tiers already carry an ORIGINAL-titles-only rule. A
+  self-generated "Official Transcript" shown to a professor is misrepresentation,
+  and contradicts the resume feature (shipped days ago) that warns students not to
+  cheat themselves.
+- Gemini's IP argument argued against a SHIPPED feature ("we decided not to do the
+  JSON export"): Export my data is LIVE and is not an IP leak (user's own progress
+  via a strict allowlist, not our schema/algorithm). It stays.
+
+OWNER DECISIONS (via AskUserQuestion): PDF via print stylesheet + window.print(),
+NOT a bundled library (Workbox globs every .js chunk into the precache, so a ~350kB
+jsPDF would download on EVERY install); NO rank/percentile at launch; name is
+"Progress Report" not a certificate.
+
+WHAT SHIPPED (build order):
+1. src/lib/report-card.js (NEW, pure, Node-tested) + report-card.test.js (13
+   assertions). buildReportCard -> ONE model both artifacts render. Accuracy =
+   firstAttemptTotals (NOT stats.totalCorrect/totalAttempted, which counts
+   re-answers and is inflatable). Thin metric -> null "Not enough data yet", NEVER
+   a flattering 0 (benchmark.js HONESTY NOTES rule). Mocks/PYQs never leak into the
+   practice figures (they write neither data.stats nor data.history). No "study
+   hours". English-only disclaimer constants.
+2. game-config.js + premium.js: gates.progressReport (ships false/free) +
+   progressReportLocked(), mirroring cribVaultLocked. If ever gated, gate the PDF,
+   keep the PNG free (it carries the referral QR).
+3. legal.js: new "Progress reports and share cards" clause; LEGAL_VERSION 6 to 7
+   (fires the quiet dismissible Home "terms updated" card, never a gate).
+4. qr-canvas.js: paintProgressReportCard() = 1080x1350 portrait PNG reusing every
+   existing helper, the hardcoded SERIF/SANS (no webfont race), disclaimer BAKED
+   onto the canvas (the gap the plain score card leaves open), QR =
+   buildReferralUrl(code, VIA.POSTER).
+5. src/ui/report-print.jsx (NEW): ReportPrintBody (no portal, smoke-coverable) +
+   ReportPrintDoc (BodyPortal). Body-level print root hides the whole SPA AND every
+   portaled node in one rule (TopBar portals to body, so a screen-scoped no-print
+   class CANNOT hide it). Fixed ink-on-white palette (never the live theme; dark
+   users must not print white-on-white).
+6. src/screens/progress-report.jsx (NEW, lazy): WYSIWYG preview + Share image card
+   (primary) + Save as PDF. iOS+standalone detected -> window.print is a no-op
+   there, so the PDF button becomes an honest note and the PNG stays primary
+   (push-opt-in "no install lie" precedent).
+7. Wiring: App.jsx route (lazy) + StatsScreen entry button + Settings row (next to
+   Export my data) + nav-registry (keyword "certificate" is searchable, title never
+   claims to be one) + two smoke entries (progress-report, report-print).
+
+DEVIATION FROM THE WRITTEN PLAN (verified, deliberate): the plan said filter GK via
+countsInNursingStats "to match the Stats screen". Verified StatsScreen.byTopic and
+coverage do NOT filter GK (nothing in StatsScreen reads includeGkInStats). Filtering
+would DISAGREE with the Stats screen. So the report does NOT filter GK, matching
+StatsScreen exactly. Proven by a Node cross-check: 12 subject rows + coverage (80%)
+match StatsScreen; headline first-attempt accuracy deliberately differs from the
+lifetime figure and is explained by its detail line + the table note.
+
+Verification: 58 test files (report-card.test added) + render smoke (2 new entries)
++ compile + bundle guard + check-locales all green; StatsScreen cross-check exact;
+dev boots clean, all 8 changed modules transform HTTP 200 err=0. NOT verified
+headlessly (no browser automation): the actual PNG pixels, the print preview visual
+(chrome hidden, dark-theme ink-on-white, page-break header repeat), iOS-standalone
+button swap. Those are the owner's interactive drive before promoting dev to main.
+Committed to dev.

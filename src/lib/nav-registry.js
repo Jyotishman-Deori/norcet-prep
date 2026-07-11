@@ -39,6 +39,7 @@ export const STUDENT_ROUTE_SCREENS = new Set([
   'bookmarks-view', 'favorites', 'library', 'doubts', 'study-plan', 'reference',
   'dosage', 'faq', 'study-methods', 'my-reports', 'mistake-vault', 'activity-log',
   'about', 'legal', 'waitlist', 'assistant', 'nursing-calc', 'support',
+  'progress-report',
 ]);
 const NAV_ACTIONS = new Set(['note', 'feedback']);
 
@@ -147,6 +148,12 @@ const STATIC_REGISTRY = [
     keywords: ['stats', 'progress', 'accuracy', 'performance', 'analytics', 'streak'],
     route: { screen: 'stats' },
     description: 'Accuracy, streaks and progress by topic.' },
+  // "certificate" is a SEARCH keyword because that is what users type; the
+  // title and description deliberately never claim to be one.
+  { id: 'progress-report', title: 'Progress report', category: 'Features',
+    keywords: ['report', 'progress', 'summary', 'pdf', 'print', 'share', 'card', 'certificate', 'achievement', 'download', 'transcript'],
+    route: { screen: 'progress-report' },
+    description: 'A shareable summary of your practice, as an image or a PDF.' },
   { id: 'ikigai', title: 'Ikigai Compass', category: 'Features',
     keywords: ['ikigai', 'readiness', 'compass', 'balance', 'purpose'],
     route: { screen: 'ikigai' },

@@ -45,7 +45,7 @@ import { getPushEnv, detectPushSupport } from '../lib/push-opt-in.js';
 import { hasDeferredPrompt, promptInstall, isInstalledDevice, installGuide } from '../lib/install-prompt.js';
 import { isIOS, isAndroid } from '../lib/platform.js';
 
-function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onOpenTrash, progressSnapshotAt = null, onRestoreProgress, onBack }) {
+function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLogout, onSwitchProfile, onToggleTheme, onSetColorTheme, onShowWelcome, onOpenFeedbackInbox, onOpenMyReports, onOpenShare, onOpenThemes, onRenameProfile, onToggleReviewReminders, onToggleIncludeGkInStats, onSetDailyReminder, onSetDemographics, onOpenFavorites, onManageFavorites, unseenReplyCount = 0, onOpenTrash, onOpenReport, progressSnapshotAt = null, onRestoreProgress, onBack }) {
   const { theme: T } = useTheme();
   const { data } = useData();
   const { profile } = useProfile();
@@ -285,6 +285,23 @@ function Settings({ themeMode, isGuest = false, onGuestSignIn, onClearAll, onLog
               <div className="font-medium text-sm" style={{ color: T.ink }}>Recently deleted</div>
               <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
                 Deleted notes and crib sheets stay restorable for 7 days.
+              </div>
+            </div>
+            <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
+          </button>
+        </Card>
+      )}
+      {onOpenReport && (
+        <Card className="mb-3 p-0 overflow-hidden">
+          <button onClick={onOpenReport}
+                  className="no-tap-highlight w-full flex items-center gap-3 p-3.5 text-left active:bg-black/5 transition-colors">
+            <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: T.surfaceWarm }}>
+              <FileText size={16} style={{ color: T.inkSoft }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="font-medium text-sm" style={{ color: T.ink }}>Progress report</div>
+              <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>
+                A summary of your practice you can share, or save as a PDF. Made on your device.
               </div>
             </div>
             <ChevronRight size={16} style={{ color: T.muted }} className="flex-shrink-0" />
