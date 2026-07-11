@@ -11221,3 +11221,55 @@ setup per docs/media-r2.md, then upload the 2021 image paper; regenerate
 the exposed Cloudinary secret. Deferred: admin drill packs (Phase 3; user
 drillPacks structure exists for 5 game kinds), admin dashboard tile
 regrouping (cosmetic), Cloudinary dynamic transforms, OCR.
+
+## 2026-07-12 - Layered disclaimer + test-entry cautions + weightage non-nursing revamp (1075ba7)
+
+Owner pasted Gemini's "3-layer medical disclaimer pattern" and asked for the best
+premium version; two UX bugs flagged mid-round (Stats "Focus next" enters a test
+with no caution; Exam weightage hides GK/Reasoning/Aptitude entirely).
+
+Already-done check (house rule): the 5-doc legal library, About content-promise
+card and link rows shipped last round (2524d2d) already covered most of Gemini's
+copy advice. Gemini ideas REJECTED as anti-patterns here: the 1-second disabled
+Start delay (artificial friction) and a modal before EVERY launch (violates the
+quiet-surfaces rule). What was genuinely missing got built:
+
+- Layer 1, recorded consent: AuthScreen CREATE mode now has a required checkbox
+  ("educational study tool... not clinical guidance" + Terms/Privacy/Content
+  Disclaimer links); tapping Create unchecked shows a gentle nudge (deliberately
+  NOT part of submitDisabled: a disabled button swallows the tap silently).
+  App.jsx stamps preferences.legalAcceptedVersion/-At on load (LEGAL_VERSION's
+  FIRST consumer); existing accounts seeded silently. Home gains a quiet
+  dismissible "Our terms were updated" card that appears only when a future
+  LEGAL_VERSION bump outdates the stamp. Guest welcome pitch page got a passive
+  one-line consent notice (links via the tour launcher; Back returns to tour).
+- Layer 2a, enter-a-test caution: Stats Focus-next CTA + per-topic rows and the
+  Coverage Map's Start pills now use the same requestConfirm gate as the
+  Knowledge Map ("Start practice: X?"). onQuick paths untouched (they land on
+  setup screens); WeakAreas deliberately left ungated (dedicated drill screen
+  whose copy states exactly what Start does).
+- Layer 2b, one-time clinical notes: new src/ui/clinical-note.jsx (portaled,
+  single Understood button); first Dosage session + first Level Up game launch
+  per profile (preferences.clinicalNoteDosageSeen / clinicalNoteGamesSeen).
+  Backdrop dismiss also marks seen but does not launch.
+- Layer 3, screenshot-proof footnote: EduTag primitive ("Educational use only.
+  Not for clinical decisions.") at the bottom of quiz, advanced run + results,
+  pyq-read, results, dosage-results, the desktop footer bottom line and About.
+- Weightage revamp: model now computes over the WHOLE paper so "% of exam" is
+  true and sums to ~100; nursing vs non-nursing split bar card on top; labelled
+  NON-NURSING SECTION with GK + Reasoning & Aptitude rows (Pill-badged) feeding
+  the existing start-practice confirm sheet. Screen no longer consumes
+  includeGkInStats (that pref still governs stats screens). lib/weightage.js
+  (Quick Test selector) deliberately untouched.
+- i18n tail: 11 new chrome keys in en.js + all 15 packs (auth.consentPre/And
+  retired everywhere; brx kept English values matching its untranslated state);
+  en mirror regenerated; Indic font subsets rebuilt (8 scripts).
+- Verification: render smoke gained auth-create / weightage / coverage-map /
+  dosage-setup / home-legal-update entries + content markers (also quiz EduTag,
+  welcome consent line, app-footer tag). Full gate green (44 suites + smoke +
+  compile + bundle guard). Shipped dev -> main (1075ba7).
+
+Notes for later: the consent-sentence keys concatenate in English word order
+(draft locales pending native review anyway); ClinicalNote copy is hardcoded
+English (content-adjacent screens); if a legal doc materially changes, bump
+LEGAL_VERSION and the Home card does the rest.
