@@ -51,6 +51,10 @@ const DIFF_RANK = { easy: 0, medium: 1, moderate: 1, hard: 2 };
 // editable answers live). Review modes (bookmarks/due/wrong) are excluded —
 // revisiting mistakes shouldn't be a race.
 const PACE_MODES = ['quick', 'topic', 'weak-topic', 'mock'];
+// How long "Next" ignores taps after an answer lands. It occupies the same pixel
+// as the "Check answer" button the user just hit, so without this a fast
+// double-tap advances past the explanation. Well below a deliberate second tap.
+const NEXT_LOCKOUT_MS = 450;
 
 // #4 — per-question self-rating. Defaults to "Unsure" so it's a zero-friction
 // optional tap; the choice feeds the calibration report on Results + Stats.
@@ -84,7 +88,7 @@ function ConfidenceChips({ value, onChange, T }) {
   );
 }
 
-function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, pulse = false, flashpoint = false, resumeState = null }) {
+function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profileId, coins = 0, onWhyBonus, onCodeBlueResolved, onToggleBookmark = null, pulse = false, flashpoint = false, resumeState = null }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   const { t } = useI18n();
@@ -108,6 +112,15 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   const [whyBonus, setWhyBonus] = useState(false);
   const [results, setResults] = useState(() => (resumeState && Array.isArray(resumeState.results) ? resumeState.results : []));        // per question { qId, correct, selected, timeMs, revealed? }
   const [bookmarkedLocal, setBookmarkedLocal] = useState(new Set(data.bookmarks));
+  // Stable for the whole run. Gates the back-button guard below (see the effect):
+  // an empty run must NOT install it, or back gets swallowed with no dialog.
+  const hasQuestions = Array.isArray(questions) && questions.length > 0;
+  // When the current question's answer landed. `next()` ignores taps within
+  // NEXT_LOCKOUT_MS of it, because "Next" replaces "Check answer" at the same
+  // pixel and a double-tap would otherwise skip the explanation entirely.
+  const answeredAtRef = useRef(0);
+  // completeQuiz is not idempotent-safe to call twice: one-way latch.
+  const finishedRef = useRef(false);
   // For count-down (mock): seconds remaining. For count-up (legacy): seconds elapsed.
   // `isCountdown` is the single switch: true iff timeLimitMin > 0.
   const isCountdown = !!(timed && timeLimitMin && timeLimitMin > 0);
@@ -295,8 +308,11 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   useEffect(() => {
     if (!isCountdown) return;
     if (secondsRemaining > 0) return;
-    // Avoid double-fire by checking against a ref-less guard: just run once.
     const id = setTimeout(() => {
+      // Same one-way finish guard as next(): completeQuiz is not free to run
+      // twice (it would double-count the run's stats).
+      if (finishedRef.current) return;
+      finishedRef.current = true;
       clearSnapshot();  // the run FINISHED (time ran out): it is not an abandoned run
       onComplete(results, bookmarkedLocal, elapsed, skipCounts);
     }, 0);
@@ -310,6 +326,17 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   // push the entry again (cancelling the navigation) and show the confirm.
   useEffect(() => {
     if (typeof window === 'undefined' || !window.history) return;
+    // ⚠ Only guard a run that HAS questions. The `if (!q)` early return below
+    // bails out before ConfirmExitDialog is rendered, so on an empty quiz this
+    // handler would swallow every back press and show nothing: the user could
+    // never leave with the device back button or the iOS back gesture. Reachable
+    // for real (bookmarks review with no bookmarks, review-due with nothing due,
+    // "re-do wrong ones" whose ids the question gate has since hidden). The empty
+    // screen has its own working TopBar back arrow, so it needs no guard.
+    // Keyed on the QUESTION COUNT, not on `q`: the count is stable for the whole
+    // run, so we push exactly one guard entry (keying on `q` would push a fresh
+    // one on every question).
+    if (!hasQuestions) return;
     window.history.pushState({ quizGuard: true }, '');
     const onPop = (e) => {
       // Each pop consumes the guard entry; push another so the next back
@@ -324,7 +351,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
       // guard entry in place. Browsers collapse forward stack on next nav so
       // this doesn't pollute history meaningfully.
     };
-  }, []);
+  }, [hasQuestions]);
 
   // Reset question start time + hint/reveal visibility on every question change
   useEffect(() => {
@@ -371,6 +398,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
 
   const submit = () => {
     if (selected.length === 0) return;
+    // Symmetry with revealAnswer/onTimerExpire, which both guard this way. Also
+    // stops a second click in the same batch from double-appending a result.
+    if (submitted || revealed) return;
+    answeredAtRef.current = Date.now();
     const correct = arraysEqualUnordered(selected, q.correct);
     const timeMs = Date.now() - questionStart.current;
     const newResults = [...results, { qId: q.id, correct, selected, timeMs, confidence }];
@@ -483,6 +514,7 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   // flags gate option taps so a reveal can never become a free correct answer.
   const revealAnswer = () => {
     if (submitted || revealed) return;
+    answeredAtRef.current = Date.now();
     const timeMs = Date.now() - questionStart.current;
     setResults(r => [...r, { qId: q.id, correct: false, selected: [], timeMs, revealed: true }]);
     setRevealed(true);
@@ -520,12 +552,22 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
   };
 
   const next = () => {
+    // ⚠ "Next" renders at the EXACT screen position the user just tapped to
+    // check their answer, so the 2nd tap of a fast double-tap used to land on it
+    // and blow straight past the explanation they never saw. Ignore Next for a
+    // beat after the answer lands. (Deliberate taps are always far slower; this
+    // is invisible to a real user and also covers the keyboard Enter path.)
+    if (Date.now() - answeredAtRef.current < NEXT_LOCKOUT_MS) return;
     if (scheduleIndex + 1 < schedule.length) {
       setIndex(i => i + 1);
       setSelected([]);
       setSubmitted(false);
       setRevealed(false);
     } else {
+      // Finishing is one-way: a second onComplete would re-run completeQuiz and
+      // double-count the whole run's stats.
+      if (finishedRef.current) return;
+      finishedRef.current = true;
       clearSnapshot();   // finished — there is nothing left to resume
       onComplete(results, bookmarkedLocal, elapsed, skipCounts);
     }
@@ -537,6 +579,12 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
     else { newSet.add(q.id); setBmAnim('pop'); }
     try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(8); } catch (e) {}
     setBookmarkedLocal(newSet);
+    // PERSIST NOW, not at completion. This used to live only in `bookmarkedLocal`
+    // (a mount-time snapshot) and was written just once, by completeQuiz. Anyone
+    // who bookmarked a question and then left the run (back, Save and exit, or a
+    // mock whose clock ran out) SILENTLY LOST every bookmark they made. The
+    // Advanced Test always did it this way; the quiz now matches.
+    if (onToggleBookmark) onToggleBookmark(q.id);
   };
   // #7 — removing a bookmark asks first; adding stays frictionless.
   const toggleBookmark = () => confirmBookmarkToggle(bookmarkedLocal.has(q.id), applyBookmarkToggle);

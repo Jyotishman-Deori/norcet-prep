@@ -81,7 +81,13 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
   // sectional one: ceil(count/20) sections of 18 rigid minutes each.
   const stressSections = useMemo(() => buildSections(count), [count]);
   const stressMinutes = Math.round(totalSeconds(stressSections) / 60);
-  const timeMinutes = stress ? stressMinutes : (customTime ?? defaultMinutes);
+  // CLAMP the custom clock here, at the single point it is consumed. The input's
+  // min/max attributes are advisory and a typed value sails straight past them, so
+  // a typed 9999 used to buy a 9999-minute exam. Clamping here (not per keystroke)
+  // keeps typing natural while making the value that actually starts the test safe.
+  const timeMinutes = stress
+    ? stressMinutes
+    : (customTime != null ? Math.min(300, Math.max(5, customTime)) : defaultMinutes);
 
   // Time preset chips. The full 6-chip ladder felt over-busy; cut to two
   // sensible defaults (matching the count) + a Custom toggle that reveals a
@@ -262,6 +268,11 @@ function AdvancedTestSetup({ allQuestions, onStart, onBack }) {
 
           {!stress && customOpen && (
             <div className="-mt-2 mb-4 flex items-center gap-2 pl-1 anim-fadeup">
+              {/* The element's min/max are advisory only: a typed value bypasses
+                  them. We do NOT clamp per keystroke (that would fight the user,
+                  turning a half-typed "1" of "10" into "5"); the value is clamped
+                  where it is USED (see timeMinutes below), which is what actually
+                  matters. */}
               <input type="number" min={5} max={300}
                      value={isCustom ? customTime : ''}
                      onChange={e => {
@@ -495,7 +506,21 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
     return () => window.removeEventListener('keydown', onKey);
   }, [index, paletteOpen, confirm, questions, activeSec, sectioned]);
 
-  if (!q) return <div className="p-6 max-w-md mx-auto text-center">No questions.</div>;
+  // No questions. This used to be a bare centred line with no TopBar and no exit
+  // control at all, so the only way out was reloading the app. Give it a way back.
+  if (!q) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title={label || 'Test'} onBack={onAbort ? () => onAbort({ answers: {}, visitedIds: [] }) : undefined} />
+        <div className="p-6 max-w-md mx-auto text-center pt-16">
+          <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No questions available</div>
+          <div className="text-sm" style={{ color: T.muted }}>
+            This test could not be built. Please pick a different set and try again.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const toggleOption = (i) => {
     setAnswers(prev => {
@@ -1016,7 +1041,11 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
 
   const wrongAndBlank = summary.detail.filter(d => d.status !== 'correct');
   const maxScore = questions.length;
-  const pctOfMax = (summary.netScore / maxScore) * 100;
+  // Guard the divide. With no questions this was 0/0 -> NaN, every verdict
+  // comparison below was then false, and the user fell through to the harshest
+  // one ("More prep needed") while MotivationCard got a NaN percentage. Results.jsx
+  // has always guarded its own percentage this way.
+  const pctOfMax = maxScore > 0 ? (summary.netScore / maxScore) * 100 : 0;
 
   const verdict =
     pctOfMax >= 80 ? { word: 'Exam-ready', color: T.success } :

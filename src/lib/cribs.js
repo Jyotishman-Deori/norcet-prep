@@ -28,9 +28,20 @@ const slimItem = (it) => {
   if (typeof sq.source === 'string' && sq.source) q.source = sq.source;
   if (typeof sq.pyqYear === 'number' && sq.pyqYear > 0) q.pyqYear = sq.pyqYear;
   if (typeof sq.pyqExam === 'string' && sq.pyqExam.trim()) q.pyqExam = sq.pyqExam;
+  // NUMERIC (Nursing Calc) questions: no options/correct, the answer lives in
+  // `answer` + `unit`, and the user's answer is a SCALAR they typed, not an
+  // index array. Both used to be discarded here, so a saved Nursing Calc sheet
+  // re-opened as "Correct: undefined" with the user's answer gone. Keep them.
+  const numeric = !Array.isArray(sq.options) || sq.options.length === 0;
+  if (numeric && sq.answer != null) {
+    q.answer = sq.answer;
+    if (sq.unit) q.unit = String(sq.unit);
+  }
   return {
     q,
-    selected: Array.isArray(it.selected) ? it.selected : [],
+    selected: Array.isArray(it.selected)
+      ? it.selected
+      : (numeric && it.selected != null ? it.selected : []),
     status: it.status === 'correct' || it.status === 'wrong' ? it.status : 'na',
   };
 };

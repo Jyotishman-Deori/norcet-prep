@@ -244,7 +244,14 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
       '',
     ];
     const qBlocks = items.slice(0, 50).map((it, i) => {
-      const ans = it.q.correct.map(c => `${String.fromCharCode(65 + c)}. ${it.q.options[c] || ''}`).join('  /  ');
+      // Numeric (Nursing Calc) questions carry `answer`/`unit` and have NO
+      // `options`/`correct`. This used to call `it.q.correct.map(...)`
+      // unconditionally, which THREW on any dosage crib the moment Share was
+      // tapped. Branch on the same `isNumeric` test QuestionCard already uses.
+      const numeric = !Array.isArray(it.q.options) || it.q.options.length === 0;
+      const ans = numeric
+        ? `${it.q.answer}${it.q.unit ? ` ${it.q.unit}` : ''}`
+        : (it.q.correct || []).map(c => `${String.fromCharCode(65 + c)}. ${(it.q.options || [])[c] || ''}`).join('  /  ');
       // A blank line sits between the question, the answer and the explanation
       // so each block reads with clear vertical rhythm (issue #10 — the old
       // `.filter(Boolean)` was silently dropping the '' separators, leaving
@@ -270,8 +277,21 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
     try { await navigator.clipboard.writeText(text); alert('Crib Sheet copied, paste it anywhere to share.'); } catch (e) {}
   };
 
-  // Abandoned session — nothing attempted at all.
-  const abandoned = correct.length === 0 && wrong.length === 0 && na.length === items.length && items.length > 0;
+  // THREE distinct states, and they must not be confused (they used to be):
+  //   emptySheet  — there is nothing in this sheet at all. Previously this fell
+  //                 through to the normal layout, printing a 0/0 score grid and
+  //                 the Wrong section's empty copy, i.e. it CONGRATULATED a user
+  //                 ("you got everything right. Seriously impressive.") who had
+  //                 answered nothing, e.g. a mock whose clock ran out untouched.
+  //   attemptedNone — questions are here, but none was actually attempted (the
+  //                 run was abandoned, OR the user submitted every question
+  //                 without answering). The old copy asserted "wasn't completed",
+  //                 which is false in the second case, so the wording below now
+  //                 states only what is TRUE of both: nothing was attempted.
+  //   normal      — everything else.
+  const emptySheet = items.length === 0;
+  const attemptedNone = !emptySheet && correct.length === 0 && wrong.length === 0 && na.length === items.length;
+  const abandoned = attemptedNone;
 
   const Section = ({ label, icon, color, soft, list, refEl, startNum, empty }) => (
     <div ref={refEl} style={{ scrollMarginTop: 'calc(120px + env(safe-area-inset-top, 0px))' }}>
@@ -391,14 +411,26 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
           )}
         </div>
 
-        {abandoned && (
+        {emptySheet && (
           <Card className="p-5 text-center mb-5">
             <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
-              Looks like this test wasn't completed. Here are all the questions with their answers, whenever you're ready.
+              There is nothing to review from this session. No questions were reached, so there is no answer sheet to build. Start a test and this fills itself in.
             </div>
           </Card>
         )}
 
+        {abandoned && (
+          <Card className="p-5 text-center mb-5">
+            <div className="text-sm leading-relaxed" style={{ color: T.inkSoft }}>
+              You did not attempt any of these. Here they all are with their answers, whenever you are ready.
+            </div>
+          </Card>
+        )}
+
+        {/* An empty sheet has no sections to show: rendering them would print the
+            "you got everything right" empty-state copy at someone who answered
+            nothing at all. */}
+        {!emptySheet && (<>
         <Section label="✓ Correct" color={T.success} soft={T.successSoft}
                  icon={<Check size={14} style={{ color: T.success }} />}
                  list={winCorrect} refEl={correctRef} startNum={1}
@@ -407,7 +439,11 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
         <Section label="✕ Wrong" color={T.error} soft={T.errorSoft}
                  icon={<X size={14} style={{ color: T.error }} />}
                  list={winWrong} refEl={wrongRef} startNum={correct.length + 1}
-                 empty="Nothing here: you got everything right. Seriously impressive." />
+                 /* Only a clean sweep earns the praise. With nothing attempted,
+                    "you got everything right" is simply false. */
+                 empty={correct.length > 0
+                   ? 'Nothing here: you got everything right. Seriously impressive.'
+                   : 'Nothing wrong here, because nothing was attempted yet.'} />
 
         {na.length > 0 && (
           <Section label=": Not attempted" color={T.muted} soft={T.surfaceWarm}
@@ -415,6 +451,7 @@ function CribSheet({ title, subtitle, items, negative = null, profileId = null, 
                    list={winNa} refEl={naRef} startNum={correct.length + wrong.length + 1}
                    empty="" />
         )}
+        </>)}
 
         {/* incremental-render sentinel */}
         {limit < items.length && (

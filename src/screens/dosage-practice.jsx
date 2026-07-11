@@ -18,6 +18,7 @@ import { shuffle } from '../lib/utils.js';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
 import { normalizePace, paceFlags } from '../lib/pace.js';
+import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
 
 // Dosage is compute-AND-type, so it gets a more generous budget than the
 // aptitude MCQ tier — never rush patient-safety math into an error.
@@ -27,7 +28,7 @@ import HelpfulBulb from '../ui/helpful-bulb.jsx';
 // Issues round — the same quick Reference lookup the other quiz modes have.
 import { ReferenceLookupModal } from './reference.jsx';
 
-function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark, count = 10 }) {
+function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmarks = [], onToggleBookmark, count = 10, onlyIds = null }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data } = useData();
   // Dosage inherits the global Pace (same Off/Pulse/Flashpoint setting). The
@@ -39,11 +40,27 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
   const [revealed, setRevealed] = useState(false);
   const [results, setResults] = useState([]);
   const [bmAnim, setBmAnim] = useState(null); // #4 — 'pop' | 'deflate' | null
+  // Exit guard. Back used to wire STRAIGHT to goHome, so a half-finished calc run
+  // was thrown away with no warning, while every other player (quiz.jsx,
+  // advanced-test.jsx) asks first. Not resumable: the calc drill has no snapshot,
+  // so this is the honest "you will lose this run" shape.
+  const [confirmExit, setConfirmExit] = useState(false);
   // Issues round — Reference overlay (labs/drugs/values), same as Quick/Topic/Mock.
   const [showReference, setShowReference] = useState(false);
   // A2 — dosage questions loaded lazily from /public/data/dosage.json.
   const { data: dosageData, loading, error, reload } = useContent('dosage');
-  const questions = useMemo(() => dosageData ? shuffle(dosageData).slice(0, Math.max(1, count)) : [], [dosageData, count]);
+  // REDO: `onlyIds` re-runs exactly the questions the user missed last round (in
+  // the same order they were served), instead of drawing a fresh random set.
+  // Otherwise: a fresh shuffled draw of `count`.
+  const questions = useMemo(() => {
+    if (!dosageData) return [];
+    if (Array.isArray(onlyIds) && onlyIds.length) {
+      const byId = {};
+      dosageData.forEach(q => { byId[q.id] = q; });
+      return onlyIds.map(id => byId[id]).filter(Boolean);
+    }
+    return shuffle(dosageData).slice(0, Math.max(1, count));
+  }, [dosageData, count, onlyIds]);
   const q = questions[index];
 
   // #4 — bookmarking a dosage question. Persists immediately via the app-level
@@ -71,9 +88,17 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
         </div>
       );
     }
+    // Data arrived but is empty. This used to render a bare line with NO TopBar
+    // and NO back button, stranding the user with nothing but a page reload.
     return (
-      <div className="p-6 max-w-md mx-auto text-center anim-fadeup">
-        <div className="font-display text-xl" style={{ color: T.ink }}>No questions</div>
+      <div className="anim-fadeup">
+        <TopBar title="Nursing Calc Test" onBack={onBack} />
+        <div className="p-6 max-w-md mx-auto text-center pt-16">
+          <div className="font-display text-xl mb-2" style={{ color: T.ink }}>No questions available</div>
+          <div className="text-sm" style={{ color: T.muted }}>
+            The calculation bank could not be loaded. Please try again in a moment.
+          </div>
+        </div>
       </div>
     );
   }
@@ -135,7 +160,11 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
     <div className="test-enter">
       {/* Issues round — the counter is a separated chip (was running straight
           into the title as "Dosage calculation test1/10"). */}
-      <TopBar title="Nursing Calc Test" onBack={onBack} feedback={{ screen: "Nursing calc" }}
+      {/* Only nag if there is something to lose: leaving before answering anything
+          costs nothing, so do not put a dialog in the way of that. */}
+      <TopBar title="Nursing Calc Test"
+              onBack={() => (results.length > 0 ? setConfirmExit(true) : onBack())}
+              feedback={{ screen: "Nursing calc" }}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full flex-shrink-0"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {index + 1} / {questions.length}
@@ -335,6 +364,14 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
 
       {/* Reference lookup overlay */}
       <ReferenceLookupModal open={showReference} onClose={() => setShowReference(false)} />
+
+      {/* Exit guard — same shape the Quiz uses for a non-resumable run. */}
+      {confirmExit && (
+        <ConfirmExitDialog mode="dosage" answered={results.length} total={questions.length}
+                           timed={false} resumable={false}
+                           onStay={() => setConfirmExit(false)}
+                           onLeave={() => { setConfirmExit(false); onBack(); }} />
+      )}
     </div>
   );
 }

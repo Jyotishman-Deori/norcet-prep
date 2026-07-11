@@ -2929,7 +2929,14 @@ export default function App() {
         // later attempt is not a fair first try).
         const isFirstAttempt = !existing ||
           (!existing.compacted && (!Array.isArray(existing.attempts) || existing.attempts.length === 0));
-        const h = existing || { attempts: [], reviewCount: 0, nextDue: null, lastResult: null };
+        // COPY, never mutate. `existing` is `prev.history[qId]`, so assigning to
+        // `h.attempts` used to write straight into the PREVIOUS state object.
+        // That made this updater non-idempotent: any second invocation (a double
+        // onComplete, or React StrictMode's deliberate double-invoke) appended
+        // every attempt twice and double-counted totalAttempted/totalCorrect.
+        const h = existing
+          ? { ...existing, attempts: Array.isArray(existing.attempts) ? existing.attempts.slice() : [] }
+          : { attempts: [], reviewCount: 0, nextDue: null, lastResult: null };
         h.attempts = [...h.attempts, {
           ts: Date.now(),
           correct: r.correct,
@@ -3027,7 +3034,11 @@ export default function App() {
         ...prev,
         history: newHistory,
         milestones,
-        bookmarks: Array.from(bookmarkedLocal),
+        // Bookmarks are NOT written here any more. The Quiz persists each toggle
+        // immediately (onToggleBookmark -> toggleBookmarkById), so writing the
+        // run's mount-time snapshot back over `prev` would be a stale wholesale
+        // REPLACE: it would silently revert any bookmark changed elsewhere while
+        // the run was open. `prev.bookmarks` (spread above) is already current.
         stats: {
           ...prev.stats,
           totalAttempted: prev.stats.totalAttempted + attemptedToday,
@@ -4866,6 +4877,7 @@ export default function App() {
               onWhyBonus={claimWhyBonus}
               onCodeBlueResolved={onCodeBlueResolved}
               resumeState={nav.resumeState || null}
+              onToggleBookmark={toggleBookmarkById}
               onComplete={completeQuiz} onBack={goHome} profileId={profile && profile.id} />
       )}
 
@@ -4886,12 +4898,21 @@ export default function App() {
                    // #28 — shape the finished session into Crib Sheet items.
                    // Quiz results carry per-question outcomes; "Show answer"
                    // reveals (revealed:true) count as Not attempted here.
-                   const items = (nav.results || []).map(r => {
-                     const q = (nav.questions || []).find(qq => qq.id === r.qId);
-                     if (!q) return null;
+                   //
+                   // Built from QUESTIONS, not results: a mock whose clock ran out
+                   // at Q12 of 50 used to produce a 12-item sheet, silently dropping
+                   // the 38 the user never reached, while the sheet itself promises
+                   // "here are all the questions with their answers". Unreached
+                   // questions now appear as Not attempted, which is what the
+                   // Advanced/PYQ crib (openAnswersCrib) has always done.
+                   const byId = {};
+                   (nav.results || []).forEach(r => { byId[r.qId] = r; });
+                   const items = (nav.questions || []).map(q => {
+                     const r = byId[q.id];
+                     if (!r) return { q, selected: [], status: 'na' };
                      const status = r.revealed ? 'na' : (r.correct ? 'correct' : 'wrong');
                      return { q, selected: r.selected || [], status };
-                   }).filter(Boolean);
+                   });
                    setNav({
                      screen: 'crib-sheet', items,
                      cribTitle: quizTypeLabel(nav.mode),
@@ -5305,6 +5326,7 @@ export default function App() {
       {nav.screen === 'dosage-run' && (
         <DosagePractice onComplete={completeDosage} onBack={goHome} profile={profile} isAdmin={isAdmin}
                         count={nav.count || 10}
+                        onlyIds={nav.onlyIds || null}
                         bookmarks={data.bookmarks} onToggleBookmark={toggleBookmarkById} />
       )}
 
@@ -5313,16 +5335,31 @@ export default function App() {
                        displayName={profile ? (profile.displayName || profile.id) : null}
                        streak={(data && data.stats && data.stats.streakCurrent) || 0}
                        profile={profile} isAdmin={isAdmin}
+                       onRedo={(qIds) => setNav({ screen: 'dosage-run', onlyIds: qIds })}
                        onCribSheet={isCribSheetEnabled() ? () => {
                          // Shape the dosage session into Crib Sheet items. Dosage
                          // is numeric: `selected` carries the user's typed answer;
                          // CribSheet renders a numeric block when q.options is absent.
+                         // The Crib Sheet renders `q.exp` as the explanation, but a
+                         // dosage question carries its teaching in `steps[]` +
+                         // `intuition` and has no `exp` at all, so calc cribs used to
+                         // show the answer with NO working, which is the entire point
+                         // of a calc drill. Fold the worked steps into `exp` here (it
+                         // then survives sharing and saving to Revision for free).
+                         const calcExp = (q) => {
+                           const lines = [];
+                           if (Array.isArray(q.steps) && q.steps.length) {
+                             lines.push('WORKING', ...q.steps.map(String));
+                           }
+                           if (q.intuition) { if (lines.length) lines.push(''); lines.push('WHY', String(q.intuition)); }
+                           return lines.join('\n');
+                         };
                          const items = (nav.results || []).map(r => {
                            const q = (nav.questions || []).find(qq => qq.id === r.qId);
                            if (!q) return null;
                            const status = (r.revealed || r.skipped || r.userAnswer == null)
                              ? 'na' : (r.correct ? 'correct' : 'wrong');
-                           return { q, selected: r.userAnswer, status };
+                           return { q: q.exp ? q : { ...q, exp: calcExp(q) }, selected: r.userAnswer, status };
                          }).filter(Boolean);
                          setNav({
                            screen: 'crib-sheet', items,

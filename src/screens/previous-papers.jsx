@@ -205,9 +205,18 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
             )}
           </div>
         </div>
+        {/* A paper with no questions cannot be attempted OR read. App's startPaperTest
+            guard returns early on an empty paper, so the button used to just do
+            NOTHING when tapped, with no explanation. Say so instead. */}
+        {qCount === 0 && (
+          <div className="text-xs mb-2 px-2.5 py-2 rounded-lg" style={{ background: T.surfaceWarm, color: T.muted, border: `1px solid ${T.borderSoft}` }}>
+            This paper has no questions loaded yet. It will open as soon as its questions are published.
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
-          <button onClick={() => onStart(paper)}
-                  className="no-tap-highlight relative overflow-hidden inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+          <button onClick={() => qCount > 0 && onStart(paper)}
+                  disabled={qCount === 0}
+                  className="no-tap-highlight relative overflow-hidden inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition disabled:opacity-40 disabled:active:scale-100"
                   style={{ background: T.sec.mock, color: '#FFF' }}>
             <span className="ppr-sheen absolute inset-0 pointer-events-none" style={{ zIndex: 0 }} />
             <span className="relative z-10 inline-flex items-center gap-1.5">
@@ -215,8 +224,9 @@ function PreviousPapers({ papers, previousPapers, onStart, onRead, onBack }) {
               <span className="text-[8px] font-bold px-1 py-0.5 rounded leading-none tracking-wide" style={{ background: 'rgba(255,255,255,0.26)' }}>CBT</span>
             </span>
           </button>
-          <button onClick={() => onRead && onRead(paper)}
-                  className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition"
+          <button onClick={() => qCount > 0 && onRead && onRead(paper)}
+                  disabled={qCount === 0}
+                  className="no-tap-highlight inline-flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-semibold active:scale-95 transition disabled:opacity-40 disabled:active:scale-100"
                   style={{ background: T.sec.mock + '14', color: T.sec.mock, border: `1.5px solid ${T.sec.mock}50` }}>
             <BookOpen size={13} /> Read
           </button>

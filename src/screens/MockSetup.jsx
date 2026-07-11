@@ -15,10 +15,20 @@ import { normalizePace } from '../lib/pace.js';
 function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
   const { theme: T } = useTheme();
   const { data } = useData();
-  const [count, setCount] = useState(Math.min(20, totalQuestions));
   const pace = normalizePace(data && data.preferences);
   const presets = [10, 25, 50, 100].filter(p => p <= totalQuestions);
   if (presets.length === 0) presets.push(totalQuestions);
+  // Default to a REAL preset. It used to default to 20, which is not in the
+  // preset list, so the count row rendered with no chip highlighted even though a
+  // count was very much selected.
+  const [count, setCount] = useState(() => {
+    if (presets.includes(25)) return 25;
+    return presets[presets.length - 1] || 0;
+  });
+  // With an empty bank there is nothing to start: `count` would be 0 and App's
+  // `spec.count || 50` would silently inflate it back to 50. The other three
+  // setups already guard their Start button; this one did not.
+  const canStart = totalQuestions > 0 && count > 0;
 
   // Duration picker. NORCET pacing is roughly 1 min/question, so we default to
   // that. Presets cover sprint / normal / relaxed pace and re-anchor whenever
@@ -89,11 +99,14 @@ function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
         {/* Custom minutes — free-form fallback. */}
         <div className="flex items-center gap-2 mb-6">
           <span className="text-xs" style={{ color: T.muted }}>Custom:</span>
+          {/* min/max on the element are advisory only: a typed value bypasses them
+              entirely (and mobile keyboards ignore them). Clamp in the handler, or
+              typing 9999 buys you a 9999-minute mock. */}
           <input type="number" min={1} max={300}
                  value={customMinutes ?? ''}
                  onChange={e => {
                    const n = parseInt(e.target.value, 10);
-                   setCustomMinutes(Number.isFinite(n) && n > 0 ? n : null);
+                   setCustomMinutes(Number.isFinite(n) && n > 0 ? Math.min(300, n) : null);
                  }}
                  placeholder={String(defaultDuration)}
                  className="w-20 rounded-lg px-2.5 py-1.5 text-sm"
@@ -111,7 +124,14 @@ function MockSetup({ onStart, onBack, totalQuestions, onSetPace }) {
 
         <PaceSelector value={pace} onChange={onSetPace} T={T} />
 
-        <Button onClick={() => onStart(count, durationMinutes)} size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
+        {!canStart && (
+          <div className="text-xs mt-3 px-3 py-2.5 rounded-xl"
+               style={{ background: T.errorSoft, color: T.error, border: `1px solid ${T.error}40` }}>
+            There are no questions to build a mock from yet. Add a question bank from the Library first.
+          </div>
+        )}
+        <Button onClick={() => onStart(count, durationMinutes)} disabled={!canStart}
+                size="lg" className="w-full mt-3" icon={<Timer size={18} />}>
           Start mock test
         </Button>
       </PageContainer>
