@@ -317,6 +317,8 @@ import UpdateToast from './screens/update-toast.jsx';
 // the extracted knowledge-map.jsx + mindmap-node-popup.jsx screens.
 // [A1 slice 16] leaderboard storage cluster + Leaderboard screen extracted.
 import { saveLeaderboardEntry } from './lib/leaderboard.js';
+// Layer 1 — versioned consent stamp (recorded at sign-up, seeded on load).
+import { LEGAL_VERSION } from './lib/legal.js';
 const LeaderboardScreen = lazy(() => import('./screens/leaderboard.jsx'));
 // [A1 slice 17] shared question parsing/validation extracted.
 import { processQuestionInput, validateQuestionFields } from './lib/question-import.js';
@@ -3634,6 +3636,38 @@ export default function App() {
     }));
   }, []);
 
+  // Layer 1 — versioned legal consent. New accounts tick the recorded consent
+  // checkbox at sign-up; the accepted LEGAL_VERSION is stamped here on first
+  // load. The same stamp quietly seeds pre-versioning accounts (they accepted
+  // the passive notice that existed when they signed up, so no mass nag). A
+  // future LEGAL_VERSION bump makes legalAcceptedVersion < LEGAL_VERSION,
+  // which shows Home's quiet "terms updated" card until acknowledged. Guests
+  // are never stamped; their recorded consent happens at account creation.
+  useEffect(() => {
+    if (!data || !profile || loading || isGuestProfile(profile)) return;
+    const prefs = data.preferences || {};
+    if (prefs.legalAcceptedVersion == null) {
+      setData(prev => ({
+        ...prev,
+        preferences: {
+          ...(prev.preferences || {}),
+          legalAcceptedVersion: LEGAL_VERSION,
+          legalAcceptedAt: Date.now()
+        }
+      }));
+    }
+  }, [data, profile, loading]);
+  const ackLegalUpdate = useCallback(() => {
+    setData(prev => ({
+      ...prev,
+      preferences: {
+        ...(prev.preferences || {}),
+        legalAcceptedVersion: LEGAL_VERSION,
+        legalAcceptedAt: Date.now()
+      }
+    }));
+  }, []);
+
   // P18 — opt GK & Aptitude (non-nursing) topics in/out of nursing analytics.
   const toggleIncludeGkInStats = useCallback((on) => {
     setData(prev => ({
@@ -4426,6 +4460,7 @@ export default function App() {
               unreadNotifCount={unreadNotifCount}
               onNotifRead={() => setUnreadNotifCount(0)}
               onEnableNotifications={() => setDailyReminder({ enabled: true })}
+              onAckLegalUpdate={ackLegalUpdate}
               onNavigate={handleHomeNavigate} />
       )}
 

@@ -33,7 +33,7 @@ const CBT_CSS = `
 .cbt-count { animation: cbtCount .26s ease both; }
 `;
 import { useTheme } from '../lib/app-context.jsx';
-import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar, EduTag } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
@@ -793,6 +793,9 @@ function AdvancedTest({ questions, timeMinutes, onSubmit, onAbort, label, bookma
             })}
           </div>
         </div>
+
+        {/* Layer 3 — quiet educational footnote (screenshot-safe context). */}
+        <EduTag className="mt-6" />
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ background: IS_DARK ? 'rgba(21,19,15,0.95)' : T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
@@ -1229,6 +1232,9 @@ function AdvancedTestResults({ questions, answers, timePerQ, elapsedSec, auto, o
           </Button>
         </div>
       </div>
+
+      {/* Layer 3 — quiet educational footnote (screenshot-safe context). */}
+      <EduTag className="mt-6" />
     </div>
   );
 }

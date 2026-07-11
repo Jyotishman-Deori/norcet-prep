@@ -9,7 +9,10 @@
 // =====================================================================
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Crown, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
+import { Activity, AlertCircle, AlertTriangle, BarChart2, Bell, BellRing, BookOpen, Brain, Calculator, CalendarDays, Check, CheckCircle, ChevronRight, ClipboardList, Crown, Dumbbell, Flag, Flame, GraduationCap, HelpCircle, Hourglass, Layers, Lightbulb, ListChecks, Menu, Network, Play, RotateCcw, ScrollText, Settings as SettingsIcon, Shuffle, Sparkles, Target, Ticket, Timer, UserPlus, X } from 'lucide-react';
+// Layer 1 — the quiet "terms updated" card compares the stamped acceptance
+// against the current LEGAL_VERSION (App seeds/records the stamp).
+import { LEGAL_VERSION } from '../lib/legal.js';
 import { useTheme, useData, useProfile, useI18n } from '../lib/app-context.jsx';
 import { loadFavs } from '../lib/favorites.js';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
@@ -116,7 +119,7 @@ function BrandMark() {
   );
 }
 
-function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead, onEnableNotifications }) {
+function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismissAnnouncement, userName, isGuest, guestBannerDismissed, onGuestSignIn, onDismissGuestBanner, unseenReplies, onOpenMyReports, onDismissReplies, onDismissGrace, onDismissReviewToday, onShowReviewInfo, onOpenMenu, weeklySummaryDismissed, dismissWeeklySummary, onOpenNotifications, unreadNotifCount = 0, onNotifRead, onEnableNotifications, onAckLegalUpdate }) {
   const { theme: T, isDark: IS_DARK } = useTheme();
   const { data, allQuestions } = useData();
   const { profile } = useProfile();
@@ -687,6 +690,38 @@ function Home({ onNavigate, whatsNew, onDismissWhatsNew, announcement, onDismiss
           </Card>
         );
       })()}
+
+      {/* Layer 1 — quiet "terms updated" notice. Appears ONLY when a signed-in
+          user's stamped acceptance predates the current LEGAL_VERSION (i.e.
+          after a future legal-doc update). Never blocks anything; "Got it"
+          stamps the new version. */}
+      {!isGuest && typeof (data.preferences || {}).legalAcceptedVersion === 'number'
+        && data.preferences.legalAcceptedVersion < LEGAL_VERSION && (
+        <Card className="p-3 mb-4 anim-fadeup"
+              style={{ background: T.surfaceWarm, border: `1px solid ${T.border}` }}>
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+                 style={{ background: T.primary + '18' }}>
+              <ScrollText size={14} style={{ color: T.primary }} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-semibold mb-0.5" style={{ color: T.ink }}>{t('home.legalUpdated.title')}</div>
+              <div className="text-sm leading-snug" style={{ color: T.inkSoft }}>
+                {t('home.legalUpdated.body')}{' '}
+                <button onClick={() => onNavigate({ screen: 'legal', doc: 'terms' })}
+                        className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
+                  {t('home.legalUpdated.review')}
+                </button>
+              </div>
+            </div>
+            <button onClick={onAckLegalUpdate}
+                    className="no-tap-highlight flex-shrink-0 text-xs font-semibold px-2.5 py-1.5 rounded-full active:scale-95 transition"
+                    style={{ background: T.primary + '14', color: T.primary }}>
+              {t('welcome.gotIt')}
+            </button>
+          </div>
+        </Card>
+      )}
 
       {/* Feedback reply — your report got a response */}
       {replies.length > 0 && (

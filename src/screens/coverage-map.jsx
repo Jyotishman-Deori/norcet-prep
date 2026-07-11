@@ -9,7 +9,7 @@ import { Activity, ChevronRight, Shuffle } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { TOPICS, countsInNursingStats } from '../data/seed.js';
-import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Card, Button, TopBar, requestConfirm } from '../ui/primitives.jsx';
 
 function CoverageMap({ onBack, onDrill }) {
   const { theme: T } = useTheme();
@@ -194,7 +194,14 @@ function CoverageMap({ onBack, onDrill }) {
 
                     {/* Right column: Start button + expand chevron, stacked. */}
                     <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-                      <button onClick={() => onDrill('topic', r.id)}
+                      {/* Enter-a-test caution — same requestConfirm gate as the
+                          Knowledge Map / Stats practice CTAs. */}
+                      <button onClick={() => requestConfirm({
+                                title: `Start practice: ${r.name}?`,
+                                body: `This begins a 10-question practice test on ${r.name}. Your answers count toward your stats.`,
+                                confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
+                                onConfirm: () => onDrill('topic', r.id),
+                              })}
                               className="no-tap-highlight inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold active:scale-95 transition"
                               style={{ background: r.color, color: '#FFF' }}>
                         <Shuffle size={11} />
@@ -263,7 +270,12 @@ function CoverageMap({ onBack, onDrill }) {
                                          style={{ width: `${Math.round(s.coverage * 100)}%`, background: r.color }} />
                                   </div>
                                 </div>
-                                <button onClick={() => onDrill('sub', r.id, s.sub)}
+                                <button onClick={() => requestConfirm({
+                                          title: `Start practice: ${s.sub}?`,
+                                          body: `This begins a 10-question practice test on ${s.sub} (${r.name}). Your answers count toward your stats.`,
+                                          confirmLabel: 'Start test', cancelLabel: 'Not now', tone: 'primary',
+                                          onConfirm: () => onDrill('sub', r.id, s.sub),
+                                        })}
                                         className="no-tap-highlight inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-semibold active:scale-95 flex-shrink-0"
                                         style={{ background: r.color, color: '#FFF' }}>
                                   <Shuffle size={11} />

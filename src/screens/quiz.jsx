@@ -20,7 +20,7 @@ import { arraysEqualUnordered } from '../lib/utils.js';
 import { loadQDoubts, saveQDoubts, toggleQDoubt } from '../lib/qdoubts.js';
 // TIP — hold (mobile) / hover (PC) info bubbles on quiz chrome.
 import { Tip } from '../ui/tooltip.jsx';
-import { Card, Button, Pill, PyqBadge, TopBar, requestFeedback } from '../ui/primitives.jsx';
+import { Card, Button, Pill, PyqBadge, TopBar, requestFeedback, EduTag } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import { QuestionImage, QuestionVideo, TTSButton, HelpfulToggle } from '../ui/question-widgets.jsx';
 import { ConfirmExitDialog } from '../ui/confirm-exit-dialog.jsx';
@@ -790,6 +790,10 @@ function Quiz({ questions, mode, onComplete, onBack, timed, timeLimitMin, profil
             )}
           </div>
         )}
+
+        {/* Layer 3 — the quiet educational footnote travels with any
+            screenshot of a question. */}
+        <EduTag className="mt-6" />
       </PageContainer>
 
       {/* Bottom action bar */}

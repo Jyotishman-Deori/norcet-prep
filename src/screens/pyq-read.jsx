@@ -15,7 +15,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Bookmark, BookmarkCheck, BookOpen, Check, ChevronLeft, Eye } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicName, topicColor } from '../lib/topics.js';
-import { Card, Button, TopBar } from '../ui/primitives.jsx';
+import { Card, Button, TopBar, EduTag } from '../ui/primitives.jsx';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
 import { QuestionImage, QuestionVideo } from '../ui/question-widgets.jsx';
@@ -202,6 +202,9 @@ function PyqRead({ paper, bookmarks, onToggleBookmark, profileId, isAdmin = fals
             </Button>
           </Card>
         )}
+
+        {/* Layer 3 — quiet educational footnote (screenshot-safe context). */}
+        <EduTag className="mt-6" />
       </div>
     </div>
   );

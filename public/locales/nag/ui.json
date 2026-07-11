@@ -385,8 +385,6 @@
   "auth.warn.google": "Apuni laga Google account ei profile ke secure rakhi ase, alag pora kunu password mone rakhibole nalage.",
   "auth.warn.create": "Apuni laga display name aru password mone rakhibi. Log in koribole duita he lagibo. Apuni laga security question he ekmatro rasta jodi apuni etu pahori jai access wapas paboloi.",
   "auth.warn.login": "Etu ekta study app ase, kunu secure account nohoi. Kot bo aru use kora password yate dibole nalage.",
-  "auth.consentPre": "Profile bonai apuni ei sob logote agree kore:",
-  "auth.consentAnd": "aru",
   "auth.privacyPolicy": "Privacy Policy",
   "auth.termsOfUse": "Terms of Use",
   "auth.legacy.title": "Ei device laga purana progress ei profile te loi anibi",
@@ -567,5 +565,16 @@
   "settings.language.searchPlaceholder": "Languages bisaribi",
   "settings.language.storageWarning": "Apuni laga device laga storage prai full hoi loise. Jitia tak apuni olop jaga khali nakore, ei language offline available nathakibo pare.",
   "settings.language.downloadFailed": "Ei language download kori napalo. Apuni laga connection check kori aru ekbar try koribi.",
-  "settings.language.draftNotice": "Translations etiya suru laga drafts ase aru feedback pora bhal hoi thake. Jodi kunuba line apuni laga language te galti lage, Report button pora amike koi dibi."
+  "settings.language.draftNotice": "Translations etiya suru laga drafts ase aru feedback pora bhal hoi thake. Jodi kunuba line apuni laga language te galti lage, Report button pora amike koi dibi.",
+  "auth.consent.ack": "Moi bujhi ase NurseHolic to exam preparation laga ekta educational study tool ase, clinical guidance laga source nohoi, aru moi agree kore:",
+  "auth.consent.and": "aru",
+  "auth.consent.nudge": "Profile bonabole uporte thaka box ke tick koribi.",
+  "auth.contentDisclaimer": "Content Disclaimer",
+  "welcome.consentPre": "Age jai thakile apuni agree kore amikhan laga",
+  "welcome.consentTerms": "Terms of Use",
+  "welcome.consentEdu": "NurseHolic to exam prep laga study tool ase, clinical guidance nohoi.",
+  "home.legalUpdated.title": "Amikhan laga terms update hoise",
+  "home.legalUpdated.body": "Amikhan laga legal page khan notun kori dise. Ekbar sai lobi.",
+  "home.legalUpdated.review": "Ki bodli se sabi",
+  "common.eduTag": "Khali educational use nimite. Clinical decision nimite nohoi."
 }

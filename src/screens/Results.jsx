@@ -9,7 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { Check, Scale, Timer, X } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
 import { topicIcon, topicName } from '../lib/topics.js';
-import { Button, Card } from '../ui/primitives.jsx';
+import { Button, Card, EduTag } from '../ui/primitives.jsx';
 import PageContainer from '../ui/page-container.jsx';
 import CalibrationCard from '../ui/calibration-card.jsx';
 import { calibrationFromItems } from '../lib/calibration.js';
@@ -228,6 +228,9 @@ function Results({ results, questions, elapsed, onHome, onReview, mode = null, w
           users after a strong session. */}
       <PeerComparisonCard />
       <ComparisonReengage pct={pct} />
+
+      {/* Layer 3 — quiet educational footnote (screenshot-safe context). */}
+      <EduTag className="mt-6" />
     </PageContainer>
   );
 }

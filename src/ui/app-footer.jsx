@@ -98,6 +98,7 @@ function FooterLanguage() {
 
 export default function AppFooter({ onNavigate }) {
   const { theme: T } = useTheme();
+  const { t } = useI18n();
 
   const COLS = [
     {
@@ -185,6 +186,8 @@ export default function AppFooter({ onNavigate }) {
              style={{ borderTop: `1px solid ${T.borderSoft}` }}>
           <div className="text-[12px]" style={{ color: T.muted }}>
             © 2026 NurseHolic™. All rights reserved.
+            <span className="mx-2" aria-hidden="true">·</span>
+            {t('common.eduTag')}
           </div>
           <FooterLanguage />
         </div>

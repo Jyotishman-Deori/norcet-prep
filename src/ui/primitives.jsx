@@ -322,4 +322,19 @@ function HelpButton({ screen }) {
   );
 }
 
-export { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar, NoteButton };
+// Layer 3 — the persistent educational micro-footnote. A single muted line
+// placed at the bottom of practice and result screens (and the footer) so any
+// screenshot of study content carries the context with it. Static, tiny,
+// never sticky, never blocks anything.
+function EduTag({ className = '', style = {} }) {
+  const { theme: T } = useTheme();
+  const { t } = useI18n();
+  return (
+    <div className={'text-[10.5px] text-center leading-relaxed ' + className}
+         style={{ color: T.muted, opacity: 0.8, ...style }}>
+      {t('common.eduTag')}
+    </div>
+  );
+}
+
+export { Pill, PyqBadge, HighYieldBadge, Card, Button, TopBar, NoteButton, EduTag };

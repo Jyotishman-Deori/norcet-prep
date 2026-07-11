@@ -95,8 +95,14 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
   const [recoveryQuestion, setRecoveryQuestion] = useState(''); // the question shown back
   const [newPassword, setNewPassword] = useState('');
   const [recoverySuccess, setRecoverySuccess] = useState(false);
-  // #2 — inline legal viewer (null | 'privacy' | 'terms').
+  // #2 — inline legal viewer (null | 'privacy' | 'terms' | 'disclaimer').
   const [legalView, setLegalView] = useState(null);
+  // Layer 1 consent — the Create button stays disabled until this box is
+  // ticked (Google sign-ups included). The accepted LEGAL_VERSION is recorded
+  // into the profile's synced preferences by App.jsx after first load, so the
+  // acceptance is versioned and re-promptable on future legal updates.
+  const [consentChecked, setConsentChecked] = useState(false);
+  const [consentNudge, setConsentNudge] = useState(false);
   // Centred security-question picker (replaces the native <select> dropdown).
   const [securityPickerOpen, setSecurityPickerOpen] = useState(false);
   // Live name-taken check (create mode only). null = unknown; true = taken;
@@ -310,6 +316,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
     // ---- Create / Login ----
     if (!displayName.trim()) { setError(t('auth.err.enterName')); return; }
     if (!googleNewUser && !password) { setError(t('auth.err.enterPwd')); return; }
+    // Layer 1 — creating an account (password or Google) requires the ticked
+    // consent box; login and recovery never do.
+    if (mode === 'create' && !consentChecked) { setConsentNudge(true); return; }
     if (mode === 'create') {
       // Community moderation: names show on the leaderboard and FAQ threads —
       // profanity (en/hi/hinglish/assamese) is blocked at the door.
@@ -365,6 +374,9 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
   const captchaRequired = isTurnstileEnabled() && (!recovering || recoveryStep === 'verify');
 
   // Submit button label/icon/disabled adapt to mode + recovery step.
+  // NOTE: the Layer 1 consent box is deliberately NOT part of submitDisabled.
+  // A disabled button swallows the tap silently; keeping it tappable lets
+  // handleSubmit point at the unchecked box instead (consentNudge).
   const submitDisabled = working
     || !displayName.trim()
     || (captchaRequired && !captchaToken)
@@ -765,19 +777,45 @@ function AuthScreen({ legacyData, initialMode = 'create', onAuthed, onBack, clai
           </Card>
         )}
 
-        {/* #2 — consent at the sign-up step (calm inline notice + tappable links) */}
+        {/* #2 / Layer 1 — explicit consent at the sign-up step: a required
+            checkbox (recorded, versioned) instead of a passive notice. Links
+            stay tappable without toggling the box. */}
         {mode === 'create' && !recovering && (
-          <div className="text-[11px] leading-relaxed mb-4 px-1" style={{ color: T.muted }}>
-            {t('auth.consentPre')}{' '}
-            <button type="button" onClick={() => setLegalView('privacy')}
-                    className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
-              {t('auth.privacyPolicy')}
-            </button>
-            {' '}{t('auth.consentAnd')}{' '}
-            <button type="button" onClick={() => setLegalView('terms')}
-                    className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
-              {t('auth.termsOfUse')}
-            </button>.
+          <div className="mb-4">
+            <div role="checkbox" aria-checked={consentChecked} tabIndex={0}
+                 onClick={() => { setConsentChecked(v => !v); setConsentNudge(false); }}
+                 onKeyDown={e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); setConsentChecked(v => !v); setConsentNudge(false); } }}
+                 className="no-tap-highlight w-full flex items-start gap-3 p-3 rounded-xl cursor-pointer select-none transition-colors"
+                 style={{ background: consentChecked ? T.successSoft : T.surface,
+                          border: `1px solid ${consentChecked ? T.success + '66' : consentNudge ? T.accent : T.border}` }}>
+              <span className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors"
+                    style={{ background: consentChecked ? T.success : 'transparent',
+                             border: `1.5px solid ${consentChecked ? T.success : consentNudge ? T.accent : T.border}` }}>
+                {consentChecked && <Check size={12} color="#FFF" className="anim-scalein" />}
+              </span>
+              <span className="text-[11px] leading-relaxed" style={{ color: T.inkSoft }}>
+                {t('auth.consent.ack')}{' '}
+                <button type="button" onClick={e => { e.stopPropagation(); setLegalView('terms'); }}
+                        className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
+                  {t('auth.termsOfUse')}
+                </button>
+                {', '}
+                <button type="button" onClick={e => { e.stopPropagation(); setLegalView('privacy'); }}
+                        className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
+                  {t('auth.privacyPolicy')}
+                </button>
+                {' '}{t('auth.consent.and')}{' '}
+                <button type="button" onClick={e => { e.stopPropagation(); setLegalView('disclaimer'); }}
+                        className="no-tap-highlight underline font-medium" style={{ color: T.primary }}>
+                  {t('auth.contentDisclaimer')}
+                </button>.
+              </span>
+            </div>
+            {consentNudge && !consentChecked && (
+              <div className="mt-1.5 px-1 text-[11px] anim-fadeup" style={{ color: T.accent }}>
+                {t('auth.consent.nudge')}
+              </div>
+            )}
           </div>
         )}
 

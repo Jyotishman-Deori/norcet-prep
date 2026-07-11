@@ -385,8 +385,6 @@
   "auth.warn.google": "உங்கள் Google கணக்கு இந்த profile-ஐ பாதுகாப்பாக வைத்திருக்கிறது, நினைவில் வைக்க தனி password தேவையில்லை.",
   "auth.warn.create": "உங்கள் display name மற்றும் password-ஐ நினைவில் வையுங்கள். log in செய்ய இரண்டும் தேவை. மறந்துவிட்டால் access மீட்க உங்கள் security question மட்டுமே வழி.",
   "auth.warn.login": "இது ஒரு study app, பாதுகாப்பான கணக்கு அல்ல. வேறு எங்காவது பயன்படுத்தும் password-ஐ இங்கே மீண்டும் பயன்படுத்த வேண்டாம்.",
-  "auth.consentPre": "Profile உருவாக்குவதன் மூலம், நீங்கள் எங்கள்",
-  "auth.consentAnd": "மற்றும்",
   "auth.privacyPolicy": "Privacy Policy",
   "auth.termsOfUse": "Terms of Use",
   "auth.legacy.title": "சாதனத்தில் உள்ள முந்தைய முன்னேற்றத்தை இந்த profile-க்கு நகர்த்து",
@@ -567,5 +565,16 @@
   "settings.language.searchPlaceholder": "மொழிகளை தேடு",
   "settings.language.storageWarning": "உங்கள் சாதன storage கிட்டத்தட்ட நிறைந்துவிட்டது. சிறிது space காலி செய்யும் வரை இந்த மொழி offline-இல் கிடைக்காமல் போகலாம்.",
   "settings.language.downloadFailed": "இந்த மொழியை download செய்ய முடியவில்லை. உங்கள் connection-ஐ சரிபார்த்து மீண்டும் முயற்சி செய்யுங்கள்.",
-  "settings.language.draftNotice": "Translations ஆரம்ப drafts, கருத்துக்களால் மேம்படும். உங்கள் மொழியில் ஒரு வரி தவறாக இருந்தால், Report பட்டனில் எங்களிடம் சொல்லுங்கள்."
+  "settings.language.draftNotice": "Translations ஆரம்ப drafts, கருத்துக்களால் மேம்படும். உங்கள் மொழியில் ஒரு வரி தவறாக இருந்தால், Report பட்டனில் எங்களிடம் சொல்லுங்கள்.",
+  "auth.consent.ack": "NurseHolic தேர்வுத் தயாரிப்பிற்கான கல்விக் கருவி என்றும், மருத்துவ வழிகாட்டுதலின் ஆதாரம் அல்ல என்றும் புரிந்துகொள்கிறேன், மேலும் ஒப்புக்கொள்கிறேன்:",
+  "auth.consent.and": "மற்றும்",
+  "auth.consent.nudge": "சுயவிவரம் உருவாக்க மேலே உள்ள பெட்டியை டிக் செய்யவும்.",
+  "auth.contentDisclaimer": "Content Disclaimer",
+  "welcome.consentPre": "தொடர்வதன் மூலம் நீங்கள் ஒப்புக்கொள்கிறீர்கள் எங்கள்",
+  "welcome.consentTerms": "Terms of Use",
+  "welcome.consentEdu": "NurseHolic தேர்வுத் தயாரிப்பு படிப்புக் கருவி, மருத்துவ வழிகாட்டுதல் அல்ல.",
+  "home.legalUpdated.title": "எங்கள் விதிமுறைகள் புதுப்பிக்கப்பட்டுள்ளன",
+  "home.legalUpdated.body": "எங்கள் சட்டப் பக்கங்களைப் புதுப்பித்துள்ளோம். ஒரு பார்வை பாருங்கள்.",
+  "home.legalUpdated.review": "மாற்றங்களைப் பார்க்கவும்",
+  "common.eduTag": "கல்விப் பயன்பாட்டிற்கு மட்டும். மருத்துவ முடிவுகளுக்கு அல்ல."
 }

@@ -385,8 +385,6 @@
   "auth.warn.google": "I Google account-in he profile hi a vengtu ang, hriatreng tur password dang a ngai lo.",
   "auth.warn.create": "I display name leh password hriat reng rawh. Log in tura pahnih zawng i mamawh vek ang. Theihnghilh chuan security question hi access recovery dan awm chhun a ni.",
   "auth.warn.login": "Hei hi zirna app a ni, account him tak a ni lo. Hmun dangah i hman tawh password i hman leh suh.",
-  "auth.consentPre": "Profile i siam chuan kan",
-  "auth.consentAnd": "leh",
   "auth.privacyPolicy": "Privacy Policy",
   "auth.termsOfUse": "Terms of Use",
   "auth.legacy.title": "I Device-a Hmasawnna Awm Tawh He Profile-ah Puitling",
@@ -567,5 +565,16 @@
   "settings.language.searchPlaceholder": "Language Zawn",
   "settings.language.storageWarning": "I device storage a khat dawn tawh. Space i chhuahsak hma loh chuan he language hi offline-ah a awm reng lo thei.",
   "settings.language.downloadFailed": "He language download theih lo. I connection enfiah la, tih leh rawh.",
-  "settings.language.draftNotice": "Translation te hi draft tirh a la ni a, feedback nen a ṭha lehzual zel ang. I language-a thu inzirh a sual chuan, Report button hmangin min hrilh rawh."
+  "settings.language.draftNotice": "Translation te hi draft tirh a la ni a, feedback nen a ṭha lehzual zel ang. I language-a thu inzirh a sual chuan, Report button hmangin min hrilh rawh.",
+  "auth.consent.ack": "NurseHolic hi exam inbuatsaihna atana zirlai tool a ni a, clinical kaihhruaina hnar a ni lo tih ka hria a, ka pawm bawk:",
+  "auth.consent.and": "leh",
+  "auth.consent.nudge": "Profile siam turin a chunga box kha tick rawh.",
+  "auth.contentDisclaimer": "Content Disclaimer",
+  "welcome.consentPre": "I kal zel chuan i pawm a ni kan",
+  "welcome.consentTerms": "Terms of Use",
+  "welcome.consentEdu": "NurseHolic hi exam inbuatsaihna study tool a ni a, clinical kaihhruaina a ni lo.",
+  "home.legalUpdated.title": "Kan thuthlung te update a ni",
+  "home.legalUpdated.body": "Kan legal page te kan siamthat a. En ve rawh.",
+  "home.legalUpdated.review": "Thlakthleng te en rawh",
+  "common.eduTag": "Zirna atan chauh. Clinical thutlukna atan a ni lo."
 }

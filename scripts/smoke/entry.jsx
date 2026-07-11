@@ -225,6 +225,65 @@ const SCREENS = {
     });
     return el;
   },
+  // Layered-disclaimer round (2026-07-11): AuthScreen CREATE mode now renders
+  // the required consent checkbox (recorded Layer 1). Turnstile/Google render
+  // nothing without env keys, so this exercises the plain create form.
+  'auth-create': async () => {
+    const m = await import('../../src/screens/auth-screen.jsx');
+    return React.createElement(m.default, {
+      legacyData: null, initialMode: 'create', onAuthed: noop,
+    });
+  },
+  // Weightage revamp (2026-07-11): true %-of-exam over the WHOLE paper, the
+  // nursing/non-nursing split bar, and the labelled Non-nursing section.
+  // Fixture papers carry gk/apt questions like the real bundled PYQs.
+  'weightage': async () => {
+    const m = await import('../../src/screens/weightage.jsx');
+    const alt = (id, topic) => ({ id, topic, type: 'mcq', q: 'Smoke question', options: ['a', 'b', 'c', 'd'], correct: [0] });
+    const paper = (id, year, extra) => ({
+      id, year, name: `NORCET ${year}`, questions: [...SEED_QUESTIONS.slice(0, 18), ...extra],
+    });
+    return React.createElement(m.default, {
+      papers: [
+        paper('p1', 2023, [alt('g1', 'gk'), alt('g2', 'gk'), alt('a1', 'apt')]),
+        paper('p2', 2024, [alt('g3', 'gk'), alt('a2', 'apt')]),
+      ],
+      onDrill: noop, onOpenPapers: noop, onBack: noop,
+    });
+  },
+  // Coverage map gained the enter-a-test requestConfirm gate on its Start pills.
+  'coverage-map': async () => {
+    const m = await import('../../src/screens/coverage-map.jsx');
+    return React.createElement(m.default, { onBack: noop, onDrill: noop });
+  },
+  // Dosage setup gained the one-time clinical note gate on Start (Layer 2b).
+  'dosage-setup': async () => {
+    const m = await import('../../src/screens/DosageSetup.jsx');
+    return React.createElement(m.default, { onStart: noop, onBack: noop, onSetPace: noop });
+  },
+  // Home's quiet "terms updated" card: only visible when the stamped
+  // acceptance predates LEGAL_VERSION — install exactly that state. (The
+  // fixture persists into the stats entries below, which install their own.)
+  'home-legal-update': async () => {
+    const stub = await import('./stub-app-context.jsx');
+    const { DEFAULT_DATA } = await import('../../src/data/seed.js');
+    stub.__setSmokeData({
+      ...DEFAULT_DATA,
+      preferences: { ...DEFAULT_DATA.preferences, legalAcceptedVersion: 1, legalAcceptedAt: 1 },
+    });
+    const m = await import('../../src/screens/home.jsx');
+    return React.createElement(m.default, {
+      onNavigate: noop, whatsNew: null, onDismissWhatsNew: noop,
+      announcement: null, onDismissAnnouncement: noop,
+      userName: 'Smoke', isGuest: false,
+      guestBannerDismissed: true, onGuestSignIn: noop, onDismissGuestBanner: noop,
+      unseenReplies: [], onOpenMyReports: noop, onDismissReplies: noop,
+      onDismissGrace: noop, onDismissReviewToday: noop, onShowReviewInfo: noop,
+      onOpenMenu: noop, weeklySummaryDismissed: true, dismissWeeklySummary: noop,
+      onOpenNotifications: noop, unreadNotifCount: 0, onNotifRead: noop,
+      onEnableNotifications: noop, onAckLegalUpdate: noop,
+    });
+  },
   // NEW-07 Advanced analytics. DEFAULT_DATA is empty (totalAttempted 0), which
   // would early-return StatsScreen and skip every new hook — so these two
   // entries install a POPULATED fixture via the stub's __setSmokeData first.
@@ -300,6 +359,14 @@ const MARKERS = {
   'where-you-stand-zero': ['about 0 percent', 'translate(41', 'sits left of it for now'],
   'where-you-stand-mid': ['about 47 percent'],
   'where-you-stand-placeholder': ['You appear here'],
+  // Layered-disclaimer round. All single-string JSX literals (renderToString
+  // comment-separates adjacent text children).
+  'auth-create': ['educational study tool for exam preparation', 'Content Disclaimer'],
+  'welcome': ['By continuing you agree to our'],
+  'app-footer': ['Educational use only. Not for clinical decisions.'],
+  'weightage': ['Non-nursing section', 'How a typical paper splits', 'marks from the same papers'],
+  'home-legal-update': ['Our terms were updated', 'Review the changes'],
+  'quiz': ['Educational use only. Not for clinical decisions.'],
 };
 
 let failed = 0;

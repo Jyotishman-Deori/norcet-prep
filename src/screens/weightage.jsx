@@ -10,7 +10,7 @@ import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tool
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { attemptStats } from '../lib/compact.js';
 import { topicName, topicColor, topicIcon } from '../lib/topics.js';
-import { countsInNursingStats } from '../data/seed.js';
+import { isNonExamTopic } from '../data/seed.js';
 import { Card, Button, TopBar, Pill } from '../ui/primitives.jsx';
 
 function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
@@ -21,7 +21,6 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   // It opens this confirmation sheet (subject, weightage, your accuracy,
   // explicit "Start practice" CTA); the quiz only starts on that tap.
   const [confirmRow, setConfirmRow] = useState(null); // { id, name, icon, color, weightage, accuracy, coverage }
-  const includeGk = data.preferences && data.preferences.includeGkInStats === true;
 
   // Only papers that actually carry questions are units of analysis.
   const loaded = useMemo(
@@ -30,14 +29,18 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
   );
 
   const model = useMemo(() => {
-    // 1) Per-paper topic mix (%) over the NURSING portion of each paper.
+    // 1) Per-paper topic mix (%) over the WHOLE paper, GK/Aptitude included,
+    //    so every percentage is genuinely "of the exam" and the list sums to
+    //    ~100. The non-nursing topics render in their own labelled section
+    //    below the nursing mix (they are real exam marks, deliberately kept
+    //    out of nursing analytics elsewhere).
     const paperMix = [];
     loaded.forEach(p => {
-      const nursing = p.questions.filter(q => q && countsInNursingStats(q.topic, includeGk));
-      const tot = nursing.length;
+      const qs = p.questions.filter(q => q && q.topic);
+      const tot = qs.length;
       if (tot === 0) return;
       const counts = {};
-      nursing.forEach(q => { counts[q.topic] = (counts[q.topic] || 0) + 1; });
+      qs.forEach(q => { counts[q.topic] = (counts[q.topic] || 0) + 1; });
       const pct = {};
       Object.keys(counts).forEach(t => { pct[t] = (counts[t] / tot) * 100; });
       paperMix.push({ year: (typeof p.year === 'number' && p.year > 0) ? p.year : null, pct });
@@ -78,8 +81,12 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
       const sb = seenByTopic[t];
       const accuracy = (sb && sb.total > 0) ? (sb.correct / sb.total) : null;
       const coverage = inBank ? ((sb ? sb.unique.size : 0) / poolTotal) : null;
-      return { id: t, name: topicName(t), icon: topicIcon(t), color: topicColor(t), weightage: typical[t], accuracy, coverage, inBank };
+      return { id: t, name: topicName(t), icon: topicIcon(t), color: topicColor(t), weightage: typical[t], accuracy, coverage, inBank, nonExam: isNonExamTopic(t) };
     }).sort((a, b) => b.weightage - a.weightage);
+
+    // 5b) The nursing vs non-nursing split of a typical paper (drives the
+    //     section header bar + the labelled non-nursing group).
+    const nonExamShare = rows.filter(r => r.nonExam).reduce((s, r) => s + r.weightage, 0);
 
     // 6) High-leverage = weightage × (1 − accuracy). Only in-bank topics, since
     //    the recommendation taps through to practice. Top 5.
@@ -113,8 +120,8 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
       movers.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta));
     }
 
-    return { rows, leverage, years, yoy, movers, topics: Array.from(topicSet) };
-  }, [loaded, data.history, data.preferences, allQuestions, includeGk]);
+    return { rows, leverage, years, yoy, movers, topics: Array.from(topicSet), nonExamShare };
+  }, [loaded, data.history, allQuestions]);
 
   const RISE = '#C2493B';   // rising weightage (red)
   const FALL = '#3B6EA5';   // declining weightage (blue)
@@ -152,6 +159,28 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
           Derived from {loaded.length} previous year paper{loaded.length === 1 ? '' : 's'}
           {model.years.length >= 2 ? ` (${model.years[0]}–${model.years[model.years.length - 1]})` : ''}.
         </div>
+
+        {/* Paper split — nursing vs the non-nursing (GK + aptitude) section.
+            One glance answers "how much of the exam is not nursing?". */}
+        {model.nonExamShare > 0 && (
+          <Card className="p-3.5 mb-4">
+            <div className="flex items-center justify-between gap-2 mb-2 text-[11px] font-semibold">
+              <span style={{ color: T.primary }}>Nursing {Math.round(100 - model.nonExamShare)}%</span>
+              <span style={{ color: T.accent }}>Non-nursing {Math.round(model.nonExamShare)}%</span>
+            </div>
+            <div className="h-2.5 rounded-full overflow-hidden flex" style={{ background: T.borderSoft }}>
+              <div className="h-full rounded-l-full"
+                   style={{ width: `${Math.max(0, 100 - model.nonExamShare)}%`, background: T.primary,
+                            transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)' }} />
+              <div className="h-full rounded-r-full"
+                   style={{ width: `${model.nonExamShare}%`, background: T.accent,
+                            transition: 'width 600ms cubic-bezier(0.22,1,0.36,1)' }} />
+            </div>
+            <div className="text-[11px] mt-2" style={{ color: T.muted }}>
+              How a typical paper splits between nursing subjects and the General Knowledge and aptitude section.
+            </div>
+          </Card>
+        )}
 
         {/* Strategic recommendation — shown on both views. */}
         {model.leverage.length > 0 && (
@@ -196,43 +225,63 @@ function WeightageScreen({ papers, onDrill, onOpenPapers, onBack }) {
           })}
         </div>
 
-        {view === 'mix' && (
-          <div className="space-y-2.5">
-            {model.rows.map(r => {
-              const hot = leverageIds.has(r.id);
-              return (
-                <Card key={r.id} className="p-3.5" onClick={r.inBank ? () => setConfirmRow(r) : undefined}
-                      style={hot ? { border: `1px solid ${T.primary}40` } : {}}>
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: r.color + '15' }}>{r.icon}</div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-semibold truncate" style={{ color: T.ink }}>{r.name}</span>
-                        {hot && <Pill bg={T.primary + '18'} color={T.primary}>High ROI</Pill>}
-                      </div>
-                      {!r.inBank && (
-                        <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Not in your bank yet</div>
-                      )}
+        {view === 'mix' && (() => {
+          const rowCard = (r) => {
+            const hot = leverageIds.has(r.id);
+            return (
+              <Card key={r.id} className="p-3.5" onClick={r.inBank ? () => setConfirmRow(r) : undefined}
+                    style={hot ? { border: `1px solid ${T.primary}40` } : {}}>
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center text-lg flex-shrink-0" style={{ background: r.color + '15' }}>{r.icon}</div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold truncate" style={{ color: T.ink }}>{r.name}</span>
+                      {r.nonExam && <Pill bg={T.accent + '18'} color={T.accent}>Non-nursing</Pill>}
+                      {hot && <Pill bg={T.primary + '18'} color={T.primary}>High ROI</Pill>}
                     </div>
-                    <div className="text-right flex-shrink-0">
-                      <div className="font-display text-lg leading-none" style={{ color: T.ink }}>{Math.round(r.weightage)}%</div>
-                      <div className="text-[10px] uppercase tracking-wider" style={{ color: T.muted }}>of exam</div>
+                    {!r.inBank && (
+                      <div className="text-[11px] mt-0.5" style={{ color: T.muted }}>Not in your bank yet</div>
+                    )}
+                  </div>
+                  <div className="text-right flex-shrink-0">
+                    <div className="font-display text-lg leading-none" style={{ color: T.ink }}>{Math.round(r.weightage)}%</div>
+                    <div className="text-[10px] uppercase tracking-wider" style={{ color: T.muted }}>of exam</div>
+                  </div>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: T.border }}>
+                  <div className="h-full rounded-full" style={{ width: `${(r.weightage / maxW) * 100}%`, background: r.color }} />
+                </div>
+                {r.inBank && (
+                  <div className="flex items-center gap-4 mt-2 text-[11px]" style={{ color: T.muted }}>
+                    <span>Accuracy {r.accuracy == null ? '—' : `${Math.round(r.accuracy * 100)}%`}</span>
+                    <span>Coverage {r.coverage == null ? '—' : `${Math.round(r.coverage * 100)}%`}</span>
+                  </div>
+                )}
+              </Card>
+            );
+          };
+          const nursingRows = model.rows.filter(r => !r.nonExam);
+          const nonExamRows = model.rows.filter(r => r.nonExam);
+          return (
+            <div className="space-y-2.5">
+              {nursingRows.map(rowCard)}
+              {nonExamRows.length > 0 && (
+                <>
+                  <div className="pt-3 pb-0.5 px-0.5">
+                    <div className="text-[11px] uppercase tracking-widest font-semibold" style={{ color: T.accent }}>
+                      Non-nursing section
+                    </div>
+                    <div className="text-[11px] mt-1 leading-relaxed" style={{ color: T.muted }}>
+                      General Knowledge and Reasoning &amp; Aptitude marks from the same papers,
+                      about {Math.round(model.nonExamShare)}% of a typical paper. Practise them here too.
                     </div>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: T.border }}>
-                    <div className="h-full rounded-full" style={{ width: `${(r.weightage / maxW) * 100}%`, background: r.color }} />
-                  </div>
-                  {r.inBank && (
-                    <div className="flex items-center gap-4 mt-2 text-[11px]" style={{ color: T.muted }}>
-                      <span>Accuracy {r.accuracy == null ? '—' : `${Math.round(r.accuracy * 100)}%`}</span>
-                      <span>Coverage {r.coverage == null ? '—' : `${Math.round(r.coverage * 100)}%`}</span>
-                    </div>
-                  )}
-                </Card>
-              );
-            })}
-          </div>
-        )}
+                  {nonExamRows.map(rowCard)}
+                </>
+              )}
+            </div>
+          );
+        })()}
 
         {view === 'yoy' && (
           <div>

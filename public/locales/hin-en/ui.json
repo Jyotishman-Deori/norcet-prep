@@ -385,8 +385,6 @@
   "auth.warn.google": "Aapka Google account is profile ko secure rakhta hai, alag se koi password yaad rakhne ki zaroorat nahi.",
   "auth.warn.create": "Apna display name aur password yaad rakhein. Log in ke liye dono chahiye honge. Bhool jaane par access wapas paane ka ek hi raasta hai: aapka security question.",
   "auth.warn.login": "Yeh ek study app hai, secure account nahi. Jo password aap kahin aur use karte hain woh yahan na daalein.",
-  "auth.consentPre": "Profile banakar aap inse sehmat hote hain:",
-  "auth.consentAnd": "aur",
   "auth.privacyPolicy": "Privacy Policy",
   "auth.termsOfUse": "Terms of Use",
   "auth.legacy.title": "Is device ka purana progress is profile mein le aayein",
@@ -567,5 +565,16 @@
   "settings.language.searchPlaceholder": "Languages search karein",
   "settings.language.storageWarning": "Aapke device ki storage lagbhag full hai. Jab tak aap thodi jagah khaali nahi karte, yeh language offline available nahi reh sakti.",
   "settings.language.downloadFailed": "Yeh language download nahi ho paayi. Apna connection check karke dobara try karein.",
-  "settings.language.draftNotice": "Translations abhi shuruaati drafts hain aur feedback se behtar hoti hain. Agar koi line aapki bhasha mein galat lage, Report button se humein batayein."
+  "settings.language.draftNotice": "Translations abhi shuruaati drafts hain aur feedback se behtar hoti hain. Agar koi line aapki bhasha mein galat lage, Report button se humein batayein.",
+  "auth.consent.ack": "Main samajhta/samajhti hoon ki NurseHolic exam prep ka ek educational study tool hai, clinical guidance ka source nahi, aur main agree karta/karti hoon:",
+  "auth.consent.and": "aur",
+  "auth.consent.nudge": "Profile banane ke liye upar wala box tick karein.",
+  "auth.contentDisclaimer": "Content Disclaimer",
+  "welcome.consentPre": "Continue karne par aap agree karte hain hamari",
+  "welcome.consentTerms": "Terms of Use",
+  "welcome.consentEdu": "NurseHolic exam prep ka study tool hai, clinical guidance nahi.",
+  "home.legalUpdated.title": "Hamari terms update hui hain",
+  "home.legalUpdated.body": "Humne apne legal pages refresh kiye hain. Ek nazar daal lein.",
+  "home.legalUpdated.review": "Changes dekhein",
+  "common.eduTag": "Sirf educational use ke liye. Clinical decisions ke liye nahi."
 }

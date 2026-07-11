@@ -25,6 +25,7 @@ import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
 import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
+import ClinicalNote from '../ui/clinical-note.jsx';
 import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
 import { rankTrending } from '../lib/trending.js';
 
@@ -75,7 +76,7 @@ function LevelRing({ level, pct, accent, track }) {
 
 function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, onBuyFrame }) {
   const { theme: T } = useTheme();
-  const { data } = useData();
+  const { data, setData } = useData();
   const { profile } = useProfile();
   const [crateOpen, setCrateOpen] = useState(false);
   const profileName = (profile && profile.displayName) || 'You';
@@ -125,10 +126,24 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
   }, []);
 
   // Record this user's interaction (fire-and-forget), then open the screen.
-  const open = (screen) => {
+  const launch = (screen) => {
     const uid = profile && profile.uid;
     if (uid) recordInteraction('game', screen, uid);
     onNavigate({ screen });
+  };
+
+  // Layer 2b — one-time simulated-for-learning note before the very first
+  // game launch on this profile (game cards only; the Knowledge Map is not a
+  // simulation). Shown once ever, then launches are never gated again.
+  const [pendingGame, setPendingGame] = useState(null);
+  const gamesNoteSeen = !!(data && data.preferences && data.preferences.clinicalNoteGamesSeen);
+  const markGamesNoteSeen = () => setData(prev => ({
+    ...prev,
+    preferences: { ...(prev.preferences || {}), clinicalNoteGamesSeen: true }
+  }));
+  const open = (screen) => {
+    if (!gamesNoteSeen && GAMES.some(g => g.screen === screen)) { setPendingGame(screen); return; }
+    launch(screen);
   };
 
   return (
@@ -400,6 +415,13 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
       </PageContainer>
 
       {crateOpen && <CrateReveal onOpen={onOpenCrate} onClose={() => setCrateOpen(false)} />}
+
+      <ClinicalNote open={!!pendingGame}
+                    title="Simulated for learning"
+                    body="Game scenarios are simplified simulations that build exam instincts. They are not patient-care instructions. Real clinical decisions always follow your institution's protocols."
+                    buttonLabel="Understood, play"
+                    onAcknowledge={() => { const s = pendingGame; setPendingGame(null); markGamesNoteSeen(); if (s) launch(s); }}
+                    onClose={() => { setPendingGame(null); markGamesNoteSeen(); }} />
     </div>
   );
 }

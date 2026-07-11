@@ -281,6 +281,18 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
 
   const recColor = recommendation.kind === 'weak' ? T.error : recommendation.kind === 'new' ? T.primary : T.success;
 
+  // Enter-a-test caution — the Focus-next CTA and the per-topic rows start a
+  // scored 10-question test immediately, so they get the same requestConfirm
+  // gate the Knowledge Map's practice CTA uses. Quiz only starts on Start.
+  const confirmPractice = (topicId, name) => requestConfirm({
+    title: `Start practice: ${name}?`,
+    body: `This begins a 10-question practice test on ${name}. Your answers count toward your stats.`,
+    confirmLabel: 'Start test',
+    cancelLabel: 'Not now',
+    tone: 'primary',
+    onConfirm: () => { if (onPracticeTopic) onPracticeTopic(topicId); },
+  });
+
   return (
     <div className="anim-fadeup">
       <TopBar title="Your stats" onBack={onBack} feedback={{ screen: "Stats" }} />
@@ -401,8 +413,12 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
           </div>
           <Button
             onClick={() => {
+              // 'sharp' routes to the Quick Test SETUP screen (its own gate);
+              // topic practice starts a scored test immediately, so it gets
+              // the same enter-a-test caution as the Knowledge Map CTA.
               if (recommendation.kind === 'sharp') { onQuick && onQuick(); }
-              else { onPracticeTopic ? onPracticeTopic(recommendation.topicId) : (onQuick && onQuick()); }
+              else if (onPracticeTopic) { confirmPractice(recommendation.topicId, recommendation.name); }
+              else if (onQuick) { onQuick(); }
             }}
             size="sm" className="w-full"
             icon={recommendation.kind === 'sharp' ? <Shuffle size={14} /> : <Target size={14} />}>
@@ -480,7 +496,7 @@ function StatsScreen({ onBack, onQuick, onResetData, onPracticeTopic, onStartAdv
             <div className="space-y-1 md:space-y-0 md:grid md:grid-cols-2 md:gap-x-6 md:gap-y-1">
               {sortedTopics.map(t => (
                 <button key={t.id}
-                        onClick={() => onPracticeTopic && onPracticeTopic(t.id)}
+                        onClick={() => onPracticeTopic && confirmPractice(t.id, t.name)}
                         className="no-tap-highlight w-full text-left rounded-xl px-2 py-2 -mx-2 active:bg-black/5 transition-colors">
                   <div className="flex items-center justify-between text-sm mb-1.5">
                     <div className="flex items-center gap-2 min-w-0 pr-2">

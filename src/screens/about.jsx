@@ -267,6 +267,10 @@ function AboutScreen({ onBack, onNavigate }) {
           <div className="text-center text-[11px]" style={{ color: T.muted }}>
             © 2026 NurseHolic™. All rights reserved. Made with care in Assam, India
           </div>
+          {/* Layer 3 — the same educational footnote the practice screens carry. */}
+          <div className="text-center text-[10.5px] mt-1.5" style={{ color: T.muted, opacity: 0.8 }}>
+            Educational use only. Not for clinical decisions.
+          </div>
         </div>
       </PageContainer>
     </div>

@@ -7,7 +7,7 @@
 import React from 'react';
 import { Calculator, Check, Eye, SkipForward, X, ClipboardList } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
-import { Card, Button } from '../ui/primitives.jsx';
+import { Card, Button, EduTag } from '../ui/primitives.jsx';
 import { MotivationCard, ShareScoreButton } from '../ui/result-cards.jsx';
 import { referralCodeFor } from '../lib/referral.js';
 import HelpfulBulb from '../ui/helpful-bulb.jsx';
@@ -147,6 +147,9 @@ function DosageResults({ results, questions, onHome, displayName = null, streak 
                           displayName={displayName} streak={streak} referralCode={referralCode} />
         <Button onClick={onHome} size="lg" className="w-full">Back to home</Button>
       </div>
+
+      {/* Layer 3 — quiet educational footnote (screenshot-safe context). */}
+      <EduTag className="mt-6" />
     </div>
   );
 }

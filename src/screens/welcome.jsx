@@ -249,6 +249,17 @@ function WelcomeScreen({ displayName, firstRun = false, demographics, onSaveDemo
         <div className="welcome-row" style={{ animationDelay: `${points.length * 70 + 60}ms` }}>
           <Button onClick={nextStep} size="lg" className="w-full" icon={<ChevronRight size={18} />}>{t('common.next')}</Button>
         </div>
+        {/* Layer 1 (guest path) — a quiet passive notice; the recorded checkbox
+            consent happens later at account creation. Tapping Terms opens the
+            legal screen; Back returns to the tour (cameFromWelcome). */}
+        <div className="text-[10.5px] leading-relaxed text-center mt-3 px-2" style={{ color: T.muted }}>
+          {t('welcome.consentPre')}{' '}
+          <button onClick={() => handleLaunch({ screen: 'legal', doc: 'terms' })}
+                  className="no-tap-highlight underline" style={{ color: T.muted }}>
+            {t('welcome.consentTerms')}
+          </button>.
+          {' '}{t('welcome.consentEdu')}
+        </div>
       </div>
     );
   }

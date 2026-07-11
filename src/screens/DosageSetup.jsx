@@ -13,12 +13,13 @@ import PageContainer from '../ui/page-container.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import { normalizePace } from '../lib/pace.js';
+import ClinicalNote from '../ui/clinical-note.jsx';
 
 const COUNT_OPTIONS = [5, 10, 15, 20];
 
 function DosageSetup({ onStart, onBack, onSetPace }) {
   const { theme: T } = useTheme();
-  const { data } = useData();
+  const { data, setData } = useData();
   const { data: dosageData, loading, error, reload } = useContent('dosage');
   const poolSize = Array.isArray(dosageData) ? dosageData.length : 0;
   const [count, setCount] = useState(10);
@@ -26,6 +27,20 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
 
   const effectiveCount = Math.min(count, poolSize || count);
   const canStart = poolSize > 0 && effectiveCount > 0;
+
+  // Layer 2b — one-time practice-environment note before the very first
+  // dosage session on this profile. Shown once ever (preferences flag),
+  // then the Start button is never gated again.
+  const [clinicalNote, setClinicalNote] = useState(false);
+  const noteSeen = !!(data && data.preferences && data.preferences.clinicalNoteDosageSeen);
+  const markNoteSeen = () => setData(prev => ({
+    ...prev,
+    preferences: { ...(prev.preferences || {}), clinicalNoteDosageSeen: true }
+  }));
+  const handleStart = () => {
+    if (!noteSeen) { setClinicalNote(true); return; }
+    onStart({ count: effectiveCount });
+  };
 
   return (
     <div className="anim-fadeup">
@@ -90,11 +105,17 @@ function DosageSetup({ onStart, onBack, onSetPace }) {
       <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
            style={{ background: T.bg + 'F2', backdropFilter: 'blur(12px)', borderTop: `1px solid ${T.borderSoft}` }}>
         <div className="max-w-md md:max-w-3xl mx-auto md:px-6 lg:px-8">
-          <Button onClick={() => onStart({ count: effectiveCount })} disabled={!canStart} size="lg" className="w-full" icon={<Play size={16} fill="#FFF" strokeWidth={0} />}>
+          <Button onClick={handleStart} disabled={!canStart} size="lg" className="w-full" icon={<Play size={16} fill="#FFF" strokeWidth={0} />}>
             Start {effectiveCount} question{effectiveCount === 1 ? '' : 's'}
           </Button>
         </div>
       </div>
+
+      <ClinicalNote open={clinicalNote}
+                    title="Practice environment"
+                    body="Dosage drills are training exercises. The values here are for practice, not prescriptions. In real care, always follow your institution's protocols and current references."
+                    onAcknowledge={() => { setClinicalNote(false); markNoteSeen(); onStart({ count: effectiveCount }); }}
+                    onClose={() => { setClinicalNote(false); markNoteSeen(); }} />
     </div>
   );
 }
