@@ -12071,3 +12071,84 @@ drive the wrong screen. Any UI probe here must filter to elements actually on-sc
 NOT DRIVEN (defensive fixes, not reachable from the UI in a healthy bank): the empty-quiz back
 trap (A4), the 0-question Advanced NaN verdict, and the zero-question PYQ paper. Correct by
 construction and covered by the gate, but nobody clicked them.
+
+---
+
+## 2026-07-12 - Level Up: full dry run of the hub + all 12 games, 20 fixes (52e69b5, LIVE)
+
+Owner: "do the same on the Level Up sections, i am sure you will find so many bugs. fix them all.
+do the dry run and also check all the edge cases. make the app feel premium and effortless."
+
+THE HEADLINE, and the difference from the Drill round: Drill Tests' bugs were all at the EDGES
+(the user who runs out of time / leaves early / answers nothing). Level Up's bugs were in the
+REWARD PATH ITSELF, on the happy path. Eight of the twelve games let a student finish a run and
+paid them NOTHING.
+
+⚠ THE ONE-LINE LESSON: **onComplete(coins) is the only thing that banks a reward, and it fired
+only from the "Finish" BUTTON.** Every results screen also had a back arrow wired straight to
+goHome, and the device back button fell through to App's global handler. So two of the three ways
+out of a finished run paid ZERO: Crash Cart, ICU Monitor, The Sorter, Tie-Breaker, Spot the
+Structure, Clinical Skill Drill, Drip Zone, Wave Hunter. Any NEW game must route EVERY exit from
+its results screen through the latched `finish`, not just the button.
+
+EXIT GUARD (new: lib/game-exit.js + ui/use-exit-guard.jsx). Not one of the 12 games asked before
+binning an in-progress run. Ward Boss was worst: back silently destroyed a live shift and dropped
+you on the scenario picker, needing a SECOND back to leave. The guard hooks the EXISTING
+back-handler registry (lib/back-handler.js, the one Settings/Kmap use), NOT a second popstate
+listener: quiz.jsx once installed one above an early return and swallowed back FOREVER. It asks
+ONLY when there is something to lose (started && (coins > 0 || progress > 0)), so browsing into a
+game and straight back out is still instant. That restraint IS the "effortless" half of the ask.
+
+PULL-TO-REFRESH: PTR_DISABLED_SCREENS listed all ten TAP-driven games but omitted the only two
+driven by pointer DRAGS on a board (three-am-chart, shift-survival), where a downward drag from the
+top-row tray could reload the app and destroy the run. NOTE_FAB_HIDDEN already listed both, which
+is what gave the omission away.
+
+REWARD UI THAT LIED: the Supply Crate FABRICATED a reward when refused (openSupplyCrate returns
+null at 0 crates; the reveal fell back to a hardcoded card saying "Added to your balance" while
+granting nothing). The frame shop showed the STATIC catalog price while App charged the LIVE
+game_config price (any override desynced them into a dead Buy button). Double-tapping Buy charged
+twice and pushed the id in twice, rendering an impossible "7/6 unlocked". Two level-ups clobbered
+each other (single-slot state).
+
+THE INVISIBLE CEILING: dailyRemaining() had existed in levelup.js since P1 and was imported by
+NOBODY. At the 3000 XP daily cap, games still paid Coins but awarded ZERO XP, so the level ring and
+the XP bar simply FROZE with no message. To the most engaged user in the app, that reads as broken.
+The hub now states the remaining XP, and at the cap explains that Coins still pay.
+
+FIVE ENGINE BUGS THE NEW TESTS FOUND. levelup.js / economy.js / cosmetics.js are the three files
+that decide how much currency a user gets, and they had ZERO tests.
+- ⚠ claimWhyBonus was FARMABLE. The "once per question, ever" ledger was a rolling
+  whyClaimed.slice(-1000). A bounded, EVICTING list cannot be a permanent ledger: past the cap the
+  oldest id dropped out and became claimable AGAIN, minting unlimited coins 50 at a time (and coins
+  now buy frames). Now a HARD ceiling that stops paying instead of evicting.
+- completeGame('abc') poisoned xp to NaN; the next normalizeLevelup read that as non-finite and
+  reset xp to 0. A silent, total WIPE of lifetime XP.
+- progress() reported a corrupt profile as LEVEL 100 (NaN makes every "used + need > xp" false, so
+  the loop ran to the ceiling).
+- restoreHearts(NaN) handed back a FULL bar (NaN hearts normalizes to the DEFAULT = HEART_MAX).
+- frameDef('toString') returned a FUNCTION (bare object literal, so inherited prototype keys
+  resolved), which framed-avatar would then try to render.
+⚠ RULE: "x || 0" is NOT a number guard. Use Number(x) then Number.isFinite. addCoins had it right;
+nothing else did.
+
+ALSO: seven games rendered a blank dead-end on an empty pool (bare "return null", no TopBar, no way
+out but reloading the app); Distractor Assassin's count chooser went blank on a bank of 1 to 4
+questions; and the nav drawer nested a button inside a button (invalid HTML, React warned on every
+single render), now a div with role="button".
+
+VERIFIED BY DRIVING, NOT COMPILING. All 12 games opened and rendered, zero runtime errors. Crash
+Cart 3/5, left via the BACK ARROW, and 45 coins + 45 XP + 1 game actually landed in the IndexedDB
+blob (it used to land 0/0/0). Mid-run back asks "You have 15 coins riding on this round"; Keep
+playing resumes; Leave round discards and pays nothing. Crate consumed exactly once, 60 coins
+landed. Double-tap Buy charged 400 ONCE, cosmetics ["ember"], counter 1/6. At the cap the hub says
+so; below it, 600 XP left. prefers-reduced-motion gives ZERO navigator.vibrate calls. npm test 61
+files (was 57).
+
+HARNESS LESSONS (cost me several false results, both now fixed in the scratchpad harness):
+- The nav drawer is translated HORIZONTALLY off-canvas, so filtering candidates by "is it in the
+  viewport" is what keeps clicks off it. I removed that check to reach below-the-fold game cards
+  and instantly started driving drawer items instead. Filter on the HORIZONTAL centre only.
+- Shift Survival has NO TopBar (hand-rolled header), so [aria-label="Go back"] does not exist
+  there. A back click that silently did nothing left the next three games "passing" while never
+  actually being opened. Reload between screens instead of trusting back.
