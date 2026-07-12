@@ -16,7 +16,10 @@ export const HEART_MAX = 5;
 export const HEART_REGEN_MS = 2 * 60 * 60 * 1000; // 1 heart every 2 hours
 export const WHY_BONUS_COINS = 50;                // PHIL-03 reward
 export const COIN_GLYPH = '\u{1FA99}';            // 🪙
-const WHY_CLAIMED_CAP = 1000;                     // keep the dedup list bounded
+// Keep the dedup list bounded. This is a HARD ceiling, not a rolling window: see
+// claimWhyBonus. Sized well past any realistic question bank so a genuine user
+// never reaches it (the blob already stores per-question history at this scale).
+const WHY_CLAIMED_CAP = 10000;
 
 export function normalizeEconomy(e) {
   const o = { coins: 0, hearts: HEART_MAX, heartsTs: 0, whyClaimed: [] };
@@ -45,12 +48,23 @@ export function withRegenHearts(e, now = Date.now()) {
 
 // PHIL-03 — claim the Why Bonus for a question. Returns { economy, awarded }.
 // Once-per-question forever (dedup on whyClaimed). Never awarded twice.
+//
+// ⚠ COIN-MINTING BUG, fixed: the list used to be trimmed with `.slice(-CAP)`.
+// A bounded, EVICTING list cannot be a "once ever" ledger. Past the cap the
+// oldest id was dropped and became claimable AGAIN, so a user with a bank
+// bigger than the cap could cycle the oldest questions forever and mint
+// unlimited coins at 50 a pop (and coins now buy cosmetic frames). The bank is
+// admin-generated and growing, so this was reachable, not theoretical.
+//
+// The list stays bounded, but at the ceiling we simply STOP AWARDING instead of
+// evicting. Memory stays capped and no coin can ever be minted twice. The cap is
+// far above any realistic bank, so a genuine user never reaches it.
 export function claimWhyBonus(e, questionId) {
   const o = normalizeEconomy(e);
   if (!questionId || o.whyClaimed.includes(questionId)) return { economy: o, awarded: false };
-  const whyClaimed = [...o.whyClaimed, questionId];
+  if (o.whyClaimed.length >= WHY_CLAIMED_CAP) return { economy: o, awarded: false };
   return {
-    economy: { ...o, coins: o.coins + WHY_BONUS_COINS, whyClaimed: whyClaimed.slice(-WHY_CLAIMED_CAP) },
+    economy: { ...o, coins: o.coins + WHY_BONUS_COINS, whyClaimed: [...o.whyClaimed, questionId] },
     awarded: true,
   };
 }
@@ -65,6 +79,13 @@ export function addCoins(e, n) {
 // max (no depletion mechanic yet), correct once the Accuracy Wallet drains them.
 export function restoreHearts(e, n = 1) {
   const o = normalizeEconomy(e);
-  const hearts = Math.min(HEART_MAX, o.hearts + Math.max(0, Math.floor(n)));
+  // Guard the amount. A non-finite `n` made `hearts` NaN, and normalizeEconomy's
+  // fallback for a non-finite hearts value is HEART_MAX, so a garbage restore
+  // silently handed back a FULL bar. Harmless while hearts are never spent, a
+  // free-lives exploit the day they are. Number() first, so a numeric string
+  // ('2') still coerces cleanly the way it always did.
+  const nNum = Number(n);
+  const add = Number.isFinite(nNum) ? Math.max(0, Math.floor(nNum)) : 0;
+  const hearts = Math.min(HEART_MAX, o.hearts + add);
   return { ...o, hearts, heartsTs: hearts >= HEART_MAX ? 0 : o.heartsTs };
 }

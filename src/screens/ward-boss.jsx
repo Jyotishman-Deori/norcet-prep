@@ -34,6 +34,7 @@ import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import EcgMonitor from '../ui/ecg-monitor.jsx';
 import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { ECG_RHYTHMS } from '../data/ecg-rhythms.js';
 import { createMonitorAudio } from '../lib/ecg-audio.js';
 import { normalizePace, paceFlags } from '../lib/pace.js';
@@ -602,6 +603,16 @@ function RunView({ T, scenario, flashpoint, soundOn, setSoundOn, onExit, onCompl
     try { if (onComplete) onComplete(tally.coins); } catch (e) {}
   }, [finished, onRecordBest, onComplete, scenario.id, tally.coins, state.status]);
 
+  // Backing out of a LIVE shift used to silently destroy it and drop the user on
+  // the scenario picker with no warning (and a second back was then needed to
+  // actually leave). Ask first: a shift in progress is several minutes of work.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: !ended, finished, earned: tally.coins, progress: state.turn || 1,
+    // Once the shift has ENDED, leaving must still go through `finish`: that is
+    // the only thing that banks the coins and records the personal best.
+    onLeave: ended ? finish : onExit,
+  });
+
   // ── DEBRIEF ──
   if (ended) {
     return <DebriefView T={T} scenario={scenario} state={state} tally={tally} flashpoint={flashpoint}
@@ -638,7 +649,8 @@ function RunView({ T, scenario, flashpoint, soundOn, setSoundOn, onExit, onCompl
              style={{ boxShadow: `inset 0 0 120px 24px ${M.red}88`, opacity: reduced ? 0.6 : undefined }} aria-hidden="true" />
       )}
 
-      <TopBar title="Ward Boss" onBack={onExit}
+      {exitDialog}
+      <TopBar title="Ward Boss" onBack={requestExit}
               right={
                 <button onClick={() => setSoundOn((s) => !s)} aria-label={soundOn ? 'Mute monitor' : 'Unmute monitor'}
                         className="no-tap-highlight text-xs font-semibold px-2.5 py-1 rounded-full"

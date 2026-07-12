@@ -23,6 +23,7 @@ import { Pill, Syringe, Bone, Moon, Coins, Trophy, Sparkles, Brain, X } from 'lu
 import { useTheme } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import ComboBurst from '../ui/combo-burst.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { CHART_FACTS } from '../data/chart-facts.js';
 import {
   SIZE, at, newTray, canPlace, placeCells, clearFullLines, anyMove, clearBottomHalf, pickLifelineQuestion,
@@ -79,6 +80,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
   const [lifeline, setLifeline] = useState(null);   // { q } | null
   const [lifelineUsed, setLifelineUsed] = useState(false);
   const [phase, setPhase] = useState('play');       // play | done
+  const [finished, setFinished] = useState(false);
 
   // Drag + juice state.
   const [drag, setDrag] = useState(null);           // { index, piece, cellSize, x, y } | null
@@ -104,6 +106,21 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
   }, []);
 
   const coins = cleared * COINS_PER_LINE;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-board discards it. This one has no timer, so a board with lines
+  // already cleared is pure progress on the table: ask before binning it.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'play', finished, earned: coins, progress: cleared, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const flashFact = () => {
     setFact(CHART_FACTS[rnd(CHART_FACTS.length)]);
@@ -272,7 +289,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
   if (phase === 'done') {
     return (
       <div className="anim-fadeup">
-        <TopBar title="The 3 AM Chart" onBack={onBack} />
+        <TopBar title="The 3 AM Chart" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.primary + '18', border: `1px solid ${T.primary}44` }}>
@@ -290,7 +307,7 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
           ) : (
             <div className="text-[13px] mb-7" style={{ color: T.muted }}>No lines cleared this time, chip away at a row or column next round.</div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -301,8 +318,9 @@ function ThreeAmChart({ onBack, onComplete, allQuestions = [] }) {
   // ── PLAY ──
   return (
     <div className="test-enter">
+      {exitDialog}
       <style>{JUICE_CSS}</style>
-      <TopBar title="The 3 AM Chart" onBack={onBack}
+      <TopBar title="The 3 AM Chart" onBack={requestExit}
               right={
                 <div className="flex items-center gap-1.5 text-xs font-bold tabular-nums px-2.5 py-1 rounded-full"
                      style={{ color: '#B45309', background: '#F59E0B1A', border: '1px solid #F59E0B33' }}>

@@ -36,6 +36,8 @@ import { useTheme, useData } from '../lib/app-context.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import ComboBurst, { useCombo } from '../ui/combo-burst.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
+import { useBackHandler } from '../lib/back-handler.js';
 import { normalizePace, paceFlags } from '../lib/pace.js';
 import { prefersReducedMotion, haptic, HAPTIC } from '../lib/juice.js';
 import { isSoundEnabled, playClearChime } from '../lib/sound.js';
@@ -251,12 +253,25 @@ function TaskRunner({ T, run, flashpoint, soundOn, setSoundOn, onExit, onFinishR
     }
   }, [idx, run.length, onFinishRun]);
 
+  // The guard lives HERE, not in the parent: the tasks already measured are held
+  // in this component's ref and are not handed up until the run ends, so the
+  // parent genuinely does not know what is on the table yet. Backing out mid-run
+  // used to go straight home and bin all of it. `progress: idx + 1` so the
+  // CURRENT task counts, not just the ones already scored.
+  const earned = resultsRef.current.reduce((s, r) => s + (Number.isFinite(r.coins) ? r.coins : 0), 0);
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: true, earned, progress: idx + 1, onLeave: onExit,
+  });
+
   if (!task) return null;
 
   return (
-    <TaskView key={task.id} T={T} task={task} taskNo={idx + 1} total={run.length}
-              flashpoint={flashpoint} soundOn={soundOn} setSoundOn={setSoundOn}
-              onExit={onExit} onNext={onTaskDone} />
+    <>
+      {exitDialog}
+      <TaskView key={task.id} T={T} task={task} taskNo={idx + 1} total={run.length}
+                flashpoint={flashpoint} soundOn={soundOn} setSoundOn={setSoundOn}
+                onExit={requestExit} onNext={onTaskDone} />
+    </>
   );
 }
 
@@ -858,15 +873,21 @@ function DoneView({ T, results, flashpoint, onPlayAgain, onComplete, onBack }) {
   const totalCoins = useMemo(() => results.reduce((s, r) => s + (Number.isFinite(r.coins) ? r.coins : 0), 0), [results]);
   const allRight = results.length > 0 && rightCount === results.length;
 
+  // The back arrow routes here too. It used to go straight home, which threw
+  // away every coin of a finished run: onComplete is the ONLY thing that pays.
   const finish = useCallback(() => {
-    if (finished) return;
+    if (finished) { if (onBack) onBack(); return; }
     setFinished(true);
-    try { if (onComplete) onComplete(totalCoins); } catch (e) {}
-  }, [finished, onComplete, totalCoins]);
+    try { if (onComplete) onComplete(totalCoins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, totalCoins]);
+
+  // ...and so does the DEVICE back button, which would otherwise be handled by
+  // App's global handler and go straight home, unpaid.
+  useBackHandler(useCallback(() => { finish(); return true; }, [finish]));
 
   return (
     <div className="anim-fadeup" style={{ minHeight: '100vh', background: T.bg }}>
-      <TopBar title="Wave Hunter" onBack={onBack} />
+      <TopBar title="Wave Hunter" onBack={finish} />
       <div className="max-w-md mx-auto px-4 pt-6 pb-32">
 
         {/* headline */}

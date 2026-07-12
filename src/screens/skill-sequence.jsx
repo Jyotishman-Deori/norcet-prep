@@ -6,9 +6,10 @@
 // patient gets a per-case countdown that LOCKS the case on timeout; Flashpoint
 // halves the clock and doubles the coins. Self-contained content (seed).
 // =====================================================================
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Activity, Check, X, GripVertical, Lightbulb, ChevronRight, Coins, RotateCcw, Trophy, TimerOff } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import { shuffle } from '../lib/utils.js';
 import { SKILL_SEQUENCES } from '../data/skill-sequences.js';
@@ -33,18 +34,34 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
   const [timedOut, setTimedOut] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
   const [phase, setPhase] = useState('drill');   // drill | done
+  const [finished, setFinished] = useState(false);
 
   const scenario = scenarios[idx];
-  const correctOrder = useMemo(() => scenario.steps.map(s => s.id), [scenario]);
-  const shuffledSteps = useMemo(() => shuffle(scenario.steps), [scenario]);
-  const byId = useMemo(() => { const m = {}; scenario.steps.forEach(s => { m[s.id] = s; }); return m; }, [scenario]);
+  const correctOrder = useMemo(() => (scenario ? scenario.steps.map(s => s.id) : []), [scenario]);
+  const shuffledSteps = useMemo(() => (scenario ? shuffle(scenario.steps) : []), [scenario]);
+  const byId = useMemo(() => { const m = {}; if (scenario) scenario.steps.forEach(s => { m[s.id] = s; }); return m; }, [scenario]);
 
   const placed = new Set(order);
   const pool = shuffledSteps.filter(s => !placed.has(s.id));
-  const allPlaced = order.length === scenario.steps.length;
+  const allPlaced = !!scenario && order.length === scenario.steps.length;
   const isExact = checked && allPlaced && order.every((id, i) => id === correctOrder[i]);
-  const budgetSec = scenario.steps.length * (flashpoint ? SEC_PER_STEP_FLASH : SEC_PER_STEP);
+  const budgetSec = (scenario ? scenario.steps.length : 0) * (flashpoint ? SEC_PER_STEP_FLASH : SEC_PER_STEP);
   const { flash: comboFlash, hit: comboHit, miss: comboMiss } = useCombo();
+  const coins = correctCount * coinPerCorrect;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const tapPool = (id) => { if (!checked) setOrder(o => [...o, id]); };
   const tapPlaced = (id) => { if (!checked) setOrder(o => o.filter(x => x !== id)); };
@@ -71,10 +88,9 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
 
   // ── DONE — summary + reward ──
   if (phase === 'done') {
-    const coins = correctCount * coinPerCorrect;
     return (
       <div className="anim-fadeup">
-        <TopBar title="Clinical Skill Drill" onBack={onBack} />
+        <TopBar title="Clinical Skill Drill" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -90,7 +106,7 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -99,10 +115,28 @@ function SkillSequence({ onBack, onComplete, count = 5 }) {
   }
 
   // ── DRILL ──
+  // No scenario to show (an empty pool). This screen had no guard at all: it
+  // would hard-crash on scenario.steps.map with an empty pool.
+  if (!scenario) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Clinical Skill Drill" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>No sequences to order</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no Clinical Skill Drill sequences available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="test-enter">
+      {exitDialog}
       <ComboBurst flash={comboFlash} />
-      <TopBar title="Clinical Skill Drill" onBack={onBack}
+      <TopBar title="Clinical Skill Drill" onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {idx + 1} / {scenarios.length}

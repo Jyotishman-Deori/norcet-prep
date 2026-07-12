@@ -10,9 +10,10 @@
 //   drill  → monitor + vitals + 4 options → feedback (rationale + first action)
 //   done   → shift summary + coins
 // =====================================================================
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Activity, HeartPulse, Volume2, VolumeX, Check, X, Play, Stethoscope, ChevronRight, Coins, Trophy, TimerOff, Droplet, Gauge } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import EcgMonitor from '../ui/ecg-monitor.jsx';
@@ -72,10 +73,26 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
   const [checked, setChecked] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const scenario = scenarios[idx];
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
+  const coins = correctCount * coinPer;
   const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   // Audio engine — created once, scheduled per live strip, closed on unmount.
   const audioRef = useRef(null);
@@ -203,10 +220,9 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
 
   // ── DONE — shift summary ──
   if (phase === 'done') {
-    const coins = correctCount * coinPer;
     return (
       <div className="anim-fadeup">
-        <TopBar title="ICU Monitor" onBack={onBack} />
+        <TopBar title="ICU Monitor" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -222,7 +238,7 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -231,15 +247,31 @@ function IcuMonitor({ onBack, onComplete, onSetPace }) {
   }
 
   // ── DRILL ──
-  if (!scenario) return null;
+  // No scenario to show (an empty pool). This used to `return null`: a blank
+  // white screen with no TopBar and no way back except reloading the app.
+  if (!scenario) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="ICU Monitor" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>No rhythms to read</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no ICU Monitor rhythms available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
   const sev = SEV[scenario.severity] || SEV.stable;
   const correctIdx = scenario.answer;
   const isCorrect = checked && selected === correctIdx;
 
   return (
     <div className="test-enter">
+      {exitDialog}
       <ComboBurst flash={comboFlash} />
-      <TopBar title="ICU Monitor" onBack={onBack}
+      <TopBar title="ICU Monitor" onBack={requestExit}
               right={
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => setSoundOn((s) => !s)} aria-label="Toggle sound"

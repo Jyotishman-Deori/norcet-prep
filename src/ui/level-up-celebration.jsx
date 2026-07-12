@@ -10,6 +10,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Activity, Badge, ClipboardList, Crown, Flame, Stethoscope } from 'lucide-react';
+import { haptic } from '../lib/juice.js';
 import { tierFor } from '../lib/levelup.js';
 
 const TIER_ICONS = {
@@ -40,8 +41,10 @@ export default function LevelUpCelebration({ fromLevel, toLevel, onClose }) {
   const newTier = tier.id !== prevTier.id;
   const TierIcon = TIER_ICONS[tier.icon] || Badge;
 
+  // Via haptic(), NOT navigator.vibrate directly: the raw call buzzed the phone
+  // even under prefers-reduced-motion, which the accessibility rule forbids.
   useEffect(() => {
-    try { if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(newTier ? [14, 50, 22] : 16); } catch (e) {}
+    haptic(newTier ? [14, 50, 22] : 16);
   }, [newTier]);
 
   // Radial confetti burst — directions evenly around the circle, a few colours.

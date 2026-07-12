@@ -1037,6 +1037,12 @@ function hydrateLoaded(rawData) {
 const PTR_DISABLED_SCREENS = new Set([
   'quiz', 'advanced-test', 'paper-test', 'dosage-run', 'knowledge-map', 'results',
   'advanced-results', 'paper-results', 'dosage-results', 'skill-drill', 'icu-monitor', 'crash-cart', 'sorter', 'distractor-assassin', 'tie-breaker', 'ibq', 'ward-boss', 'drip-zone', 'wave-hunter',
+  // The two DRAG-BOARD games were missing from this list, and they are the two
+  // that need it most: they are driven by pointerdown drags on a board whose
+  // tray sits at the top, so dragging a piece downward could trigger a
+  // pull-to-refresh and reload the app mid-run, destroying it. (NOTE_FAB_HIDDEN
+  // already listed both, which is what gave the omission away.)
+  'three-am-chart', 'shift-survival',
   // Fix 1 — the Share screen has its own scrollable shareable text; PTR would
   // intercept the pull and interfere with scrolling it.
   'share-app',
@@ -3371,6 +3377,17 @@ export default function App() {
   profileRef.current = profile;
   const [levelUpCelebration, setLevelUpCelebration] = useState(null);
 
+  // Celebrate a level-up. MERGES rather than replaces: this is a single-slot bit
+  // of state, so levelling up from a game and then claiming a quest before
+  // dismissing the first card used to REPLACE it mid-animation, silently eating a
+  // celebration the user earned. Keep the earliest `fromLevel` and the latest
+  // `toLevel` so the surviving card spans every level actually gained.
+  const celebrateLevelUp = useCallback((fromLevel, toLevel) => {
+    setLevelUpCelebration(prev => (prev
+      ? { fromLevel: Math.min(prev.fromLevel, fromLevel), toLevel: Math.max(prev.toLevel, toLevel) }
+      : { fromLevel, toLevel }));
+  }, []);
+
   // ⚠️ TEMPORARY TEST GRANT — one-time +100,000 Coins per profile so testers
   // have plenty to spend while we trial the gamification. Fires ONCE per profile
   // (the `testCoinGrant` flag is synced in the blob and survives migration +
@@ -3446,8 +3463,8 @@ export default function App() {
       return { ...next, levelup: res.levelup };
     });
     goLevelUpDirect();
-    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
-  }, [goLevelUpDirect]);
+    if (res.leveledUp) celebrateLevelUp(res.fromLevel, res.toLevel);
+  }, [goLevelUpDirect, celebrateLevelUp]);
 
   // Per-scenario personal bests for the clinical sims (Ward Boss picker badges).
   // Lives in the synced blob under data.gameBests; pure merge in lib/game-bests.
@@ -3464,8 +3481,8 @@ export default function App() {
       ...prev, levelup: res.levelup,
       milestones: res.leveledUp ? recordMilestone(prev && prev.milestones, levelUpMilestone(res.toLevel)) : (prev && prev.milestones),
     }));
-    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
-  }, []);
+    if (res.leveledUp) celebrateLevelUp(res.fromLevel, res.toLevel);
+  }, [celebrateLevelUp]);
 
   // Level Up — open one Supply Crate: applies the reward (Coins to economy, any
   // bonus XP to levelup) and returns the reward so the reveal UI can show it.
@@ -3478,9 +3495,9 @@ export default function App() {
       economy: (res.reward.coins > 0) ? addCoinsPure(prev && prev.economy, res.reward.coins) : (prev && prev.economy),
       milestones: res.leveledUp ? recordMilestone(prev && prev.milestones, levelUpMilestone(res.toLevel)) : (prev && prev.milestones),
     }));
-    if (res.leveledUp) setLevelUpCelebration({ fromLevel: res.fromLevel, toLevel: res.toLevel });
+    if (res.leveledUp) celebrateLevelUp(res.fromLevel, res.toLevel);
     return res.reward;
-  }, []);
+  }, [celebrateLevelUp]);
 
   // Level Up — equip a cosmetic frame the user owns (or 'none').
   const equipCosmeticFrame = useCallback((frameId) => {
@@ -3496,6 +3513,15 @@ export default function App() {
     if (frameId === 'none' || price <= 0 || lu.cosmetics.includes(frameId) || econ.coins < price) return false;
     setData(prev => {
       const pl = normalizeLevelupPure(prev && prev.levelup);
+      // ⚠ Re-check ownership and affordability INSIDE the updater, against `prev`
+      // rather than the render-time ref. The guard above reads a snapshot that is
+      // only fresh after a commit, so a fast double-tap on Buy passed it twice:
+      // the user was charged twice and the frame id was pushed into `cosmetics`
+      // twice (normalizeLevelup filters unknown ids but did not de-dupe), which
+      // showed up as an impossible "7/6 unlocked" in the hub. Queued updaters run
+      // in order, so the second one sees the first one's result and no-ops.
+      const pe = normalizeEconomy(prev && prev.economy);
+      if (pl.cosmetics.includes(frameId) || pe.coins < price) return prev;
       return {
         ...prev,
         economy: addCoinsPure(prev && prev.economy, -price),

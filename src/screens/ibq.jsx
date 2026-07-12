@@ -7,9 +7,10 @@
 // reveals on timeout); pays Accuracy Coins per structure found.
 //   intro → drill (diagram + "Tap the …" prompts) → done (coins)
 // =====================================================================
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ScanSearch, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
@@ -46,6 +47,7 @@ function Ibq({ onBack, onComplete, onSetPace }) {
   const [timedOut, setTimedOut] = useState(false);
   const [found, setFound] = useState([]);
   const [correctTotal, setCorrectTotal] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const diagram = diagrams[dIdx];
   const prompt = diagram ? diagram.prompts[pIdx] : null;
@@ -53,6 +55,21 @@ function Ibq({ onBack, onComplete, onSetPace }) {
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
   const isCorrect = checked && picked === answer;
   const totalPrompts = useMemo(() => diagrams.reduce((s, d) => s + d.prompts.length, 0), [diagrams]);
+  const coins = correctTotal * coinPer;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: dIdx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const begin = () => {
     setDiagrams(shuffle(allDiagrams).slice(0, Math.max(1, count)));
@@ -148,10 +165,9 @@ function Ibq({ onBack, onComplete, onSetPace }) {
 
   // ── DONE ──
   if (phase === 'done') {
-    const coins = correctTotal * coinPer;
     return (
       <div className="anim-fadeup">
-        <TopBar title="Spot the Structure" onBack={onBack} />
+        <TopBar title="Spot the Structure" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -167,18 +183,34 @@ function Ibq({ onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">Finish</Button>
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>Finish</Button>
         </div>
       </div>
     );
   }
 
   // ── DRILL ──
-  if (!diagram || !prompt) return null;
+  // No diagram/prompt to show (an empty pool). This used to `return null`: a
+  // blank white screen with no TopBar and no way back except reloading the app.
+  if (!diagram || !prompt) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Spot the Structure" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>No diagrams to explore</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no Spot the Structure diagrams available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="test-enter">
-      <TopBar title={diagram.title} onBack={onBack}
+      {exitDialog}
+      <TopBar title={diagram.title} onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {pIdx + 1} / {diagram.prompts.length}

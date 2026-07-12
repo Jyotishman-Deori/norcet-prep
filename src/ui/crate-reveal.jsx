@@ -10,10 +10,11 @@
 //             rolled reward { id, label, coins, xp, tone })
 //   onClose — () => void
 // =====================================================================
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Coins, Gift, Sparkles } from 'lucide-react';
 import { useTheme } from '../lib/app-context.jsx';
+import { haptic } from '../lib/juice.js';
 import { crateOdds } from '../lib/levelup.js';
 import { frameDef } from '../lib/cosmetics.js';
 import FramedAvatar from './framed-avatar.jsx';
@@ -43,16 +44,27 @@ export default function CrateReveal({ onOpen, onClose }) {
   const [reward, setReward] = useState(null);
   const [shakeKey, setShakeKey] = useState(0);
   const opened = reward !== null;
+  // ⚠ A ref, not the `opened` state: two taps landing in one React batch would
+  // both read `opened === false` and BOTH call onOpen(), consuming two crates for
+  // three taps. A ref flips synchronously, so the second tap can never get in.
+  const openingRef = useRef(false);
 
   const tap = () => {
-    if (opened) return;
+    if (opened || openingRef.current) return;
     const n = taps + 1;
     setTaps(n);
     setShakeKey(k => k + 1);
-    try { if (navigator.vibrate) navigator.vibrate(n >= 3 ? [10, 30, 14] : 8); } catch (e) {}
+    haptic(n >= 3 ? [10, 30, 14] : 8);
     if (n >= 3) {
+      openingRef.current = true;
       const r = (onOpen && onOpen()) || null;
-      setReward(r || { id: 'common', label: 'Reward', coins: 0, xp: 0, tone: T.primary });
+      // ⚠ NEVER fabricate a reward. onOpen() returns null when the crate was
+      // REFUSED (none left: a stale blob, a second tab, a cross-device sync).
+      // This used to fall back to a hardcoded "Reward" card, so the user was told
+      // "Added to your balance" while receiving precisely nothing. If there was
+      // nothing to open, say nothing and close.
+      if (!r) { if (onClose) onClose(); return; }
+      setReward(r);
     }
   };
 

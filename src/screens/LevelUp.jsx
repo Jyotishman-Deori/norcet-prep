@@ -20,10 +20,10 @@ import FavHeart from '../ui/fav-heart.jsx';
 import StreakFire, { STREAK_FIRE_MIN } from '../ui/streak-fire.jsx';
 import CrateReveal from '../ui/crate-reveal.jsx';
 import FramedAvatar from '../ui/framed-avatar.jsx';
-import { frameDef, FRAME_IDS } from '../lib/cosmetics.js';
+import { frameDef, framePrice, FRAME_IDS } from '../lib/cosmetics.js';
 import { todayStr } from '../lib/utils.js';
 import { normalizeEconomy } from '../lib/economy.js';
-import { progress, tierFor, nextTier, normalizeLevelup, questState, MAX_LEVEL } from '../lib/levelup.js';
+import { progress, tierFor, nextTier, normalizeLevelup, questState, dailyRemaining, MAX_LEVEL } from '../lib/levelup.js';
 import TrendingBadge from '../ui/trending-badge.jsx';
 import ClinicalNote from '../ui/clinical-note.jsx';
 import { recordInteraction, loadTrendStats } from '../lib/trending-store.js';
@@ -90,6 +90,12 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
   const streak = (data && data.stats && data.stats.streakCurrent) || 0;
   const atMax = prog.level >= MAX_LEVEL;
   const quests = questState(data && data.levelup, todayStr());
+  // Today's remaining XP room. There is a daily cap (anti-grind), and it used to
+  // be completely invisible: once you hit it, games still paid Coins but awarded
+  // ZERO XP, so the ring and the bar just stopped moving with no explanation. To
+  // the app's most engaged user, that reads as broken. Say it out loud instead.
+  const xpLeftToday = dailyRemaining(data && data.levelup, todayStr());
+  const cappedToday = xpLeftToday <= 0;
 
   // PERF — warm up the Knowledge Map chunk (the app's biggest lazy screen)
   // while the user browses this hub, its main door. Same import specifier as
@@ -217,11 +223,28 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
           </button>
         )}
 
-        {/* How XP works — one quiet line, no jargon */}
-        <div className="flex items-center gap-1.5 text-[12px] mb-4 px-1" style={{ color: T.muted }}>
-          <Sparkles size={13} style={{ color: T.primary }} />
-          Play any drill below to earn XP and level up. The harder the round, the more you earn.
-        </div>
+        {/* How XP works — one quiet line, no jargon. At the daily cap this turns
+            into an honest explanation instead of a silently frozen XP bar. */}
+        {cappedToday ? (
+          <Card className="p-3.5 mb-4 flex items-start gap-2.5"
+                style={{ background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
+            <Sparkles size={15} className="flex-shrink-0 mt-0.5" style={{ color: T.primary }} />
+            <div className="min-w-0">
+              <div className="text-[12.5px] font-semibold mb-0.5" style={{ color: T.ink }}>
+                You have hit today's XP limit
+              </div>
+              <div className="text-[11.5px] leading-relaxed" style={{ color: T.muted }}>
+                Your XP bar is paused until midnight. Keep playing if you want to: you still earn Coins,
+                and everything you practise still counts. The cap is there so levels reward steady study, not one long grind.
+              </div>
+            </div>
+          </Card>
+        ) : (
+          <div className="flex items-center gap-1.5 text-[12px] mb-4 px-1" style={{ color: T.muted }}>
+            <Sparkles size={13} style={{ color: T.primary }} />
+            Play any drill below to earn XP and level up. {xpLeftToday.toLocaleString()} XP left to earn today.
+          </div>
+        )}
 
         {/* DAILY QUESTS — 3 a day, reset at local midnight. Bonus XP on claim. */}
         <div className="flex items-center gap-2 mb-2.5">
@@ -384,7 +407,12 @@ function LevelUp({ onBack, onNavigate, onClaimQuest, onOpenCrate, onEquipFrame, 
               const f = frameDef(fid);
               const owned = fid === 'none' || lu.cosmetics.includes(fid);
               const equipped = lu.frame === fid;
-              const price = f.price || 0;
+              // framePrice(), NOT the static catalog's f.price. App charges
+              // framePrice() (which honours the live game_config override), so
+              // reading f.price here meant any override desynced the shop: it
+              // displayed the old price, judged affordability against it, and
+              // then the Buy button silently did nothing.
+              const price = framePrice(fid);
               const afford = econ.coins >= price;
               return (
                 <div key={fid} className="rounded-xl p-2.5 flex flex-col items-center text-center"

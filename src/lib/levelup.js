@@ -36,7 +36,13 @@ export function xpToNext(level) {
 // Resolve a total-XP value into { level, into, span, pct } — `into` = XP earned
 // inside the current level, `span` = XP that level needs, `pct` = 0..100.
 export function progress(xpTotal) {
-  let xp = Math.max(0, Math.floor(xpTotal || 0));
+  // `|| 0` alone let a truthy non-number ('x', {}) through as NaN, and since every
+  // `used + need > NaN` comparison is false the loop ran to the ceiling: a corrupt
+  // profile was reported as LEVEL 100. Non-finite input means level 1, not legend.
+  // Number() rather than Number.isFinite() on the raw value, so a numeric STRING
+  // ('600') still coerces cleanly the way it always did.
+  const xpNum = Number(xpTotal);
+  let xp = Number.isFinite(xpNum) ? Math.max(0, Math.floor(xpNum)) : 0;
   let level = 1;
   let used = 0;
   while (level < MAX_LEVEL) {
@@ -85,9 +91,13 @@ export function normalizeLevelup(l) {
     // Weekly XP accumulator (Games board "this week" — daily-capped + weekly reset).
     if (typeof l.weekStart === 'string') o.weekStart = l.weekStart;
     if (Number.isFinite(l.weekXp)) o.weekXp = Math.max(0, Math.floor(l.weekXp));
-    if (Array.isArray(l.questClaims)) o.questClaims = l.questClaims.filter(x => typeof x === 'string');
+    if (Array.isArray(l.questClaims)) o.questClaims = Array.from(new Set(l.questClaims.filter(x => typeof x === 'string')));
     if (Number.isFinite(l.crates)) o.crates = Math.max(0, Math.floor(l.crates));
-    if (Array.isArray(l.cosmetics)) o.cosmetics = l.cosmetics.filter(x => FRAME_IDS.includes(x));
+    // DE-DUPE, not just filter. You can only own a frame once, but a double-tap
+    // on Buy used to push the same id in twice, and the hub then rendered an
+    // impossible "7/6 unlocked". The buy path is now idempotent; this repairs any
+    // blob already corrupted by it (and keeps the invariant true by construction).
+    if (Array.isArray(l.cosmetics)) o.cosmetics = Array.from(new Set(l.cosmetics.filter(x => FRAME_IDS.includes(x))));
     if (typeof l.frame === 'string') o.frame = normalizeFrame(l.frame);
   }
   // Can't have a frame equipped you don't own (defensive).
@@ -118,7 +128,11 @@ function rolloverWindows(o, today) {
 export function completeGame(l, xpAmount, today) {
   let o = rolloverWindows(normalizeLevelup(l), today);
   const before = progress(o.xp).level;
-  const amt = Math.max(0, Math.floor(xpAmount || 0));
+  // Same `|| 0` hole as progress(), but worse: a truthy non-number made `granted`
+  // NaN, which poisoned xp/dailyXp/weekXp, and the next normalizeLevelup then read
+  // those as non-finite and reset xp to 0. A silent, total WIPE of lifetime XP.
+  const amtNum = Number(xpAmount);
+  const amt = Number.isFinite(amtNum) ? Math.max(0, Math.floor(amtNum)) : 0;
   const room = Math.max(0, getConfig().xp.dailyCap - o.dailyXp);
   const granted = Math.min(amt, room);
   o = { ...o, xp: o.xp + granted, dailyXp: o.dailyXp + granted, weekXp: o.weekXp + granted, dailyGames: o.dailyGames + 1 };

@@ -7,9 +7,10 @@
 // auto-checks on timeout) and pays Accuracy Coins per correctly-sorted item.
 //   intro → drill (bins + tray → review) → done (coins)
 // =====================================================================
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Recycle, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, RotateCcw, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
@@ -46,6 +47,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
   const [timedOut, setTimedOut] = useState(false);
   const [correctTotal, setCorrectTotal] = useState(0);
   const [itemTotal, setItemTotal] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const kase = cases[idx];
   const items = kase ? kase.items : [];
@@ -53,10 +55,25 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
   const allAssigned = items.length > 0 && items.every((it) => assign[it.id]);
   const caseCorrect = items.filter((it) => assign[it.id] === it.bin).length;
   const budgetSec = items.length * (flashpoint ? SEC_PER_ITEM_FLASH : SEC_PER_ITEM);
+  const coins = correctTotal * coinPerItem;
 
   useEffect(() => { setAssign({}); setPicked(null); }, [kase && kase.id]);
 
   const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const begin = () => {
     setCases(shuffle(pool).slice(0, Math.max(1, count)));
@@ -168,10 +185,9 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
 
   // ── DONE ──
   if (phase === 'done') {
-    const coins = correctTotal * coinPerItem;
     return (
       <div className="anim-fadeup">
-        <TopBar title="The Sorter" onBack={onBack} />
+        <TopBar title="The Sorter" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -187,7 +203,7 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -196,13 +212,29 @@ function SorterDrill({ onBack, onComplete, onSetPace }) {
   }
 
   // ── DRILL ──
-  if (!kase) return null;
+  // No case to show (an empty pool). This used to `return null`: a blank white
+  // screen with no TopBar and no way back except reloading the app.
+  if (!kase) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="The Sorter" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>Nothing to sort</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no Sorter cases available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
   const binById = {}; kase.bins.forEach((b) => { binById[b.id] = b; });
 
   return (
     <div className="test-enter">
+      {exitDialog}
       <ComboBurst flash={comboFlash} />
-      <TopBar title={kase.title} onBack={onBack}
+      <TopBar title={kase.title} onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {idx + 1} / {cases.length}

@@ -7,9 +7,10 @@
 // existing "Code Blue Mode" (which re-drills your own past mistakes).
 //   intro → drill (vignette + drug cards → rationale) → done (coins)
 // =====================================================================
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Syringe, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, AlertTriangle, Activity, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
@@ -51,9 +52,25 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   const [checked, setChecked] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const kase = cases[idx];
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
+  const coins = correctCount * coinPer;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   // shuffle the option order for the current case (indices into kase.options)
   useEffect(() => {
@@ -152,10 +169,9 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
 
   // ── DONE ──
   if (phase === 'done') {
-    const coins = correctCount * coinPer;
     return (
       <div className="anim-fadeup">
-        <TopBar title="Crash Cart" onBack={onBack} />
+        <TopBar title="Crash Cart" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -171,7 +187,7 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -180,14 +196,30 @@ function CrashCart({ onBack, onComplete, onSetPace }) {
   }
 
   // ── DRILL ──
-  if (!kase) return null;
+  // No case to show (an empty pool). This used to `return null`: a blank white
+  // screen with no TopBar and no way back except reloading the app.
+  if (!kase) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Crash Cart" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>No codes to run</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no Crash Cart cases available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
   const sev = SEV[kase.severity] || SEV.critical;
   const isCorrect = checked && selected === kase.answer;
 
   return (
     <div className="test-enter">
+      {exitDialog}
       <ComboBurst flash={comboFlash} />
-      <TopBar title="Crash Cart" onBack={onBack}
+      <TopBar title="Crash Cart" onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {idx + 1} / {cases.length}

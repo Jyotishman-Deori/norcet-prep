@@ -301,8 +301,16 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const glowing = returnGlowKey === it.key;
     return (
       <Tip title={it.label} text={it.tip || it.sub}>
-      <button onClick={it.action}
-              className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left mb-1.5" + (entering ? ' drawer-item-in' : '') + (glowing ? ' drawer-glow' : '')}
+      {/* A DIV with role="button", not a <button>: the favourite heart below is
+          itself a <button>, and a button nested inside a button is invalid HTML
+          (React warns, and browsers are free to mis-deliver the clicks). Same
+          classes, same styles, same keyboard affordance. */}
+      <div onClick={it.action}
+              role="button" tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); it.action(); }
+              }}
+              className={"no-tap-highlight drawer-row w-full flex items-center gap-3 px-3 py-3 rounded-2xl text-left mb-1.5 cursor-pointer" + (entering ? ' drawer-item-in' : '') + (glowing ? ' drawer-glow' : '')}
               style={{
                 background: T.surface,
                 border: `1px solid ${glowing ? it.color + '70' : T.borderSoft}`,
@@ -335,7 +343,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
             same vertical line instead of trailing the title text. */}
         {it.fav && <span className="flex-shrink-0 -mr-1"><FavHeart favId={it.fav} inline /></span>}
         <ChevronRight size={16} style={{ color: it.color, opacity: 0.55 }} className="flex-shrink-0 drawer-chev" />
-      </button>
+      </div>
       </Tip>
     );
   };

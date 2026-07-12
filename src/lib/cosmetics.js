@@ -20,24 +20,29 @@ export const FRAMES = {
   gold:   { id: 'gold',   name: 'Gold',     rarity: 'epic',   ring: ['#FCD34D', '#B45309'], glow: 'rgba(252,211,77,0.6)',   price: 1800 },
 };
 
+// Is `id` a REAL frame in the catalog? Plain `FRAMES[id]` also resolved inherited
+// Object.prototype members, so frameDef('toString') handed back a FUNCTION, which
+// ui/framed-avatar.jsx would then try to render, and normalizeFrame('toString')
+// accepted it as a valid equipped id. Own-property check only.
+const isFrameId = (id) => typeof id === 'string' && Object.prototype.hasOwnProperty.call(FRAMES, id);
+
 // Live-tunable price from the game_config row, falling back to the catalog.
 export function framePrice(id) {
   const prices = getConfig().framePrices || {};
-  if (Number.isFinite(prices[id])) return prices[id];
-  const f = FRAMES[id];
-  return f ? (f.price || 0) : 0;
+  if (isFrameId(id) && Number.isFinite(prices[id])) return prices[id];
+  return isFrameId(id) ? (FRAMES[id].price || 0) : 0;
 }
 
 // All collectible (non-default) frame ids.
 export const FRAME_IDS = Object.keys(FRAMES).filter(id => id !== 'none');
 
 export function frameDef(id) {
-  return FRAMES[id] || FRAMES.none;
+  return isFrameId(id) ? FRAMES[id] : FRAMES.none;
 }
 
 // Sanitise a stored equipped-frame id.
 export function normalizeFrame(id) {
-  return FRAMES[id] ? id : 'none';
+  return isFrameId(id) ? id : 'none';
 }
 
 // Frames the user hasn't won yet (candidates for a crate drop). `owned` is the

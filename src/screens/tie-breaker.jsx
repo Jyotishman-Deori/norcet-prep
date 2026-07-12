@@ -6,9 +6,10 @@
 // countdown that locks on timeout) and pays Accuracy Coins for correct calls.
 //   intro → drill (scenario + A/B → which is priority) → done (coins)
 // =====================================================================
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Scale, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, Lightbulb } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
@@ -43,11 +44,27 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
   const [checked, setChecked] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [correctCount, setCorrectCount] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const r = rounds[idx];
   const budgetSec = flashpoint ? SEC_BUDGET_FLASH : SEC_BUDGET;
   const isCorrect = checked && picked === (r && r.answer);
   const { flash: comboFlash, hit: comboHit, miss: comboMiss, reset: comboReset } = useCombo();
+  const coins = correctCount * coinPer;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const begin = () => {
     const picks = shuffle(pool).slice(0, Math.max(1, count)).map((tb) => ({ ...tb, flip: Math.random() < 0.5 }));
@@ -139,10 +156,9 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
 
   // ── DONE ──
   if (phase === 'done') {
-    const coins = correctCount * coinPer;
     return (
       <div className="anim-fadeup">
-        <TopBar title="Tie-Breaker" onBack={onBack} />
+        <TopBar title="Tie-Breaker" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -158,7 +174,7 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -167,7 +183,22 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
   }
 
   // ── DRILL ──
-  if (!r) return null;
+  // No round to show (an empty pool). This used to `return null`: a blank
+  // white screen with no TopBar and no way back except reloading the app.
+  if (!r) {
+    return (
+      <div className="anim-fadeup">
+        <TopBar title="Tie-Breaker" onBack={onBack} />
+        <div className="max-w-md mx-auto px-4 pt-16 text-center">
+          <div className="font-display text-lg font-semibold mb-1.5" style={{ color: T.ink }}>Nothing to compare</div>
+          <div className="text-[13px] mb-6" style={{ color: T.muted }}>
+            There are no Tie-Breaker rounds available right now. Try again later.
+          </div>
+          <Button onClick={onBack} size="lg" className="w-full">Back</Button>
+        </div>
+      </div>
+    );
+  }
   // display order: optionally flip so the correct side isn't predictable
   const left  = r.flip ? { key: 'b', text: r.b } : { key: 'a', text: r.a };
   const right = r.flip ? { key: 'a', text: r.a } : { key: 'b', text: r.b };
@@ -197,8 +228,9 @@ function TieBreaker({ onBack, onComplete, onSetPace }) {
 
   return (
     <div className="test-enter">
+      {exitDialog}
       <ComboBurst flash={comboFlash} />
-      <TopBar title="Tie-Breaker" onBack={onBack}
+      <TopBar title="Tie-Breaker" onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {idx + 1} / {rounds.length}

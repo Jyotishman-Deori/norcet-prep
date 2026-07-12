@@ -9,9 +9,10 @@
 // Honours the global Pace (per-question countdown that locks on timeout) and
 // pays Accuracy Coins per distractor eliminated.
 // =====================================================================
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Crosshair, Target, Check, X, Play, ChevronRight, Coins, Trophy, TimerOff, Skull, ShieldX } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import { Card, Button, TopBar } from '../ui/primitives.jsx';
 import PaceSelector from '../ui/pace-selector.jsx';
 import PulseTimer from '../ui/pulse-timer.jsx';
@@ -40,7 +41,13 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
 
   const pool = useMemo(() => (allQuestions || []).filter(eligible), [allQuestions]);
   const POOL = pool.length;
-  const COUNT_OPTIONS = useMemo(() => Array.from(new Set([5, 10, 15])).filter((c) => c <= POOL), [POOL]);
+  // Always offer at least one real choice. Filtering [5,10,15] by `c <= POOL`
+  // alone rendered an EMPTY chip grid on a small bank (1 to 4 eligible
+  // questions): every sibling game appends POOL as the fallback, so do that.
+  const COUNT_OPTIONS = useMemo(
+    () => Array.from(new Set([5, 10, 15, POOL])).filter((c) => c > 0 && c <= POOL).sort((a, b) => a - b),
+    [POOL]
+  );
 
   const [phase, setPhase] = useState('intro');
   const [count, setCount] = useState(Math.min(10, POOL) || 1);
@@ -51,6 +58,7 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
   const [timedOut, setTimedOut] = useState(false);
   const [killTotal, setKillTotal] = useState(0);
   const [perfects, setPerfects] = useState(0);
+  const [finished, setFinished] = useState(false);
 
   const q = qs[idx];
   const correctIdx = q ? q.correct[0] : -1;
@@ -61,6 +69,22 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
   const locked = hitCorrect || perfect || timedOut;
 
   useEffect(() => { setEliminated([]); setHitCorrect(false); setTimedOut(false); }, [q && q.id]);
+
+  const coins = killTotal * coinPerKill;
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the results back arrow routes here too: it used to go straight home and
+  // silently bin the whole run's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Leaving mid-run discards it. Ask first, but only once there is something to lose.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'drill', finished, earned: coins, progress: idx, onLeave: phase === 'done' ? finish : onBack,
+  });
 
   const begin = () => {
     setQs(shuffle(pool).slice(0, Math.max(1, count)));
@@ -167,10 +191,9 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
 
   // ── DONE ──
   if (phase === 'done') {
-    const coins = killTotal * coinPerKill;
     return (
       <div className="anim-fadeup">
-        <TopBar title="Distractor Assassin" onBack={onBack} />
+        <TopBar title="Distractor Assassin" onBack={finish} />
         <div className="max-w-md mx-auto px-4 pt-10 pb-24 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4 q-pulse"
                style={{ background: T.success + '18', border: `1px solid ${T.success}44` }}>
@@ -186,7 +209,7 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
               <Coins size={15} /> +{coins} Coins{flashpoint ? ' · 2×' : ''}
             </div>
           )}
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full mt-2">
+          <Button onClick={finish} size="lg" className="w-full mt-2" disabled={finished}>
             Finish
           </Button>
         </div>
@@ -195,12 +218,13 @@ function DistractorAssassin({ allQuestions, onBack, onComplete, onSetPace }) {
   }
 
   // ── DRILL ──
-  if (!q) return null;
+  if (!q) return null;   // unreachable: the empty-bank state above already caught it
   const wrongMap = q.wrong || {};
 
   return (
     <div className="test-enter">
-      <TopBar title="Distractor Assassin" onBack={onBack}
+      {exitDialog}
+      <TopBar title="Distractor Assassin" onBack={requestExit}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
                        {idx + 1} / {qs.length}

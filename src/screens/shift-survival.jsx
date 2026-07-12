@@ -15,6 +15,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Pill, Syringe, Bone, AlertTriangle, ArrowLeft, Coins, Skull, HeartPulse, Brain, Activity } from 'lucide-react';
 import { Card, Button } from '../ui/primitives.jsx';
+import { useExitGuard } from '../ui/use-exit-guard.jsx';
 import ComboBurst from '../ui/combo-burst.jsx';
 import { MATH_QUESTIONS } from '../data/shift-survival.js';
 import {
@@ -99,6 +100,7 @@ function ShiftSurvival({ onBack, onComplete }) {
   const [mathKey, setMathKey] = useState(0);
   const [failed, setFailed] = useState([]);          // malpractice review
   const [phase, setPhase] = useState('play');        // play | dead
+  const [finished, setFinished] = useState(false);
 
   // Drag + juice state.
   const [drag, setDrag] = useState(null);            // { index, piece, cellSize, x, y } | null
@@ -127,6 +129,22 @@ function ShiftSurvival({ onBack, onComplete }) {
   }, []);
 
   const die = () => { haptic(60); setPhase('dead'); };
+
+  // Pay out exactly once. onComplete is the ONLY thing that banks the coins, so
+  // the debrief's back route goes here too: it used to go straight home and
+  // silently bin the whole shift's earnings.
+  const finish = useCallback(() => {
+    if (finished) { if (onBack) onBack(); return; }
+    setFinished(true);
+    try { if (onComplete) onComplete(coins); else if (onBack) onBack(); } catch (e) { if (onBack) onBack(); }
+  }, [finished, onComplete, onBack, coins]);
+
+  // Coins accrue DURING the shift but are only banked at the end, so backing out
+  // mid-shift used to bin them with no warning. "End shift" is right there in the
+  // footer and pays properly, so the guard just has to stop the accident.
+  const { requestExit, dialog: exitDialog } = useExitGuard({
+    started: phase === 'play', finished, earned: coins, onLeave: phase === 'dead' ? finish : onBack,
+  });
 
   // Re-top conditions toward 2 active, dropping `resolved` rows first.
   const reconcileConditions = (gridAfter, resolved) => {
@@ -373,7 +391,7 @@ function ShiftSurvival({ onBack, onComplete }) {
             )}
           </div>
 
-          <Button onClick={() => { try { if (onComplete) onComplete(coins); } catch (e) {} }} size="lg" className="w-full">
+          <Button onClick={finish} size="lg" className="w-full" disabled={finished}>
             End shift
           </Button>
         </div>
@@ -389,10 +407,11 @@ function ShiftSurvival({ onBack, onComplete }) {
   return (
     <div className="min-h-screen" style={{ background: D.bg }}>
       {styleTag}
+      {exitDialog}
       {/* dark header */}
       <div className="sticky top-0 z-20 flex items-center justify-between px-4 py-3"
            style={{ background: D.bg + 'F0', borderBottom: `1px solid ${D.slotBorder}`, paddingTop: 'calc(12px + env(safe-area-inset-top, 0px))' }}>
-        <button onClick={onBack} className="no-tap-highlight p-1.5 -ml-1.5 rounded-lg active:bg-white/5"><ArrowLeft size={20} color={D.muted} /></button>
+        <button onClick={requestExit} className="no-tap-highlight p-1.5 -ml-1.5 rounded-lg active:bg-white/5"><ArrowLeft size={20} color={D.muted} /></button>
         <div className="font-display text-sm font-bold tracking-wide flex items-center gap-1.5" style={{ color: D.ink }}>
           <Activity size={15} color={D.red} className="timer-beat" /> SHIFT SURVIVAL
         </div>
