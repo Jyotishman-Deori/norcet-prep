@@ -41,6 +41,27 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const { isAdmin } = useProfile();
   const { t } = useI18n();
   const panelRef = useRef(null);
+
+  // Which SIDE the drawer lives on. The owner wants it RIGHT on desktop (the pc
+  // build) but LEFT on tablet and phone, the way it originally shipped, so the
+  // right-side change (commit a1b5bc7) must apply to desktop ONLY. The panel
+  // anchor AND every gesture direction below mirror on this, so it is a runtime
+  // boolean, not a CSS breakpoint. lg = 1024px, matching the app's desktop chrome.
+  const [rightSide, setRightSide] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia
+      ? window.matchMedia('(min-width: 1024px)').matches : false));
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const on = () => setRightSide(mq.matches);
+    on();
+    if (mq.addEventListener) mq.addEventListener('change', on); else mq.addListener(on);
+    return () => { if (mq.removeEventListener) mq.removeEventListener('change', on); else mq.removeListener(on); };
+  }, []);
+  // The off-screen resting transform: off to the right when right-anchored, off
+  // to the left when left-anchored. Every close/open transform routes through this.
+  const closedTx = rightSide ? 'translateX(102%)' : 'translateX(-102%)';
+
   // Lock background scroll while the drawer is open.
   useEffect(() => {
     if (open) {
@@ -94,7 +115,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   const restorePanel = (isOpen) => {
     const el = panelRef.current; if (!el) return;
     el.style.transition = '';
-    el.style.transform = isOpen ? 'translateX(0)' : 'translateX(102%)';
+    el.style.transform = isOpen ? 'translateX(0)' : closedTx;
   };
 
   // -- swipe-to-close: handlers attached to the panel itself --
@@ -117,7 +138,9 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const now = Date.now();
     d.vx = (t.clientX - d.lastX) / Math.max(1, now - d.lastT);
     d.lastX = t.clientX; d.lastT = now;
-    setPanelX(Math.max(0, dx), false);
+    // Only move the panel toward its home edge: rightward when right-anchored,
+    // leftward when left-anchored. The other direction clamps to 0 (no rubber-band).
+    setPanelX(rightSide ? Math.max(0, dx) : Math.min(0, dx), false);
   };
   const onPanelTouchEnd = () => {
     const d = dragRef.current; dragRef.current = null;
@@ -125,7 +148,11 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
     const el = panelRef.current; if (!el) return;
     const w = el.offsetWidth || 300;
     const dx = d.lastX - d.startX;
-    const commit = dx > w * 0.38 || d.vx > 0.4; // distance OR fast flick right
+    // Commit on a drag/flick TOWARD the home edge (right when right-anchored,
+    // left when left-anchored).
+    const commit = rightSide
+      ? (dx > w * 0.38 || d.vx > 0.4)
+      : ((-dx) > w * 0.38 || d.vx < -0.4);
     restorePanel(!commit);            // committed → animate to closed; else spring back open
     if (commit) onClose();
   };
@@ -133,11 +160,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
   // -- swipe-to-open: a document-level edge listener while closed --
   useEffect(() => {
     if (open || !gesturesAllowed || typeof document === 'undefined') return;
-    // Home-only (gesturesAllowed) LEFTWARD-swipe to open, anywhere on the
-    // screen, on every platform (the panel lives on the right). A mid-screen
-    // start is what AVOIDS the iOS system back-edge, so this is safe on iOS
-    // too. Horizontal intent is required below before we claim the drag,
-    // so vertical scrolling is unaffected.
+    // Home-only (gesturesAllowed) swipe to open, anywhere on the screen. The
+    // direction is TOWARD the panel: leftward when it lives on the right (desktop),
+    // rightward when it lives on the left (tablet/phone). A mid-screen start is
+    // what AVOIDS the iOS system back-edge, so this is safe on iOS too. Horizontal
+    // intent is required below before we claim the drag, so vertical scrolling is
+    // unaffected. Re-binds when the side flips (rightSide is in the deps).
     const onStart = (e) => {
       if (!getSidebarGestures().open) return;
       // Popups own the screen: never begin an edge-swipe while ANY modal is up
@@ -155,7 +183,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       const dx = t.clientX - d.startX;
       const dy = t.clientY - d.startY;
       if (!d.active) {
-        if (dx > -12 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+        // Claim only a clear drag TOWARD the panel: leftward (dx < -12) for a
+        // right panel, rightward (dx > 12) for a left panel. Vertical scroll wins.
+        const towardPanel = rightSide ? (dx <= -12) : (dx >= 12);
+        if (!towardPanel || Math.abs(dx) < Math.abs(dy) * 1.2) return;
         d.active = true;
       }
       const now = Date.now();
@@ -163,7 +194,10 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       d.lastX = t.clientX; d.lastT = now;
       const el = panelRef.current; if (!el) return;
       const w = el.offsetWidth || 300;
-      setPanelX(Math.max(0, w + dx), false);
+      // Track from the closed edge inward. Right panel starts at +w and a leftward
+      // (negative) dx pulls it toward 0; left panel starts at -w and a rightward
+      // (positive) dx pushes it toward 0.
+      setPanelX(rightSide ? Math.max(0, w + dx) : Math.min(0, -w + dx), false);
     };
     const onEnd = () => {
       const d = dragRef.current; dragRef.current = null;
@@ -171,7 +205,9 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       const el = panelRef.current;
       const w = (el && el.offsetWidth) || 300;
       const dx = d.lastX - d.startX;
-      const commit = (-dx) > w * 0.38 || d.vx < -0.4;
+      const commit = rightSide
+        ? ((-dx) > w * 0.38 || d.vx < -0.4)
+        : (dx > w * 0.38 || d.vx > 0.4);
       restorePanel(commit);           // committed → animate to open; else slide back out
       if (commit && onOpen) onOpen();
     };
@@ -185,7 +221,7 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
       document.removeEventListener('touchend', onEnd);
       document.removeEventListener('touchcancel', onEnd);
     };
-  }, [open, gesturesAllowed, onOpen]);
+  }, [open, gesturesAllowed, onOpen, rightSide]);
 
   // The drag mutates the panel's inline transform; make sure a state-driven
   // open/close always wins by re-asserting the explicit transform whenever
@@ -401,12 +437,12 @@ function NavDrawer({ open, onClose, onNavigate, onOpen, gesturesAllowed = true, 
           so scrolling works on every device without relying on flexbox. */}
       <div ref={panelRef}
            data-no-ptr
-           className="absolute inset-y-0 right-0 w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out"
+           className={`absolute inset-y-0 ${rightSide ? 'right-0' : 'left-0'} w-[82%] max-w-[330px] overflow-y-auto overscroll-contain transition-transform duration-300 ease-out`}
            style={{
              background: T.bg,
              WebkitOverflowScrolling: 'touch',
              touchAction: 'pan-y',
-             transform: open ? 'translateX(0)' : 'translateX(102%)',
+             transform: open ? 'translateX(0)' : closedTx,
              boxShadow: open ? '0 0 40px rgba(0,0,0,0.25)' : 'none'
            }}>
         {/* Header (sticky so it stays pinned while the list scrolls). Pads

@@ -7,10 +7,11 @@
 // (only T + isDark), so a single useTheme() destructure suffices. Questions
 // load lazily via useContent('dosage'); shuffle from lib/utils.
 // =====================================================================
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Bookmark, BookmarkCheck, Calculator, Check, X, Eye, FlaskConical, Sigma, Lightbulb, SkipForward, ChevronRight } from 'lucide-react';
 import { useTheme, useData } from '../lib/app-context.jsx';
 import { useContent } from '../lib/content.js';
+import { useBackHandler } from '../lib/back-handler.js';
 import { confirmBookmarkToggle } from '../ui/bookmark-actions.jsx';
 import { Tip } from '../ui/tooltip.jsx';
 import { ContentGate } from '../ui/content-gate.jsx';
@@ -74,6 +75,18 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
     if (onToggleBookmark && q) onToggleBookmark(q.id);
   };
   const toggleBookmark = () => confirmBookmarkToggle(isBookmarked, applyBookmarkToggle);
+
+  // Guard the DEVICE / gesture back too, not just the on-screen arrow. The quiz
+  // is in NAV_SELF_GUARDED_SCREENS and pushes its own history entry; this drill
+  // is not, so its hardware back used to fall through to App's global handler and
+  // go straight home. App consults this registry before navigating, so returning
+  // true here routes the press through the same confirm the arrow uses. Only
+  // while a run is on screen (`q` exists); the empty state keeps its plain back.
+  useBackHandler(useCallback(() => {
+    if (confirmExit) { setConfirmExit(false); return true; }
+    setConfirmExit(true);
+    return true;
+  }, [confirmExit]), !!q);
 
   if (!q) {
     // A2 — show a load/retry state while the question bank is fetching, and a
@@ -163,7 +176,7 @@ function DosagePractice({ onComplete, onBack, profile, isAdmin = false, bookmark
       {/* Only nag if there is something to lose: leaving before answering anything
           costs nothing, so do not put a dialog in the way of that. */}
       <TopBar title="Nursing Calc Test"
-              onBack={() => (results.length > 0 ? setConfirmExit(true) : onBack())}
+              onBack={() => setConfirmExit(true)}
               feedback={{ screen: "Nursing calc" }}
               right={<div className="text-xs font-semibold tabular-nums px-2.5 py-1 rounded-full flex-shrink-0"
                           style={{ color: T.inkSoft, background: T.surfaceWarm, border: `1px solid ${T.borderSoft}` }}>
