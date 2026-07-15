@@ -51,7 +51,12 @@ function vQuote(it) {
   return e;
 }
 // Concept cards nest: { topicId, sub, cards:[{type,title,body,clinicalNote?}] }
-const CARD_TYPES = ['concept', 'mnemonic', 'keypoints'];
+// ⚠ This list MUST match typeMeta in src/screens/learn-cards.jsx. It used to be
+// just concept/mnemonic/keypoints, which meant the Content Studio REJECTED five
+// of the eight types the app already renders and already ships (33 live cards are
+// whatTests/method/worked/mistake/quiz). An admin could not author a Method or a
+// Worked example card at all without a redeploy.
+const CARD_TYPES = ['concept', 'mnemonic', 'keypoints', 'quiz', 'whatTests', 'method', 'worked', 'mistake'];
 function vConceptGroup(it) {
   const e = [];
   if (!isStr(it.topicId)) e.push('topicId required');
@@ -59,7 +64,7 @@ function vConceptGroup(it) {
   if (!Array.isArray(it.cards) || it.cards.length === 0) e.push('cards[] required');
   else it.cards.forEach((c, i) => {
     if (!c || typeof c !== 'object') { e.push(`card ${i + 1} invalid`); return; }
-    if (c.type && !CARD_TYPES.includes(c.type)) e.push(`card ${i + 1}: type must be concept/mnemonic/keypoints`);
+    if (c.type && !CARD_TYPES.includes(c.type)) e.push(`card ${i + 1}: type must be one of ${CARD_TYPES.join('/')}`);
     if (!isStr(c.title)) e.push(`card ${i + 1}: title required`);
     // body is a string OR (keypoints) an array of strings
     const bodyOk = isStr(c.body) || (Array.isArray(c.body) && c.body.every(isStr));

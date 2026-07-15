@@ -95,7 +95,12 @@ export function unresolvedCards(map) {
 
 // "3d ago" style relative age.
 export function relativeAge(ts) {
-  const ms = Date.now() - ts;
+  // A missing or corrupt timestamp made every comparison below false, so it fell
+  // through to the last line and rendered the literal string "NaNmo ago" into the
+  // My Doubts list. Non-finite input has no age to report, so say nothing.
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return '';
+  const ms = Date.now() - n;
   const m = Math.floor(ms / 60000);
   if (m < 1) return 'just now';
   if (m < 60) return `${m}m ago`;

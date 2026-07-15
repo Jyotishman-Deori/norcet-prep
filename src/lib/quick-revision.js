@@ -69,9 +69,14 @@ export function buildRevisionStream(plan, conceptCards, budget, doubtCards = [])
   const out = [];
   const used = new Set(); // `${topic}::${title}` already emitted
   const b = budget || { perTopic: 5, essentialOnly: false };
+  // Tolerate a missing plan / doubt list the way every other function here does.
+  // The content blob loads ASYNCHRONOUSLY, so a first render can legitimately
+  // call this before anything has arrived.
+  const steps = Array.isArray(plan) ? plan : [];
+  const doubts = Array.isArray(doubtCards) ? doubtCards : [];
 
   // 1) Doubts first.
-  for (const d of doubtCards) {
+  for (const d of doubts) {
     const found = findCardByTitle(conceptCards, d.topic, d.cardTitle);
     if (!found) continue;
     const key = `${d.topic}::${d.cardTitle}`;
@@ -81,7 +86,7 @@ export function buildRevisionStream(plan, conceptCards, budget, doubtCards = [])
   }
 
   // 2) The prioritised plan (skipping cards already shown as doubts).
-  for (const { topic, reason } of plan) {
+  for (const { topic, reason } of steps) {
     const mods = (conceptCards && conceptCards[topic]) || [];
     let taken = 0;
     for (const m of mods) {

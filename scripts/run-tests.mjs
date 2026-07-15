@@ -61,6 +61,18 @@ console.log('\n> i18n locale gate');
 const loc = spawnSync(process.execPath, [join(root, 'scripts', 'check-locales.mjs')], { stdio: 'inherit', cwd: root });
 if (loc.status !== 0) process.exit(1);
 
+// LEARN CONTENT gate (scripts/check-learn-content.mjs) — concept-cards.json feeds
+// three surfaces at once (Modules, the derived Guidebook, Quick Revision) and
+// several of its invariants are enforced nowhere in code: break one and Learn
+// degrades SILENTLY. Checks unique card titles per topic (doubt ids are keyed by
+// topic+title, so a duplicate makes one flag apply to several cards), that no
+// existing title has disappeared (renaming a card ORPHANS a student's saved
+// doubts), and that every module can actually fill the Guidebook and the Quick
+// Revision budget.
+console.log('\n> learn content gate');
+const learn = spawnSync(process.execPath, [join(root, 'scripts', 'check-learn-content.mjs')], { stdio: 'inherit', cwd: root });
+if (learn.status !== 0) process.exit(1);
+
 // Runtime render smoke (scripts/smoke) — server-renders the real Knowledge
 // Map screen, catching first-render crashes (e.g. TDZ in memo deps) that the
 // compile gate can't see. See scripts/smoke/build.mjs for the incident note.
