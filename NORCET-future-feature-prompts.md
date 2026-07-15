@@ -12152,3 +12152,64 @@ HARNESS LESSONS (cost me several false results, both now fixed in the scratchpad
 - Shift Survival has NO TopBar (hand-rolled header), so [aria-label="Go back"] does not exist
   there. A back click that silently did nothing left the next three games "passing" while never
   actually being opened. Reload between screens instead of trusting back.
+
+---
+
+## 2026-07-15 — Learn topic-wise: NORCET-sized content build + 2 UX fixes (1cec198, 70464c0, LIVE)
+
+Owner: "full testing and dry run of the worst case scenarios of the learn topic wise section. the
+amount of content (modules, guidebook, quick) is far too small vs the AIIMS NORCET syllabus. cover
+the gaps, fix anything illogical, satisfy a user's wish per the exam requirements. best version only."
+Plus, mid-round: the tablet/phone sidebar should open from the LEFT (only the pc build was meant to
+be right), and the Nursing Calc test does not caution on exit like the other tests.
+
+COUNTED, not estimated. The 10 nursing subjects shared 45 concept cards (avg 4.5); Medical-Surgical,
+the biggest NORCET subject, had 5. Aptitude alone held 32 of 77 cards, and General Knowledge had
+ZERO (a dead end that search still linked to). Built the nursing corpus to 427 cards / 82 modules,
+GK to 3 modules, and the whole file to 493 cards / 85 modules. Authored from the standard Indian
+nursing curriculum, kept inside the reference bands the app already ships. FLAGGED for owner
+nurse-review before launch, like the calculator bands: the gate proves the mechanics, only a nurse
+vouches for every clinical number.
+
+THE THREE SURFACES ARE ONE FILE. Modules = the sub-groups; the Guidebook is DERIVED from
+keypoints+mnemonic cards (learn-path.js compileGuidebook); Quick Revision asks for 5 cards/topic. So
+one build feeds all three, but only if every module ships >=5 cards with >=1 keypoints and >=1
+mnemonic. New gate enforces exactly that (scripts/check-learn-content.mjs, wired into npm test).
+
+STRUCTURAL DEFECTS found while mapping (all live):
+- All 8 aptitude modules reused the SAME 4 card titles. Doubt ids are pointId(topic, cardTitle) with
+  NO module in the key, so flagging "Worked example" in one module flagged it in all eight, and
+  quick-revision's findCardByTitle served the wrong card. Titles now unique per topic; the gate holds
+  it forever. ⚠ RULE: card titles must be unique WITHIN a topic, and never rename a shipped title
+  (doubts are keyed by it, a rename orphans a student's flags). The gate keeps an append-only baseline
+  of all 493 titles (scripts/learn-title-baseline.json).
+- The aptitude Guidebook was always null (no keypoints/mnemonic); it also vanished from Quick Revision
+  inside 30 days (ESSENTIAL_TYPES excludes the aptitude card types). Fixed by giving each module both.
+- obg shipped two near-duplicate modules, merged with every title preserved.
+- content-packs CARD_TYPES rejected 5 of the 8 types the app already renders and ships; an admin
+  could not author a Method or Worked-example card. Widened to match learn-cards.jsx.
+
+ENGINE BUGS the two NEW tests exposed (quick-revision.js and doubts.js had none):
+- buildRevisionStream(null) threw instead of returning [], unlike every sibling. The content loads
+  async, so a first render can legitimately call it with nothing.
+- doubts relativeAge rendered the literal "NaNmo ago" into the My Doubts list on a corrupt timestamp
+  (same |0-vs-NaN class as the Level-100 and shock bugs). Both fixed.
+- New scripts/stub-storage-loader.mjs: an ESM loader hook that stubs the storage layer, so lib
+  modules that statically import src/storage.js (which reads a Vite-only env value and explodes under
+  Node) can finally be unit-tested. doubts.js was untestable before it.
+
+CONTENT_VERSION 17 -> 18 (or returning users keep the stale cached copy forever). VERIFIED LIVE: the
+CDN served 77 cards for the first ~40s while Vercel built, then flipped to 493 with ?v=18, proving the
+cache-bust. Guidebook now non-null on all 12 topics; learn path builds over all 12 incl gk.
+
+TWO UX FIXES (browser-verified at real viewports, then shipped):
+- DRAWER SIDE. The right-side drawer (a1b5bc7) was meant for desktop only but flipped EVERY viewport.
+  Restored LEFT for tablet/phone, RIGHT for desktop, chosen at runtime on the lg (1024px) breakpoint;
+  the anchor and all four gesture directions mirror on it and re-bind live across the breakpoint. That
+  commit never moved the hamburger, so it stayed. Confirmed: open panel flush RIGHT at 1280px, flush
+  LEFT at 390px.
+- NURSING CALC EXIT. Every other drill (quiz.jsx) cautions from Q0; the calc drill only cautioned once
+  results.length>0, and its device/gesture back was unguarded (dosage-run is not in
+  NAV_SELF_GUARDED_SCREENS and pushed no history entry). On-screen back now always confirms during a
+  run, and a useBackHandler routes the hardware back through the same dialog. Confirmed: back at Q1/5
+  with nothing typed now shows "Leave this session? Your progress in this round won't be saved."
